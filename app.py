@@ -1,40 +1,68 @@
 import streamlit as st
 from firebase_config import iniciar_firebase
+from datetime import datetime
+import uuid
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
-st.title("🔬 Gestión de Muestras - Firebase + Streamlit")
 
+# Inicializar Firebase
 db = iniciar_firebase()
-coleccion = db.collection("muestras")
 
-# -------------------- Cargar muestra --------------------
-st.subheader("➕ Agregar nueva muestra")
-with st.form("form_muestra"):
-    nombre = st.text_input("Nombre")
-    tipo = st.selectbox("Tipo", ["Aceite", "Epóxido", "Poliol", "Otro"])
-    origen = st.selectbox("Origen", ["Soja", "Vegetal", "Otro", "Desconocido"])
-    observaciones = st.text_area("Observaciones")
-    submit = st.form_submit_button("Guardar")
+# Título
+st.title("🔬 Laboratorio de Polioles")
 
-    if submit and nombre:
-        coleccion.document(nombre).set({
-            "tipo": tipo,
-            "origen": origen,
-            "observaciones": observaciones
+# --- Función para cargar muestras desde Firebase ---
+def cargar_muestras():
+    docs = db.collection("muestras").order_by("fecha", direction="DESCENDING").stream()
+    return [doc.to_dict() | {"id": doc.id} for doc in docs]
+
+# --- Función para subir una nueva muestra ---
+def subir_muestra(nombre, observaciones, imagenes):
+    nueva_muestra = {
+        "nombre": nombre,
+        "observaciones": observaciones,
+        "fecha": datetime.now().isoformat(),
+        "imagenes": []
+    }
+
+    # Subida de imágenes
+    for img in imagenes:
+        img_id = str(uuid.uuid4())
+        db.collection("imagenes").document(img_id).set({
+            "nombre_muestra": nombre,
+            "archivo": img.read(),
+            "filename": img.name,
+            "tipo": "muestra",
+            "fecha": datetime.now().isoformat()
         })
-        st.success(f"✅ Muestra '{nombre}' guardada.")
+        nueva_muestra["imagenes"].append(img_id)
 
-# -------------------- Ver todas las muestras --------------------
-st.subheader("📋 Muestras cargadas")
+    doc_ref = db.collection("muestras").document()
+    doc_ref.set(nueva_muestra)
 
-docs = coleccion.stream()
-muestras = []
-for doc in docs:
-    data = doc.to_dict()
-    data["nombre"] = doc.id
-    muestras.append(data)
+# --- Formulario para agregar nueva muestra ---
+with st.expander("➕ Agregar nueva muestra"):
+    with st.form("form_nueva_muestra"):
+        nombre = st.text_input("Nombre de la muestra *", max_chars=100)
+        observaciones = st.text_area("Observaciones (100 palabras o más)", height=200)
+        imagenes = st.file_uploader("Subir imágenes de la muestra (opcional)", accept_multiple_files=True, type=["png", "jpg", "jpeg"])
+        submitted = st.form_submit_button("Guardar muestra")
+        if submitted:
+            if not nombre:
+                st.warning("El nombre es obligatorio.")
+            else:
+                subir_muestra(nombre, observaciones, imagenes)
+                st.success("✅ Muestra guardada correctamente.")
+                st.experimental_rerun()
 
-if muestras:
-    st.dataframe(muestras, use_container_width=True)
+# --- Mostrar muestras cargadas ---
+st.subheader("📋 Muestras registradas")
+
+muestras = cargar_muestras()
+if not muestras:
+    st.info("Aún no hay muestras registradas.")
 else:
-    st.info("Todavía no hay muestras registradas.")
+    for m in muestras:
+        st.markdown(f"### 🧪 {m['nombre']}")
+        st.markdown(m["observaciones"] or "_Sin observaciones_")
+        st.caption(f"Fecha de carga: {m['fecha'][:10]}")

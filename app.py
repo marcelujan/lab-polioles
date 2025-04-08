@@ -5,10 +5,14 @@ from firebase_config import iniciar_firebase
 from datetime import datetime
 import uuid
 import io
+import base64
 from fpdf import FPDF
 
-# Función para generar PDF (igual que antes)
 def generar_pdf_ficha(muestra: dict) -> io.BytesIO:
+    """
+    Genera un PDF con la ficha de la muestra.
+    Se muestran los campos obligatorios (nombre) y todos los campos de análisis, incluso si están vacíos.
+    """
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -54,17 +58,17 @@ def generar_pdf_ficha(muestra: dict) -> io.BytesIO:
     pdf_bytes = pdf_string.encode("latin1")
     return io.BytesIO(pdf_bytes)
 
-# Inicializamos Firebase
+# Inicializar Firebase
 db = iniciar_firebase()
 
 st.title("🔬 Laboratorio de Polioles")
 
-# Función para cargar muestras desde Firebase
+# --- Función para cargar muestras desde Firebase ---
 def cargar_muestras():
     docs = db.collection("muestras").order_by("fecha", direction="DESCENDING").stream()
     return [doc.to_dict() | {"id": doc.id} for doc in docs]
 
-# Función para subir una nueva muestra
+# --- Función para subir una nueva muestra ---
 def subir_muestra(nombre, observaciones, imagenes):
     nueva_muestra = {
         "nombre": nombre,
@@ -72,12 +76,14 @@ def subir_muestra(nombre, observaciones, imagenes):
         "fecha": datetime.now().isoformat(),
         "imagenes": []
     }
-    # Subida de imágenes
+    # Subida de imágenes, codificadas en base64
     for img in imagenes:
+        img_data = img.read()
+        encoded_data = base64.b64encode(img_data).decode("utf-8")
         img_id = str(uuid.uuid4())
         db.collection("imagenes").document(img_id).set({
             "nombre_muestra": nombre,
-            "archivo": img.read(),
+            "archivo": encoded_data,
             "filename": img.name,
             "tipo": "muestra",
             "fecha": datetime.now().isoformat()
@@ -100,7 +106,7 @@ with st.expander("➕ Agregar nueva muestra"):
             else:
                 subir_muestra(nombre, observaciones, imagenes)
                 st.success("✅ Muestra guardada correctamente.")
-                st.experimental_rerun()  # Forzamos la recarga para actualizar la lista
+                st.info("Por favor, recargá la página para ver los cambios.")
 
 # --- Mostrar muestras registradas ---
 st.subheader("📋 Muestras registradas")
@@ -120,7 +126,6 @@ else:
                     st.session_state["edit_id"] = m["id"]
             with col3:
                 if st.button("Ver Ficha", key=f"ver_ficha_{m['id']}"):
-                    # Abrir un modal para ver la ficha
                     with st.modal(f"Ficha de {m['nombre']}"):
                         st.markdown("### Detalles de la muestra")
                         st.markdown(f"**Nombre:** {m.get('nombre','')}")
@@ -140,12 +145,10 @@ else:
                         ]
                         for prop, valor in propiedades:
                             st.markdown(f"**{prop}:** {valor}")
-                        # Botón para descargar ficha en PDF
                         pdf_bytes = generar_pdf_ficha(m)
                         st.download_button("⬇️ Descargar ficha en PDF", data=pdf_bytes,
                                            file_name=f"{m.get('nombre','Ficha')}.pdf",
                                            mime="application/pdf")
-            # Botón de eliminación en un tercer columna o debajo del contenedor
             if st.button("🗑️ Eliminar", key=f"delete_{m['id']}"):
                 with st.modal("Confirmar eliminación"):
                     st.warning(f"¿Estás seguro de que querés eliminar la muestra **{m['nombre']}**?", icon="⚠️")
@@ -153,31 +156,37 @@ else:
                     with col_del:
                         if st.button("✅ Sí, eliminar"):
                             db.collection("muestras").document(m["id"]).delete()
-                            # Eliminar imágenes asociadas
                             imagenes = db.collection("imagenes").where("nombre_muestra", "==", m["nombre"]).stream()
                             for img in imagenes:
                                 db.collection("imagenes").document(img.id).delete()
                             st.success("🗑️ Muestra eliminada correctamente.")
-                            st.experimental_rerun()
+                            st.info("Por favor, recargá la página para ver los cambios.")
                     with col_can:
                         if st.button("❌ Cancelar"):
                             st.info("Eliminación cancelada.")
-                            st.experimental_rerun()
-        # Modo de edición inline (si corresponde)
-        if st.session_state.get("edit_id") == m["id"]:
-            with st.form(f"form_editar_{m['id']}"):
-                nuevo_nombre = st.text_input("Nombre de la muestra", value=m["nombre"])
-                nuevas_obs = st.text_area("Observaciones", value=m["observaciones"], height=200)
+                            st.info("Por favor, recargá la página para ver los cambios.")
+
+# Modo de edición para una muestra
+if st.session_state.get("edit_id"):
+    edit_id = st.session_state["edit_id"]
+    muestra_edit = None
+    for m in cargar_muestras():
+        if m["id"] == edit_id:
+            muestra_edit = m
+            break
+    if muestra_edit:
+        with st.modal(f"Editar {muestra_edit['nombre']}"):
+            with st.form(f"form_editar_{muestra_edit['id']}"):
+                nuevo_nombre = st.text_input("Nombre de la muestra", value=muestra_edit["nombre"])
+                nuevas_obs = st.text_area("Observaciones", value=muestra_edit["observaciones"], height=200)
                 guardar = st.form_submit_button("💾 Guardar cambios")
                 cancelar = st.form_submit_button("❌ Cancelar")
                 if guardar:
-                    db.collection("muestras").document(m["id"]).update({
+                    db.collection("muestras").document(muestra_edit["id"]).update({
                         "nombre": nuevo_nombre,
                         "observaciones": nuevas_obs
                     })
                     st.success("✅ Muestra actualizada.")
-                    st.session_state["edit_id"] = None
-                    st.experimental_rerun()
+                    st.info("Por favor, recargá la página para ver los cambios.")
                 if cancelar:
-                    st.session_state["edit_id"] = None
-                    st.experimental_rerun()
+                    st.info("Edición cancelada. Por favor, recargá la página para ver los cambios.")

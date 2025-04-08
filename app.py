@@ -1,19 +1,14 @@
 import streamlit as st
+st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
+
 from firebase_config import iniciar_firebase
 from datetime import datetime
 import uuid
 import io
 from fpdf import FPDF
 
-st.write("Streamlit version:", st.__version__)
-st.write("Keys in streamlit:", dir(st))
-
-
+# Función para generar PDF (igual que antes)
 def generar_pdf_ficha(muestra: dict) -> io.BytesIO:
-    """
-    Genera un PDF con la ficha de la muestra.
-    Se muestran los campos obligatorios (nombre) y todos los campos de análisis, incluso si están vacíos.
-    """
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -55,25 +50,21 @@ def generar_pdf_ficha(muestra: dict) -> io.BytesIO:
     for prop, valor in propiedades:
         pdf.cell(0, 10, f"{prop}: {valor}", ln=True)
     
-    # Obtenemos el PDF como cadena (dest="S") y lo convertimos a bytes
     pdf_string = pdf.output(dest="S")
     pdf_bytes = pdf_string.encode("latin1")
     return io.BytesIO(pdf_bytes)
 
-st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
-
-# Inicializar Firebase
+# Inicializamos Firebase
 db = iniciar_firebase()
 
-# Título
 st.title("🔬 Laboratorio de Polioles")
 
-# --- Función para cargar muestras desde Firebase ---
+# Función para cargar muestras desde Firebase
 def cargar_muestras():
     docs = db.collection("muestras").order_by("fecha", direction="DESCENDING").stream()
     return [doc.to_dict() | {"id": doc.id} for doc in docs]
 
-# --- Función para subir una nueva muestra ---
+# Función para subir una nueva muestra
 def subir_muestra(nombre, observaciones, imagenes):
     nueva_muestra = {
         "nombre": nombre,
@@ -81,7 +72,6 @@ def subir_muestra(nombre, observaciones, imagenes):
         "fecha": datetime.now().isoformat(),
         "imagenes": []
     }
-
     # Subida de imágenes
     for img in imagenes:
         img_id = str(uuid.uuid4())
@@ -93,7 +83,6 @@ def subir_muestra(nombre, observaciones, imagenes):
             "fecha": datetime.now().isoformat()
         })
         nueva_muestra["imagenes"].append(img_id)
-
     doc_ref = db.collection("muestras").document()
     doc_ref.set(nueva_muestra)
 
@@ -111,18 +100,9 @@ with st.expander("➕ Agregar nueva muestra"):
             else:
                 subir_muestra(nombre, observaciones, imagenes)
                 st.success("✅ Muestra guardada correctamente.")
-                # Usamos un flag en session_state en lugar de llamar directamente a experimental_rerun
-                st.session_state["nueva_muestra_guardada"] = True
+                st.experimental_rerun()  # Forzamos la recarga para actualizar la lista
 
-# Fuera del bloque del formulario, después de procesar la carga
-if st.session_state.get("nueva_muestra_guardada"):
-    st.session_state["nueva_muestra_guardada"] = False  # Reiniciamos el flag
-    try:
-        st.experimental_rerun()
-    except Exception as e:
-        st.error(f"Error al recargar la app: {e}")
-
-# --- Mostrar muestras cargadas ---
+# --- Mostrar muestras registradas ---
 st.subheader("📋 Muestras registradas")
 muestras = cargar_muestras()
 if not muestras:
@@ -130,18 +110,60 @@ if not muestras:
 else:
     for m in muestras:
         with st.container():
-            col1, col2 = st.columns([4, 1])
+            col1, col2, col3 = st.columns([4, 1, 1])
             with col1:
                 st.markdown(f"### 🧪 {m['nombre']}")
-                st.markdown(m["observaciones"] or "_Sin observaciones_")
+                st.markdown(m.get("observaciones") or "_Sin observaciones_")
                 st.caption(f"📅 Fecha: {m['fecha'][:10]}")
             with col2:
                 if st.button("✏️ Editar", key=f"edit_{m['id']}"):
                     st.session_state["edit_id"] = m["id"]
-                if st.button("🗑️ Eliminar", key=f"delete_{m['id']}"):
-                    st.session_state["delete_id"] = m["id"]
-
-        # Si está en modo edición para esta muestra
+            with col3:
+                if st.button("Ver Ficha", key=f"ver_ficha_{m['id']}"):
+                    # Abrir un modal para ver la ficha
+                    with st.modal(f"Ficha de {m['nombre']}"):
+                        st.markdown("### Detalles de la muestra")
+                        st.markdown(f"**Nombre:** {m.get('nombre','')}")
+                        st.markdown(f"**Observaciones:** {m.get('observaciones','Sin observaciones')}")
+                        st.markdown(f"**Fecha de carga:** {m.get('fecha','Sin fecha')}")
+                        st.markdown("#### Análisis Físico-Químicos")
+                        propiedades = [
+                            ("Índice de yodo [% p/p I2 abs]", m.get("indice_yodo", "")),
+                            ("Índice OH [mg KOH/g]", m.get("indice_oh", "")),
+                            ("Índice de acidez [mg KOH/g]", m.get("indice_acidez", "")),
+                            ("Índice de epóxido [mol/100g]", m.get("indice_epoxido", "")),
+                            ("Humedad [%]", m.get("humedad", "")),
+                            ("PM [g/mol]", m.get("pm", "")),
+                            ("Funcionalidad [#]", m.get("funcionalidad", "")),
+                            ("Viscosidad dinámica [cP]", m.get("viscosidad", "")),
+                            ("Densidad [g/mL]", m.get("densidad", ""))
+                        ]
+                        for prop, valor in propiedades:
+                            st.markdown(f"**{prop}:** {valor}")
+                        # Botón para descargar ficha en PDF
+                        pdf_bytes = generar_pdf_ficha(m)
+                        st.download_button("⬇️ Descargar ficha en PDF", data=pdf_bytes,
+                                           file_name=f"{m.get('nombre','Ficha')}.pdf",
+                                           mime="application/pdf")
+            # Botón de eliminación en un tercer columna o debajo del contenedor
+            if st.button("🗑️ Eliminar", key=f"delete_{m['id']}"):
+                with st.modal("Confirmar eliminación"):
+                    st.warning(f"¿Estás seguro de que querés eliminar la muestra **{m['nombre']}**?", icon="⚠️")
+                    col_del, col_can = st.columns(2)
+                    with col_del:
+                        if st.button("✅ Sí, eliminar"):
+                            db.collection("muestras").document(m["id"]).delete()
+                            # Eliminar imágenes asociadas
+                            imagenes = db.collection("imagenes").where("nombre_muestra", "==", m["nombre"]).stream()
+                            for img in imagenes:
+                                db.collection("imagenes").document(img.id).delete()
+                            st.success("🗑️ Muestra eliminada correctamente.")
+                            st.experimental_rerun()
+                    with col_can:
+                        if st.button("❌ Cancelar"):
+                            st.info("Eliminación cancelada.")
+                            st.experimental_rerun()
+        # Modo de edición inline (si corresponde)
         if st.session_state.get("edit_id") == m["id"]:
             with st.form(f"form_editar_{m['id']}"):
                 nuevo_nombre = st.text_input("Nombre de la muestra", value=m["nombre"])
@@ -155,76 +177,7 @@ else:
                     })
                     st.success("✅ Muestra actualizada.")
                     st.session_state["edit_id"] = None
-                    try:
-                        st.experimental_rerun()
-                    except Exception as e:
-                        st.error(f"Error al recargar la app: {e}")
+                    st.experimental_rerun()
                 if cancelar:
                     st.session_state["edit_id"] = None
-                    try:
-                        st.experimental_rerun()
-                    except Exception as e:
-                        st.error(f"Error al recargar la app: {e}")
-
-# --- Confirmación y ejecución de borrado ---
-if "delete_id" in st.session_state and st.session_state["delete_id"]:
-    id_muestra = st.session_state["delete_id"]
-    muestra = db.collection("muestras").document(id_muestra).get().to_dict()
-    st.warning(f"¿Estás seguro de que querés eliminar la muestra **{muestra['nombre']}**?", icon="⚠️")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Sí, eliminar"):
-            # Eliminar muestra
-            db.collection("muestras").document(id_muestra).delete()
-
-            # Eliminar imágenes asociadas
-            imagenes = db.collection("imagenes").where("nombre_muestra", "==", muestra["nombre"]).stream()
-            for img in imagenes:
-                db.collection("imagenes").document(img.id).delete()
-
-            # (Aquí se eliminarían otros datos asociados, como análisis y espectros)
-            st.success("🗑️ Muestra eliminada correctamente.")
-            st.session_state["delete_id"] = None
-            try:
-                st.experimental_rerun()
-            except Exception as e:
-                st.error(f"Error al recargar la app: {e}")
-    with col2:
-        if st.button("❌ Cancelar eliminación"):
-            st.session_state["delete_id"] = None
-            try:
-                st.experimental_rerun()
-            except Exception as e:
-                st.error(f"Error al recargar la app: {e}")
-
-st.markdown("---")
-st.subheader("📄 Ficha de Muestra")
-# Obtener las muestras nuevamente
-muestras = cargar_muestras()
-if not muestras:
-    st.info("No hay muestras registradas.")
-else:
-    opciones = {m["nombre"]: m for m in muestras}
-    seleccion = st.selectbox("Seleccioná una muestra para ver su ficha", list(opciones.keys()))
-    muestra_seleccionada = opciones[seleccion]
-    st.markdown("### Detalles de la muestra")
-    st.markdown(f"**Nombre:** {muestra_seleccionada.get('nombre', '')}")
-    st.markdown(f"**Observaciones:** {muestra_seleccionada.get('observaciones', 'Sin observaciones')}")
-    st.markdown(f"**Fecha de carga:** {muestra_seleccionada.get('fecha', 'Sin fecha')}")
-    st.markdown("#### Análisis Físico-Químicos")
-    propiedades = [
-        ("Índice de yodo [% p/p I2 abs]", muestra_seleccionada.get("indice_yodo", "")),
-        ("Índice OH [mg KOH/g]", muestra_seleccionada.get("indice_oh", "")),
-        ("Índice de acidez [mg KOH/g]", muestra_seleccionada.get("indice_acidez", "")),
-        ("Índice de epóxido [mol/100g]", muestra_seleccionada.get("indice_epoxido", "")),
-        ("Humedad [%]", muestra_seleccionada.get("humedad", "")),
-        ("PM [g/mol]", muestra_seleccionada.get("pm", "")),
-        ("Funcionalidad [#]", muestra_seleccionada.get("funcionalidad", "")),
-        ("Viscosidad dinámica [cP]", muestra_seleccionada.get("viscosidad", "")),
-        ("Densidad [g/mL]", muestra_seleccionada.get("densidad", ""))
-    ]
-    for prop, valor in propiedades:
-        st.markdown(f"**{prop}:** {valor}")
-    pdf_bytes = generar_pdf_ficha(muestra_seleccionada)
-    st.download_button("⬇️ Descargar ficha en PDF", data=pdf_bytes, file_name=f"{muestra_seleccionada.get('nombre','Ficha')}.pdf", mime="application/pdf")
-
+                    st.experimental_rerun()

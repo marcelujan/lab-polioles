@@ -8,12 +8,14 @@ import uuid
 # Inicializar Firebase
 db = iniciar_firebase()
 
-# Función para cargar muestras desde Firebase
+st.title("🔬 Laboratorio de Polioles")
+
+# --- Función para cargar muestras desde Firebase ---
 def cargar_muestras():
     docs = db.collection("muestras").order_by("fecha", direction="DESCENDING").stream()
     return [doc.to_dict() | {"id": doc.id} for doc in docs]
 
-# Función para subir una nueva muestra
+# --- Función para subir una nueva muestra ---
 def subir_muestra(nombre, observaciones):
     muestra = {
         "nombre": nombre,
@@ -22,14 +24,14 @@ def subir_muestra(nombre, observaciones):
     }
     db.collection("muestras").document().set(muestra)
 
-# Función para editar una muestra
+# --- Función para editar una muestra ---
 def editar_muestra(id, nombre, observaciones):
     db.collection("muestras").document(id).update({
         "nombre": nombre,
         "observaciones": observaciones
     })
 
-# Función para eliminar una muestra
+# --- Función para eliminar una muestra ---
 def eliminar_muestra(id):
     db.collection("muestras").document(id).delete()
 
@@ -46,8 +48,8 @@ with st.form("form_nueva_muestra"):
             st.error("El nombre es obligatorio.")
         else:
             subir_muestra(nuevo_nombre, nuevas_obs)
-            st.success("Muestra guardada correctamente. Recargá la página para ver los cambios.")
-            st.experimental_rerun()
+            st.success("Muestra guardada correctamente.")
+            st.info("Recargá la página para ver los cambios.")
 
 # =======================================================
 # Sección: Mostrar muestras registradas
@@ -57,7 +59,6 @@ muestras = cargar_muestras()
 if not muestras:
     st.info("No hay muestras registradas.")
 else:
-    # Recorrer cada muestra y mostrarla en una fila
     for m in muestras:
         with st.container():
             cols = st.columns([3, 1, 1])
@@ -66,42 +67,43 @@ else:
                 st.write("**Nombre:**", m["nombre"])
                 st.write("**Fecha:**", m["fecha"][:10])
                 st.write("**Observaciones:**", m.get("observaciones", ""))
-            # Columna 2: Botón Editar (para activar modo edición)
+            # Columna 2: Botón Editar
             with cols[1]:
-                if st.button("Editar", key="edit_" + m["id"]):
+                if st.button("Editar", key=f"edit_{m['id']}"):
                     st.session_state["editar"] = m["id"]
-            # Columna 3: Botón Eliminar (para activar confirmación)
+            # Columna 3: Botón Eliminar
             with cols[2]:
-                if st.button("Eliminar", key="delete_" + m["id"]):
+                if st.button("Eliminar", key=f"delete_{m['id']}"):
                     st.session_state["eliminar"] = m["id"]
-
-        # Si la muestra está en modo edición, mostrar formulario inline
+        
+        # Modo edición inline
         if st.session_state.get("editar") == m["id"]:
-            with st.form(key="form_editar_" + m["id"]):
+            with st.form(key=f"form_editar_{m['id']}"):
                 nuevo_nombre = st.text_input("Editar nombre", value=m["nombre"])
                 nuevas_obs = st.text_area("Editar observaciones", value=m.get("observaciones", ""), height=100)
                 guardar = st.form_submit_button("Guardar cambios")
                 cancelar = st.form_submit_button("Cancelar")
                 if guardar:
                     editar_muestra(m["id"], nuevo_nombre, nuevas_obs)
-                    st.success("Muestra actualizada. Recargá la página para ver los cambios.")
+                    st.success("Muestra actualizada.")
                     st.session_state["editar"] = None
-                    st.experimental_rerun()
+                    st.info("Recargá la página para ver los cambios.")
                 if cancelar:
                     st.session_state["editar"] = None
-                    st.info("Edición cancelada. Recargá la página si es necesario.")
-
-        # Si se ha activado el modo de eliminación para esta muestra, pedir confirmación inline
+                    st.info("Edición cancelada. Recargá la página para ver los cambios.")
+        
+        # Confirmación de eliminación inline
         if st.session_state.get("eliminar") == m["id"]:
-            st.warning("¿Confirmá que querés eliminar esta muestra?")
+            st.warning("¿Confirmás que querés eliminar esta muestra?")
             col_del, col_can = st.columns(2)
             with col_del:
-                if st.button("Sí", key="confirma_" + m["id"]):
+                if st.button("Sí", key=f"confirma_{m['id']}"):
                     eliminar_muestra(m["id"])
-                    st.success("Muestra eliminada. Recargá la página para ver los cambios.")
+                    st.success("Muestra eliminada correctamente.")
                     st.session_state["eliminar"] = None
-                    st.experimental_rerun()
+                    st.info("Recargá la página para ver los cambios.")
             with col_can:
-                if st.button("Cancelar", key="cancela_" + m["id"]):
+                if st.button("Cancelar", key=f"cancela_{m['id']}"):
                     st.session_state["eliminar"] = None
-                    st.info("Eliminación cancelada. Recargá la página si es necesario.")
+                    st.info("Eliminación cancelada. Recargá la página para ver los cambios.")
+

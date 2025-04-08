@@ -5,6 +5,9 @@ import uuid
 import io
 from fpdf import FPDF
 
+st.write("Streamlit version:", st.__version__)
+st.write("Keys in streamlit:", dir(st))
+
 
 def generar_pdf_ficha(muestra: dict) -> io.BytesIO:
     """

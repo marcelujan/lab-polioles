@@ -49,17 +49,13 @@ def generar_pdf_ficha(muestra: dict) -> io.BytesIO:
         ("Viscosidad dinámica [cP]", muestra.get("viscosidad", "")),
         ("Densidad [g/mL]", muestra.get("densidad", ""))
     ]
-    
     for prop, valor in propiedades:
         pdf.cell(0, 10, f"{prop}: {valor}", ln=True)
     
-    # Si en el futuro agregás otros campos, los podés incluir aquí.
-    
-    pdf_output = io.BytesIO()
-    pdf.output(pdf_output)
-    pdf_output.seek(0)
-    return pdf_output
-
+    # Obtenemos el PDF como cadena (dest="S") y lo convertimos a bytes
+    pdf_string = pdf.output(dest="S")
+    pdf_bytes = pdf_string.encode("latin1")
+    return io.BytesIO(pdf_bytes)
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 
@@ -103,7 +99,8 @@ with st.expander("➕ Agregar nueva muestra"):
     with st.form("form_nueva_muestra"):
         nombre = st.text_input("Nombre de la muestra *", max_chars=100)
         observaciones = st.text_area("Observaciones (100 palabras o más)", height=200)
-        imagenes = st.file_uploader("Subir imágenes de la muestra (opcional)", accept_multiple_files=True, type=["png", "jpg", "jpeg"])
+        imagenes = st.file_uploader("Subir imágenes de la muestra (opcional)", 
+                                    accept_multiple_files=True, type=["png", "jpg", "jpeg"])
         submitted = st.form_submit_button("Guardar muestra")
         if submitted:
             if not nombre:
@@ -111,17 +108,25 @@ with st.expander("➕ Agregar nueva muestra"):
             else:
                 subir_muestra(nombre, observaciones, imagenes)
                 st.success("✅ Muestra guardada correctamente.")
-                st.experimental_rerun()
+                # Usamos un flag en session_state en lugar de llamar directamente a experimental_rerun
+                st.session_state["nueva_muestra_guardada"] = True
+
+# Fuera del bloque del formulario, después de procesar la carga
+if st.session_state.get("nueva_muestra_guardada"):
+    st.session_state["nueva_muestra_guardada"] = False  # Reiniciamos el flag
+    try:
+        st.experimental_rerun()
+    except Exception as e:
+        st.error(f"Error al recargar la app: {e}")
 
 # --- Mostrar muestras cargadas ---
 st.subheader("📋 Muestras registradas")
-
 muestras = cargar_muestras()
 if not muestras:
     st.info("Aún no hay muestras registradas.")
 else:
     for m in muestras:
-        with st.container(border=True):
+        with st.container():
             col1, col2 = st.columns([4, 1])
             with col1:
                 st.markdown(f"### 🧪 {m['nombre']}")
@@ -132,7 +137,6 @@ else:
                     st.session_state["edit_id"] = m["id"]
                 if st.button("🗑️ Eliminar", key=f"delete_{m['id']}"):
                     st.session_state["delete_id"] = m["id"]
-
 
         # Si está en modo edición para esta muestra
         if st.session_state.get("edit_id") == m["id"]:
@@ -148,10 +152,16 @@ else:
                     })
                     st.success("✅ Muestra actualizada.")
                     st.session_state["edit_id"] = None
-                    st.experimental_rerun()
+                    try:
+                        st.experimental_rerun()
+                    except Exception as e:
+                        st.error(f"Error al recargar la app: {e}")
                 if cancelar:
                     st.session_state["edit_id"] = None
-                    st.experimental_rerun()
+                    try:
+                        st.experimental_rerun()
+                    except Exception as e:
+                        st.error(f"Error al recargar la app: {e}")
 
 # --- Confirmación y ejecución de borrado ---
 if "delete_id" in st.session_state and st.session_state["delete_id"]:
@@ -169,38 +179,35 @@ if "delete_id" in st.session_state and st.session_state["delete_id"]:
             for img in imagenes:
                 db.collection("imagenes").document(img.id).delete()
 
-            # (Más adelante: eliminar análisis y espectros asociados aquí)
-
+            # (Aquí se eliminarían otros datos asociados, como análisis y espectros)
             st.success("🗑️ Muestra eliminada correctamente.")
             st.session_state["delete_id"] = None
-            st.experimental_rerun()
+            try:
+                st.experimental_rerun()
+            except Exception as e:
+                st.error(f"Error al recargar la app: {e}")
     with col2:
         if st.button("❌ Cancelar eliminación"):
             st.session_state["delete_id"] = None
-            st.experimental_rerun()
-
+            try:
+                st.experimental_rerun()
+            except Exception as e:
+                st.error(f"Error al recargar la app: {e}")
 
 st.markdown("---")
 st.subheader("📄 Ficha de Muestra")
-
-# Supongamos que 'cargar_muestras()' es tu función que obtiene todas las muestras desde Firebase.
-muestras = cargar_muestras()  # Esta función debe devolver una lista de diccionarios, cada uno representando una muestra.
-
+# Obtener las muestras nuevamente
+muestras = cargar_muestras()
 if not muestras:
     st.info("No hay muestras registradas.")
 else:
-    # Selección de la muestra por nombre
     opciones = {m["nombre"]: m for m in muestras}
     seleccion = st.selectbox("Seleccioná una muestra para ver su ficha", list(opciones.keys()))
-    
     muestra_seleccionada = opciones[seleccion]
-    
-    # Muestra la ficha en pantalla
     st.markdown("### Detalles de la muestra")
     st.markdown(f"**Nombre:** {muestra_seleccionada.get('nombre', '')}")
     st.markdown(f"**Observaciones:** {muestra_seleccionada.get('observaciones', 'Sin observaciones')}")
     st.markdown(f"**Fecha de carga:** {muestra_seleccionada.get('fecha', 'Sin fecha')}")
-    
     st.markdown("#### Análisis Físico-Químicos")
     propiedades = [
         ("Índice de yodo [% p/p I2 abs]", muestra_seleccionada.get("indice_yodo", "")),
@@ -213,11 +220,8 @@ else:
         ("Viscosidad dinámica [cP]", muestra_seleccionada.get("viscosidad", "")),
         ("Densidad [g/mL]", muestra_seleccionada.get("densidad", ""))
     ]
-    
     for prop, valor in propiedades:
         st.markdown(f"**{prop}:** {valor}")
-    
-    # Botón para descargar la ficha en PDF
     pdf_bytes = generar_pdf_ficha(muestra_seleccionada)
     st.download_button("⬇️ Descargar ficha en PDF", data=pdf_bytes, file_name=f"{muestra_seleccionada.get('nombre','Ficha')}.pdf", mime="application/pdf")
 

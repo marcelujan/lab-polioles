@@ -1,3 +1,3 @@
-streamlit
-firebase-admin
-fpdf
+streamlit>=1.44.1
+firebase-admin>=6.0.0
+fpdf>=1.7.2

@@ -1,11 +1,11 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
+import streamlit as st
+import json
 
 def iniciar_firebase():
-    cred = credentials.Certificate("firebase_key.json")
-    try:
+    if not firebase_admin._apps:
+        cred_dict = json.loads(st.secrets["firebase_key"])
+        cred = credentials.Certificate(cred_dict)
         firebase_admin.initialize_app(cred)
-    except ValueError:
-        pass  # Ya fue inicializado
-
     return firestore.client()

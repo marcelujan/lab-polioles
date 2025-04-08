@@ -149,22 +149,35 @@ else:
                         st.download_button("⬇️ Descargar ficha en PDF", data=pdf_bytes,
                                            file_name=f"{m.get('nombre','Ficha')}.pdf",
                                            mime="application/pdf")
-            if st.button("🗑️ Eliminar", key=f"delete_{m['id']}"):
-                with st.modal("Confirmar eliminación"):
-                    st.warning(f"¿Estás seguro de que querés eliminar la muestra **{m['nombre']}**?", icon="⚠️")
-                    col_del, col_can = st.columns(2)
-                    with col_del:
-                        if st.button("✅ Sí, eliminar"):
-                            db.collection("muestras").document(m["id"]).delete()
-                            imagenes = db.collection("imagenes").where("nombre_muestra", "==", m["nombre"]).stream()
-                            for img in imagenes:
-                                db.collection("imagenes").document(img.id).delete()
-                            st.success("🗑️ Muestra eliminada correctamente.")
-                            st.info("Por favor, recargá la página para ver los cambios.")
-                    with col_can:
-                        if st.button("❌ Cancelar"):
-                            st.info("Eliminación cancelada.")
-                            st.info("Por favor, recargá la página para ver los cambios.")
+# --- Bloque de eliminación ---
+if st.button("🗑️ Eliminar", key=f"delete_{m['id']}"):
+    # Si existe la función modal, la usamos; sino, usamos una confirmación en línea
+    if hasattr(st, "modal"):
+        with st.modal("Confirmar eliminación"):
+            st.warning(f"¿Estás seguro de que querés eliminar la muestra **{m['nombre']}**?", icon="⚠️")
+            col_del, col_can = st.columns(2)
+            with col_del:
+                if st.button("✅ Sí, eliminar"):
+                    db.collection("muestras").document(m["id"]).delete()
+                    # Eliminar imágenes asociadas
+                    imagenes = db.collection("imagenes").where("nombre_muestra", "==", m["nombre"]).stream()
+                    for img in imagenes:
+                        db.collection("imagenes").document(img.id).delete()
+                    st.success("🗑️ Muestra eliminada correctamente.")
+                    st.info("Recargá la página para ver los cambios.")
+            with col_can:
+                if st.button("❌ Cancelar"):
+                    st.info("Eliminación cancelada. Recargá la página.")
+    else:
+        st.warning("La función modal no está disponible en esta versión de Streamlit. Por favor, confirma la eliminación a continuación:")
+        if st.button("✅ Sí, eliminar", key=f"confirm_delete_{m['id']}"):
+            db.collection("muestras").document(m["id"]).delete()
+            # Eliminar imágenes asociadas
+            imagenes = db.collection("imagenes").where("nombre_muestra", "==", m["nombre"]).stream()
+            for img in imagenes:
+                db.collection("imagenes").document(img.id).delete()
+            st.success("🗑️ Muestra eliminada correctamente.")
+            st.info("Recargá la página para ver los cambios.")
 
 # Modo de edición para una muestra
 if st.session_state.get("edit_id"):

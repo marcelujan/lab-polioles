@@ -163,26 +163,6 @@ for i_muestra, muestra in enumerate(st.session_state.muestras):
 
 if data_expandida:
     df_vista = pd.DataFrame(data_expandida)
-    selected_to_delete = st.multiselect(
-        "Seleccioná análisis a eliminar (filtrá o marcá filas):",
-        options=df_vista.index,
-        format_func=lambda i: f"{df_vista.at[i, 'Nombre']} – {df_vista.at[i, 'Tipo de análisis']} – {df_vista.at[i, 'Fecha']}"
-    )
-
-    if selected_to_delete and st.button("Eliminar seleccionados"):
-        if st.confirm("¿Estás seguro de eliminar los análisis seleccionados? Esta acción no se puede deshacer."):
-            for idx in sorted(selected_to_delete, reverse=True):
-                i_m = df_vista.at[idx, "Muestra_idx"]
-                i_a = df_vista.at[idx, "Analisis_idx"]
-                try:
-                    del st.session_state.muestras[i_m]["analisis"][i_a]
-                except:
-                    pass
-            with open(DATA_FILE, "w", encoding="utf-8") as f:
-                json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
-            st.success("Análisis eliminados.")
-            st.rerun()
-
     st.dataframe(df_vista.drop(columns=["Muestra_idx", "Analisis_idx"]), use_container_width=True)
 
     excel_data = BytesIO()

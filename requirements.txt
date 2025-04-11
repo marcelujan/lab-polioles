@@ -1,4 +1,5 @@
 streamlit
 pandas
 toml
+firebase-admin
 xlsxwriter

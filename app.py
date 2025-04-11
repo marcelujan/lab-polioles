@@ -1,8 +1,10 @@
 import streamlit as st
 import pandas as pd
 import toml
+import json
 from datetime import date
 from io import BytesIO
+import os
 
 # --- CONFIGURACION DE SEGURIDAD ---
 config = toml.load("config.toml")
@@ -26,10 +28,30 @@ if not st.session_state.autenticado:
             st.error("Contraseña incorrecta")
     st.stop()
 
-# --- INICIO DE LA APP ---
-if "muestras" not in st.session_state:
+# Archivo local para guardar datos
+DATA_FILE = "muestras_data.json"
+
+# Cargar datos desde archivo siempre que exista
+if os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        st.session_state.muestras = json.load(f)
+else:
     st.session_state.muestras = []
 
+# Lista fija de tipos de análisis
+tipos_analisis = [
+    "Índice de yodo [% p/p I2 abs]",
+    "Índice OH [mg KHO/g]",
+    "Índice de acidez [mg KOH/g]",
+    "Índice de epóxido [mol/100g]",
+    "Humedad [%]",
+    "PM [g/mol]",
+    "Funcionalidad [#]",
+    "Viscosidad dinámica [cP]",
+    "Densidad [g/mL]"
+]
+
+# ---- FORMULARIO PARA AÑADIR NUEVA MUESTRA ----
 st.header("Nueva muestra")
 with st.form("form_nueva_muestra"):
     nombre_muestra = st.text_input("Nombre de la muestra", "")
@@ -37,17 +59,17 @@ with st.form("form_nueva_muestra"):
 
     st.markdown("### Análisis físico-químicos")
 
-    if "nuevo_analisis" not in st.session_state:
-        st.session_state.nuevo_analisis = pd.DataFrame([{
-            "Tipo": "Índice de yodo [% p/p I2 abs]",
-            "Valor": 0.0,
-            "Fecha": date.today(),
-            "Observaciones": ""
-        }])
+    # Generar tabla siempre con todos los análisis
+    df_input = pd.DataFrame([{
+        "Tipo": tipo,
+        "Valor": 0.0,
+        "Fecha": date.today(),
+        "Observaciones": ""
+    } for tipo in tipos_analisis])
 
     df_input = st.data_editor(
-        st.session_state.nuevo_analisis,
-        num_rows="dynamic",
+        df_input,
+        num_rows="fixed",
         use_container_width=True,
         key="analisis_editor"
     )
@@ -61,20 +83,20 @@ with st.form("form_nueva_muestra"):
             "analisis": []
         }
         for _, row in df_input.iterrows():
-            nueva_muestra["analisis"].append({
-                "tipo": row["Tipo"],
-                "valor": row["Valor"],
-                "fecha": row["Fecha"],
-                "observaciones": row["Observaciones"]
-            })
-        st.session_state.muestras.append(nueva_muestra)
-        st.session_state.nuevo_analisis = pd.DataFrame([{
-            "Tipo": "Índice de yodo [% p/p I2 abs]",
-            "Valor": 0.0,
-            "Fecha": date.today(),
-            "Observaciones": ""
-        }])
-        st.success(f"Muestra '{nombre_muestra}' agregada correctamente.")
+            if row["Valor"] and float(row["Valor"]) != 0.0:
+                nueva_muestra["analisis"].append({
+                    "tipo": row["Tipo"],
+                    "valor": row["Valor"],
+                    "fecha": str(row["Fecha"]),
+                    "observaciones": row["Observaciones"]
+                })
+        if nueva_muestra["analisis"]:
+            st.session_state.muestras.append(nueva_muestra)
+            with open(DATA_FILE, "w", encoding="utf-8") as f:
+                json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
+            st.success(f"Muestra '{nombre_muestra}' agregada correctamente.")
+        else:
+            st.warning("Debe ingresar al menos un análisis con valor distinto de cero.")
 
 # ---- VISUALIZAR Y EDITAR ----
 st.header("Muestras cargadas")
@@ -112,6 +134,8 @@ if data_expandida:
                 "observaciones": row["Observaciones de análisis"]
             })
         st.session_state.muestras = [nuevas_muestras[k] for k in sorted(nuevas_muestras.keys())]
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
         st.success("Cambios guardados correctamente.")
 
     def convertir_excel(df):

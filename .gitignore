@@ -4,5 +4,3 @@ __pycache__/
 venv/
 *.xlsx
 *.csv
-.DS_Store
-Thumbs.db

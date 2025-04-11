@@ -90,9 +90,10 @@ with st.form("form_nueva_muestra"):
                     "fecha": str(row["Fecha"]),
                     "observaciones": row["Observaciones"]
                 })
-        if nueva_muestra["analisis"]:
+        
+        if nueva_muestra["analisis"] or True:
             st.session_state.muestras.append(nueva_muestra)
-with open(DATA_FILE, "w", encoding="utf-8") as f:
+            with open(DATA_FILE, "w", encoding="utf-8") as f:
                 json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
             backup_name = f"muestras_data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
             with open(backup_name, "w", encoding="utf-8") as f:

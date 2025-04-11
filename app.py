@@ -10,6 +10,7 @@ PASSWORD = config["auth"]["password"]
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 st.title("Laboratorio de Polioles")
+st.caption("Versión 2025.04.11")
 
 # Autenticación simple
 if "autenticado" not in st.session_state:

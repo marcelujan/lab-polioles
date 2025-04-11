@@ -103,62 +103,45 @@ with st.form("form_nueva_muestra"):
         
 
 # ---- VISUALIZAR Y EDITAR ----
-st.header("Muestras cargadas")
-data_expandida = []
-for idx, muestra in enumerate(st.session_state.muestras):
-    for analisis in muestra["analisis"]:
-        data_expandida.append({
-            "Índice": idx,
-            "Nombre": muestra["nombre"],
-            "Observación de muestra": muestra["observacion"],
-            "Tipo de análisis": analisis["tipo"],
-            "Valor": analisis["valor"],
-            "Fecha": analisis["fecha"],
-            "Observaciones de análisis": analisis["observaciones"]
-        })
 
-if data_expandida:
-    df = pd.DataFrame(data_expandida)
-    df_editable = st.data_editor(df, num_rows="dynamic", use_container_width=True, key="editor")
-    if not df_editable.equals(pd.DataFrame(data_expandida)):
-        st.warning("⚠️ Detectamos cambios sin guardar.")
-        st.session_state.cambios_pendientes = True
+# ---- LISTA DE MUESTRAS ----
+st.header("Muestras cargadas")
+
+if "editar_idx" not in st.session_state:
+    st.session_state.editar_idx = None
+
+if st.session_state.editar_idx is None:
+    if st.session_state.muestras:
+        for idx, muestra in enumerate(st.session_state.muestras):
+            with st.container():
+                cols = st.columns([3, 5, 2])
+                cols[0].markdown(f"**{muestra['nombre']}**")
+                cols[1].markdown(muestra["observacion"])
+                if cols[2].button("Editar", key=f"edit_{idx}"):
+                    st.session_state.editar_idx = idx
+                    st.rerun()
     else:
-        st.session_state.cambios_pendientes = False
+        st.info("No hay muestras cargadas todavía.")
+else:
+    idx = st.session_state.editar_idx
+    muestra = st.session_state.muestras[idx]
+    st.subheader(f"Editar análisis de: {muestra['nombre']}")
+    df_edit = pd.DataFrame(muestra["analisis"])
+
+    edited_df = st.data_editor(df_edit, num_rows="dynamic", use_container_width=True, key="editor_detallado")
 
     if st.button("Guardar cambios"):
-        nuevas_muestras = {}
-        for _, row in df_editable.iterrows():
-            idx = int(row["Índice"])
-            if idx not in nuevas_muestras:
-                nuevas_muestras[idx] = {
-                    "nombre": row["Nombre"],
-                    "observacion": row["Observación de muestra"],
-                    "analisis": []
-                }
-            nuevas_muestras[idx]["analisis"].append({
-                "tipo": row["Tipo de análisis"],
-                "valor": row["Valor"],
-                "fecha": row["Fecha"],
-                "observaciones": row["Observaciones de análisis"]
-            })
-        st.session_state.muestras = [nuevas_muestras[k] for k in sorted(nuevas_muestras.keys())]
+        muestra["analisis"] = edited_df.to_dict(orient="records")
+        st.session_state.muestras[idx] = muestra
         with open(DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
+        backup_name = f"muestras_data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
+        with open(backup_name, "w", encoding="utf-8") as f:
+            json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
         st.success("Cambios guardados correctamente.")
+        st.session_state.editar_idx = None
+        st.rerun()
 
-    def convertir_excel(df):
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-            df.to_excel(writer, index=False, sheet_name="Muestras")
-        return output.getvalue()
-
-    excel_data = convertir_excel(df_editable)
-    st.download_button(
-        label="Descargar Excel",
-        data=excel_data,
-        file_name=f"lab-polioles_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-else:
-    st.info("No hay muestras cargadas todavía.")
+    if st.button("Volver a la lista de muestras"):
+        st.session_state.editar_idx = None
+        st.rerun()

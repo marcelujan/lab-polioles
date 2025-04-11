@@ -148,7 +148,7 @@ if data_expandida:
     st.download_button(
         label="Descargar Excel",
         data=excel_data,
-        file_name="muestras_laboratorio.xlsx",
+        file_name=f"lab-polioles_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 else:

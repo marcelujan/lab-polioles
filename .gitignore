@@ -1,5 +1,5 @@
 # Ignorar configuración sensible
-config.toml
+
 
 # Ignorar cachés de Python
 __pycache__/

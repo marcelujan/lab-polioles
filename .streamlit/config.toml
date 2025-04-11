@@ -1,0 +1,15 @@
+[theme]
+base = "light"
+primaryColor = "#0c5d9e"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#000000"
+font = "sans serif"
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+
+[general]
+email = "tucorreo@ejemplo.com"

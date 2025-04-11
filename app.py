@@ -4,6 +4,22 @@ import pandas as pd
 import toml
 import json
 from datetime import date, datetime
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Inicializar Firebase desde secrets
+if "firebase_initialized" not in st.session_state:
+    import json
+    cred_dict = json.loads(st.secrets["firebase_key"])
+    cred = credentials.Certificate(cred_dict)
+    firebase_admin.initialize_app(cred)
+    st.session_state.firebase_initialized = True
+
+db = firestore.client()
+
+# Inicializar Firebase
+
+db = firestore.client()
 from io import BytesIO
 import os
 
@@ -33,10 +49,14 @@ if not st.session_state.autenticado:
 DATA_FILE = "muestras_data.json"
 
 # Cargar datos desde archivo si existe
-if os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        st.session_state.muestras = json.load(f)
-else:
+try:
+    docs = db.collection("muestras").stream()
+    st.session_state.muestras = []
+    for doc in docs:
+        data = doc.to_dict()
+        data["nombre"] = doc.id
+        st.session_state.muestras.append(data)
+except Exception as e:
     st.session_state.muestras = []
 
 # Lista fija de tipos de análisis

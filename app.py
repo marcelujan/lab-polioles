@@ -92,11 +92,13 @@ with st.form("form_nueva_muestra"):
                 })
         if nueva_muestra["analisis"]:
             st.session_state.muestras.append(nueva_muestra)
-            with open(DATA_FILE, "w", encoding="utf-8") as f:
+with open(DATA_FILE, "w", encoding="utf-8") as f:
+                json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
+            backup_name = f"muestras_data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
+            with open(backup_name, "w", encoding="utf-8") as f:
                 json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
             st.success(f"Muestra '{nombre_muestra}' agregada correctamente.")
-        else:
-            st.warning("Debe ingresar al menos un análisis con valor distinto de cero.")
+        
 
 # ---- VISUALIZAR Y EDITAR ----
 st.header("Muestras cargadas")

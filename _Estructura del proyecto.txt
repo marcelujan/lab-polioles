@@ -1,0 +1,8 @@
+tu-proyecto/
+├── app.py                  ← código principal
+├── config.toml             ← contraseña editable manualmente
+├── requirements.txt        ← dependencias
+├── README.md               ← instrucciones del proyecto
+├── .gitignore              ← ignora archivos sensibles
+└── .streamlit/
+    └── config.toml         ← tema visual claro (opcional para Streamlit Cloud)

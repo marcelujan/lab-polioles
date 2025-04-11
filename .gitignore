@@ -1,2 +1,15 @@
-"firebase_key.json" 
-"firebase_key.json" 
+# Ignorar configuración sensible
+config.toml
+
+# Ignorar cachés de Python
+__pycache__/
+*.pyc
+
+# Ignorar entorno virtual
+venv/
+
+# Archivos temporales
+*.xlsx
+*.csv
+.DS_Store
+Thumbs.db

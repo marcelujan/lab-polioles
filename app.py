@@ -1,94 +1,121 @@
 import streamlit as st
+import pandas as pd
+import toml
+from datetime import date
+from io import BytesIO
+
+# --- CONFIGURACION DE SEGURIDAD ---
+config = toml.load("config.toml")
+PASSWORD = config["auth"]["password"]
+
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
+st.title("Laboratorio de Polioles")
 
-from firebase_config import iniciar_firebase
-from datetime import datetime
-import uuid
+# Autenticación simple
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
 
-# Inicializar Firebase
-db = iniciar_firebase()
-
-st.title("Gestión de Muestras")
-
-# Función para cargar muestras desde Firebase
-def cargar_muestras():
-    docs = db.collection("muestras").order_by("fecha", direction="DESCENDING").stream()
-    return [doc.to_dict() | {"id": doc.id} for doc in docs]
-
-# Función para subir una nueva muestra
-def subir_muestra(nombre, observaciones):
-    muestra = {
-        "nombre": nombre,
-        "observaciones": observaciones,
-        "fecha": datetime.now().isoformat()
-    }
-    db.collection("muestras").document().set(muestra)
-
-# Función para editar una muestra
-def editar_muestra(id, nombre, observaciones):
-    db.collection("muestras").document(id).update({
-        "nombre": nombre,
-        "observaciones": observaciones
-    })
-
-# Función para eliminar una muestra
-def eliminar_muestra(id):
-    db.collection("muestras").document(id).delete()
-
-# --- Sección: Agregar nueva muestra ---
-st.header("Agregar Nueva Muestra")
-with st.form("form_nueva_muestra"):
-    nuevo_nombre = st.text_input("Nombre de la muestra *", max_chars=100)
-    nuevas_obs = st.text_area("Observaciones (opcional)", height=100)
-    submit_nueva = st.form_submit_button("Guardar")
-    if submit_nueva:
-        if not nuevo_nombre:
-            st.error("El nombre es obligatorio.")
+if not st.session_state.autenticado:
+    password = st.text_input("Contraseña de acceso", type="password")
+    if st.button("Ingresar"):
+        if password == PASSWORD:
+            st.session_state.autenticado = True
+            st.experimental_rerun()
         else:
-            subir_muestra(nuevo_nombre, nuevas_obs)
-            st.success("Muestra guardada correctamente. Recargue la página para ver los cambios.")
+            st.error("Contraseña incorrecta")
+    st.stop()
 
-# --- Sección: Listado de Muestras ---
-st.header("Muestras Registradas")
-muestras = cargar_muestras()
-if not muestras:
-    st.info("No hay muestras registradas.")
+# --- INICIO DE LA APP ---
+if "muestras" not in st.session_state:
+    st.session_state.muestras = []
+
+st.header("Nueva muestra")
+with st.form("form_nueva_muestra"):
+    nombre_muestra = st.text_input("Nombre de la muestra", "")
+    observacion_muestra = st.text_area("Observaciones de la muestra", "")
+
+    st.markdown("### Análisis físico-químicos")
+    tipo = st.selectbox("Tipo de análisis", [
+        "Índice de yodo [% p/p I2 abs]",
+        "Índice OH [mg KHO/g]",
+        "Índice de acidez [mg KOH/g]",
+        "Índice de epóxido [mol/100g]",
+        "Humedad [%]",
+        "PM [g/mol]",
+        "Funcionalidad [#]",
+        "Viscosidad dinámica [cP]",
+        "Densidad [g/mL]"
+    ])
+    valor = st.number_input("Valor", value=0.0, format="%.4f")
+    fecha = st.date_input("Fecha", value=date.today())
+    observaciones = st.text_input("Observaciones", "")
+
+    agregar_analisis = st.form_submit_button("Agregar muestra")
+
+    if agregar_analisis and nombre_muestra:
+        nueva_muestra = {
+            "nombre": nombre_muestra,
+            "observacion": observacion_muestra,
+            "analisis": [{
+                "tipo": tipo,
+                "valor": valor,
+                "fecha": fecha,
+                "observaciones": observaciones
+            }]
+        }
+        st.session_state.muestras.append(nueva_muestra)
+        st.success(f"Muestra '{nombre_muestra}' agregada correctamente.")
+
+# ---- VISUALIZAR Y EDITAR ----
+st.header("Muestras cargadas")
+data_expandida = []
+for idx, muestra in enumerate(st.session_state.muestras):
+    for analisis in muestra["analisis"]:
+        data_expandida.append({
+            "Índice": idx,
+            "Nombre": muestra["nombre"],
+            "Observación de muestra": muestra["observacion"],
+            "Tipo de análisis": analisis["tipo"],
+            "Valor": analisis["valor"],
+            "Fecha": analisis["fecha"],
+            "Observaciones de análisis": analisis["observaciones"]
+        })
+
+if data_expandida:
+    df = pd.DataFrame(data_expandida)
+    df_editable = st.data_editor(df, num_rows="dynamic", use_container_width=True, key="editor")
+
+    if st.button("Guardar cambios"):
+        nuevas_muestras = {}
+        for _, row in df_editable.iterrows():
+            idx = int(row["Índice"])
+            if idx not in nuevas_muestras:
+                nuevas_muestras[idx] = {
+                    "nombre": row["Nombre"],
+                    "observacion": row["Observación de muestra"],
+                    "analisis": []
+                }
+            nuevas_muestras[idx]["analisis"].append({
+                "tipo": row["Tipo de análisis"],
+                "valor": row["Valor"],
+                "fecha": row["Fecha"],
+                "observaciones": row["Observaciones de análisis"]
+            })
+        st.session_state.muestras = [nuevas_muestras[k] for k in sorted(nuevas_muestras.keys())]
+        st.success("Cambios guardados correctamente.")
+
+    def convertir_excel(df):
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+            df.to_excel(writer, index=False, sheet_name="Muestras")
+        return output.getvalue()
+
+    excel_data = convertir_excel(df_editable)
+    st.download_button(
+        label="Descargar Excel",
+        data=excel_data,
+        file_name="muestras_laboratorio.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 else:
-    for m in muestras:
-        with st.container():
-            cols = st.columns([3, 1, 1])
-            with cols[0]:
-                st.write("**Nombre:**", m["nombre"])
-                st.write("**Fecha:**", m["fecha"][:10])
-                st.write("**Observaciones:**", m.get("observaciones", ""))
-            with cols[1]:
-                if st.button("Editar", key=f"edit_{m['id']}"):
-                    st.session_state["editar"] = m["id"]
-            with cols[2]:
-                if st.button("Eliminar", key=f"delete_{m['id']}"):
-                    st.session_state["eliminar"] = m["id"]
-
-        # Modo edición inline para cada muestra
-        if st.session_state.get("editar") == m["id"]:
-            with st.form(key=f"form_editar_{m['id']}"):
-                nuevo_nombre = st.text_input("Nuevo nombre", value=m["nombre"])
-                nuevas_obs = st.text_area("Nuevas observaciones", value=m.get("observaciones", ""), height=100)
-                if st.form_submit_button("Guardar cambios"):
-                    editar_muestra(m["id"], nuevo_nombre, nuevas_obs)
-                    st.success("Muestra actualizada. Recargue la página.")
-                    st.session_state["editar"] = None
-                if st.form_submit_button("Cancelar"):
-                    st.session_state["editar"] = None
-
-        # Confirmación de eliminación inline
-        if st.session_state.get("eliminar") == m["id"]:
-            st.warning("Confirmar eliminación de esta muestra:")
-            col_del, col_can = st.columns(2)
-            with col_del:
-                if st.button("Sí", key=f"confirma_{m['id']}"):
-                    eliminar_muestra(m["id"])
-                    st.success("Muestra eliminada. Recargue la página.")
-                    st.session_state["eliminar"] = None
-            with col_can:
-                if st.button("Cancelar", key=f"cancel_{m['id']}"):
-                    st.session_state["eliminar"] = None
+    st.info("No hay muestras cargadas todavía.")

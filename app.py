@@ -20,7 +20,7 @@ if not st.session_state.autenticado:
     if st.button("Ingresar"):
         if password == PASSWORD:
             st.session_state.autenticado = True
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Contraseña incorrecta")
     st.stop()
@@ -35,35 +35,44 @@ with st.form("form_nueva_muestra"):
     observacion_muestra = st.text_area("Observaciones de la muestra", "")
 
     st.markdown("### Análisis físico-químicos")
-    tipo = st.selectbox("Tipo de análisis", [
-        "Índice de yodo [% p/p I2 abs]",
-        "Índice OH [mg KHO/g]",
-        "Índice de acidez [mg KOH/g]",
-        "Índice de epóxido [mol/100g]",
-        "Humedad [%]",
-        "PM [g/mol]",
-        "Funcionalidad [#]",
-        "Viscosidad dinámica [cP]",
-        "Densidad [g/mL]"
-    ])
-    valor = st.number_input("Valor", value=0.0, format="%.4f")
-    fecha = st.date_input("Fecha", value=date.today())
-    observaciones = st.text_input("Observaciones", "")
 
-    agregar_analisis = st.form_submit_button("Agregar muestra")
+    if "nuevo_analisis" not in st.session_state:
+        st.session_state.nuevo_analisis = pd.DataFrame([{
+            "Tipo": "Índice de yodo [% p/p I2 abs]",
+            "Valor": 0.0,
+            "Fecha": date.today(),
+            "Observaciones": ""
+        }])
 
-    if agregar_analisis and nombre_muestra:
+    df_input = st.data_editor(
+        st.session_state.nuevo_analisis,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="analisis_editor"
+    )
+
+    submitted = st.form_submit_button("Guardar muestra y análisis")
+
+    if submitted and nombre_muestra:
         nueva_muestra = {
             "nombre": nombre_muestra,
             "observacion": observacion_muestra,
-            "analisis": [{
-                "tipo": tipo,
-                "valor": valor,
-                "fecha": fecha,
-                "observaciones": observaciones
-            }]
+            "analisis": []
         }
+        for _, row in df_input.iterrows():
+            nueva_muestra["analisis"].append({
+                "tipo": row["Tipo"],
+                "valor": row["Valor"],
+                "fecha": row["Fecha"],
+                "observaciones": row["Observaciones"]
+            })
         st.session_state.muestras.append(nueva_muestra)
+        st.session_state.nuevo_analisis = pd.DataFrame([{
+            "Tipo": "Índice de yodo [% p/p I2 abs]",
+            "Valor": 0.0,
+            "Fecha": date.today(),
+            "Observaciones": ""
+        }])
         st.success(f"Muestra '{nombre_muestra}' agregada correctamente.")
 
 # ---- VISUALIZAR Y EDITAR ----

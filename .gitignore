@@ -1,14 +1,7 @@
-# Ignorar configuración sensible
-
-
-# Ignorar cachés de Python
+config.toml
 __pycache__/
 *.pyc
-
-# Ignorar entorno virtual
 venv/
-
-# Archivos temporales
 *.xlsx
 *.csv
 .DS_Store

@@ -67,29 +67,73 @@ else:
 
 observacion_muestra = st.text_area("Observaciones de la muestra", muestra_existente["observacion"] if muestra_existente else "")
 
-# Tabla editable de análisis
-st.markdown("### Análisis físico-químicos")
+# Mostrar última entrada de cada tipo de análisis estándar
+st.markdown("### Análisis físico-químicos (últimos valores)")
 
-analisis_existentes = muestra_existente["analisis"] if muestra_existente else []
-df_input = pd.DataFrame(analisis_existentes) if analisis_existentes else pd.DataFrame(columns=["Tipo", "Valor", "Fecha", "Observaciones"])
+base_rows = []
+if muestra_existente:
+    for tipo in tipos_analisis:
+        filas = [a for a in muestra_existente["analisis"] if a["tipo"] == tipo]
+        if filas:
+            fila = sorted(filas, key=lambda x: x["fecha"])[-1]
+            base_rows.append({
+                "Tipo": tipo,
+                "Valor": fila["valor"],
+                "Fecha": fila["fecha"],
+                "Observaciones": fila["observaciones"]
+            })
+        else:
+            base_rows.append({
+                "Tipo": tipo,
+                "Valor": 0.0,
+                "Fecha": date.today(),
+                "Observaciones": ""
+            })
+else:
+    for tipo in tipos_analisis:
+        base_rows.append({
+            "Tipo": tipo,
+            "Valor": 0.0,
+            "Fecha": date.today(),
+            "Observaciones": ""
+        })
 
-# Completar columnas si faltan
-for col in ["Tipo", "Valor", "Fecha", "Observaciones"]:
-    if col not in df_input.columns:
-        df_input[col] = "" if col != "Valor" else 0.0
-    if col == "Fecha":
-        df_input[col] = pd.to_datetime(df_input[col]).dt.date
+# Análisis nuevos para repetir (vacíos)
+st.markdown("### Repeticiones de análisis (opcional)")
+if "repeticiones_nuevas" not in st.session_state:
+    st.session_state.repeticiones_nuevas = []
 
-df_input = st.data_editor(df_input, num_rows="dynamic", use_container_width=True, key="editor_formulario")
+df_base = pd.DataFrame(base_rows)
+df_repeticiones = pd.DataFrame(st.session_state.repeticiones_nuevas or [{"Tipo": "", "Valor": 0.0, "Fecha": date.today(), "Observaciones": ""}])
+
+df_base_edit = st.data_editor(df_base, num_rows="fixed", use_container_width=True, key="base_editor")
+df_repeticiones_edit = st.data_editor(df_repeticiones, num_rows="dynamic", use_container_width=True, key="repe_editor")
 
 if st.button("Guardar muestra"):
     nueva_entrada = {
         "nombre": nombre_muestra,
         "observacion": observacion_muestra,
-        "analisis": df_input.to_dict(orient="records")
+        "analisis": []
     }
+    # Guardar últimos valores (por tipo único)
+    for _, row in df_base_edit.iterrows():
+        nueva_entrada["analisis"].append({
+            "tipo": row["Tipo"],
+            "valor": row["Valor"],
+            "fecha": str(row["Fecha"]),
+            "observaciones": row["Observaciones"]
+        })
+    # Guardar repeticiones si tienen tipo válido
+    for _, row in df_repeticiones_edit.iterrows():
+        if row["Tipo"] in tipos_analisis:
+            nueva_entrada["analisis"].append({
+                "tipo": row["Tipo"],
+                "valor": row["Valor"],
+                "fecha": str(row["Fecha"]),
+                "observaciones": row["Observaciones"]
+            })
 
-    # Si la muestra ya existe, actualizarla
+    # Actualizar o agregar
     idx = next((i for i, m in enumerate(st.session_state.muestras) if m["nombre"] == nombre_muestra), None)
     if idx is not None:
         st.session_state.muestras[idx] = nueva_entrada
@@ -103,29 +147,50 @@ if st.button("Guardar muestra"):
         json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
 
     st.success("Muestra guardada correctamente.")
+    st.session_state.repeticiones_nuevas = []
     st.rerun()
 
 # --- TABLA GENERAL DE VISUALIZACIÓN ---
-st.header("Muestras cargadas (visualización)")
+st.header("Muestras cargadas")
 
 data_expandida = []
 for muestra in st.session_state.muestras:
-    for analisis in muestra["analisis"]:
+    for i, analisis in enumerate(muestra["analisis"]):
         data_expandida.append({
             "Nombre": muestra["nombre"],
             "Observación muestra": muestra["observacion"],
             "Tipo de análisis": analisis.get("tipo", ""),
             "Valor": analisis.get("valor", ""),
             "Fecha": analisis.get("fecha", ""),
-            "Observaciones análisis": analisis.get("observaciones", "")
+            "Observaciones análisis": analisis.get("observaciones", ""),
+            "Muestra_idx": st.session_state.muestras.index(muestra),
+            "Analisis_idx": i
         })
 
 if data_expandida:
     df_vista = pd.DataFrame(data_expandida)
-    st.dataframe(df_vista, use_container_width=True)
+    df_vista_visible = df_vista.drop(columns=["Muestra_idx", "Analisis_idx"])
+    st.dataframe(df_vista_visible, use_container_width=True)
+
+    # Botones para eliminar
+    for i, row in df_vista.iterrows():
+        col = st.columns([0.9, 0.1])[1]
+        with col:
+            if st.button("🗑️", key=f"del_{i}"):
+                if st.confirm("¿Seguro que desea eliminar este análisis?"):
+                    idx_muestra = int(row["Muestra_idx"])
+                    idx_analisis = int(row["Analisis_idx"])
+                    del st.session_state.muestras[idx_muestra]["analisis"][idx_analisis]
+                    with open(DATA_FILE, "w", encoding="utf-8") as f:
+                        json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
+                    st.success("Análisis eliminado correctamente.")
+                    st.rerun()
+
+    # Descargar Excel
+    df_export = df_vista_visible
     excel_data = BytesIO()
     with pd.ExcelWriter(excel_data, engine="xlsxwriter") as writer:
-        df_vista.to_excel(writer, index=False, sheet_name="Muestras")
+        df_export.to_excel(writer, index=False, sheet_name="Muestras")
     st.download_button(
         label="Descargar Excel",
         data=excel_data.getvalue(),

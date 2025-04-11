@@ -120,6 +120,11 @@ for idx, muestra in enumerate(st.session_state.muestras):
 if data_expandida:
     df = pd.DataFrame(data_expandida)
     df_editable = st.data_editor(df, num_rows="dynamic", use_container_width=True, key="editor")
+    if not df_editable.equals(pd.DataFrame(data_expandida)):
+        st.warning("⚠️ Detectamos cambios sin guardar.")
+        st.session_state.cambios_pendientes = True
+    else:
+        st.session_state.cambios_pendientes = False
 
     if st.button("Guardar cambios"):
         nuevas_muestras = {}

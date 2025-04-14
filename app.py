@@ -13,6 +13,7 @@ if "firebase_initialized" not in st.session_state:
     cred_dict = json.loads(st.secrets["firebase_key"])
     cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
     cred = credentials.Certificate(cred_dict)
+    if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
     st.session_state.firebase_initialized = True
 

@@ -13,7 +13,7 @@ if "firebase_initialized" not in st.session_state:
     cred_dict = json.loads(st.secrets["firebase_key"])
     cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
     cred = credentials.Certificate(cred_dict)
-if not firebase_admin._apps:
+    if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
     st.session_state.firebase_initialized = True
 
@@ -156,6 +156,12 @@ if st.button("Guardar muestra"):
         st.session_state.muestras[idx] = nueva_entrada
     else:
         st.session_state.muestras.append(nueva_entrada)
+
+    # Guardar en Firestore
+    db.collection("muestras").document(nombre_muestra).set({
+        "observacion": observacion_muestra,
+        "analisis": nueva_entrada["analisis"]
+    })
 
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)

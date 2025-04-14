@@ -171,7 +171,7 @@ st.header("Muestras cargadas")
 
 data_expandida = []
 for i_muestra, muestra in enumerate(st.session_state.muestras):
-    for i, analisis in enumerate(muestra["analisis"]):
+    for i, analisis in enumerate(muestra.get("analisis", [])):
         data_expandida.append({
             "Nombre": muestra["nombre"],
             "Observación muestra": muestra["observacion"],

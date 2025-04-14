@@ -6,23 +6,19 @@ import json
 from datetime import date, datetime
 import firebase_admin
 from firebase_admin import credentials, firestore
+from io import BytesIO
+import os
 
 # Inicializar Firebase desde secrets
 if "firebase_initialized" not in st.session_state:
-    import json
     cred_dict = json.loads(st.secrets["firebase_key"])
     cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
     cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred)
-    st.session_state.firebase_initialized = True
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
+        st.session_state.firebase_initialized = True
 
 db = firestore.client()
-
-# Inicializar Firebase
-
-db = firestore.client()
-from io import BytesIO
-import os
 
 # --- CONFIGURACION DE SEGURIDAD ---
 config = toml.load("config.toml")
@@ -46,10 +42,7 @@ if not st.session_state.autenticado:
             st.error("Contraseña incorrecta")
     st.stop()
 
-# Archivo local para guardar datos
-DATA_FILE = "muestras_data.json"
-
-# Cargar datos desde archivo si existe
+# Leer datos de Firestore
 try:
     docs = db.collection("muestras").stream()
     st.session_state.muestras = []
@@ -70,7 +63,8 @@ tipos_analisis = [
     "PM [g/mol]",
     "Funcionalidad [#]",
     "Viscosidad dinámica [cP]",
-    "Densidad [g/mL]"
+    "Densidad [g/mL]",
+    "Otro análisis"
 ]
 
 # --- FORMULARIO DE MUESTRAS ---
@@ -89,44 +83,29 @@ else:
 
 observacion_muestra = st.text_area("Observaciones de la muestra", muestra_existente["observacion"] if muestra_existente else "")
 
-# Mostrar última entrada de cada tipo de análisis estándar
-st.markdown("### Análisis físico-químicos (últimos valores)")
+st.markdown("### Análisis físico-químicos")
 
-base_rows = []
-if muestra_existente:
-    for tipo in tipos_analisis:
-        filas = [a for a in muestra_existente["analisis"] if a["tipo"] == tipo]
-        if filas:
-            fila = sorted(filas, key=lambda x: x["fecha"])[-1]
-            base_rows.append({
-                "Tipo": tipo,
-                "Valor": fila["valor"],
-                "Fecha": fila["fecha"],
-                "Observaciones": fila["observaciones"]
-            })
-        else:
-            base_rows.append({
-                "Tipo": tipo,
-                "Valor": 0.0,
-                "Fecha": date.today(),
-                "Observaciones": ""
-            })
+analisis_existentes = muestra_existente["analisis"] if muestra_existente else []
+df_analisis = pd.DataFrame(analisis_existentes)
+if not df_analisis.empty:
+    df_analisis["Tipo"] = df_analisis["tipo"]
+    df_analisis["Valor"] = df_analisis["valor"]
+    df_analisis["Fecha"] = pd.to_datetime(df_analisis["fecha"]).dt.date
+    df_analisis["Observaciones"] = df_analisis["observaciones"]
+    df_analisis = df_analisis[["Tipo", "Valor", "Fecha", "Observaciones"]]
 else:
-    for tipo in tipos_analisis:
-        base_rows.append({
-            "Tipo": tipo,
-            "Valor": 0.0,
-            "Fecha": date.today(),
-            "Observaciones": ""
-        })
+    df_analisis = pd.DataFrame([{"Tipo": "", "Valor": 0.0, "Fecha": date.today(), "Observaciones": ""}])
 
-df_base = pd.DataFrame(base_rows)
-df_base_edit = st.data_editor(df_base, num_rows="fixed", use_container_width=True, key="base_editor")
-
-# Análisis nuevos para repetir (vacíos)
-st.markdown("### Repeticiones de análisis (opcional)")
-df_repeticiones = pd.DataFrame([{"Tipo": "", "Valor": 0.0, "Fecha": date.today(), "Observaciones": ""}])
-df_repeticiones_edit = st.data_editor(df_repeticiones, num_rows="dynamic", use_container_width=True, key="repe_editor")
+# Mostrar tabla editable y con eliminación de filas desde el editor
+edited = st.data_editor(
+    df_analisis,
+    num_rows="dynamic",
+    use_container_width=True,
+    column_config={
+        "Tipo": st.column_config.SelectboxColumn("Tipo", options=tipos_analisis)
+    },
+    key="editor_analisis"
+)
 
 if st.button("Guardar muestra"):
     nueva_entrada = {
@@ -134,15 +113,8 @@ if st.button("Guardar muestra"):
         "observacion": observacion_muestra,
         "analisis": []
     }
-    for _, row in df_base_edit.iterrows():
-        nueva_entrada["analisis"].append({
-            "tipo": row["Tipo"],
-            "valor": row["Valor"],
-            "fecha": str(row["Fecha"]),
-            "observaciones": row["Observaciones"]
-        })
-    for _, row in df_repeticiones_edit.iterrows():
-        if row["Tipo"] in tipos_analisis:
+    for _, row in edited.iterrows():
+        if row["Tipo"] != "":
             nueva_entrada["analisis"].append({
                 "tipo": row["Tipo"],
                 "valor": row["Valor"],
@@ -156,61 +128,36 @@ if st.button("Guardar muestra"):
     else:
         st.session_state.muestras.append(nueva_entrada)
 
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
-    backup_name = f"muestras_data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-    with open(backup_name, "w", encoding="utf-8") as f:
-        json.dump(st.session_state.muestras, f, ensure_ascii=False, indent=2)
+    db.collection("muestras").document(nombre_muestra).set({
+        "observacion": observacion_muestra,
+        "analisis": nueva_entrada["analisis"]
+    })
 
     st.success("Muestra guardada correctamente.")
     st.rerun()
 
-# --- TABLA GENERAL DE VISUALIZACIÓN ---
-
-# --- TABLA GENERAL DE VISUALIZACIÓN ---
+# --- VISUALIZACIÓN ---
 st.header("Muestras cargadas")
 
 data_expandida = []
-for i_muestra, muestra in enumerate(st.session_state.muestras):
-    for i_analisis, analisis in enumerate(muestra.get("analisis", [])):
+for muestra in st.session_state.muestras:
+    for analisis in muestra.get("analisis", []):
         data_expandida.append({
             "Nombre": muestra["nombre"],
             "Observación muestra": muestra["observacion"],
             "Tipo de análisis": analisis.get("tipo", ""),
             "Valor": analisis.get("valor", ""),
             "Fecha": analisis.get("fecha", ""),
-            "Observaciones análisis": analisis.get("observaciones", ""),
-            "Muestra_idx": i_muestra,
-            "Analisis_idx": i_analisis
+            "Observaciones análisis": analisis.get("observaciones", "")
         })
 
 if data_expandida:
     df_vista = pd.DataFrame(data_expandida)
+    st.dataframe(df_vista, use_container_width=True)
 
-    st.dataframe(df_vista.drop(columns=["Muestra_idx", "Analisis_idx"]), use_container_width=True)
-
-    # Botones para eliminar análisis individuales
-    st.markdown("### Eliminar análisis individual")
-    for i, row in df_vista.iterrows():
-        texto = f"{row['Nombre']} – {row['Tipo de análisis']} ({row['Fecha']})"
-        if st.button(f"🗑️ Eliminar: {texto}", key=f"del_{i}"):
-            m_idx = row["Muestra_idx"]
-            a_idx = row["Analisis_idx"]
-            try:
-                del st.session_state.muestras[m_idx]["analisis"][a_idx]
-                db.collection("muestras").document(st.session_state.muestras[m_idx]["nombre"]).set({
-                    "observacion": st.session_state.muestras[m_idx]["observacion"],
-                    "analisis": st.session_state.muestras[m_idx]["analisis"]
-                })
-                st.success("Análisis eliminado correctamente.")
-                st.rerun()
-            except Exception as e:
-                st.error(f"No se pudo eliminar el análisis: {e}")
-
-    # Botón para exportar Excel
     excel_data = BytesIO()
     with pd.ExcelWriter(excel_data, engine="xlsxwriter") as writer:
-        df_vista.drop(columns=["Muestra_idx", "Analisis_idx"]).to_excel(writer, index=False, sheet_name="Muestras")
+        df_vista.to_excel(writer, index=False, sheet_name="Muestras")
     st.download_button(
         label="Descargar Excel",
         data=excel_data.getvalue(),

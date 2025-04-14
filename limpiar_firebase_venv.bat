@@ -1,0 +1,6 @@
+@echo off
+echo Activando entorno virtual...
+call venv\Scripts\activate.bat
+echo Ejecutando limpieza de Firestore con Streamlit...
+streamlit run limpiar_firebase.py
+pause

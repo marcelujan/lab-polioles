@@ -14,7 +14,7 @@ if "firebase_initialized" not in st.session_state:
     cred_dict = json.loads(st.secrets["firebase_key"])
     cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
     cred = credentials.Certificate(cred_dict)
-if not firebase_admin._apps:
+    if not firebase_admin._apps:
         firebase_admin.initialize_app(cred)
         st.session_state.firebase_initialized = True
 
@@ -96,7 +96,16 @@ if not df_analisis.empty:
 else:
     df_analisis = pd.DataFrame([{"Tipo": "", "Valor": 0.0, "Fecha": date.today(), "Observaciones": ""}])
 
-edited = st.data_editor(df_analisis, num_rows="dynamic", use_container_width=True, key="editor_unificado")
+# Mostrar tabla editable con selectbox en columna Tipo
+edited = st.data_editor(
+    df_analisis,
+    num_rows="dynamic",
+    use_container_width=True,
+    column_config={
+        "Tipo": st.column_config.SelectboxColumn("Tipo", options=tipos_analisis)
+    },
+    key="editor_unificado"
+)
 
 if st.button("Guardar muestra"):
     nueva_entrada = {
@@ -130,37 +139,46 @@ if st.button("Guardar muestra"):
 # --- TABLA GENERAL DE VISUALIZACIÓN ---
 st.header("Muestras cargadas")
 
-# Mostrar selección para eliminar muestras completas
-st.subheader("Eliminar muestras")
-muestras_seleccionadas = st.multiselect("Seleccionar muestras a eliminar:", [m["nombre"] for m in st.session_state.muestras])
-if muestras_seleccionadas and st.button("Eliminar seleccionadas"):
-    if st.confirm("¿Estás seguro de eliminar las muestras seleccionadas? Esta acción no se puede deshacer."):
-        for nombre in muestras_seleccionadas:
-            st.session_state.muestras = [m for m in st.session_state.muestras if m["nombre"] != nombre]
-            db.collection("muestras").document(nombre).delete()
-        st.success("Muestras eliminadas correctamente.")
-        st.rerun()
-
-# Mostrar tabla general
+# Mostrar tabla general con opción de eliminar análisis individual
 data_expandida = []
-for muestra in st.session_state.muestras:
-    for analisis in muestra.get("analisis", []):
+for i_muestra, muestra in enumerate(st.session_state.muestras):
+    for i_analisis, analisis in enumerate(muestra.get("analisis", [])):
         data_expandida.append({
             "Nombre": muestra["nombre"],
             "Observación muestra": muestra["observacion"],
             "Tipo de análisis": analisis.get("tipo", ""),
             "Valor": analisis.get("valor", ""),
             "Fecha": analisis.get("fecha", ""),
-            "Observaciones análisis": analisis.get("observaciones", "")
+            "Observaciones análisis": analisis.get("observaciones", ""),
+            "Muestra_idx": i_muestra,
+            "Analisis_idx": i_analisis
         })
 
 if data_expandida:
     df_vista = pd.DataFrame(data_expandida)
-    st.dataframe(df_vista, use_container_width=True)
+    st.dataframe(df_vista.drop(columns=["Muestra_idx", "Analisis_idx"]), use_container_width=True)
+
+    for row_idx, row in df_vista.iterrows():
+        col = st.columns([0.9, 0.1])[1]
+        with col:
+            if st.button("🗑️", key=f"del_{row_idx}"):
+                if st.confirm(f"¿Eliminar análisis de '{row['Nombre']}' tipo '{row['Tipo de análisis']}'?"):
+                    m_idx = row["Muestra_idx"]
+                    a_idx = row["Analisis_idx"]
+                    try:
+                        del st.session_state.muestras[m_idx]["analisis"][a_idx]
+                        db.collection("muestras").document(st.session_state.muestras[m_idx]["nombre"]).set({
+                            "observacion": st.session_state.muestras[m_idx]["observacion"],
+                            "analisis": st.session_state.muestras[m_idx]["analisis"]
+                        })
+                        st.success("Análisis eliminado.")
+                        st.rerun()
+                    except:
+                        st.error("No se pudo eliminar el análisis.")
 
     excel_data = BytesIO()
     with pd.ExcelWriter(excel_data, engine="xlsxwriter") as writer:
-        df_vista.to_excel(writer, index=False, sheet_name="Muestras")
+        df_vista.drop(columns=["Muestra_idx", "Analisis_idx"]).to_excel(writer, index=False, sheet_name="Muestras")
     st.download_button(
         label="Descargar Excel",
         data=excel_data.getvalue(),

@@ -139,6 +139,8 @@ if st.button("Guardar muestra"):
 # --- VISUALIZACIÓN ---
 
 # --- VISUALIZACIÓN ---
+
+# --- VISUALIZACIÓN ---
 st.header("Muestras cargadas")
 
 data_expandida = []
@@ -152,43 +154,37 @@ for i_muestra, muestra in enumerate(st.session_state.muestras):
             "Fecha": analisis.get("fecha", ""),
             "Observaciones análisis": analisis.get("observaciones", ""),
             "Muestra_idx": i_muestra,
-            "Analisis_idx": i_analisis,
-            "Eliminar": "🗑️"
+            "Analisis_idx": i_analisis
         })
 
 if data_expandida:
     df_vista = pd.DataFrame(data_expandida)
 
-    clicked = st.data_editor(
-        df_vista,
-        column_config={
-            "Eliminar": st.column_config.ButtonColumn("Eliminar", help="Eliminar análisis de la muestra", width="small")
-        },
-        disabled=["Nombre", "Observación muestra", "Tipo de análisis", "Valor", "Fecha", "Observaciones análisis"],
-        use_container_width=True,
-        key="tabla_cargada"
-    )
+    st.dataframe(df_vista.drop(columns=["Muestra_idx", "Analisis_idx"]), use_container_width=True)
 
-    # Buscar si se presionó algún botón "Eliminar"
-    for i, row in clicked.iterrows():
-        if row["Eliminar"] == "🗑️" and row["Muestra_idx"] in range(len(st.session_state.muestras)):
-            m_idx = row["Muestra_idx"]
-            a_idx = row["Analisis_idx"]
-            try:
-                del st.session_state.muestras[m_idx]["analisis"][a_idx]
-                db.collection("muestras").document(st.session_state.muestras[m_idx]["nombre"]).set({
-                    "observacion": st.session_state.muestras[m_idx]["observacion"],
-                    "analisis": st.session_state.muestras[m_idx]["analisis"]
-                })
-                st.success(f"Análisis eliminado correctamente de {row['Nombre']}")
-                st.rerun()
-            except Exception as e:
-                st.error(f"No se pudo eliminar: {e}")
+    # Selector para eliminar un análisis
+    st.subheader("Eliminar análisis individual")
+    seleccion = st.selectbox("Seleccionar análisis a eliminar:", options=df_vista.index,
+                             format_func=lambda i: f"{df_vista.at[i, 'Nombre']} – {df_vista.at[i, 'Tipo de análisis']} – {df_vista.at[i, 'Fecha']}")
 
-    # Descargar Excel
+    if st.button("Eliminar análisis seleccionado"):
+        m_idx = df_vista.at[seleccion, "Muestra_idx"]
+        a_idx = df_vista.at[seleccion, "Analisis_idx"]
+        try:
+            del st.session_state.muestras[m_idx]["analisis"][a_idx]
+            db.collection("muestras").document(st.session_state.muestras[m_idx]["nombre"]).set({
+                "observacion": st.session_state.muestras[m_idx]["observacion"],
+                "analisis": st.session_state.muestras[m_idx]["analisis"]
+            })
+            st.success("Análisis eliminado correctamente.")
+            st.rerun()
+        except Exception as e:
+            st.error(f"No se pudo eliminar el análisis: {e}")
+
+    # Exportación a Excel
     excel_data = BytesIO()
     with pd.ExcelWriter(excel_data, engine="xlsxwriter") as writer:
-        df_vista.drop(columns=["Muestra_idx", "Analisis_idx", "Eliminar"]).to_excel(writer, index=False, sheet_name="Muestras")
+        df_vista.drop(columns=["Muestra_idx", "Analisis_idx"]).to_excel(writer, index=False, sheet_name="Muestras")
     st.download_button(
         label="Descargar Excel",
         data=excel_data.getvalue(),

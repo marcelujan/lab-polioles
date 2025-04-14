@@ -137,9 +137,10 @@ if st.button("Guardar muestra"):
     st.rerun()
 
 # --- TABLA GENERAL DE VISUALIZACIÓN ---
+
+# --- TABLA GENERAL DE VISUALIZACIÓN ---
 st.header("Muestras cargadas")
 
-# Mostrar tabla general con opción de eliminar análisis individual
 data_expandida = []
 for i_muestra, muestra in enumerate(st.session_state.muestras):
     for i_analisis, analisis in enumerate(muestra.get("analisis", [])):
@@ -156,26 +157,28 @@ for i_muestra, muestra in enumerate(st.session_state.muestras):
 
 if data_expandida:
     df_vista = pd.DataFrame(data_expandida)
-    st.dataframe(df_vista.drop(columns=["Muestra_idx", "Analisis_idx"]), use_container_width=True)
 
-    for row_idx, row in df_vista.iterrows():
-        col = st.columns([0.9, 0.1])[1]
-        with col:
-            if st.button("🗑️", key=f"del_{row_idx}"):
-                if st.confirm(f"¿Eliminar análisis de '{row['Nombre']}' tipo '{row['Tipo de análisis']}'?"):
-                    m_idx = row["Muestra_idx"]
-                    a_idx = row["Analisis_idx"]
-                    try:
-                        del st.session_state.muestras[m_idx]["analisis"][a_idx]
-                        db.collection("muestras").document(st.session_state.muestras[m_idx]["nombre"]).set({
-                            "observacion": st.session_state.muestras[m_idx]["observacion"],
-                            "analisis": st.session_state.muestras[m_idx]["analisis"]
-                        })
-                        st.success("Análisis eliminado.")
-                        st.rerun()
-                    except:
-                        st.error("No se pudo eliminar el análisis.")
+    for i, row in df_vista.iterrows():
+        st.write(f"🔬 **{row['Nombre']}** – {row['Tipo de análisis']} ({row['Fecha']})")
+        col1, col2 = st.columns([0.9, 0.1])
+        with col1:
+            st.write(f"{row['Observaciones análisis']} – Valor: {row['Valor']}")
+        with col2:
+            if st.button("🗑️", key=f"del_{i}"):
+                m_idx = row["Muestra_idx"]
+                a_idx = row["Analisis_idx"]
+                try:
+                    del st.session_state.muestras[m_idx]["analisis"][a_idx]
+                    db.collection("muestras").document(st.session_state.muestras[m_idx]["nombre"]).set({
+                        "observacion": st.session_state.muestras[m_idx]["observacion"],
+                        "analisis": st.session_state.muestras[m_idx]["analisis"]
+                    })
+                    st.success("Análisis eliminado correctamente.")
+                    st.rerun()
+                except:
+                    st.error("No se pudo eliminar el análisis.")
 
+    # Descargar Excel
     excel_data = BytesIO()
     with pd.ExcelWriter(excel_data, engine="xlsxwriter") as writer:
         df_vista.drop(columns=["Muestra_idx", "Analisis_idx"]).to_excel(writer, index=False, sheet_name="Muestras")

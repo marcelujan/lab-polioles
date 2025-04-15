@@ -224,3 +224,78 @@ with tab2:
                            mime="image/png")
     else:
         st.warning("Los datos seleccionados no son compatibles para graficar.")
+
+
+# --- HOJA 2: Análisis de datos (con repeticiones y color por muestra) ---
+with tab2:
+    st.title("Análisis de datos")
+
+    muestras = cargar_muestras()
+    tabla = []
+    for m in muestras:
+        for i, a in enumerate(m.get("analisis", [])):
+            tabla.append({
+                "ID": f"{m['nombre']}__{i}",
+                "Nombre": m["nombre"],
+                "Tipo": a.get("tipo", ""),
+                "Valor": a.get("valor", ""),
+                "Fecha": a.get("fecha", ""),
+                "Observaciones": a.get("observaciones", "")
+            })
+
+    df = pd.DataFrame(tabla)
+    if df.empty:
+        st.info("No hay análisis cargados.")
+        st.stop()
+
+    st.subheader("Tabla completa de análisis")
+    st.dataframe(df.drop(columns=["ID"]), use_container_width=True)
+
+    st.subheader("Seleccionar análisis")
+    seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df["ID"].tolist(),
+                               format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
+
+    df_sel = df[df["ID"].isin(seleccion)]
+    st.subheader("Resumen de selección")
+    st.dataframe(df_sel.drop(columns=["ID"]), use_container_width=True)
+
+    st.subheader("Gráfico XY")
+    tipos_disponibles = sorted(df_sel["Tipo"].unique())
+
+    colx, coly = st.columns(2)
+    with colx:
+        tipo_x = st.selectbox("Selección de eje X", tipos_disponibles)
+    with coly:
+        tipo_y = st.selectbox("Selección de eje Y", tipos_disponibles)
+
+    df_x = df_sel[df_sel["Tipo"] == tipo_x][["Nombre", "Valor"]].rename(columns={"Valor": "X"})
+    df_y = df_sel[df_sel["Tipo"] == tipo_y][["Nombre", "Valor"]].rename(columns={"Valor": "Y"})
+
+    df_xy = pd.merge(df_x, df_y, on="Nombre", how="inner")
+
+    if df_xy.empty:
+        st.warning("No hay combinaciones de muestras compatibles para graficar.")
+    else:
+        st.write("🧪 Datos a graficar:")
+        st.dataframe(df_xy)
+
+        fig, ax = plt.subplots()
+        muestras_unicas = df_xy["Nombre"].unique()
+        colores = cm.get_cmap('tab10', len(muestras_unicas))
+
+        for i, muestra in enumerate(muestras_unicas):
+            datos = df_xy[df_xy["Nombre"] == muestra]
+            ax.scatter(datos["X"], datos["Y"], label=muestra, color=colores(i))
+            for j, row in datos.iterrows():
+                ax.annotate(muestra, (row["X"], row["Y"]))
+
+        ax.set_xlabel(tipo_x)
+        ax.set_ylabel(tipo_y)
+        ax.legend()
+        st.pyplot(fig)
+
+        buf_img = BytesIO()
+        fig.savefig(buf_img, format="png")
+        st.download_button("📷 Descargar gráfico", buf_img.getvalue(),
+                           file_name=f"grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
+                           mime="image/png")

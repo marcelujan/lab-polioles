@@ -167,7 +167,7 @@ with tab2:
     st.dataframe(df.drop(columns=["ID"]), use_container_width=True)
 
     st.subheader("Seleccionar análisis")
-    seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df["ID"].tolist(),
+    seleccion = st.multiselect("Seleccione uno o más análisis para graficar", key="multi_e4b96e6c-c8f3-448e-a9b5-72c891d2db71", df["ID"].tolist(),
                                format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
 
     df_sel = df[df["ID"].isin(seleccion)]
@@ -194,7 +194,7 @@ with tab2:
         nombres = []
         st.markdown("**Asignar valores X manualmente por muestra:**")
         for nombre in comunes:
-            val = st.number_input(f"{nombre}", step=0.1, key=f"manual_x_{nombre}")
+            val = st.number_input(f"{nombre}", step=0.1, key=f"manual_x_{nombre}_{i}")
             valores_x_manual.append(val)
             nombres.append(nombre)
         x = valores_x_manual
@@ -252,7 +252,7 @@ with tab2:
     st.dataframe(df.drop(columns=["ID"]), use_container_width=True)
 
     st.subheader("Seleccionar análisis")
-    seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df["ID"].tolist(),
+    seleccion = st.multiselect("Seleccione uno o más análisis para graficar", key="multi_e4b96e6c-c8f3-448e-a9b5-72c891d2db71", df["ID"].tolist(),
                                format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
 
     df_sel = df[df["ID"].isin(seleccion)]

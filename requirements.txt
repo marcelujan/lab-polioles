@@ -3,3 +3,4 @@ pandas
 toml
 firebase-admin
 xlsxwriter
+matplotlib

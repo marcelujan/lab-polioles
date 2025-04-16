@@ -1,4 +1,5 @@
-# --- APP COMPLETA: Hoja 1 + Hoja 2 corregida con depuración ---
+
+# --- APP COMPLETA: Hoja 1 + Hoja 2 corregida con depuración y mejoras gráficas ---
 import streamlit as st
 import pandas as pd
 import toml
@@ -141,7 +142,7 @@ with tab1:
     else:
         st.info("No hay análisis cargados.")
 
-# --- HOJA 2: Análisis de datos (con depuración) ---
+# --- HOJA 2: Análisis de datos (con colores por muestra y toggle de etiquetas) ---
 with tab2:
     st.title("Análisis de datos")
 
@@ -171,12 +172,19 @@ with tab2:
                                format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
 
     df_sel = df[df["ID"].isin(seleccion)]
+
     st.subheader("Resumen de selección")
-    st.dataframe(df_sel.drop(columns=["ID"]), use_container_width=True)
+    colores_tabla = plt.cm.get_cmap("tab10", len(set(df_sel["Nombre"])))
+    color_dict_tabla = {nombre: colores_tabla(i) for i, nombre in enumerate(sorted(set(df_sel["Nombre"])))}
+    color_dict_hex = {k: '#{:02x}{:02x}{:02x}'.format(int(v[0]*255), int(v[1]*255), int(v[2]*255)) for k, v in color_dict_tabla.items()}
+    def highlight_muestra(row):
+        color = color_dict_hex.get(row["Nombre"], "#FFFFFF")
+        return ['background-color: {}'.format(color)] * len(row)
+    styled_df = df_sel.drop(columns=["ID"]).style.apply(highlight_muestra, axis=1)
+    st.dataframe(styled_df, use_container_width=True)
 
     st.subheader("Gráfico XY")
     tipos_disponibles = sorted(df_sel["Tipo"].unique())
-
     colx, coly = st.columns(2)
     with colx:
         tipo_x = st.selectbox("Selección de eje X", tipos_disponibles)
@@ -186,8 +194,8 @@ with tab2:
     muestras_x = df_sel[df_sel["Tipo"] == tipo_x][["Nombre", "Valor"]].set_index("Nombre")
     muestras_y = df_sel[df_sel["Tipo"] == tipo_y][["Nombre", "Valor"]].set_index("Nombre")
     comunes = muestras_x.index.intersection(muestras_y.index)
-
     usar_manual_x = st.checkbox("Asignar valores X manualmente")
+    mostrar_etiquetas = st.checkbox("Mostrar etiquetas en el gráfico", value=True)
 
     if usar_manual_x:
         valores_x_manual = []
@@ -204,21 +212,23 @@ with tab2:
 
     y = muestras_y.loc[comunes, "Valor"].tolist()
 
-    st.write("🧪 Muestras en común:", nombres)
-    st.write("📈 X:", x)
-    st.write("📈 Y:", y)
-
-    if x and y and len(x) == len(y):
+    if nombres and x and y and len(x) == len(y):
         fig, ax = plt.subplots()
-        ax.scatter(x, y)
-        for i, txt in enumerate(nombres):
-            ax.annotate(txt, (x[i], y[i]))
+        colores = plt.cm.get_cmap("tab10", len(set(nombres)))
+        color_dict = {nombre: colores(i) for i, nombre in enumerate(sorted(set(nombres)))}
+        for nombre in sorted(set(nombres)):
+            x_vals = [x[i] for i in range(len(nombres)) if nombres[i] == nombre]
+            y_vals = [y[i] for i in range(len(nombres)) if nombres[i] == nombre]
+            ax.scatter(x_vals, y_vals, label=nombre, color=color_dict[nombre])
+            if mostrar_etiquetas:
+                for i in range(len(x_vals)):
+                    ax.annotate(nombre, (x_vals[i], y_vals[i]), fontsize=8)
         ax.set_xlabel(tipo_x)
         ax.set_ylabel(tipo_y)
+        ax.legend(title="Muestra", bbox_to_anchor=(1.05, 1), loc='upper left')
         st.pyplot(fig)
-
         buf_img = BytesIO()
-        fig.savefig(buf_img, format="png")
+        fig.savefig(buf_img, format="png", bbox_inches="tight")
         st.download_button("📷 Descargar gráfico", buf_img.getvalue(),
                            file_name=f"grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
                            mime="image/png")

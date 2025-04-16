@@ -208,9 +208,6 @@ with tab2:
 
     y = muestras_y.loc[comunes, "Valor"].tolist()
 
-    st.write("🧪 Muestras en común:", nombres)
-    st.write("📈 X:", x)
-    st.write("📈 Y:", y)
 
     if x and y and len(x) == len(y):
         fig, ax = plt.subplots()

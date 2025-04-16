@@ -191,9 +191,9 @@ with tab2:
     with coly:
         tipo_y = st.selectbox("Selección de eje Y", tipos_disponibles)
 
-    muestras_x = df_sel[df_sel["Tipo"] == tipo_x].groupby("Nombre")["Valor"].mean()
-    muestras_y = df_sel[df_sel["Tipo"] == tipo_y].groupby("Nombre")["Valor"].mean()
-    comunes = muestras_x.index.intersection(muestras_y.index)
+    x_stats = df_sel[df_sel["Tipo"] == tipo_x].groupby("Nombre")["Valor"].agg(["mean", "std"])
+    y_stats = df_sel[df_sel["Tipo"] == tipo_y].groupby("Nombre")["Valor"].agg(["mean", "std"])
+    comunes = x_stats.index.intersection(y_stats.index)
     usar_manual_x = st.checkbox("Asignar valores X manualmente")
     mostrar_etiquetas = st.checkbox("Mostrar etiquetas en el gráfico", value=True)
 

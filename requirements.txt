@@ -4,3 +4,4 @@ toml
 firebase-admin
 xlsxwriter
 matplotlib
+openpyxl

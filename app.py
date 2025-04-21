@@ -496,10 +496,7 @@ with tab4:
     st.markdown("---")
     st.subheader("📦 Descargar selección")
 
-    figuras_combinadas = locals().get("figuras_combinadas", [])
-    tablas_combinadas = locals().get("tablas_combinadas", [])
-
-    if figuras_combinadas:
+    if "figuras_combinadas" in locals() and figuras_combinadas:
         from PIL import Image
         import numpy as np
         from io import BytesIO
@@ -524,11 +521,11 @@ with tab4:
             for nombre, tipo, tabla in tablas_combinadas:
                 nombre_hoja = f"{nombre}_{tipo}".replace(" ", "_")[:31]
                 tabla.to_excel(writer, index=False, sheet_name=nombre_hoja)
-                tabla = tabla.rename(columns={tabla.columns[1]: f"{nombre} - {tipo}"})
+                tabla_ren = tabla.rename(columns={tabla.columns[1]: f"{nombre} - {tipo}"})
                 if resumen.empty:
-                    resumen = tabla
+                    resumen = tabla_ren
                 else:
-                    resumen = pd.merge(resumen, tabla, on=tabla.columns[0], how="outer")
+                    resumen = pd.merge(resumen, tabla_ren, on=tabla.columns[0], how="outer")
             resumen.to_excel(writer, index=False, sheet_name="Resumen")
         buffer_excel.seek(0)
 

@@ -227,7 +227,7 @@ with tab2:
 
         buf_img = BytesIO()
         fig.savefig(buf_img, format="png")
-                        nombre_archivo = f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_X{int(x_range[0])}-{int(x_range[1])}_grafico.png"
+        nombre_archivo = f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_X{int(x_range[0])}-{int(x_range[1])}_grafico.png"
         st.download_button("📷 Descargar gráfico", buf_img.getvalue(),
                            file_name=f"grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
                            mime="image/png")
@@ -443,7 +443,7 @@ with tab4:
 
                     buf_img = BytesIO()
                     fig.savefig(buf_img, format="png")
-                        nombre_archivo = f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_X{int(x_range[0])}-{int(x_range[1])}_grafico.png"
+        nombre_archivo = f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_X{int(x_range[0])}-{int(x_range[1])}_grafico.png"
                     st.download_button("📷 Descargar gráfico", data=buf_img.getvalue(),
                                        file_name=nombre_archivo,
                                        mime="image/png", key=f"btn_grafico_{row['Muestra']}_{row['Tipo']}")

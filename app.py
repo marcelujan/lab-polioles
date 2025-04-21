@@ -224,6 +224,55 @@ with tab2:
         ax.set_xlabel(tipo_x)
         ax.set_ylabel(tipo_y)
         st.pyplot(fig)
+if se_grafico_algo:
+            ax.set_xlabel("X")
+            ax.set_ylabel("Y")
+            ax.legend()
+            st.pyplot(fig)
+
+            # Descargar imagen del gráfico combinado
+            buf_img = BytesIO()
+            fig.savefig(buf_img, format="png", bbox_inches="tight")
+            st.download_button("🖼️ Descargar gráfico combinado", data=buf_img.getvalue(),
+                               file_name="grafico_combinado.png", mime="image/png")
+
+            # Descargar Excel con todos los datos seleccionados
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                for _, row in df_filtrado.iterrows():
+                    try:
+                        extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+                        if extension == ".xlsx":
+                            binario = BytesIO(bytes.fromhex(row["Contenido"]))
+                            df_data = pd.read_excel(binario)
+                        else:
+                            contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+                            separadores = [",", "	", ";", " "]
+                            for sep in separadores:
+                                contenido.seek(0)
+                                try:
+                                    df_data = pd.read_csv(contenido, sep=sep, engine="python")
+                                    if df_data.shape[1] >= 2:
+                                        break
+                                except:
+                                    continue
+                            else:
+                                continue
+
+                        col_x, col_y = df_data.columns[:2]
+                        df_data[col_x] = df_data[col_x].astype(str).str.replace(",", ".", regex=False)
+                        df_data[col_y] = df_data[col_y].astype(str).str.replace(",", ".", regex=False)
+                        df_data[col_x] = pd.to_numeric(df_data[col_x], errors="coerce")
+                        df_data[col_y] = pd.to_numeric(df_data[col_y], errors="coerce")
+
+                        nombre_hoja = f"{row['Muestra']}_{row['Tipo']}".replace(" ", "_")[:31]
+                        df_data.to_excel(writer, index=False, sheet_name=nombre_hoja)
+                    except:
+                        continue
+            excel_buffer.seek(0)
+            st.download_button("📊 Descargar datos combinados", data=excel_buffer.getvalue(),
+                               file_name="datos_combinados.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         if se_grafico_algo:
             ax.set_xlabel("X")
             ax.set_ylabel("Y")
@@ -446,7 +495,7 @@ with tab4:
     if solo_imagenes:
         df_filtrado = df_filtrado[df_filtrado["Es imagen"]]
 
-    st.subheader("Espectros combinados")
+    st.subheader("Espectros")
 
     # Definir los rangos globales predeterminados
     rango_x = [float('inf'), float('-inf')]

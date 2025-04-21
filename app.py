@@ -283,7 +283,7 @@ with tab3:
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
-            "contenido": archivo.getvalue().decode("latin1") if not es_imagen else archivo.getvalue().hex(),
+            "contenido": archivo.getvalue().hex(),
             "es_imagen": es_imagen,
         }
         espectros.append(nuevo)
@@ -352,25 +352,3 @@ with tab3:
                                        mime="application/zip")
     else:
         st.info("No hay espectros cargados.")
-
-
-# --- HOJA 4 ---
-with tab4:
-    st.title("Análisis de espectros")
-    try:
-        muestras = cargar_muestras()
-        espectros_info = []
-        for m in muestras:
-            for e in m.get("espectros", []):
-                espectros_info.append({
-                    "Muestra": m["nombre"],
-                    "Tipo": e.get("tipo", ""),
-                    "Nombre archivo": e.get("nombre_archivo", ""),
-                    "Observaciones": e.get("observaciones", ""),
-                    "Contenido": e.get("contenido"),
-                    "Es imagen": e.get("es_imagen", False)
-                })
-        df_esp = pd.DataFrame(espectros_info)
-        st.dataframe(df_esp)
-    except Exception as e:
-        st.error(f"⚠️ Error en la Hoja 4: {e}")

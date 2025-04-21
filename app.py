@@ -352,3 +352,49 @@ with tab3:
                                        mime="application/zip")
     else:
         st.info("No hay espectros cargados.")
+
+
+# --- HOJA 4 ---
+with tab4:
+    st.title("Diagnóstico directo Hoja 4")
+
+    try:
+        muestras = cargar_muestras()
+        st.write(f"Total de muestras: {len(muestras)}")
+        for m in muestras:
+            espectros = m.get("espectros", [])
+            if not espectros:
+                st.write(f"{m['nombre']}: sin espectros")
+                continue
+
+            st.subheader(f"Primer espectro de {m['nombre']}")
+            espectro = espectros[0]
+            st.write("Tipo:", espectro.get("tipo", ""))
+            st.write("Archivo:", espectro.get("nombre_archivo", ""))
+            st.write("Es imagen:", espectro.get("es_imagen", False))
+
+            if not espectro.get("es_imagen") and espectro.get("contenido"):
+                from io import BytesIO
+                import pandas as pd
+                try:
+                    binario = BytesIO(bytes.fromhex(espectro["contenido"]))
+                    st.write("✅ Convertido a BytesIO")
+                    df_esp = pd.read_excel(binario)
+                    st.write("✅ Leído con pandas:")
+                    st.dataframe(df_esp)
+
+                    if df_esp.shape[1] >= 2:
+                        col_x, col_y = df_esp.columns[:2]
+                        import matplotlib.pyplot as plt
+                        fig, ax = plt.subplots()
+                        ax.plot(df_esp[col_x], df_esp[col_y])
+                        ax.set_xlabel(col_x)
+                        ax.set_ylabel(col_y)
+                        st.pyplot(fig)
+                    else:
+                        st.warning("Archivo tiene menos de dos columnas.")
+                except Exception as e:
+                    st.error(f"❌ Error al graficar espectro: {e}")
+            break  # solo analizamos la primera muestra con espectros
+    except Exception as e:
+        st.error(f"❌ Error general en Hoja 4: {e}")

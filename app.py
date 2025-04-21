@@ -399,6 +399,8 @@ with tab4:
         df_filtrado = df_filtrado[df_filtrado["Es imagen"]]
 
     st.subheader("Espectros visualizados")
+    modo_grafico = st.radio("Modo de visualización", ["Gráficos individuales", "Gráfico combinado"], key="modo_vista")
+
 
     for _, row in df_filtrado.iterrows():
         st.markdown(f"**{row['Muestra']}** – *{row['Tipo']}* – {row['Nombre archivo']}")

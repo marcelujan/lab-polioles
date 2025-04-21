@@ -355,6 +355,9 @@ with tab3:
 
 
 
+
+
+
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
@@ -365,7 +368,6 @@ with tab4:
         st.info("No hay muestras cargadas con espectros.")
         st.stop()
 
-    # Construir lista de espectros con metadatos
     espectros_info = []
     for m in muestras:
         for e in m.get("espectros", []):
@@ -384,8 +386,8 @@ with tab4:
     muestras_disp = df_esp["Muestra"].unique().tolist()
     tipos_disp = df_esp["Tipo"].unique().tolist()
 
-    muestras_sel = st.multiselect("Muestras", muestras_disp, default=muestras_disp)
-    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=tipos_disp)
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
     solo_datos = st.checkbox("Mostrar solo espectros numéricos", value=False)
     solo_imagenes = st.checkbox("Mostrar solo imágenes", value=False)
 
@@ -407,26 +409,70 @@ with tab4:
         else:
             try:
                 from io import StringIO
-                contenido = StringIO(row["Contenido"])
-                separadores = [",", "\t", ";", " "]
-                for sep in separadores:
-                    contenido.seek(0)
-                    try:
-                        df_espectro = pd.read_csv(contenido, sep=sep, engine="python")
-                        if df_espectro.shape[1] >= 2:
-                            break
-                    except:
-                        continue
+                
+                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+                if extension == ".xlsx":
+                    binario = BytesIO(bytes.fromhex(row["Contenido"]))
+                    df_espectro = pd.read_excel(binario)
                 else:
-                    st.warning("No se pudo detectar un separador válido.")
-                    continue
+                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+                    separadores = [",", "	", ";", " "]
+                    for sep in separadores:
+                        contenido.seek(0)
+                        try:
+                            df_espectro = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df_espectro.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        st.warning("No se pudo detectar un separador válido.")
+                        continue
+
 
                 if df_espectro.shape[1] >= 2:
                     col_x, col_y = df_espectro.columns[:2]
+
+                    st.write(f"🔍 Columnas detectadas: X = `{col_x}`, Y = `{col_y}`")
+
+                    df_espectro[col_x] = df_espectro[col_x].astype(str).str.replace(',', '.', regex=False)
+                    df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
+                    df_espectro[col_y] = df_espectro[col_y].astype(str).str.replace(',', '.', regex=False)
+                    df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
+
+                    min_x, max_x = df_espectro[col_x].dropna().agg(["min", "max"])
+                    min_y, max_y = df_espectro[col_y].dropna().agg(["min", "max"])
+
+                    st.write(f"📊 Rango X detectado: {min_x} a {max_x}")
+                    st.write(f"📊 Rango Y detectado: {min_y} a {max_y}")
+
+                    colx1, colx2 = st.columns(2)
+                    with colx1:
+                        x_min = st.number_input("X mínimo", value=float(min_x), key=f"xmin_{row['Nombre archivo']}")
+                    with colx2:
+                        x_max = st.number_input("X máximo", value=float(max_x), key=f"xmax_{row['Nombre archivo']}")
+
+                    coly1, coly2 = st.columns(2)
+                    with coly1:
+                        y_min = st.number_input("Y mínimo", value=float(min_y), key=f"ymin_{row['Nombre archivo']}")
+                    with coly2:
+                        y_max = st.number_input("Y máximo", value=float(max_y), key=f"ymax_{row['Nombre archivo']}")
+
+                    df_fil = df_espectro[
+                        (df_espectro[col_x] >= x_min) & (df_espectro[col_x] <= x_max) &
+                        (df_espectro[col_y] >= y_min) & (df_espectro[col_y] <= y_max)
+                    ]
+
+                    if df_fil.empty:
+                        st.warning("⚠️ El rango seleccionado no contiene datos válidos para graficar.")
+                        continue
+
                     fig, ax = plt.subplots()
-                    ax.plot(df_espectro[col_x], df_espectro[col_y])
+                    ax.plot(df_fil[col_x], df_fil[col_y])
                     ax.set_xlabel(col_x)
                     ax.set_ylabel(col_y)
+                    ax.set_xlim(x_min, x_max)
+                    ax.set_ylim(y_min, y_max)
                     st.pyplot(fig)
                 else:
                     st.warning("El archivo tiene menos de dos columnas.")

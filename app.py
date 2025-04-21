@@ -402,8 +402,6 @@ with tab4:
         buffer_combinado.seek(0)
         st.download_button("📦 Descargar selección", data=buffer_combinado.getvalue(),
                            file_name="graficos_seleccionados.png", mime="image/png")
-    else:
-        st.info("Aún no se han generado gráficos en esta sesión.")
 
 with tab4:
     figuras_combinadas = []

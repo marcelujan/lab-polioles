@@ -9,6 +9,8 @@ from datetime import date, datetime
 from io import BytesIO
 import os
 import matplotlib.pyplot as plt
+import zipfile
+from tempfile import TemporaryDirectory
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 
@@ -60,9 +62,10 @@ def guardar_muestra(nombre, observacion, analisis, espectros=None):
 tab1, tab2, tab3, tab4 = st.tabs([
     "Laboratorio de Polioles",
     "Análisis de datos",
-    "Análisis de espectros",
-    "Visualización de espectros"
+    "Carga de espectros",
+    "Análisis de espectros"
 ])
+
 
 # --- HOJA 1 ---
 with tab1:
@@ -148,10 +151,6 @@ with tab1:
     else:
         st.info("No hay análisis cargados.")
 
-# (HOJA 2 y HOJA 3 continuarán en la siguiente celda)
-
-
-
 
 # --- HOJA 2 ---
 with tab2:
@@ -236,7 +235,7 @@ with tab2:
 
 # --- HOJA 3 ---
 with tab3:
-    st.title("Gestión de espectros")
+    st.title("Carga de espectros")
 
     muestras = cargar_muestras()
     nombres_muestras = [m["nombre"] for m in muestras]
@@ -278,7 +277,7 @@ with tab3:
             except Exception as e:
                 st.error(f"No se pudo leer el archivo: {e}")
 
-    if st.button("Guardar espectro en Firestore") and archivo:
+    if st.button("Guardar espectro") and archivo:
         espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])
         nuevo = {
             "tipo": tipo_espectro,
@@ -320,11 +319,36 @@ with tab3:
                     st.success("Espectro eliminado.")
                     st.rerun()
 
-        buffer = BytesIO()
-        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-            df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")
-        st.download_button("Descargar tabla de espectros", data=buffer.getvalue(),
-                           file_name=f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        if st.button("📦 Descargar espectros"):
+            with TemporaryDirectory() as tmpdir:
+                zip_path = os.path.join(tmpdir, f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
+                excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
+
+                with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
+                    df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")
+
+                with zipfile.ZipFile(zip_path, "w") as zipf:
+                    zipf.write(excel_path, arcname="tabla_espectros.xlsx")
+                    for m in muestras:
+                        for e in m.get("espectros", []):
+                            contenido = e.get("contenido")
+                            if not contenido:
+                                continue
+                            carpeta = f"{m['nombre']}"
+                            nombre = e.get("nombre_archivo", "espectro")
+                            fullpath = os.path.join(tmpdir, carpeta)
+                            os.makedirs(fullpath, exist_ok=True)
+                            file_path = os.path.join(fullpath, nombre)
+                            with open(file_path, "wb") as file_out:
+                                if e.get("es_imagen"):
+                                    file_out.write(bytes.fromhex(contenido))
+                                else:
+                                    file_out.write(contenido.encode("latin1"))
+                            zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
+
+                with open(zip_path, "rb") as final_zip:
+                    st.download_button("📦 Descargar espectros", data=final_zip.read(),
+                                       file_name=os.path.basename(zip_path),
+                                       mime="application/zip")
     else:
         st.info("No hay espectros cargados.")

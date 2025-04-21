@@ -354,6 +354,8 @@ with tab3:
 
 # --- HOJA 4 ---
 with tab4:
+    figuras_combinadas = []
+    tablas_combinadas = []
 
     st.subheader("Descargar selección")
     if False:  # eliminado el uso de session_state
@@ -362,25 +364,27 @@ with tab4:
     from PIL import Image
     import numpy as np
 
-        if figuras_combinadas
-            imgs = [Image.fromarray(np.array(fig.canvas.renderer.buffer_rgba())) for fig in st.session_state.figuras_guardadas]
-            alturas = [im.size[1] for im in imgs]
-            ancho = max(im.size[0] for im in imgs)
-            altura_total = sum(alturas)
-            combinada = Image.new("RGBA", (ancho, altura_total))
-            y_offset = 0
-            for im in imgs:
-                combinada.paste(im, (0, y_offset))
-                y_offset += im.size[1]
-            buffer_combinado = BytesIO()
-            combinada.save(buffer_combinado, format="PNG")
-            buffer_combinado.seek(0)
-            st.download_button("📦 Descargar selección", data=buffer_combinado.getvalue(),
-                               file_name="graficos_seleccionados.png", mime="image/png")
-        else:
-            st.info("Aún no se han generado gráficos en esta sesión.")
+    if figuras_combinadas
+        imgs = [Image.fromarray(np.array(fig.canvas.renderer.buffer_rgba())) for fig in st.session_state.figuras_guardadas]
+        alturas = [im.size[1] for im in imgs]
+        ancho = max(im.size[0] for im in imgs)
+        altura_total = sum(alturas)
+        combinada = Image.new("RGBA", (ancho, altura_total))
+        y_offset = 0
+        for im in imgs:
+            combinada.paste(im, (0, y_offset))
+            y_offset += im.size[1]
+        buffer_combinado = BytesIO()
+        combinada.save(buffer_combinado, format="PNG")
+        buffer_combinado.seek(0)
+        st.download_button("📦 Descargar selección", data=buffer_combinado.getvalue(),
+                           file_name="graficos_seleccionados.png", mime="image/png")
+    else:
+        st.info("Aún no se han generado gráficos en esta sesión.")
 
 with tab4:
+    figuras_combinadas = []
+    tablas_combinadas = []
     st.title("Análisis de espectros")
 
     muestras = cargar_muestras()
@@ -496,46 +500,43 @@ with tab4:
     st.markdown("---")
     st.subheader("📦 Descargar selección")
 
-    try:
-        if figuras_combinadas:
-            from PIL import Image
-            import numpy as np
-            from io import BytesIO
-            import pandas as pd
+    if len(figuras_combinadas) > 0:
+        from PIL import Image
+        import numpy as np
+        from io import BytesIO
+        import pandas as pd
 
-            imgs = [Image.fromarray(np.array(fig.canvas.buffer_rgba())) for fig in figuras_combinadas]
-            alturas = [im.size[1] for im in imgs]
-            ancho = max(im.size[0] for im in imgs)
-            altura_total = sum(alturas)
-            combinada = Image.new("RGBA", (ancho, altura_total))
-            y_offset = 0
-            for im in imgs:
-                combinada.paste(im, (0, y_offset))
-                y_offset += im.size[1]
-            buffer_img = BytesIO()
-            combinada.save(buffer_img, format="PNG")
-            buffer_img.seek(0)
+        imgs = [Image.fromarray(np.array(fig.canvas.buffer_rgba())) for fig in figuras_combinadas]
+        alturas = [im.size[1] for im in imgs]
+        ancho = max(im.size[0] for im in imgs)
+        altura_total = sum(alturas)
+        combinada = Image.new("RGBA", (ancho, altura_total))
+        y_offset = 0
+        for im in imgs:
+            combinada.paste(im, (0, y_offset))
+            y_offset += im.size[1]
+        buffer_img = BytesIO()
+        combinada.save(buffer_img, format="PNG")
+        buffer_img.seek(0)
 
-            buffer_excel = BytesIO()
-            with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                resumen = pd.DataFrame()
-                for nombre, tipo, tabla in tablas_combinadas:
-                    nombre_hoja = f"{nombre}_{tipo}".replace(" ", "_")[:31]
-                    tabla.to_excel(writer, index=False, sheet_name=nombre_hoja)
-                    tabla_ren = tabla.rename(columns={tabla.columns[1]: f"{nombre} - {tipo}"})
-                    if resumen.empty:
-                        resumen = tabla_ren
-                    else:
-                        resumen = pd.merge(resumen, tabla_ren, on=tabla.columns[0], how="outer")
-                resumen.to_excel(writer, index=False, sheet_name="Resumen")
-            buffer_excel.seek(0)
+        buffer_excel = BytesIO()
+        with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+            resumen = pd.DataFrame()
+            for nombre, tipo, tabla in tablas_combinadas:
+                nombre_hoja = f"{nombre}_{tipo}".replace(" ", "_")[:31]
+                tabla.to_excel(writer, index=False, sheet_name=nombre_hoja)
+                tabla_ren = tabla.rename(columns={tabla.columns[1]: f"{nombre} - {tipo}"})
+                if resumen.empty:
+                    resumen = tabla_ren
+                else:
+                    resumen = pd.merge(resumen, tabla_ren, on=tabla.columns[0], how="outer")
+            resumen.to_excel(writer, index=False, sheet_name="Resumen")
+        buffer_excel.seek(0)
 
-            st.download_button("🖼️ Descargar imagen combinada", data=buffer_img.getvalue(),
-                               file_name="graficos_seleccionados.png", mime="image/png")
+        st.download_button("🖼️ Descargar imagen combinada", data=buffer_img.getvalue(),
+                           file_name="graficos_seleccionados.png", mime="image/png")
 
-            st.download_button("📊 Descargar Excel resumen", data=buffer_excel.getvalue(),
-                               file_name="tablas_seleccionadas.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        else:
-            st.info("Aún no se han generado gráficos en esta sesión.")
-    except Exception as e:
-        st.error(f"❌ Error al generar la descarga: {e}")
+        st.download_button("📊 Descargar Excel resumen", data=buffer_excel.getvalue(),
+                           file_name="tablas_seleccionadas.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    else:
+        st.info("Aún no se han generado gráficos en esta sesión.")

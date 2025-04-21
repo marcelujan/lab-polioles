@@ -396,7 +396,7 @@ with tab4:
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     else:
         st.info("Aún no se han generado gráficos en esta sesión.")
-            y_offset += im.size[1]
+        y_offset += im.size[1]
         buffer_combinado = BytesIO()
         combinada.save(buffer_combinado, format="PNG")
         buffer_combinado.seek(0)

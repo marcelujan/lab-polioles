@@ -409,8 +409,26 @@ with tab4:
         else:
             try:
                 from io import StringIO
-                contenido = StringIO(row["Contenido"])
-                df_espectro = pd.read_csv(contenido, sep=None, engine="python")
+                
+                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+                if extension == ".xlsx":
+                    binario = BytesIO(bytes.fromhex(row["Contenido"]))
+                    df_espectro = pd.read_excel(binario)
+                else:
+                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+                    separadores = [",", "	", ";", " "]
+                    for sep in separadores:
+                        contenido.seek(0)
+                        try:
+                            df_espectro = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df_espectro.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        st.warning("No se pudo detectar un separador válido.")
+                        continue
+
 
                 if df_espectro.shape[1] >= 2:
                     col_x, col_y = df_espectro.columns[:2]

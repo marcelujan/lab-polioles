@@ -352,3 +352,109 @@ with tab3:
                                        mime="application/zip")
     else:
         st.info("No hay espectros cargados.")
+
+
+# --- HOJA 4 ---
+with tab4:
+    st.title("Análisis de espectros")
+
+    muestras = cargar_muestras()
+    espectros_info = []
+    for m in muestras:
+        for e in m.get("espectros", []):
+            espectros_info.append({
+                "Muestra": m["nombre"],
+                "Tipo": e.get("tipo", ""),
+                "Nombre archivo": e.get("nombre_archivo", ""),
+                "Observaciones": e.get("observaciones", ""),
+                "Contenido": e.get("contenido"),
+                "Es imagen": e.get("es_imagen", False)
+            })
+
+    df_esp = pd.DataFrame(espectros_info)
+
+    st.subheader("Filtrar espectros")
+    muestras_disp = df_esp["Muestra"].unique().tolist()
+    tipos_disp = df_esp["Tipo"].unique().tolist()
+
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=muestras_disp)
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=tipos_disp)
+    solo_datos = st.checkbox("Mostrar solo espectros numéricos", value=False)
+    solo_imagenes = st.checkbox("Mostrar solo imágenes", value=False)
+
+    df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
+
+    if solo_datos:
+        df_filtrado = df_filtrado[~df_filtrado["Es imagen"]]
+    if solo_imagenes:
+        df_filtrado = df_filtrado[df_filtrado["Es imagen"]]
+
+    st.subheader("Espectros visualizados")
+
+    for _, row in df_filtrado.iterrows():
+        st.markdown(f"**{row['Muestra']}** – *{row['Tipo']}* – {row['Nombre archivo']}")
+        st.markdown(f"`{row['Observaciones']}`")
+
+        if row["Es imagen"]:
+            st.image(BytesIO(bytes.fromhex(row["Contenido"])), use_column_width=True)
+        else:
+            try:
+                from io import StringIO, BytesIO
+                import pandas as pd
+
+                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+
+                if extension == ".xlsx":
+                    binario = BytesIO(bytes.fromhex(row["Contenido"]))
+                    df_esp = pd.read_excel(binario)
+                    for col in df_esp.columns:
+                        if df_esp[col].dtype == object:
+                            df_esp[col] = df_esp[col].astype(str).str.replace(",", ".", regex=False)
+                            try:
+                                df_esp[col] = df_esp[col].astype(float)
+                            except:
+                                pass
+                else:
+                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+                    separadores = [",", "\t", ";", " "]
+                    for sep in separadores:
+                        contenido.seek(0)
+                        try:
+                            df_esp = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df_esp.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        st.warning("No se pudo detectar un separador válido.")
+                        continue
+
+                if df_esp.shape[1] >= 2:
+                    col_x, col_y = df_esp.columns[:2]
+                    fig, ax = plt.subplots()
+                    ax.plot(df_esp[col_x], df_esp[col_y])
+                    ax.set_xlabel(col_x)
+                    ax.set_ylabel(col_y)
+                    st.pyplot(fig)
+
+                    buf_img = BytesIO()
+                    fig.savefig(buf_img, format="png")
+                    st.download_button("📷 Descargar gráfico", data=buf_img.getvalue(),
+                                       file_name=f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_grafico.png",
+                                       mime="image/png", key=f"btn_grafico_{row['Muestra']}_{row['Tipo']}")
+
+                    if st.checkbox(f"🔍 Ver tabla de datos: {row['Muestra']} - {row['Tipo']}",
+                                   key=f"tabla_{row['Muestra']}_{row['Tipo']}"):
+                        st.dataframe(df_esp)
+
+                    buf_excel = BytesIO()
+                    with pd.ExcelWriter(buf_excel, engine='xlsxwriter') as writer:
+                        df_esp.to_excel(writer, index=False, sheet_name='Espectro')
+                    st.download_button("📥 Descargar datos", data=buf_excel.getvalue(),
+                                       file_name=f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_datos.xlsx",
+                                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                       key=f"btn_datos_{row['Muestra']}_{row['Tipo']}")
+                else:
+                    st.warning("El archivo tiene menos de dos columnas.")
+            except Exception as ex:
+                st.error(f"❌ Error al procesar espectro: {ex}")

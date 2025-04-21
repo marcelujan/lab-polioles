@@ -402,8 +402,7 @@ with tab4:
 
     for _, row in df_filtrado.iterrows():
         st.markdown(f"**{row['Muestra']}** – *{row['Tipo']}* – {row['Nombre archivo']}")
-        st.markdown(f"`{row['Observaciones']}`")
-
+        
         if row["Es imagen"]:
             st.image(BytesIO(bytes.fromhex(row["Contenido"])), use_column_width=True)
         else:

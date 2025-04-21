@@ -408,18 +408,10 @@ with tab4:
             try:
                 from io import StringIO
                 contenido = StringIO(row["Contenido"])
-                separadores = [",", "\t", ";", " "]
-                for sep in separadores:
-                    contenido.seek(0)
-                    try:
-                        df_espectro = pd.read_csv(contenido, sep=sep, engine="python")
-                        if df_espectro.shape[1] >= 2:
-                            break
-                    except:
-                        continue
-                else:
-                    st.warning("No se pudo detectar un separador válido.")
-                    continue
+                try:
+                    df_espectro = pd.read_csv(contenido, sep=None, engine="python")
+                except:
+                    df_espectro = pd.read_table(contenido)
 
                 if df_espectro.shape[1] >= 2:
                     col_x, col_y = df_espectro.columns[:2]

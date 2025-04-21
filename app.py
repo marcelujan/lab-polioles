@@ -523,6 +523,9 @@ with tab4:
     st.markdown("---")
     st.subheader("📦 Descargar selección")
 
+    figuras_combinadas = locals().get("figuras_combinadas", [])
+    tablas_combinadas = locals().get("tablas_combinadas", [])
+
     if len(figuras_combinadas) > 0:
         from PIL import Image
         import numpy as np
@@ -560,6 +563,7 @@ with tab4:
                            file_name="graficos_seleccionados.png", mime="image/png")
 
         st.download_button("📊 Descargar Excel resumen", data=buffer_excel.getvalue(),
-                           file_name="tablas_seleccionadas.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                           file_name="tablas_seleccionadas.xlsx",
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     else:
         st.info("Aún no se han generado gráficos en esta sesión.")

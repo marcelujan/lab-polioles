@@ -432,7 +432,12 @@ with tab4:
                 if df_esp.shape[1] >= 2:
                     col_x, col_y = df_esp.columns[:2]
                     min_x, max_x = float(df_esp[col_x].min()), float(df_esp[col_x].max())
-                    x_range = st.slider("Seleccionar rango en X", min_value=min_x, max_value=max_x, value=(min_x, max_x))
+                    col_r1, col_r2 = st.columns(2)
+with col_r1:
+    x_min_manual = st.number_input("X mínimo", min_value=min_x, max_value=max_x, value=min_x, key=f"xmin_{row['Muestra']}_{row['Tipo']}")
+with col_r2:
+    x_max_manual = st.number_input("X máximo", min_value=min_x, max_value=max_x, value=max_x, key=f"xmax_{row['Muestra']}_{row['Tipo']}")
+x_range = (x_min_manual, x_max_manual)
                     df_filtrado = df_esp[(df_esp[col_x] >= x_range[0]) & (df_esp[col_x] <= x_range[1])]
                     fig, ax = plt.subplots()
                     ax.plot(df_filtrado[col_x], df_filtrado[col_y])

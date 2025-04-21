@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import toml
@@ -225,7 +226,7 @@ with tab2:
         st.pyplot(fig)
 
         buf_img = BytesIO()
-        nombre_archivo = f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_X{int(x_range[0])}-{int(x_range[1])}_grafico.png"
+        fig.savefig(buf_img, format="png")
         st.download_button("📷 Descargar gráfico", buf_img.getvalue(),
                            file_name=f"grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
                            mime="image/png")
@@ -263,6 +264,7 @@ with tab3:
                 if df_esp.shape[1] >= 2:
                     col_x, col_y = df_esp.columns[:2]
                     min_x, max_x = float(df_esp[col_x].min()), float(df_esp[col_x].max())
+                    x_range = st.slider("Rango eje X", min_value=min_x, max_value=max_x, value=(min_x, max_x))
                     df_filtrado = df_esp[(df_esp[col_x] >= x_range[0]) & (df_esp[col_x] <= x_range[1])]
 
                     fig, ax = plt.subplots()
@@ -281,7 +283,7 @@ with tab3:
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
-            "contenido": archivo.getvalue().hex(),
+            "contenido": archivo.getvalue().decode("latin1") if not es_imagen else archivo.getvalue().hex(),
             "es_imagen": es_imagen,
         }
         espectros.append(nuevo)
@@ -352,63 +354,18 @@ with tab3:
         st.info("No hay espectros cargados.")
 
 
+
 # --- HOJA 4 ---
 with tab4:
-    figuras_combinadas = []
-    tablas_combinadas = []
-
-    st.markdown("---")
-    st.subheader("📦 Descargar selección")
-    if len(figuras_combinadas) > 0:
-        from PIL import Image
-        import numpy as np
-        from io import BytesIO
-        import pandas as pd
-        imgs = [Image.fromarray(np.array(fig.canvas.buffer_rgba())) for fig in figuras_combinadas]
-        alturas = [im.size[1] for im in imgs]
-        ancho = max(im.size[0] for im in imgs)
-        altura_total = sum(alturas)
-        combinada = Image.new("RGBA", (ancho, altura_total))
-        y_offset = 0
-        for im in imgs:
-            combinada.paste(im, (0, y_offset))
-            y_offset += im.size[1]
-        buffer_img = BytesIO()
-        combinada.save(buffer_img, format="PNG")
-        buffer_img.seek(0)
-        buffer_excel = BytesIO()
-        with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-            resumen = pd.DataFrame()
-            for nombre, tipo, tabla in tablas_combinadas:
-                nombre_hoja = f"{nombre}_{tipo}".replace(" ", "_")[:31]
-                tabla.to_excel(writer, index=False, sheet_name=nombre_hoja)
-                tabla_ren = tabla.rename(columns={tabla.columns[1]: f"{nombre} - {tipo}"})
-                if resumen.empty:
-                    resumen = tabla_ren
-                else:
-                    resumen = pd.merge(resumen, tabla_ren, on=tabla.columns[0], how="outer")
-            resumen.to_excel(writer, index=False, sheet_name="Resumen")
-        buffer_excel.seek(0)
-        st.download_button("🖼️ Descargar imagen combinada", data=buffer_img.getvalue(),
-                           file_name="graficos_seleccionados.png", mime="image/png")
-        st.download_button("📊 Descargar Excel resumen", data=buffer_excel.getvalue(),
-                           file_name="tablas_seleccionadas.xlsx",
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    else:
-        st.info("Aún no se han generado gráficos en esta sesión.")
-        y_offset += im.size[1]
-        buffer_combinado = BytesIO()
-        combinada.save(buffer_combinado, format="PNG")
-        buffer_combinado.seek(0)
-        st.download_button("📦 Descargar selección", data=buffer_combinado.getvalue(),
-                           file_name="graficos_seleccionados.png", mime="image/png")
-
-with tab4:
-    figuras_combinadas = []
-    tablas_combinadas = []
     st.title("Análisis de espectros")
 
     muestras = cargar_muestras()
+
+    if not muestras:
+        st.info("No hay muestras cargadas con espectros.")
+        st.stop()
+
+    # Construir lista de espectros con metadatos
     espectros_info = []
     for m in muestras:
         for e in m.get("espectros", []):
@@ -427,8 +384,8 @@ with tab4:
     muestras_disp = df_esp["Muestra"].unique().tolist()
     tipos_disp = df_esp["Tipo"].unique().tolist()
 
-    muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
-    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=muestras_disp)
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=tipos_disp)
     solo_datos = st.checkbox("Mostrar solo espectros numéricos", value=False)
     solo_imagenes = st.checkbox("Mostrar solo imágenes", value=False)
 
@@ -449,115 +406,21 @@ with tab4:
             st.image(BytesIO(bytes.fromhex(row["Contenido"])), use_column_width=True)
         else:
             try:
-                from io import StringIO, BytesIO
-                import pandas as pd
+                from io import StringIO
+                contenido = StringIO(row["Contenido"])
+                try:
+                    df_espectro = pd.read_csv(contenido, sep=None, engine="python")
+                except:
+                    df_espectro = pd.read_table(contenido)
 
-                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-
-                if extension == ".xlsx":
-                    binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                    df_esp = pd.read_excel(binario)
-                    for col in df_esp.columns:
-                        if df_esp[col].dtype == object:
-                            df_esp[col] = df_esp[col].astype(str).str.replace(",", ".", regex=False)
-                            try:
-                                df_esp[col] = df_esp[col].astype(float)
-                            except:
-                                pass
-                else:
-                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
-                    separadores = [",", "\t", ";", " "]
-                    for sep in separadores:
-                        contenido.seek(0)
-                        try:
-                            df_esp = pd.read_csv(contenido, sep=sep, engine="python")
-                            if df_esp.shape[1] >= 2:
-                                break
-                        except:
-                            continue
-                    else:
-                        st.warning("No se pudo detectar un separador válido.")
-                        continue
-
-                if df_esp.shape[1] >= 2:
-                    col_x, col_y = df_esp.columns[:2]
-                    min_x, max_x = float(df_esp[col_x].min()), float(df_esp[col_x].max())
-                    col_r1, col_r2 = st.columns(2)
-                    with col_r1:
-                        x_min_manual = st.number_input("X mínimo", min_value=min_x, max_value=max_x, value=min_x, key=f"xmin_{row['Muestra']}_{row['Tipo']}")
-                    with col_r2:
-                        x_max_manual = st.number_input("X máximo", min_value=min_x, max_value=max_x, value=max_x, key=f"xmax_{row['Muestra']}_{row['Tipo']}")
-                        x_range = (x_min_manual, x_max_manual)
-                    df_filtrado = df_esp[(df_esp[col_x] >= x_range[0]) & (df_esp[col_x] <= x_range[1])]
+                if df_espectro.shape[1] >= 2:
+                    col_x, col_y = df_espectro.columns[:2]
                     fig, ax = plt.subplots()
-                    ax.plot(df_filtrado[col_x], df_filtrado[col_y])
+                    ax.plot(df_espectro[col_x], df_espectro[col_y])
                     ax.set_xlabel(col_x)
                     ax.set_ylabel(col_y)
                     st.pyplot(fig)
-
-                    buf_img = BytesIO()
-                    nombre_archivo = f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_X{int(x_range[0])}-{int(x_range[1])}_grafico.png"
-                    st.download_button("📷 Descargar gráfico", data=buf_img.getvalue(),
-                                       file_name=nombre_archivo,
-                                       mime="image/png", key=f"btn_grafico_{row['Muestra']}_{row['Tipo']}")
-
-                    if st.checkbox(f"🔍 Ver tabla de datos: {row['Muestra']} - {row['Tipo']}",
-                                   key=f"tabla_{row['Muestra']}_{row['Tipo']}"):
-                        st.dataframe(df_esp)
-
-                    buf_excel = BytesIO()
-                    with pd.ExcelWriter(buf_excel, engine='xlsxwriter') as writer:
-                        df_esp.to_excel(writer, index=False, sheet_name='Espectro')
-                    st.download_button("📥 Descargar datos", data=buf_excel.getvalue(),
-                                       file_name=f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_datos.xlsx",
-                                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                       key=f"btn_datos_{row['Muestra']}_{row['Tipo']}")
                 else:
                     st.warning("El archivo tiene menos de dos columnas.")
             except Exception as ex:
-                st.error(f"❌ Error al procesar espectro: {ex}")
-
-    # --- Al final de Hoja 4 ---
-    st.markdown("---")
-    st.subheader("📦 Descargar selección")
-
-    if len(figuras_combinadas) > 0:
-        from PIL import Image
-        import numpy as np
-        from io import BytesIO
-        import pandas as pd
-
-        imgs = [Image.fromarray(np.array(fig.canvas.buffer_rgba())) for fig in figuras_combinadas]
-        alturas = [im.size[1] for im in imgs]
-        ancho = max(im.size[0] for im in imgs)
-        altura_total = sum(alturas)
-        combinada = Image.new("RGBA", (ancho, altura_total))
-        y_offset = 0
-        for im in imgs:
-            combinada.paste(im, (0, y_offset))
-            y_offset += im.size[1]
-        buffer_img = BytesIO()
-        combinada.save(buffer_img, format="PNG")
-        buffer_img.seek(0)
-
-        buffer_excel = BytesIO()
-        with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-            resumen = pd.DataFrame()
-            for nombre, tipo, tabla in tablas_combinadas:
-                nombre_hoja = f"{nombre}_{tipo}".replace(" ", "_")[:31]
-                tabla.to_excel(writer, index=False, sheet_name=nombre_hoja)
-                tabla_ren = tabla.rename(columns={tabla.columns[1]: f"{nombre} - {tipo}"})
-                if resumen.empty:
-                    resumen = tabla_ren
-                else:
-                    resumen = pd.merge(resumen, tabla_ren, on=tabla.columns[0], how="outer")
-            resumen.to_excel(writer, index=False, sheet_name="Resumen")
-        buffer_excel.seek(0)
-
-        st.download_button("🖼️ Descargar imagen combinada", data=buffer_img.getvalue(),
-                           file_name="graficos_seleccionados.png", mime="image/png")
-
-        st.download_button("📊 Descargar Excel resumen", data=buffer_excel.getvalue(),
-                           file_name="tablas_seleccionadas.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    else:
-        st.info("Aún no se han generado gráficos en esta sesión.")
+                st.error(f"No se pudo graficar el archivo: {ex}")

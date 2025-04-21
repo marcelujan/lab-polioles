@@ -258,6 +258,12 @@ with tab3:
             try:
                 if extension == ".xlsx":
                     df_esp = pd.read_excel(archivo)
+                    for col in df_esp.columns:
+                        if df_esp[col].dtype == object:
+                            try:
+                                df_esp[col] = df_esp[col].str.replace(",", ".").astype(float)
+                            except:
+                                pass
                 else:
                     df_esp = pd.read_csv(archivo, sep=None, engine="python")
 

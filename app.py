@@ -362,23 +362,23 @@ with tab4:
     from PIL import Image
     import numpy as np
 
-    if figuras_combinadas
-        imgs = [Image.fromarray(np.array(fig.canvas.renderer.buffer_rgba())) for fig in st.session_state.figuras_guardadas]
-        alturas = [im.size[1] for im in imgs]
-        ancho = max(im.size[0] for im in imgs)
-        altura_total = sum(alturas)
-        combinada = Image.new("RGBA", (ancho, altura_total))
-        y_offset = 0
-        for im in imgs:
-            combinada.paste(im, (0, y_offset))
-            y_offset += im.size[1]
-        buffer_combinado = BytesIO()
-        combinada.save(buffer_combinado, format="PNG")
-        buffer_combinado.seek(0)
-        st.download_button("📦 Descargar selección", data=buffer_combinado.getvalue(),
-                           file_name="graficos_seleccionados.png", mime="image/png")
-    else:
-        st.info("Aún no se han generado gráficos en esta sesión.")
+        if figuras_combinadas
+            imgs = [Image.fromarray(np.array(fig.canvas.renderer.buffer_rgba())) for fig in st.session_state.figuras_guardadas]
+            alturas = [im.size[1] for im in imgs]
+            ancho = max(im.size[0] for im in imgs)
+            altura_total = sum(alturas)
+            combinada = Image.new("RGBA", (ancho, altura_total))
+            y_offset = 0
+            for im in imgs:
+                combinada.paste(im, (0, y_offset))
+                y_offset += im.size[1]
+            buffer_combinado = BytesIO()
+            combinada.save(buffer_combinado, format="PNG")
+            buffer_combinado.seek(0)
+            st.download_button("📦 Descargar selección", data=buffer_combinado.getvalue(),
+                               file_name="graficos_seleccionados.png", mime="image/png")
+        else:
+            st.info("Aún no se han generado gráficos en esta sesión.")
 
 with tab4:
     st.title("Análisis de espectros")

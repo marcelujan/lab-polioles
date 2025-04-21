@@ -223,10 +223,7 @@ with tab2:
             ax.annotate(txt, (x[i], y[i]))
         ax.set_xlabel(tipo_x)
         ax.set_ylabel(tipo_y)
-        st.pyplot(fig)
-if se_grafico_algo:
-            ax.set_xlabel("X")
-            ax.set_ylabel("Y")
+        st.pyplot(fig)            ax.set_ylabel("Y")
             ax.legend()
             st.pyplot(fig)
 

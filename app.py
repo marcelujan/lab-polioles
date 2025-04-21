@@ -541,6 +541,7 @@ with tab4:
         for im in imgs:
             combinada.paste(im, (0, y_offset))
             y_offset += im.size[1]
+
         buffer_img = BytesIO()
         combinada.save(buffer_img, format="PNG")
         buffer_img.seek(0)

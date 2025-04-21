@@ -319,7 +319,7 @@ with tab3:
                     st.success("Espectro eliminado.")
                     st.rerun()
 
-        if st.button("📦 Descargar espectros"):
+        with st.spinner("Preparando archivo ZIP..."):
             with TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
@@ -347,7 +347,7 @@ with tab3:
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
-                    st.download_button("📦 Descargar espectros", data=final_zip.read(),
+                    st.download_button("📦 Descargar espectros", data=final_zip.read(), key="descarga_espectros_btn",
                                        file_name=os.path.basename(zip_path),
                                        mime="application/zip")
     else:

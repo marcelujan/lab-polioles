@@ -358,6 +358,7 @@ with tab3:
 
 
 
+
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
@@ -396,8 +397,10 @@ with tab4:
         df_filtrado = df_filtrado[df_filtrado["Es imagen"]]
 
     st.subheader("Espectros combinados")
-    fig, ax = plt.subplots()
-    se_grafico_algo = False
+
+    # Definir los rangos globales predeterminados
+    rango_x = [float('inf'), float('-inf')]
+    rango_y = [float('inf'), float('-inf')]
 
     for _, row in df_filtrado.iterrows():
         if not row["Es imagen"]:
@@ -407,55 +410,97 @@ with tab4:
                 extension = os.path.splitext(row["Nombre archivo"])[1].lower()
                 if extension == ".xlsx":
                     binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                    df_esp = pd.read_excel(binario)
+                    df_temp = pd.read_excel(binario)
                 else:
                     contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
                     separadores = [",", "\t", ";", " "]
                     for sep in separadores:
                         contenido.seek(0)
                         try:
-                            df_esp = pd.read_csv(contenido, sep=sep, engine="python")
-                            if df_esp.shape[1] >= 2:
+                            df_temp = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df_temp.shape[1] >= 2:
                                 break
                         except:
                             continue
                     else:
                         continue
 
-                col_x, col_y = df_esp.columns[:2]
-                df_esp[col_x] = df_esp[col_x].astype(str).str.replace(',', '.', regex=False)
-                df_esp[col_y] = df_esp[col_y].astype(str).str.replace(',', '.', regex=False)
-                df_esp[col_x] = pd.to_numeric(df_esp[col_x], errors="coerce")
-                df_esp[col_y] = pd.to_numeric(df_esp[col_y], errors="coerce")
+                col_x, col_y = df_temp.columns[:2]
+                df_temp[col_x] = df_temp[col_x].astype(str).str.replace(",", ".", regex=False)
+                df_temp[col_y] = df_temp[col_y].astype(str).str.replace(",", ".", regex=False)
+                df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors="coerce")
+                df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors="coerce")
 
-                min_x, max_x = df_esp[col_x].dropna().agg(["min", "max"])
-                min_y, max_y = df_esp[col_y].dropna().agg(["min", "max"])
+                min_x, max_x = df_temp[col_x].dropna().agg(["min", "max"])
+                min_y, max_y = df_temp[col_y].dropna().agg(["min", "max"])
 
-                colx1, colx2 = st.columns(2)
-                with colx1:
-                    x_min = st.number_input(f"X mínimo – {row['Nombre archivo']}", value=float(min_x), key=f"xmin_{row['Nombre archivo']}")
-                    x_max = st.number_input(f"X máximo – {row['Nombre archivo']}", value=float(max_x), key=f"xmax_{row['Nombre archivo']}")
-                coly1, coly2 = st.columns(2)
-                with coly1:
-                    y_min = st.number_input(f"Y mínimo – {row['Nombre archivo']}", value=float(min_y), key=f"ymin_{row['Nombre archivo']}")
-                    y_max = st.number_input(f"Y máximo – {row['Nombre archivo']}", value=float(max_y), key=f"ymax_{row['Nombre archivo']}")
+                rango_x[0] = min(rango_x[0], min_x)
+                rango_x[1] = max(rango_x[1], max_x)
+                rango_y[0] = min(rango_y[0], min_y)
+                rango_y[1] = max(rango_y[1], max_y)
 
-                df_fil = df_esp[
-                    (df_esp[col_x] >= x_min) & (df_esp[col_x] <= x_max) &
-                    (df_esp[col_y] >= y_min) & (df_esp[col_y] <= y_max)
-                ]
-                if df_fil.empty:
+            except:
+                continue
+
+    if rango_x[0] == float('inf') or rango_y[0] == float('inf'):
+        st.warning("No se pudo graficar ningún espectro válido.")
+    else:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            x_min = st.number_input("X mínimo", value=float(rango_x[0]))
+        with col2:
+            x_max = st.number_input("X máximo", value=float(rango_x[1]))
+        with col3:
+            y_min = st.number_input("Y mínimo", value=float(rango_y[0]))
+        with col4:
+            y_max = st.number_input("Y máximo", value=float(rango_y[1]))
+
+        fig, ax = plt.subplots()
+        se_grafico_algo = False
+
+        for _, row in df_filtrado.iterrows():
+            if not row["Es imagen"]:
+                try:
+                    extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+                    if extension == ".xlsx":
+                        binario = BytesIO(bytes.fromhex(row["Contenido"]))
+                        df_esp = pd.read_excel(binario)
+                    else:
+                        contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+                        separadores = [",", "\t", ";", " "]
+                        for sep in separadores:
+                            contenido.seek(0)
+                            try:
+                                df_esp = pd.read_csv(contenido, sep=sep, engine="python")
+                                if df_esp.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            continue
+
+                    col_x, col_y = df_esp.columns[:2]
+                    df_esp[col_x] = df_esp[col_x].astype(str).str.replace(',', '.', regex=False)
+                    df_esp[col_y] = df_esp[col_y].astype(str).str.replace(',', '.', regex=False)
+                    df_esp[col_x] = pd.to_numeric(df_esp[col_x], errors='coerce')
+                    df_esp[col_y] = pd.to_numeric(df_esp[col_y], errors='coerce')
+
+                    df_fil = df_esp[
+                        (df_esp[col_x] >= x_min) & (df_esp[col_x] <= x_max) &
+                        (df_esp[col_y] >= y_min) & (df_esp[col_y] <= y_max)
+                    ]
+                    if df_fil.empty:
+                        continue
+
+                    ax.plot(df_fil[col_x], df_fil[col_y], label=f"{row['Muestra']} – {row['Tipo']}")
+                    se_grafico_algo = True
+                except:
                     continue
 
-                ax.plot(df_fil[col_x], df_fil[col_y], label=f"{row['Muestra']} – {row['Tipo']}")
-                se_grafico_algo = True
-            except Exception as ex:
-                st.error(f"❌ {row['Nombre archivo']}: {ex}")
-
-    if se_grafico_algo:
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.legend()
-        st.pyplot(fig)
-    else:
-        st.warning("No se pudo graficar ningún espectro válido.")
+        if se_grafico_algo:
+            ax.set_xlabel("X")
+            ax.set_ylabel("Y")
+            ax.legend()
+            st.pyplot(fig)
+        else:
+            st.warning("No se pudo graficar ningún espectro válido.")

@@ -433,8 +433,7 @@ with tab4:
                 if df_espectro.shape[1] >= 2:
                     col_x, col_y = df_espectro.columns[:2]
 
-                    st.write(f"🔍 Columnas detectadas: X = `{col_x}`, Y = `{col_y}`")
-
+                    
                     df_espectro[col_x] = df_espectro[col_x].astype(str).str.replace(',', '.', regex=False)
                     df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
                     df_espectro[col_y] = df_espectro[col_y].astype(str).str.replace(',', '.', regex=False)
@@ -443,9 +442,7 @@ with tab4:
                     min_x, max_x = df_espectro[col_x].dropna().agg(["min", "max"])
                     min_y, max_y = df_espectro[col_y].dropna().agg(["min", "max"])
 
-                    st.write(f"📊 Rango X detectado: {min_x} a {max_x}")
-                    st.write(f"📊 Rango Y detectado: {min_y} a {max_y}")
-
+                                        
                     colx1, colx2 = st.columns(2)
                     with colx1:
                         x_min = st.number_input("X mínimo", value=float(min_x), key=f"xmin_{row['Nombre archivo']}")

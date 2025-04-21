@@ -357,13 +357,13 @@ with tab3:
 with tab4:
 
     st.subheader("Descargar selección")
-    if "figuras_guardadas" not in st.session_state:
-        st.session_state.figuras_guardadas = []
+    if False:  # eliminado el uso de session_state
+        # eliminado el uso de session_state
 
     from PIL import Image
     import numpy as np
 
-    if st.session_state.figuras_guardadas:
+    if figuras_combinadas
         imgs = [Image.fromarray(np.array(fig.canvas.renderer.buffer_rgba())) for fig in st.session_state.figuras_guardadas]
         alturas = [im.size[1] for im in imgs]
         ancho = max(im.size[0] for im in imgs)

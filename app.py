@@ -227,6 +227,7 @@ with tab2:
 
         buf_img = BytesIO()
         fig.savefig(buf_img, format="png")
+                        nombre_archivo = f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_X{int(x_range[0])}-{int(x_range[1])}_grafico.png"
         st.download_button("📷 Descargar gráfico", buf_img.getvalue(),
                            file_name=f"grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
                            mime="image/png")
@@ -377,8 +378,8 @@ with tab4:
     muestras_disp = df_esp["Muestra"].unique().tolist()
     tipos_disp = df_esp["Tipo"].unique().tolist()
 
-    muestras_sel = st.multiselect("Muestras", muestras_disp, default=muestras_disp)
-    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=tipos_disp)
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
     solo_datos = st.checkbox("Mostrar solo espectros numéricos", value=False)
     solo_imagenes = st.checkbox("Mostrar solo imágenes", value=False)
 
@@ -431,16 +432,20 @@ with tab4:
 
                 if df_esp.shape[1] >= 2:
                     col_x, col_y = df_esp.columns[:2]
+                    min_x, max_x = float(df_esp[col_x].min()), float(df_esp[col_x].max())
+                    x_range = st.slider("Seleccionar rango en X", min_value=min_x, max_value=max_x, value=(min_x, max_x))
+                    df_filtrado = df_esp[(df_esp[col_x] >= x_range[0]) & (df_esp[col_x] <= x_range[1])]
                     fig, ax = plt.subplots()
-                    ax.plot(df_esp[col_x], df_esp[col_y])
+                    ax.plot(df_filtrado[col_x], df_filtrado[col_y])
                     ax.set_xlabel(col_x)
                     ax.set_ylabel(col_y)
                     st.pyplot(fig)
 
                     buf_img = BytesIO()
                     fig.savefig(buf_img, format="png")
+                        nombre_archivo = f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_X{int(x_range[0])}-{int(x_range[1])}_grafico.png"
                     st.download_button("📷 Descargar gráfico", data=buf_img.getvalue(),
-                                       file_name=f"{row['Muestra'].replace(' ', '_')}_{row['Tipo'].replace(' ', '_')}_grafico.png",
+                                       file_name=nombre_archivo,
                                        mime="image/png", key=f"btn_grafico_{row['Muestra']}_{row['Tipo']}")
 
                     if st.checkbox(f"🔍 Ver tabla de datos: {row['Muestra']} - {row['Tipo']}",

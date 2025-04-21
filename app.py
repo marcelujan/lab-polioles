@@ -417,7 +417,9 @@ with tab4:
 
                     st.write(f"🔍 Columnas detectadas: X = `{col_x}`, Y = `{col_y}`")
 
+                    df_espectro[col_x] = df_espectro[col_x].astype(str).str.replace(',', '.', regex=False)
                     df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
+                    df_espectro[col_y] = df_espectro[col_y].astype(str).str.replace(',', '.', regex=False)
                     df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
 
                     min_x, max_x = df_espectro[col_x].dropna().agg(["min", "max"])

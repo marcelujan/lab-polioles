@@ -352,3 +352,19 @@ with tab3:
                                        mime="application/zip")
     else:
         st.info("No hay espectros cargados.")
+
+
+
+# --- HOJA 4 ---
+with tab4:
+    st.title("Análisis de espectros (DEBUG)")
+
+    try:
+        muestras = cargar_muestras()
+        st.write(f"Se cargaron {len(muestras)} muestras.")
+        for m in muestras:
+            st.write(f"Muestra: {m['nombre']}, espectros: {len(m.get('espectros', []))}")
+            if m.get("espectros"):
+                st.write("Primer espectro:", m["espectros"][0])
+    except Exception as e:
+        st.error(f"Error general en Hoja 4: {e}")

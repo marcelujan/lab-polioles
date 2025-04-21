@@ -224,68 +224,66 @@ with tab2:
         ax.set_xlabel(tipo_x)
         ax.set_ylabel(tipo_y)
         st.pyplot(fig)
-
             # --- Botón para descargar el gráfico como PNG ---
             buf_img = BytesIO()
             fig.savefig(buf_img, format="png")
             st.download_button(
-                "📷 Descargar gráfico como PNG",
-                data=buf_img.getvalue(),
-                file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
-                mime="image/png"
+            "📷 Descargar gráfico como PNG",
+            data=buf_img.getvalue(),
+            file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
+            mime="image/png"
             )
-
+            
             # --- Botón para descargar los datos como Excel ---
             df_concat = pd.DataFrame()
             for _, row in df_filtrado.iterrows():
-                if not row["Es imagen"]:
-                    try:
-                        extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-                        if extension == ".xlsx":
-                            binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                            df_temp = pd.read_excel(binario)
-                        else:
-                            contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
-                            separadores = [",", "\t", ";", " "]
-                            for sep in separadores:
-                                contenido.seek(0)
-                                try:
-                                    df_temp = pd.read_csv(contenido, sep=sep, engine="python")
-                                    if df_temp.shape[1] >= 2:
-                                        break
-                                except:
-                                    continue
-                            else:
-                                continue
-
-                        col_x, col_y = df_temp.columns[:2]
-                        df_temp[col_x] = df_temp[col_x].astype(str).str.replace(',', '.', regex=False)
-                        df_temp[col_y] = df_temp[col_y].astype(str).str.replace(',', '.', regex=False)
-                        df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors='coerce')
-                        df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors='coerce')
-
-                        df_fil = df_temp[
-                            (df_temp[col_x] >= x_min) & (df_temp[col_x] <= x_max) &
-                            (df_temp[col_y] >= y_min) & (df_temp[col_y] <= y_max)
-                        ]
-                        df_fil.insert(0, "Muestra", row["Muestra"])
-                        df_fil.insert(1, "Tipo", row["Tipo"])
-                        df_concat = pd.concat([df_concat, df_fil], ignore_index=True)
-                    except:
-                        continue
-
+            if not row["Es imagen"]:
+            try:
+            extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+            if extension == ".xlsx":
+            binario = BytesIO(bytes.fromhex(row["Contenido"]))
+            df_temp = pd.read_excel(binario)
+            else:
+            contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+            separadores = [",", "\t", ";", " "]
+            for sep in separadores:
+            contenido.seek(0)
+            try:
+            df_temp = pd.read_csv(contenido, sep=sep, engine="python")
+            if df_temp.shape[1] >= 2:
+            break
+            except:
+            continue
+            else:
+            continue
+            
+            col_x, col_y = df_temp.columns[:2]
+            df_temp[col_x] = df_temp[col_x].astype(str).str.replace(',', '.', regex=False)
+            df_temp[col_y] = df_temp[col_y].astype(str).str.replace(',', '.', regex=False)
+            df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors='coerce')
+            df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors='coerce')
+            
+            df_fil = df_temp[
+            (df_temp[col_x] >= x_min) & (df_temp[col_x] <= x_max) &
+            (df_temp[col_y] >= y_min) & (df_temp[col_y] <= y_max)
+            ]
+            df_fil.insert(0, "Muestra", row["Muestra"])
+            df_fil.insert(1, "Tipo", row["Tipo"])
+            df_concat = pd.concat([df_concat, df_fil], ignore_index=True)
+            except:
+            continue
+            
             if not df_concat.empty:
-                excel_buffer = BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                    df_concat.to_excel(writer, index=False, sheet_name="Datos del gráfico")
-
-                st.download_button(
-                    "📄 Descargar datos como Excel",
-                    data=excel_buffer.getvalue(),
-                    file_name=f"datos_grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            df_concat.to_excel(writer, index=False, sheet_name="Datos del gráfico")
+            
+            st.download_button(
+            "📄 Descargar datos como Excel",
+            data=excel_buffer.getvalue(),
+            file_name=f"datos_grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
         buf_img = BytesIO()
         fig.savefig(buf_img, format="png")
@@ -334,68 +332,66 @@ with tab3:
                     ax.set_xlabel(col_x)
                     ax.set_ylabel(col_y)
                     st.pyplot(fig)
-
             # --- Botón para descargar el gráfico como PNG ---
             buf_img = BytesIO()
             fig.savefig(buf_img, format="png")
             st.download_button(
-                "📷 Descargar gráfico como PNG",
-                data=buf_img.getvalue(),
-                file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
-                mime="image/png"
+            "📷 Descargar gráfico como PNG",
+            data=buf_img.getvalue(),
+            file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
+            mime="image/png"
             )
-
+            
             # --- Botón para descargar los datos como Excel ---
             df_concat = pd.DataFrame()
             for _, row in df_filtrado.iterrows():
-                if not row["Es imagen"]:
-                    try:
-                        extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-                        if extension == ".xlsx":
-                            binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                            df_temp = pd.read_excel(binario)
-                        else:
-                            contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
-                            separadores = [",", "\t", ";", " "]
-                            for sep in separadores:
-                                contenido.seek(0)
-                                try:
-                                    df_temp = pd.read_csv(contenido, sep=sep, engine="python")
-                                    if df_temp.shape[1] >= 2:
-                                        break
-                                except:
-                                    continue
-                            else:
-                                continue
-
-                        col_x, col_y = df_temp.columns[:2]
-                        df_temp[col_x] = df_temp[col_x].astype(str).str.replace(',', '.', regex=False)
-                        df_temp[col_y] = df_temp[col_y].astype(str).str.replace(',', '.', regex=False)
-                        df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors='coerce')
-                        df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors='coerce')
-
-                        df_fil = df_temp[
-                            (df_temp[col_x] >= x_min) & (df_temp[col_x] <= x_max) &
-                            (df_temp[col_y] >= y_min) & (df_temp[col_y] <= y_max)
-                        ]
-                        df_fil.insert(0, "Muestra", row["Muestra"])
-                        df_fil.insert(1, "Tipo", row["Tipo"])
-                        df_concat = pd.concat([df_concat, df_fil], ignore_index=True)
-                    except:
-                        continue
-
+            if not row["Es imagen"]:
+            try:
+            extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+            if extension == ".xlsx":
+            binario = BytesIO(bytes.fromhex(row["Contenido"]))
+            df_temp = pd.read_excel(binario)
+            else:
+            contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+            separadores = [",", "\t", ";", " "]
+            for sep in separadores:
+            contenido.seek(0)
+            try:
+            df_temp = pd.read_csv(contenido, sep=sep, engine="python")
+            if df_temp.shape[1] >= 2:
+            break
+            except:
+            continue
+            else:
+            continue
+            
+            col_x, col_y = df_temp.columns[:2]
+            df_temp[col_x] = df_temp[col_x].astype(str).str.replace(',', '.', regex=False)
+            df_temp[col_y] = df_temp[col_y].astype(str).str.replace(',', '.', regex=False)
+            df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors='coerce')
+            df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors='coerce')
+            
+            df_fil = df_temp[
+            (df_temp[col_x] >= x_min) & (df_temp[col_x] <= x_max) &
+            (df_temp[col_y] >= y_min) & (df_temp[col_y] <= y_max)
+            ]
+            df_fil.insert(0, "Muestra", row["Muestra"])
+            df_fil.insert(1, "Tipo", row["Tipo"])
+            df_concat = pd.concat([df_concat, df_fil], ignore_index=True)
+            except:
+            continue
+            
             if not df_concat.empty:
-                excel_buffer = BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                    df_concat.to_excel(writer, index=False, sheet_name="Datos del gráfico")
-
-                st.download_button(
-                    "📄 Descargar datos como Excel",
-                    data=excel_buffer.getvalue(),
-                    file_name=f"datos_grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            df_concat.to_excel(writer, index=False, sheet_name="Datos del gráfico")
+            
+            st.download_button(
+            "📄 Descargar datos como Excel",
+            data=excel_buffer.getvalue(),
+            file_name=f"datos_grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
                 else:
                     st.warning("El archivo debe tener al menos dos columnas.")
             except Exception as e:
@@ -626,67 +622,65 @@ with tab4:
             ax.set_ylabel("Y")
             ax.legend()
             st.pyplot(fig)
-
             # --- Botón para descargar el gráfico como PNG ---
             buf_img = BytesIO()
             fig.savefig(buf_img, format="png")
             st.download_button(
-                "📷 Descargar gráfico como PNG",
-                data=buf_img.getvalue(),
-                file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
-                mime="image/png"
+            "📷 Descargar gráfico como PNG",
+            data=buf_img.getvalue(),
+            file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
+            mime="image/png"
             )
-
+            
             # --- Botón para descargar los datos como Excel ---
             df_concat = pd.DataFrame()
             for _, row in df_filtrado.iterrows():
-                if not row["Es imagen"]:
-                    try:
-                        extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-                        if extension == ".xlsx":
-                            binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                            df_temp = pd.read_excel(binario)
-                        else:
-                            contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
-                            separadores = [",", "\t", ";", " "]
-                            for sep in separadores:
-                                contenido.seek(0)
-                                try:
-                                    df_temp = pd.read_csv(contenido, sep=sep, engine="python")
-                                    if df_temp.shape[1] >= 2:
-                                        break
-                                except:
-                                    continue
-                            else:
-                                continue
-
-                        col_x, col_y = df_temp.columns[:2]
-                        df_temp[col_x] = df_temp[col_x].astype(str).str.replace(',', '.', regex=False)
-                        df_temp[col_y] = df_temp[col_y].astype(str).str.replace(',', '.', regex=False)
-                        df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors='coerce')
-                        df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors='coerce')
-
-                        df_fil = df_temp[
-                            (df_temp[col_x] >= x_min) & (df_temp[col_x] <= x_max) &
-                            (df_temp[col_y] >= y_min) & (df_temp[col_y] <= y_max)
-                        ]
-                        df_fil.insert(0, "Muestra", row["Muestra"])
-                        df_fil.insert(1, "Tipo", row["Tipo"])
-                        df_concat = pd.concat([df_concat, df_fil], ignore_index=True)
-                    except:
-                        continue
-
+            if not row["Es imagen"]:
+            try:
+            extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+            if extension == ".xlsx":
+            binario = BytesIO(bytes.fromhex(row["Contenido"]))
+            df_temp = pd.read_excel(binario)
+            else:
+            contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+            separadores = [",", "\t", ";", " "]
+            for sep in separadores:
+            contenido.seek(0)
+            try:
+            df_temp = pd.read_csv(contenido, sep=sep, engine="python")
+            if df_temp.shape[1] >= 2:
+            break
+            except:
+            continue
+            else:
+            continue
+            
+            col_x, col_y = df_temp.columns[:2]
+            df_temp[col_x] = df_temp[col_x].astype(str).str.replace(',', '.', regex=False)
+            df_temp[col_y] = df_temp[col_y].astype(str).str.replace(',', '.', regex=False)
+            df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors='coerce')
+            df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors='coerce')
+            
+            df_fil = df_temp[
+            (df_temp[col_x] >= x_min) & (df_temp[col_x] <= x_max) &
+            (df_temp[col_y] >= y_min) & (df_temp[col_y] <= y_max)
+            ]
+            df_fil.insert(0, "Muestra", row["Muestra"])
+            df_fil.insert(1, "Tipo", row["Tipo"])
+            df_concat = pd.concat([df_concat, df_fil], ignore_index=True)
+            except:
+            continue
+            
             if not df_concat.empty:
-                excel_buffer = BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                    df_concat.to_excel(writer, index=False, sheet_name="Datos del gráfico")
-
-                st.download_button(
-                    "📄 Descargar datos como Excel",
-                    data=excel_buffer.getvalue(),
-                    file_name=f"datos_grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            df_concat.to_excel(writer, index=False, sheet_name="Datos del gráfico")
+            
+            st.download_button(
+            "📄 Descargar datos como Excel",
+            data=excel_buffer.getvalue(),
+            file_name=f"datos_grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
         else:
             st.warning("No se pudo graficar ningún espectro válido.")

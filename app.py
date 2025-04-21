@@ -356,6 +356,7 @@ with tab3:
 
 
 
+
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
@@ -412,21 +413,29 @@ with tab4:
 
                 if df_espectro.shape[1] >= 2:
                     col_x, col_y = df_espectro.columns[:2]
-                    min_x, max_x = float(df_espectro[col_x].min()), float(df_espectro[col_x].max())
-                    min_y, max_y = float(df_espectro[col_y].min()), float(df_espectro[col_y].max())
+                    min_x, max_x = pd.to_numeric(df_espectro[col_x], errors='coerce').dropna().agg(['min', 'max'])
+                    min_y, max_y = pd.to_numeric(df_espectro[col_y], errors='coerce').dropna().agg(['min', 'max'])
 
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        x_min = st.number_input("X mínimo", value=min_x, key=f"xmin_{row['Muestra']}_{row['Tipo']}")
-                        x_max = st.number_input("X máximo", value=max_x, key=f"xmax_{row['Muestra']}_{row['Tipo']}")
-                    with col2:
-                        y_min = st.number_input("Y mínimo", value=min_y, key=f"ymin_{row['Muestra']}_{row['Tipo']}")
-                        y_max = st.number_input("Y máximo", value=max_y, key=f"ymax_{row['Muestra']}_{row['Tipo']}")
+                    colx1, colx2 = st.columns(2)
+                    with colx1:
+                        x_min = st.number_input("X mínimo", value=float(min_x), key=f"xmin_{row['Muestra']}_{row['Tipo']}")
+                    with colx2:
+                        x_max = st.number_input("X máximo", value=float(max_x), key=f"xmax_{row['Muestra']}_{row['Tipo']}")
+
+                    coly1, coly2 = st.columns(2)
+                    with coly1:
+                        y_min = st.number_input("Y mínimo", value=float(min_y), key=f"ymin_{row['Muestra']}_{row['Tipo']}")
+                    with coly2:
+                        y_max = st.number_input("Y máximo", value=float(max_y), key=f"ymax_{row['Muestra']}_{row['Tipo']}")
 
                     df_fil = df_espectro[
                         (df_espectro[col_x] >= x_min) & (df_espectro[col_x] <= x_max) &
                         (df_espectro[col_y] >= y_min) & (df_espectro[col_y] <= y_max)
                     ]
+
+                    if df_fil.empty or df_fil[col_x].isnull().all() or df_fil[col_y].isnull().all():
+                        st.warning("El rango seleccionado no contiene datos válidos para graficar.")
+                        continue
 
                     fig, ax = plt.subplots()
                     ax.plot(df_fil[col_x], df_fil[col_y])

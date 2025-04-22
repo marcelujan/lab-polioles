@@ -493,8 +493,6 @@ with tab4:
             try:
                 imagen = BytesIO(base64.b64decode(row["Contenido"]))
                 st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
-            except:
-                st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
     if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
         st.subheader("Descargar imágenes seleccionadas")
         if st.button("📥 Descargar imágenes"):

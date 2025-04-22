@@ -354,11 +354,6 @@ with tab3:
         st.info("No hay espectros cargados.")
 
 
-
-
-
-
-
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
@@ -398,22 +393,21 @@ with tab4:
 
     st.subheader("Espectros combinados")
 
-    # Definir los rangos globales predeterminados
     rango_x = [float('inf'), float('-inf')]
     rango_y = [float('inf'), float('-inf')]
+    tablas_individuales = []
+    x_values = None
 
     for _, row in df_filtrado.iterrows():
         if not row["Es imagen"]:
             try:
-                from io import StringIO, BytesIO
-                import pandas as pd
                 extension = os.path.splitext(row["Nombre archivo"])[1].lower()
                 if extension == ".xlsx":
                     binario = BytesIO(bytes.fromhex(row["Contenido"]))
                     df_temp = pd.read_excel(binario)
                 else:
                     contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
-                    separadores = [",", "\t", ";", " "]
+                    separadores = [",", "	", ";", " "]
                     for sep in separadores:
                         contenido.seek(0)
                         try:
@@ -430,15 +424,19 @@ with tab4:
                 df_temp[col_y] = df_temp[col_y].astype(str).str.replace(",", ".", regex=False)
                 df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors="coerce")
                 df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors="coerce")
+                df_temp = df_temp.dropna()
 
-                min_x, max_x = df_temp[col_x].dropna().agg(["min", "max"])
-                min_y, max_y = df_temp[col_y].dropna().agg(["min", "max"])
+                min_x, max_x = df_temp[col_x].agg(["min", "max"])
+                min_y, max_y = df_temp[col_y].agg(["min", "max"])
 
                 rango_x[0] = min(rango_x[0], min_x)
                 rango_x[1] = max(rango_x[1], max_x)
                 rango_y[0] = min(rango_y[0], min_y)
                 rango_y[1] = max(rango_y[1], max_y)
 
+                tablas_individuales.append((row["Muestra"], row["Tipo"], df_temp[[col_x, col_y]]))
+                if x_values is None:
+                    x_values = df_temp[col_x]
             except:
                 continue
 
@@ -457,58 +455,38 @@ with tab4:
 
         fig, ax = plt.subplots()
         se_grafico_algo = False
+        df_resumen = pd.DataFrame({'X': x_values}) if x_values is not None else pd.DataFrame()
 
-        for _, row in df_filtrado.iterrows():
-            if not row["Es imagen"]:
-                try:
-                    extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-                    if extension == ".xlsx":
-                        binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                        df_esp = pd.read_excel(binario)
-                    else:
-                        contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
-                        separadores = [",", "\t", ";", " "]
-                        for sep in separadores:
-                            contenido.seek(0)
-                            try:
-                                df_esp = pd.read_csv(contenido, sep=sep, engine="python")
-                                if df_esp.shape[1] >= 2:
-                                    break
-                            except:
-                                continue
-                        else:
-                            continue
-
-                    col_x, col_y = df_esp.columns[:2]
-                    df_esp[col_x] = df_esp[col_x].astype(str).str.replace(',', '.', regex=False)
-                    df_esp[col_y] = df_esp[col_y].astype(str).str.replace(',', '.', regex=False)
-                    df_esp[col_x] = pd.to_numeric(df_esp[col_x], errors='coerce')
-                    df_esp[col_y] = pd.to_numeric(df_esp[col_y], errors='coerce')
-
-                    df_fil = df_esp[
-                        (df_esp[col_x] >= x_min) & (df_esp[col_x] <= x_max) &
-                        (df_esp[col_y] >= y_min) & (df_esp[col_y] <= y_max)
-                    ]
-                    if df_fil.empty:
-                        continue
-
-                    ax.plot(df_fil[col_x], df_fil[col_y], label=f"{row['Muestra']} – {row['Tipo']}")
-                    se_grafico_algo = True
-                except:
-                    continue
+        for muestra, tipo, df in tablas_individuales:
+            col_x, col_y = df.columns[:2]
+            df_fil = df[
+                (df[col_x] >= x_min) & (df[col_x] <= x_max) &
+                (df[col_y] >= y_min) & (df[col_y] <= y_max)
+            ]
+            if df_fil.empty:
+                continue
+            ax.plot(df_fil[col_x], df_fil[col_y], label=f"{muestra} – {tipo}")
+            df_resumen[f"{muestra} – {tipo}"] = df_fil[col_y].reset_index(drop=True)
+            se_grafico_algo = True
 
         if se_grafico_algo:
-            ax.set_xlabel("X")
-            ax.set_ylabel("Y")
             ax.legend()
             st.pyplot(fig)
 
-        if se_grafico_algo:
-            # Botón para descargar gráfico combinado
-            buffer_img = BytesIO()
-            fig.savefig(buffer_img, format="png")
-            st.download_button("🖼️ Descargar gráfico combinado", data=buffer_img.getvalue(),
-                               file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
-                               mime="image/png")
+            buf_img = BytesIO()
+            fig.savefig(buf_img, format="png", bbox_inches="tight")
+            st.download_button("📷 Descargar PNG", data=buf_img.getvalue(),
+                               file_name="grafico_combinado.png", mime="image/png")
+
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                df_resumen.to_excel(writer, index=False, sheet_name="Resumen")
+                for muestra, tipo, df in tablas_individuales:
+                    nombre_hoja = f"{muestra}_{tipo}".replace(" ", "_")[:31]
+                    df.to_excel(writer, index=False, sheet_name=nombre_hoja)
+            excel_buffer.seek(0)
+            st.download_button("📊 Descargar tabla", data=excel_buffer.getvalue(),
+                               file_name="espectros_combinados.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.warning("No se pudo graficar ningún espectro válido.")

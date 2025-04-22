@@ -253,7 +253,7 @@ with tab3:
 
         st.markdown("### Vista previa")
         if es_imagen:
-            st.image(archivo, use_column_width=True)
+            st.image(archivo, use_container_width=True)
         else:
             try:
                 if extension == ".xlsx":

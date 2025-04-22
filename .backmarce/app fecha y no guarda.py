@@ -8,7 +8,6 @@ from firebase_admin import credentials, firestore
 from datetime import date, datetime
 from io import BytesIO
 import os
-import base64
 import matplotlib.pyplot as plt
 import zipfile
 from tempfile import TemporaryDirectory

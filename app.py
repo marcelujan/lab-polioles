@@ -162,11 +162,11 @@ with tab2:
     for m in muestras:
         for i, a in enumerate(m.get("analisis", [])):
             tabla.append({
+                "Fecha": a.get("fecha", ""),
                 "ID": f"{m['nombre']}__{i}",
                 "Nombre": m["nombre"],
                 "Tipo": a.get("tipo", ""),
                 "Valor": a.get("valor", ""),
-                "Fecha": a.get("fecha", ""),
                 "Observaciones": a.get("observaciones", "")
             })
 
@@ -243,14 +243,10 @@ with tab3:
 
     st.subheader("Subir nuevo espectro")
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
-    fecha_spectro = st.date_input("Fecha del espectro", value=date.today())
-    tipo_espectro = st.selectbox(
-        "Tipo de espectro", ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"]
-    )
+    tipo_espectro = st.selectbox("Tipo de espectro", ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"])
     observaciones = st.text_area("Observaciones")
-    archivo = st.file_uploader(
-        "Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"]
-    )
+    fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
+    archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
 
     if archivo:
         nombre_archivo = archivo.name
@@ -286,24 +282,19 @@ with tab3:
     if st.button("Guardar espectro") and archivo:
         espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])
         nuevo = {
-            "fecha": str(fecha_spectro),
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
             "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8") if not es_imagen else archivo.getvalue().hex(),
             "es_imagen": es_imagen,
+            "fecha": str(fecha_espectro),
         }
         espectros.append(nuevo)
 
         for m in muestras:
             if m["nombre"] == nombre_sel:
                 m["espectros"] = espectros
-                guardar_muestra(
-                    m["nombre"],
-                    m.get("observacion", ""),
-                    m.get("analisis", []),
-                    espectros
-                )
+                guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
                 st.success("Espectro guardado.")
                 st.rerun()
 
@@ -313,32 +304,35 @@ with tab3:
         for i, e in enumerate(m.get("espectros", [])):
             filas.append({
                 "Muestra": m["nombre"],
-                "Fecha": e.get("fecha", ""),
                 "Tipo": e.get("tipo", ""),
                 "Archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
                 "Observaciones": e.get("observaciones", ""),
                 "ID": f"{m['nombre']}__{i}"
             })
     df_esp_tabla = pd.DataFrame(filas)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
-
-        seleccion = st.selectbox("Eliminar espectro", df_esp_tabla["ID"])
+        seleccion = st.selectbox(
+            "Eliminar espectro",
+            df_esp_tabla["ID"],
+            format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
+        )
         if st.button("Eliminar espectro"):
             nombre, idx = seleccion.split("__")
             for m in muestras:
                 if m["nombre"] == nombre:
                     m["espectros"].pop(int(idx))
-                    guardar_muestra(
-                        m["nombre"],
-                        m.get("observacion", ""),
-                        m.get("analisis", []),
-                        m.get("espectros", [])
-                    )
+                    guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
                     st.success("Espectro eliminado.")
                     st.rerun()
 
-        if st.button("📦 Descargar espectros"):
+        # --- DESCARGA DE ESPECTROS ---
+                # Lógica de descarga solo si se hace clic
+        if st.button("📦 Preparar descarga"):
+            from tempfile import TemporaryDirectory
+            import zipfile
+
             with TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
@@ -362,13 +356,22 @@ with tab3:
                                 if e.get("es_imagen"):
                                     file_out.write(bytes.fromhex(contenido))
                                 else:
-                                    file_out.write(base64.b64decode(contenido))
+                                    try:
+                                        file_out.write(base64.b64decode(contenido))
+                                    except Exception as error:
+                                        st.error(f"Error al decodificar archivo: {nombre} — {error}")
+                                        continue
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
-                    st.download_button("📦 Descargar espectros", data=final_zip.read(),
-                                       file_name=os.path.basename(zip_path),
-                                       mime="application/zip")
+                    st.session_state["zip_bytes"] = final_zip.read()
+                    st.session_state["zip_name"] = os.path.basename(zip_path)
+
+        # Botón de descarga fuera del evento
+        if "zip_bytes" in st.session_state:
+            st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
+                               file_name=st.session_state["zip_name"],
+                               mime="application/zip")
     else:
         st.info("No hay espectros cargados.")
 
@@ -406,6 +409,7 @@ with tab4:
 
     df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
 
+    # Separar espectros numéricos e imágenes
     df_datos = df_filtrado[~df_filtrado["Es imagen"]]
     df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
 
@@ -442,10 +446,9 @@ with tab4:
                     df_temp[col] = df_temp[col].astype(str).str.replace(",", ".", regex=False)
                 df_temp[col] = pd.to_numeric(df_temp[col], errors="coerce")
             df_temp = df_temp.dropna()
-
-            st.markdown(f"#### Vista previa: {row['Muestra']} – {row['Tipo']}")
-            st.write(df_temp.head())
-            st.write(df_temp.dtypes)
+    st.markdown(f"#### Vista previa: {row['Muestra']} – {row['Tipo']}")
+    st.write(df_temp.head())
+    st.write(df_temp.dtypes)
 
             min_x, max_x = df_temp[col_x].agg(["min", "max"])
             min_y, max_y = df_temp[col_y].agg(["min", "max"])
@@ -458,8 +461,7 @@ with tab4:
             tablas_individuales.append((row["Muestra"], row["Tipo"], df_temp[[col_x, col_y]]))
             if x_values is None:
                 x_values = df_temp[col_x]
-        except Exception as error:
-            st.warning(f"No se pudo procesar el archivo {row['Nombre archivo']}: {error}")
+        except:
             continue
 
     if rango_x[0] == float('inf') or rango_y[0] == float('inf'):
@@ -513,6 +515,7 @@ with tab4:
         else:
             st.warning("No se pudo graficar ningún espectro válido.")
 
+    # Mostrar imágenes
     if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")
         for _, row in df_imagenes.iterrows():

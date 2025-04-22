@@ -261,12 +261,39 @@ with tab3:
                 if extension == ".xlsx":
                     df_esp = pd.read_excel(archivo)
                 else:
-                    df_esp = pd.read_csv(archivo, sep=None, engine="python")
+                    
+                    from io import BytesIO
+                    contenido = BytesIO(archivo.getvalue())
+                    separadores = [",", ";", "\t", " "]
+                    from io import BytesIO
+                    contenido = BytesIO(archivo.getvalue())
+                    separadores = [",", ";", "\t", " "]
+                    df_esp = None
+                    for sep in separadores:
+                        contenido.seek(0)
+                        try:
+                            df_esp = pd.read_csv(contenido, sep=sep, engine="python", header=None)
+                            if df_esp.shape[1] == 1:
+                                df_esp = df_esp[0].astype(str).str.split(sep, expand=True)
+                            df_esp.columns = ["X", "Y"]
+                            if df_esp.shape[1] >= 2:
+                                df_esp = df_esp.iloc[:, :2]
+                                df_esp.columns = ["X", "Y"]
+                                break
+                        except:
+                            continue
+                    else:
+                        raise ValueError("No se pudo interpretar el archivo con separadores comunes.")
+
 
                 if df_esp.shape[1] >= 2:
-                    col_x, col_y = df_esp.columns[:2]
+                    colnames = df_esp.columns[:2].tolist()
+                    col_x = st.selectbox("Columna eje X", colnames, index=0)
+                    col_y = st.selectbox("Columna eje Y", colnames, index=1)
                     min_x, max_x = float(df_esp[col_x].min()), float(df_esp[col_x].max())
                     x_range = st.slider("Rango eje X", min_value=min_x, max_value=max_x, value=(min_x, max_x))
+                    df_esp[col_x] = pd.to_numeric(df_esp[col_x].astype(str).str.replace(",", ".", regex=False), errors="coerce")
+                    df_esp[col_y] = pd.to_numeric(df_esp[col_y].astype(str).str.replace(",", ".", regex=False), errors="coerce")
                     df_filtrado = df_esp[(df_esp[col_x] >= x_range[0]) & (df_esp[col_x] <= x_range[1])]
 
                     fig, ax = plt.subplots()
@@ -411,7 +438,7 @@ with tab4:
     df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
 
     if not df_datos.empty:
-        st.subheader("Gráfico combinado de espectros numéricos")
+        st.subheader("Espectros seleccionados")
 
         import matplotlib.pyplot as plt
         import pandas as pd
@@ -508,7 +535,7 @@ with tab4:
 
 
     if not df_imagenes.empty:
-        st.subheader("Imágenes de espectros")
+        
         for _, row in df_imagenes.iterrows():
             try:
                 imagen = BytesIO(base64.b64decode(row["Contenido"]))
@@ -516,8 +543,8 @@ with tab4:
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
     if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
-        st.subheader("Descargar imágenes seleccionadas")
-        if st.button("📥 Descargar imágenes"):
+        st.subheader("Descargar")
+        if st.button("📥 Descargar tabla o imágenes"):
             from tempfile import TemporaryDirectory
             import zipfile
 

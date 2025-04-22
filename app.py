@@ -306,6 +306,7 @@ with tab3:
                 "Muestra": m["nombre"],
                 "Tipo": e.get("tipo", ""),
                 "Archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
                 "Observaciones": e.get("observaciones", ""),
                 "ID": f"{m['nombre']}__{i}"
             })

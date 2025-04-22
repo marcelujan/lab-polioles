@@ -328,7 +328,8 @@ with tab3:
                     st.rerun()
 
         # --- DESCARGA DE ESPECTROS ---
-        if st.button("📦 Descargar espectros"):
+                # Lógica de descarga solo si se hace clic
+        if st.button("📦 Preparar descarga"):
             from tempfile import TemporaryDirectory
             import zipfile
 
@@ -363,11 +364,13 @@ with tab3:
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
-                    zip_bytes = final_zip.read()
+                    st.session_state["zip_bytes"] = final_zip.read()
+                    st.session_state["zip_name"] = os.path.basename(zip_path)
 
-            # botón fuera del with
-            st.download_button("📦 Descargar espectros", data=zip_bytes,
-                               file_name=os.path.basename(zip_path),
+        # Botón de descarga fuera del evento
+        if "zip_bytes" in st.session_state:
+            st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
+                               file_name=st.session_state["zip_name"],
                                mime="application/zip")
     else:
         st.info("No hay espectros cargados.")

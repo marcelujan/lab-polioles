@@ -229,14 +229,47 @@ with tab2:
         buf_png = BytesIO()
         fig.savefig(buf_png, format="png", bbox_inches="tight")
         st.download_button(
+            "📷 Descargar gráfico combinado",
+            data=buf_png.getvalue(),
+            file_name="grafico_combinado.png",
+            mime="image/png"
+        )
+
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            resumen = pd.DataFrame()
+            for idx, (muestra, tipo, x, y) in enumerate(data_validos):
+                x_filtrado = x[(x >= x_min) & (x <= x_max)]
+                y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+                df_tmp = pd.DataFrame({f"Y_{muestra}_{tipo}": y_filtrado.reset_index(drop=True)})
+                if resumen.empty:
+                    resumen["X"] = x_filtrado.reset_index(drop=True)
+                resumen[f"Y_{muestra}_{tipo}"] = y_filtrado.reset_index(drop=True)
+                hoja = f"{muestra[:15]}_{tipo[:10]}"
+                df_full = pd.DataFrame({f"X_{muestra}_{tipo}": x_filtrado[:len(y_filtrado)],
+                                        f"Y_{muestra}_{tipo}": y_filtrado})
+                df_full.to_excel(writer, index=False, sheet_name=hoja)
+            resumen.to_excel(writer, index=False, sheet_name="Resumen")
+        excel_buffer.seek(0)
+        st.download_button(
+            "📊 Descargar tabla",
+            data=excel_buffer.getvalue(),
+            file_name="espectros_combinados.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+
+        buf_png = BytesIO()
+            fig.savefig(buf_png, format="png", bbox_inches="tight")
+            st.download_button(
                 "📷 Descargar gráfico combinado",
                 data=buf_png.getvalue(),
                 file_name="grafico_combinado.png",
                 mime="image/png"
             )
 
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 resumen = pd.DataFrame()
                 for idx, (muestra, tipo, x, y) in enumerate(data_validos):
                     x_filtrado = x[(x >= x_min) & (x <= x_max)]
@@ -250,8 +283,8 @@ with tab2:
                                             f"Y_{muestra}_{tipo}": y_filtrado})
                     df_full.to_excel(writer, index=False, sheet_name=hoja)
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
-                excel_buffer.seek(0)
-        st.download_button(
+            excel_buffer.seek(0)
+            st.download_button(
                 "📊 Descargar tabla",
                 data=excel_buffer.getvalue(),
                 file_name="espectros_combinados.xlsx",
@@ -259,8 +292,8 @@ with tab2:
             )
 
         buf_png = BytesIO()
-        fig.savefig(buf_png, format="png", bbox_inches="tight")
-        st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
+            fig.savefig(buf_png, format="png", bbox_inches="tight")
+            st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
                                file_name="grafico_combinado.png", mime="image/png")
 
         buf_img = BytesIO()
@@ -315,14 +348,47 @@ with tab3:
         buf_png = BytesIO()
         fig.savefig(buf_png, format="png", bbox_inches="tight")
         st.download_button(
+            "📷 Descargar gráfico combinado",
+            data=buf_png.getvalue(),
+            file_name="grafico_combinado.png",
+            mime="image/png"
+        )
+
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            resumen = pd.DataFrame()
+            for idx, (muestra, tipo, x, y) in enumerate(data_validos):
+                x_filtrado = x[(x >= x_min) & (x <= x_max)]
+                y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+                df_tmp = pd.DataFrame({f"Y_{muestra}_{tipo}": y_filtrado.reset_index(drop=True)})
+                if resumen.empty:
+                    resumen["X"] = x_filtrado.reset_index(drop=True)
+                resumen[f"Y_{muestra}_{tipo}"] = y_filtrado.reset_index(drop=True)
+                hoja = f"{muestra[:15]}_{tipo[:10]}"
+                df_full = pd.DataFrame({f"X_{muestra}_{tipo}": x_filtrado[:len(y_filtrado)],
+                                        f"Y_{muestra}_{tipo}": y_filtrado})
+                df_full.to_excel(writer, index=False, sheet_name=hoja)
+            resumen.to_excel(writer, index=False, sheet_name="Resumen")
+        excel_buffer.seek(0)
+        st.download_button(
+            "📊 Descargar tabla",
+            data=excel_buffer.getvalue(),
+            file_name="espectros_combinados.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+
+        buf_png = BytesIO()
+            fig.savefig(buf_png, format="png", bbox_inches="tight")
+            st.download_button(
                 "📷 Descargar gráfico combinado",
                 data=buf_png.getvalue(),
                 file_name="grafico_combinado.png",
                 mime="image/png"
             )
 
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 resumen = pd.DataFrame()
                 for idx, (muestra, tipo, x, y) in enumerate(data_validos):
                     x_filtrado = x[(x >= x_min) & (x <= x_max)]
@@ -337,7 +403,7 @@ with tab3:
                     df_full.to_excel(writer, index=False, sheet_name=hoja)
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
             excel_buffer.seek(0)
-        st.download_button(
+            st.download_button(
                 "📊 Descargar tabla",
                 data=excel_buffer.getvalue(),
                 file_name="espectros_combinados.xlsx",
@@ -345,13 +411,13 @@ with tab3:
             )
 
         buf_png = BytesIO()
-        fig.savefig(buf_png, format="png", bbox_inches="tight")
-        st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
+            fig.savefig(buf_png, format="png", bbox_inches="tight")
+            st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
                                file_name="grafico_combinado.png", mime="image/png")
-        else:
-        st.warning("El archivo debe tener al menos dos columnas.")
-        except Exception as e:
-        st.error(f"No se pudo leer el archivo: {e}")
+                else:
+                    st.warning("El archivo debe tener al menos dos columnas.")
+            except Exception as e:
+                st.error(f"No se pudo leer el archivo: {e}")
 
     if st.button("Guardar espectro") and archivo:
         espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])
@@ -565,14 +631,47 @@ with tab4:
         buf_png = BytesIO()
         fig.savefig(buf_png, format="png", bbox_inches="tight")
         st.download_button(
+            "📷 Descargar gráfico combinado",
+            data=buf_png.getvalue(),
+            file_name="grafico_combinado.png",
+            mime="image/png"
+        )
+
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            resumen = pd.DataFrame()
+            for idx, (muestra, tipo, x, y) in enumerate(data_validos):
+                x_filtrado = x[(x >= x_min) & (x <= x_max)]
+                y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+                df_tmp = pd.DataFrame({f"Y_{muestra}_{tipo}": y_filtrado.reset_index(drop=True)})
+                if resumen.empty:
+                    resumen["X"] = x_filtrado.reset_index(drop=True)
+                resumen[f"Y_{muestra}_{tipo}"] = y_filtrado.reset_index(drop=True)
+                hoja = f"{muestra[:15]}_{tipo[:10]}"
+                df_full = pd.DataFrame({f"X_{muestra}_{tipo}": x_filtrado[:len(y_filtrado)],
+                                        f"Y_{muestra}_{tipo}": y_filtrado})
+                df_full.to_excel(writer, index=False, sheet_name=hoja)
+            resumen.to_excel(writer, index=False, sheet_name="Resumen")
+        excel_buffer.seek(0)
+        st.download_button(
+            "📊 Descargar tabla",
+            data=excel_buffer.getvalue(),
+            file_name="espectros_combinados.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+
+        buf_png = BytesIO()
+            fig.savefig(buf_png, format="png", bbox_inches="tight")
+            st.download_button(
                 "📷 Descargar gráfico combinado",
                 data=buf_png.getvalue(),
                 file_name="grafico_combinado.png",
                 mime="image/png"
             )
 
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 resumen = pd.DataFrame()
                 for idx, (muestra, tipo, x, y) in enumerate(data_validos):
                     x_filtrado = x[(x >= x_min) & (x <= x_max)]
@@ -587,7 +686,7 @@ with tab4:
                     df_full.to_excel(writer, index=False, sheet_name=hoja)
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
             excel_buffer.seek(0)
-        st.download_button(
+            st.download_button(
                 "📊 Descargar tabla",
                 data=excel_buffer.getvalue(),
                 file_name="espectros_combinados.xlsx",
@@ -595,13 +694,13 @@ with tab4:
             )
 
         buf_png = BytesIO()
-        fig.savefig(buf_png, format="png", bbox_inches="tight")
-        st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
+            fig.savefig(buf_png, format="png", bbox_inches="tight")
+            st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
                                file_name="grafico_combinado.png", mime="image/png")
 
             # Exportar Excel con resumen y hojas individuales
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 resumen = pd.DataFrame()
                 for muestra, tipo, x, y in data_validos:
                     x_filtrado = x[(x >= x_min) & (x <= x_max)]
@@ -630,12 +729,12 @@ with tab4:
         st.subheader("Descargar imágenes seleccionadas")
         descargar_zip = st.button("📥 Descargar tabla o imágenes")
 
-        from tempfile import TemporaryDirectory
-        import zipfile
+            from tempfile import TemporaryDirectory
+            import zipfile
 
-        seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
+            seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
 
-        with TemporaryDirectory() as tmpdir:
+            with TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, f"imagenes_espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
                 with zipfile.ZipFile(zip_path, "w") as zipf:
                     for _, row in seleccionadas.iterrows():

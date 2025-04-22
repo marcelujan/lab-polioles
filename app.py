@@ -361,7 +361,7 @@ with tab3:
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
-    zip_bytes = final_zip.read()
+                    zip_bytes = final_zip.read()
                     st.session_state["zip_bytes"] = final_zip.read()
                     st.session_state["zip_name"] = os.path.basename(zip_path)
 

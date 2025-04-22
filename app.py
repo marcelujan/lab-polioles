@@ -8,7 +8,6 @@ from firebase_admin import credentials, firestore
 from datetime import date, datetime
 from io import BytesIO
 import os
-import base64
 import matplotlib.pyplot as plt
 import zipfile
 from tempfile import TemporaryDirectory
@@ -162,11 +161,11 @@ with tab2:
     for m in muestras:
         for i, a in enumerate(m.get("analisis", [])):
             tabla.append({
-                "Fecha": a.get("fecha", ""),
                 "ID": f"{m['nombre']}__{i}",
                 "Nombre": m["nombre"],
                 "Tipo": a.get("tipo", ""),
                 "Valor": a.get("valor", ""),
+                "Fecha": a.get("fecha", ""),
                 "Observaciones": a.get("observaciones", "")
             })
 
@@ -245,7 +244,6 @@ with tab3:
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
     tipo_espectro = st.selectbox("Tipo de espectro", ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"])
     observaciones = st.text_area("Observaciones")
-    fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
     archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
 
     if archivo:
@@ -255,7 +253,7 @@ with tab3:
 
         st.markdown("### Vista previa")
         if es_imagen:
-            st.image(archivo, use_container_width=True)
+            st.image(archivo, use_column_width=True)
         else:
             try:
                 if extension == ".xlsx":
@@ -285,9 +283,8 @@ with tab3:
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
-            "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8") if not es_imagen else archivo.getvalue().hex(),
+            "contenido": archivo.getvalue().decode("latin1") if not es_imagen else archivo.getvalue().hex(),
             "es_imagen": es_imagen,
-            "fecha": str(fecha_espectro),
         }
         espectros.append(nuevo)
 
@@ -306,18 +303,13 @@ with tab3:
                 "Muestra": m["nombre"],
                 "Tipo": e.get("tipo", ""),
                 "Archivo": e.get("nombre_archivo", ""),
-                "Fecha": e.get("fecha", ""),
                 "Observaciones": e.get("observaciones", ""),
                 "ID": f"{m['nombre']}__{i}"
             })
     df_esp_tabla = pd.DataFrame(filas)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
-        seleccion = st.selectbox(
-            "Eliminar espectro",
-            df_esp_tabla["ID"],
-            format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
-        )
+        seleccion = st.selectbox("Eliminar espectro", df_esp_tabla["ID"])
         if st.button("Eliminar espectro"):
             nombre, idx = seleccion.split("__")
             for m in muestras:
@@ -327,12 +319,7 @@ with tab3:
                     st.success("Espectro eliminado.")
                     st.rerun()
 
-        # --- DESCARGA DE ESPECTROS ---
-                # Lógica de descarga solo si se hace clic
-        if st.button("📦 Preparar descarga"):
-            from tempfile import TemporaryDirectory
-            import zipfile
-
+        if st.button("📦 Descargar espectros"):
             with TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
@@ -356,22 +343,13 @@ with tab3:
                                 if e.get("es_imagen"):
                                     file_out.write(bytes.fromhex(contenido))
                                 else:
-                                    try:
-                                        file_out.write(base64.b64decode(contenido))
-                                    except Exception as error:
-                                        st.error(f"Error al decodificar archivo: {nombre} — {error}")
-                                        continue
+                                    file_out.write(contenido.encode("latin1"))
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
-                    st.session_state["zip_bytes"] = final_zip.read()
-                    st.session_state["zip_name"] = os.path.basename(zip_path)
-
-        # Botón de descarga fuera del evento
-        if "zip_bytes" in st.session_state:
-            st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
-                               file_name=st.session_state["zip_name"],
-                               mime="application/zip")
+                    st.download_button("📦 Descargar espectros", data=final_zip.read(),
+                                       file_name=os.path.basename(zip_path),
+                                       mime="application/zip")
     else:
         st.info("No hay espectros cargados.")
 
@@ -398,21 +376,20 @@ with tab4:
             })
 
     df_esp = pd.DataFrame(espectros_info)
-    if df_esp.empty:
-        st.warning("No hay espectros cargados.")
-        st.stop()
 
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()
     tipos_disp = df_esp["Tipo"].unique().tolist()
     muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
     tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
+    solo_datos = st.checkbox("Mostrar solo espectros numéricos", value=False)
+    solo_imagenes = st.checkbox("Mostrar solo imágenes", value=False)
 
     df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
-
-    # Separar espectros numéricos e imágenes
-    df_datos = df_filtrado[~df_filtrado["Es imagen"]]
-    df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
+    if solo_datos:
+        df_filtrado = df_filtrado[~df_filtrado["Es imagen"]]
+    if solo_imagenes:
+        df_filtrado = df_filtrado[df_filtrado["Es imagen"]]
 
     st.subheader("Espectros combinados")
 
@@ -421,49 +398,47 @@ with tab4:
     tablas_individuales = []
     x_values = None
 
-    for _, row in df_datos.iterrows():
-        try:
-            extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-            if extension == ".xlsx":
-                binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                df_temp = pd.read_excel(binario)
-            else:
-                contenido = BytesIO(base64.b64decode(row["Contenido"]))
-                separadores = [",", "\t", ";", " "]
-                for sep in separadores:
-                    contenido.seek(0)
-                    try:
-                        df_temp = pd.read_csv(contenido, sep=sep, engine="python")
-                        if df_temp.shape[1] >= 2:
-                            break
-                    except:
-                        continue
+    for _, row in df_filtrado.iterrows():
+        if not row["Es imagen"]:
+            try:
+                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+                if extension == ".xlsx":
+                    binario = BytesIO(bytes.fromhex(row["Contenido"]))
+                    df_temp = pd.read_excel(binario)
                 else:
-                    continue
+                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+                    separadores = [",", "	", ";", " "]
+                    for sep in separadores:
+                        contenido.seek(0)
+                        try:
+                            df_temp = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df_temp.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        continue
 
-            col_x, col_y = df_temp.columns[:2]
-            for col in [col_x, col_y]:
-                if df_temp[col].dtype == object:
-                    df_temp[col] = df_temp[col].astype(str).str.replace(",", ".", regex=False)
-                df_temp[col] = pd.to_numeric(df_temp[col], errors="coerce")
-            df_temp = df_temp.dropna()
-    st.markdown(f"#### Vista previa: {row['Muestra']} – {row['Tipo']}")
-    st.write(df_temp.head())
-    st.write(df_temp.dtypes)
+                col_x, col_y = df_temp.columns[:2]
+                df_temp[col_x] = df_temp[col_x].astype(str).str.replace(",", ".", regex=False)
+                df_temp[col_y] = df_temp[col_y].astype(str).str.replace(",", ".", regex=False)
+                df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors="coerce")
+                df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors="coerce")
+                df_temp = df_temp.dropna()
 
-            min_x, max_x = df_temp[col_x].agg(["min", "max"])
-            min_y, max_y = df_temp[col_y].agg(["min", "max"])
+                min_x, max_x = df_temp[col_x].agg(["min", "max"])
+                min_y, max_y = df_temp[col_y].agg(["min", "max"])
 
-            rango_x[0] = min(rango_x[0], min_x)
-            rango_x[1] = max(rango_x[1], max_x)
-            rango_y[0] = min(rango_y[0], min_y)
-            rango_y[1] = max(rango_y[1], max_y)
+                rango_x[0] = min(rango_x[0], min_x)
+                rango_x[1] = max(rango_x[1], max_x)
+                rango_y[0] = min(rango_y[0], min_y)
+                rango_y[1] = max(rango_y[1], max_y)
 
-            tablas_individuales.append((row["Muestra"], row["Tipo"], df_temp[[col_x, col_y]]))
-            if x_values is None:
-                x_values = df_temp[col_x]
-        except:
-            continue
+                tablas_individuales.append((row["Muestra"], row["Tipo"], df_temp[[col_x, col_y]]))
+                if x_values is None:
+                    x_values = df_temp[col_x]
+            except:
+                continue
 
     if rango_x[0] == float('inf') or rango_y[0] == float('inf'):
         st.warning("No se pudo graficar ningún espectro válido.")
@@ -515,13 +490,3 @@ with tab4:
                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.warning("No se pudo graficar ningún espectro válido.")
-
-    # Mostrar imágenes
-    if not df_imagenes.empty:
-        st.subheader("Imágenes de espectros")
-        for _, row in df_imagenes.iterrows():
-            try:
-                img = BytesIO(bytes.fromhex(row["Contenido"]))
-                st.image(img, caption=f"{row['Muestra']} – {row['Tipo']}", use_container_width=True)
-            except:
-                st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")

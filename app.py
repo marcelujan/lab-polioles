@@ -353,7 +353,6 @@ with tab3:
     else:
         st.info("No hay espectros cargados.")
 
-
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
@@ -376,20 +375,20 @@ with tab4:
             })
 
     df_esp = pd.DataFrame(espectros_info)
+    if df_esp.empty:
+        st.warning("No hay espectros cargados.")
+        st.stop()
 
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()
     tipos_disp = df_esp["Tipo"].unique().tolist()
     muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
     tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
-    solo_datos = st.checkbox("Mostrar solo espectros numéricos", value=False)
-    solo_imagenes = st.checkbox("Mostrar solo imágenes", value=False)
 
     df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
-    if solo_datos:
-        df_filtrado = df_filtrado[~df_filtrado["Es imagen"]]
-    if solo_imagenes:
-        df_filtrado = df_filtrado[df_filtrado["Es imagen"]]
+
+    df_datos = df_filtrado[~df_filtrado["Es imagen"]]
+    df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
 
     st.subheader("Espectros combinados")
 
@@ -398,47 +397,51 @@ with tab4:
     tablas_individuales = []
     x_values = None
 
-    for _, row in df_filtrado.iterrows():
-        if not row["Es imagen"]:
-            try:
-                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-                if extension == ".xlsx":
-                    binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                    df_temp = pd.read_excel(binario)
-                else:
-                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
-                    separadores = [",", "	", ";", " "]
-                    for sep in separadores:
-                        contenido.seek(0)
-                        try:
-                            df_temp = pd.read_csv(contenido, sep=sep, engine="python")
-                            if df_temp.shape[1] >= 2:
-                                break
-                        except:
-                            continue
-                    else:
+    for _, row in df_datos.iterrows():
+        try:
+            extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+            if extension == ".xlsx":
+                binario = BytesIO(bytes.fromhex(row["Contenido"]))
+                df_temp = pd.read_excel(binario)
+            else:
+                contenido = BytesIO(base64.b64decode(row["Contenido"]))
+                separadores = [",", "\t", ";", " "]
+                for sep in separadores:
+                    contenido.seek(0)
+                    try:
+                        df_temp = pd.read_csv(contenido, sep=sep, engine="python")
+                        if df_temp.shape[1] >= 2:
+                            break
+                    except:
                         continue
+                else:
+                    continue
 
-                col_x, col_y = df_temp.columns[:2]
-                df_temp[col_x] = df_temp[col_x].astype(str).str.replace(",", ".", regex=False)
-                df_temp[col_y] = df_temp[col_y].astype(str).str.replace(",", ".", regex=False)
-                df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors="coerce")
-                df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors="coerce")
-                df_temp = df_temp.dropna()
+            col_x, col_y = df_temp.columns[:2]
+            for col in [col_x, col_y]:
+                if df_temp[col].dtype == object:
+                    df_temp[col] = df_temp[col].astype(str).str.replace(",", ".", regex=False)
+                df_temp[col] = pd.to_numeric(df_temp[col], errors="coerce")
+            df_temp = df_temp.dropna()
 
-                min_x, max_x = df_temp[col_x].agg(["min", "max"])
-                min_y, max_y = df_temp[col_y].agg(["min", "max"])
+            st.markdown(f"#### Vista previa: {row['Muestra']} – {row['Tipo']}")
+            st.write(df_temp.head())
+            st.write(df_temp.dtypes)
 
-                rango_x[0] = min(rango_x[0], min_x)
-                rango_x[1] = max(rango_x[1], max_x)
-                rango_y[0] = min(rango_y[0], min_y)
-                rango_y[1] = max(rango_y[1], max_y)
+            min_x, max_x = df_temp[col_x].agg(["min", "max"])
+            min_y, max_y = df_temp[col_y].agg(["min", "max"])
 
-                tablas_individuales.append((row["Muestra"], row["Tipo"], df_temp[[col_x, col_y]]))
-                if x_values is None:
-                    x_values = df_temp[col_x]
-            except:
-                continue
+            rango_x[0] = min(rango_x[0], min_x)
+            rango_x[1] = max(rango_x[1], max_x)
+            rango_y[0] = min(rango_y[0], min_y)
+            rango_y[1] = max(rango_y[1], max_y)
+
+            tablas_individuales.append((row["Muestra"], row["Tipo"], df_temp[[col_x, col_y]]))
+            if x_values is None:
+                x_values = df_temp[col_x]
+        except Exception as error:
+            st.warning(f"No se pudo procesar el archivo {row['Nombre archivo']}: {error}")
+            continue
 
     if rango_x[0] == float('inf') or rango_y[0] == float('inf'):
         st.warning("No se pudo graficar ningún espectro válido.")
@@ -490,3 +493,12 @@ with tab4:
                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.warning("No se pudo graficar ningún espectro válido.")
+
+    if not df_imagenes.empty:
+        st.subheader("Imágenes de espectros")
+        for _, row in df_imagenes.iterrows():
+            try:
+                img = BytesIO(bytes.fromhex(row["Contenido"]))
+                st.image(img, caption=f"{row['Muestra']} – {row['Tipo']}", use_container_width=True)
+            except:
+                st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")

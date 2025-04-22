@@ -221,8 +221,8 @@ with tab2:
         ax.scatter(x, y)
         for i, txt in enumerate(nombres):
             ax.annotate(txt, (x[i], y[i]))
-        
-        
+        ax.set_xlabel(tipo_x)
+        ax.set_ylabel(tipo_y)
         st.pyplot(fig)
 
         buf_img = BytesIO()
@@ -269,8 +269,8 @@ with tab3:
 
                     fig, ax = plt.subplots()
                     ax.plot(df_filtrado[col_x], df_filtrado[col_y])
-                    
-                    
+                    ax.set_xlabel(col_x)
+                    ax.set_ylabel(col_y)
                     st.pyplot(fig)
                 else:
                     st.warning("El archivo debe tener al menos dos columnas.")
@@ -498,59 +498,17 @@ with tab4:
                     continue
 
         if se_grafico_algo:
-            
-            
+            ax.set_xlabel("X")
+            ax.set_ylabel("Y")
             ax.legend()
             st.pyplot(fig)
-            st.pyplot(fig)
 
-            # Descargar imagen
-            buf_img = BytesIO()
-            fig.savefig(buf_img, format="png", bbox_inches="tight")
-            st.download_button("📷 Descargar PNG", data=buf_img.getvalue(),
-                               file_name="grafico_combinado.png", mime="image/png")
-
-            # Descargar tabla combinada
-            excel_buffer = BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-# Línea comentada por error:                 df_resumen = pd.DataFrame({'X': x_values})
-df_resumen = pd.DataFrame()  # Corregir si se usa esta tabla más adelante
-
-# --- Descarga de Excel con resumen y hojas individuales ---
-if se_grafico_algo:
-    st.markdown("### Descargar tabla")
-    try:
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-# Línea comentada por error:             df_resumen = pd.DataFrame({'X': None})
-df_resumen = pd.DataFrame()  # Corregir si se usa esta tabla más adelante
-                col_x, col_y = df_data.columns[:2]
-                df_data[col_x] = df_data[col_x].astype(str).str.replace(",", ".", regex=False)
-                df_data[col_y] = df_data[col_y].astype(str).str.replace(",", ".", regex=False)
-                df_data[col_x] = pd.to_numeric(df_data[col_x], errors="coerce")
-                df_data[col_y] = pd.to_numeric(df_data[col_y], errors="coerce")
-
-                df_filtrado_final = df_data[
-                    (df_data[col_x] >= x_min) & (df_data[col_x] <= x_max) &
-                    (df_data[col_y] >= y_min) & (df_data[col_y] <= y_max)
-                ].dropna()
-
-                # Escribir hoja individual
-                nombre_hoja = f"{row['Muestra']}_{row['Tipo']}".replace(" ", "_")[:31]
-                df_filtrado_final.to_excel(writer, index=False, sheet_name=nombre_hoja)
-
-                # Agregar al resumen
-                df_temp = df_filtrado_final[[col_x, col_y]].rename(columns={col_x: "X", col_y: f"{row['Muestra']} – {row['Tipo']}"})
-                if df_resumen["X"].isnull().all():
-                    df_resumen = df_temp
-                else:
-                    df_resumen = pd.merge(df_resumen, df_temp, on="X", how="outer")
-
-            df_resumen.to_excel(writer, index=False, sheet_name="Resumen")
-
-        excel_buffer.seek(0)
-        st.download_button("📊 Descargar tabla", data=excel_buffer.getvalue(),
-                           file_name="tabla_espectros_seleccionados.xlsx",
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    except Exception as e:
-        st.error(f"Error al generar la tabla: {e}")
+        if se_grafico_algo:
+            # Botón para descargar gráfico combinado
+            buffer_img = BytesIO()
+            fig.savefig(buffer_img, format="png")
+            st.download_button("🖼️ Descargar gráfico combinado", data=buffer_img.getvalue(),
+                               file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
+                               mime="image/png")
+        else:
+            st.warning("No se pudo graficar ningún espectro válido.")

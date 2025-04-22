@@ -242,14 +242,9 @@ with tab3:
 
     st.subheader("Subir nuevo espectro")
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
-    fecha_spectro = st.date_input("Fecha del espectro", value=date.today())
-    tipo_espectro = st.selectbox(
-        "Tipo de espectro", ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"]
-    )
+    tipo_espectro = st.selectbox("Tipo de espectro", ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"])
     observaciones = st.text_area("Observaciones")
-    archivo = st.file_uploader(
-        "Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"]
-    )
+    archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
 
     if archivo:
         nombre_archivo = archivo.name
@@ -258,7 +253,7 @@ with tab3:
 
         st.markdown("### Vista previa")
         if es_imagen:
-            st.image(archivo, use_container_width=True)
+            st.image(archivo, use_column_width=True)
         else:
             try:
                 if extension == ".xlsx":
@@ -285,11 +280,10 @@ with tab3:
     if st.button("Guardar espectro") and archivo:
         espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])
         nuevo = {
-            "fecha": str(fecha_spectro),
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
-            "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8") if not es_imagen else archivo.getvalue().hex(),
+            "contenido": archivo.getvalue().decode("latin1") if not es_imagen else archivo.getvalue().hex(),
             "es_imagen": es_imagen,
         }
         espectros.append(nuevo)
@@ -297,12 +291,7 @@ with tab3:
         for m in muestras:
             if m["nombre"] == nombre_sel:
                 m["espectros"] = espectros
-                guardar_muestra(
-                    m["nombre"],
-                    m.get("observacion", ""),
-                    m.get("analisis", []),
-                    espectros
-                )
+                guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
                 st.success("Espectro guardado.")
                 st.rerun()
 
@@ -312,7 +301,6 @@ with tab3:
         for i, e in enumerate(m.get("espectros", [])):
             filas.append({
                 "Muestra": m["nombre"],
-                "Fecha": e.get("fecha", ""),
                 "Tipo": e.get("tipo", ""),
                 "Archivo": e.get("nombre_archivo", ""),
                 "Observaciones": e.get("observaciones", ""),
@@ -321,19 +309,13 @@ with tab3:
     df_esp_tabla = pd.DataFrame(filas)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
-
-        seleccion = st.selectbox("Eliminar espectro cargado", df_esp_tabla["ID"])
-        if st.button("Eliminar espectro cargado"):
+        seleccion = st.selectbox("Eliminar espectro", df_esp_tabla["ID"])
+        if st.button("Eliminar espectro"):
             nombre, idx = seleccion.split("__")
             for m in muestras:
                 if m["nombre"] == nombre:
                     m["espectros"].pop(int(idx))
-                    guardar_muestra(
-                        m["nombre"],
-                        m.get("observacion", ""),
-                        m.get("analisis", []),
-                        m.get("espectros", [])
-                    )
+                    guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
                     st.success("Espectro eliminado.")
                     st.rerun()
 
@@ -361,7 +343,7 @@ with tab3:
                                 if e.get("es_imagen"):
                                     file_out.write(bytes.fromhex(contenido))
                                 else:
-                                    file_out.write(base64.b64decode(contenido))
+                                    file_out.write(contenido.encode("latin1"))
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:

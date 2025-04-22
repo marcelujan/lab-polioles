@@ -388,6 +388,7 @@ with tab4:
                 "Muestra": m["nombre"],
                 "Tipo": e.get("tipo", ""),
                 "Nombre archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
                 "Observaciones": e.get("observaciones", ""),
                 "Contenido": e.get("contenido"),
                 "Es imagen": e.get("es_imagen", False)
@@ -405,119 +406,93 @@ with tab4:
     tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
 
     df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
-
-    # Separar espectros numéricos e imágenes
     df_datos = df_filtrado[~df_filtrado["Es imagen"]]
     df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
 
-    st.subheader("Espectros combinados")
+    if not df_datos.empty:
+        st.subheader("Gráfico combinado de espectros numéricos")
 
-    rango_x = [float('inf'), float('-inf')]
-    rango_y = [float('inf'), float('-inf')]
-    tablas_individuales = []
-    x_values = None
-
-    for _, row in df_datos.iterrows():
-        try:
-            extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-            if extension == ".xlsx":
-                binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                df_temp = pd.read_excel(binario)
-            else:
-                contenido = BytesIO(base64.b64decode(row["Contenido"]))
-                separadores = [",", "\t", ";", " "]
-                for sep in separadores:
-                    contenido.seek(0)
-                    try:
-                        df_temp = pd.read_csv(contenido, sep=sep, engine="python")
-                        if df_temp.shape[1] >= 2:
-                            break
-                    except:
-                        continue
-                else:
-                    continue
-
-            col_x, col_y = df_temp.columns[:2]
-            for col in [col_x, col_y]:
-                if df_temp[col].dtype == object:
-                    df_temp[col] = df_temp[col].astype(str).str.replace(",", ".", regex=False)
-                df_temp[col] = pd.to_numeric(df_temp[col], errors="coerce")
-            df_temp = df_temp.dropna()
-            st.markdown(f"#### Vista previa: {row['Muestra']} – {row['Tipo']}")
-            st.write(df_temp.head())
-            st.write(df_temp.dtypes)
-
-            min_x, max_x = df_temp[col_x].agg(["min", "max"])
-            min_y, max_y = df_temp[col_y].agg(["min", "max"])
-
-            rango_x[0] = min(rango_x[0], min_x)
-            rango_x[1] = max(rango_x[1], max_x)
-            rango_y[0] = min(rango_y[0], min_y)
-            rango_y[1] = max(rango_y[1], max_y)
-
-            tablas_individuales.append((row["Muestra"], row["Tipo"], df_temp[[col_x, col_y]]))
-            if x_values is None:
-                x_values = df_temp[col_x]
-        except:
-            continue
-
-    if rango_x[0] == float('inf') or rango_y[0] == float('inf'):
-        st.warning("No se pudo graficar ningún espectro válido.")
-    else:
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            x_min = st.number_input("X mínimo", value=float(rango_x[0]))
-        with col2:
-            x_max = st.number_input("X máximo", value=float(rango_x[1]))
-        with col3:
-            y_min = st.number_input("Y mínimo", value=float(rango_y[0]))
-        with col4:
-            y_max = st.number_input("Y máximo", value=float(rango_y[1]))
+        import matplotlib.pyplot as plt
+        import pandas as pd
+        from io import BytesIO
+        import base64
 
         fig, ax = plt.subplots()
-        se_grafico_algo = False
-        df_resumen = pd.DataFrame({'X': x_values}) if x_values is not None else pd.DataFrame()
+        rango_x = [float("inf"), float("-inf")]
+        rango_y = [float("inf"), float("-inf")]
 
-        for muestra, tipo, df in tablas_individuales:
-            col_x, col_y = df.columns[:2]
-            df_fil = df[
-                (df[col_x] >= x_min) & (df[col_x] <= x_max) &
-                (df[col_y] >= y_min) & (df[col_y] <= y_max)
-            ]
-            if df_fil.empty:
+        data_validos = []
+
+        for _, row in df_datos.iterrows():
+            try:
+                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+                if extension == ".xlsx":
+                    binario = BytesIO(base64.b64decode(row["Contenido"]))
+                    df = pd.read_excel(binario)
+                else:
+                    contenido = BytesIO(base64.b64decode(row["Contenido"]))
+                    sep_try = [",", ";", "\t", " "]
+                    for sep in sep_try:
+                        contenido.seek(0)
+                        try:
+                            df = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        continue
+
+                col_x, col_y = df.columns[:2]
+                for col in [col_x, col_y]:
+                    if df[col].dtype == object:
+                        df[col] = df[col].astype(str).str.replace(",", ".", regex=False)
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+                df = df.dropna()
+                if df.empty:
+                    continue
+
+                data_validos.append((row["Muestra"], row["Tipo"], df[col_x], df[col_y]))
+
+                rango_x[0] = min(rango_x[0], df[col_x].min())
+                rango_x[1] = max(rango_x[1], df[col_x].max())
+                rango_y[0] = min(rango_y[0], df[col_y].min())
+                rango_y[1] = max(rango_y[1], df[col_y].max())
+            except:
                 continue
-            ax.plot(df_fil[col_x], df_fil[col_y], label=f"{muestra} – {tipo}")
-            df_resumen[f"{muestra} – {tipo}"] = df_fil[col_y].reset_index(drop=True)
-            se_grafico_algo = True
 
-        if se_grafico_algo:
+        if not data_validos:
+            st.warning("No se pudo graficar ningún espectro válido.")
+        else:
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                x_min = st.number_input("X mínimo", value=rango_x[0])
+            with col2:
+                x_max = st.number_input("X máximo", value=rango_x[1])
+            with col3:
+                y_min = st.number_input("Y mínimo", value=rango_y[0])
+            with col4:
+                y_max = st.number_input("Y máximo", value=rango_y[1])
+
+            for muestra, tipo, x, y in data_validos:
+                x_filtrado = x[(x >= x_min) & (x <= x_max)]
+                y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+                if not y_filtrado.empty:
+                    ax.plot(x_filtrado[:len(y_filtrado)], y_filtrado, label=f"{muestra} – {tipo}")
+
+            ax.set_xlim(x_min, x_max)
+            ax.set_ylim(y_min, y_max)
             ax.legend()
+            ax.set_xlabel("X")
+            ax.set_ylabel("Y")
             st.pyplot(fig)
 
-            buf_img = BytesIO()
-            fig.savefig(buf_img, format="png", bbox_inches="tight")
-            st.download_button("📷 Descargar PNG", data=buf_img.getvalue(),
-                               file_name="grafico_combinado.png", mime="image/png")
-
-            excel_buffer = BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                df_resumen.to_excel(writer, index=False, sheet_name="Resumen")
-                for muestra, tipo, df in tablas_individuales:
-                    nombre_hoja = f"{muestra}_{tipo}".replace(" ", "_")[:31]
-                    df.to_excel(writer, index=False, sheet_name=nombre_hoja)
-            excel_buffer.seek(0)
-            st.download_button("📊 Descargar tabla", data=excel_buffer.getvalue(),
-                               file_name="espectros_combinados.xlsx",
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        else:
-            st.warning("No se pudo graficar ningún espectro válido.")
-
-    # Mostrar imágenes
     if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")
         for _, row in df_imagenes.iterrows():
             try:
-                img = BytesIO(bytes.fromhex(row["Contenido"]))
-                st.image(img, caption=f"{row['Muestra']} – {row['Tipo']}", use_container_width=True)
+                imagen = BytesIO(base64.b64decode(row["Contenido"]))
+                st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")

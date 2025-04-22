@@ -355,9 +355,9 @@ with tab3:
                             with open(file_path, "wb") as file_out:
                                 try:
                                     file_out.write(base64.b64decode(contenido))
-                                    except Exception as error:
-                                        st.error(f"Error al decodificar archivo: {nombre} — {error}")
-                                        continue
+                                except Exception as error:
+                                    st.error(f"Error al decodificar archivo: {nombre} — {error}")
+                                    continue
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:

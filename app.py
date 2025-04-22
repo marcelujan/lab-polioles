@@ -161,6 +161,7 @@ with tab2:
     for m in muestras:
         for i, a in enumerate(m.get("analisis", [])):
             tabla.append({
+                "Fecha": e.get("fecha", ""),
                 "ID": f"{m['nombre']}__{i}",
                 "Nombre": m["nombre"],
                 "Tipo": a.get("tipo", ""),
@@ -244,6 +245,7 @@ with tab3:
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
     tipo_espectro = st.selectbox("Tipo de espectro", ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"])
     observaciones = st.text_area("Observaciones")
+    fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
     archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
 
     if archivo:
@@ -285,6 +287,7 @@ with tab3:
             "nombre_archivo": archivo.name,
             "contenido": archivo.getvalue().decode("latin1") if not es_imagen else archivo.getvalue().hex(),
             "es_imagen": es_imagen,
+            "fecha": str(fecha_espectro),
         }
         espectros.append(nuevo)
 
@@ -304,12 +307,17 @@ with tab3:
                 "Tipo": e.get("tipo", ""),
                 "Archivo": e.get("nombre_archivo", ""),
                 "Observaciones": e.get("observaciones", ""),
+                "Fecha": e.get("fecha", ""),
                 "ID": f"{m['nombre']}__{i}"
             })
     df_esp_tabla = pd.DataFrame(filas)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
-        seleccion = st.selectbox("Eliminar espectro", df_esp_tabla["ID"])
+        seleccion = st.selectbox(
+            "Eliminar espectro",
+            df_esp_tabla["ID"],
+            format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
+        )
         if st.button("Eliminar espectro"):
             nombre, idx = seleccion.split("__")
             for m in muestras:

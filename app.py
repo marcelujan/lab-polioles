@@ -349,9 +349,6 @@ with tab3:
                             file_path = os.path.join(fullpath, nombre)
                             with open(file_path, "wb") as file_out:
                                 if e.get("es_imagen"):
-                                    file_out.write(bytes.fromhex(contenido))
-                                else:
-                                    if e.get("es_imagen"):
                                 file_out.write(bytes.fromhex(contenido))
                             else:
                                 try:

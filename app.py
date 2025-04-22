@@ -224,14 +224,6 @@ with tab2:
         ax.set_xlabel(tipo_x)
         ax.set_ylabel(tipo_y)
         st.pyplot(fig)
-buf = BytesIO()
-            fig.savefig(buf, format="png")
-            st.download_button(
-                label="📷 Descargar gráfico",
-                data=buf.getvalue(),
-                file_name=f"grafico_espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
-                mime="image/png"
-            )
 
         buf_img = BytesIO()
         fig.savefig(buf_img, format="png")
@@ -280,14 +272,6 @@ with tab3:
                     ax.set_xlabel(col_x)
                     ax.set_ylabel(col_y)
                     st.pyplot(fig)
-buf = BytesIO()
-            fig.savefig(buf, format="png")
-            st.download_button(
-                label="📷 Descargar gráfico",
-                data=buf.getvalue(),
-                file_name=f"grafico_espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
-                mime="image/png"
-            )
                 else:
                     st.warning("El archivo debe tener al menos dos columnas.")
             except Exception as e:
@@ -518,13 +502,13 @@ with tab4:
             ax.set_ylabel("Y")
             ax.legend()
             st.pyplot(fig)
-buf = BytesIO()
-            fig.savefig(buf, format="png")
-            st.download_button(
-                label="📷 Descargar gráfico",
-                data=buf.getvalue(),
-                file_name=f"grafico_espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
-                mime="image/png"
-            )
+
+        if se_grafico_algo:
+            # Botón para descargar gráfico combinado
+            buffer_img = BytesIO()
+            fig.savefig(buffer_img, format="png")
+            st.download_button("🖼️ Descargar gráfico combinado", data=buffer_img.getvalue(),
+                               file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
+                               mime="image/png")
         else:
             st.warning("No se pudo graficar ningún espectro válido.")

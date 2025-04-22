@@ -261,23 +261,11 @@ with tab3:
                 if extension == ".xlsx":
                     df_esp = pd.read_excel(archivo)
                 else:
-                    
-                    from io import BytesIO
-                    contenido = BytesIO(archivo.getvalue())
-                    separadores = [",", ";", "\t", " "]
-                    for sep in separadores:
-                        contenido.seek(0)
-                        try:
-                            df_esp = pd.read_csv(contenido, sep=sep, engine="python", header=None)
-                            if df_esp.shape[1] >= 2:
-                                df_esp = df_esp.iloc[:, :2]
-                                df_esp.columns = ["X", "Y"]
-                                break
-                        except:
-                            continue
-                    else:
-                        raise ValueError("No se pudo interpretar el archivo con separadores comunes")
-
+                    try:
+                        df_esp = pd.read_csv(archivo, sep=None, engine="python")
+                    except:
+                        archivo.seek(0)
+                        df_esp = pd.read_csv(archivo, sep=";", engine="python")
 
                 if df_esp.shape[1] >= 2:
                     colnames = df_esp.columns[:2].tolist()

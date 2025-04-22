@@ -484,8 +484,7 @@ with tab4:
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
             ax.legend()
-            ax.set_xlabel("X")
-            ax.set_ylabel("Y")
+            
             st.pyplot(fig)
 
     if not df_imagenes.empty:

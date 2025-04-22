@@ -161,12 +161,11 @@ with tab2:
     for m in muestras:
         for i, a in enumerate(m.get("analisis", [])):
             tabla.append({
-                "Fecha": e.get("fecha", ""),
+                "Fecha": a.get("fecha", ""),
                 "ID": f"{m['nombre']}__{i}",
                 "Nombre": m["nombre"],
                 "Tipo": a.get("tipo", ""),
                 "Valor": a.get("valor", ""),
-                "Fecha": e.get("fecha", ""),
                 "Observaciones": a.get("observaciones", "")
             })
 
@@ -307,7 +306,6 @@ with tab3:
                 "Tipo": e.get("tipo", ""),
                 "Archivo": e.get("nombre_archivo", ""),
                 "Observaciones": e.get("observaciones", ""),
-                "Fecha": e.get("fecha", ""),
                 "ID": f"{m['nombre']}__{i}"
             })
     df_esp_tabla = pd.DataFrame(filas)

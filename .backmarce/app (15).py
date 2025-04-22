@@ -273,8 +273,6 @@ with tab3:
                     col_y = st.selectbox("Columna eje Y", colnames, index=1)
                     min_x, max_x = float(df_esp[col_x].min()), float(df_esp[col_x].max())
                     x_range = st.slider("Rango eje X", min_value=min_x, max_value=max_x, value=(min_x, max_x))
-                    df_esp[col_x] = pd.to_numeric(df_esp[col_x].astype(str).str.replace(",", ".", regex=False), errors="coerce")
-                    df_esp[col_y] = pd.to_numeric(df_esp[col_y].astype(str).str.replace(",", ".", regex=False), errors="coerce")
                     df_filtrado = df_esp[(df_esp[col_x] >= x_range[0]) & (df_esp[col_x] <= x_range[1])]
 
                     fig, ax = plt.subplots()

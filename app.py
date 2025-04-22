@@ -375,6 +375,7 @@ with tab3:
     else:
         st.info("No hay espectros cargados.")
 
+
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
@@ -397,20 +398,18 @@ with tab4:
             })
 
     df_esp = pd.DataFrame(espectros_info)
-    if df_esp.empty:
-        st.warning("No hay espectros cargados.")
-        st.stop()
-
 
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()
     tipos_disp = df_esp["Tipo"].unique().tolist()
     muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
     tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
-    solo_datos = st.checkbox("Mostrar solo espectros numéricos", value=False)
-    solo_imagenes = st.checkbox("Mostrar solo imágenes", value=False)
-
+    
     df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
+
+    # Separar espectros numéricos e imágenes
+    df_datos = df_filtrado[~df_filtrado["Es imagen"]]
+    df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
     if solo_datos:
         df_filtrado = df_filtrado[~df_filtrado["Es imagen"]]
     if solo_imagenes:
@@ -431,7 +430,7 @@ with tab4:
                     binario = BytesIO(bytes.fromhex(row["Contenido"]))
                     df_temp = pd.read_excel(binario)
                 else:
-                    contenido = BytesIO(base64.b64decode(row["Contenido"]))
+                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
                     separadores = [",", "	", ";", " "]
                     for sep in separadores:
                         contenido.seek(0)
@@ -515,3 +514,12 @@ with tab4:
                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.warning("No se pudo graficar ningún espectro válido.")
+
+    if not df_imagenes.empty:
+        st.subheader("Imágenes de espectros")
+        for _, row in df_imagenes.iterrows():
+            try:
+                img = BytesIO(bytes.fromhex(row["Contenido"]))
+                st.image(img, caption=f"{row['Muestra']} – {row['Tipo']}", use_container_width=True)
+            except:
+                st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")

@@ -8,6 +8,7 @@ from firebase_admin import credentials, firestore
 from datetime import date, datetime
 from io import BytesIO
 import os
+import base64
 import matplotlib.pyplot as plt
 import zipfile
 from tempfile import TemporaryDirectory
@@ -161,11 +162,11 @@ with tab2:
     for m in muestras:
         for i, a in enumerate(m.get("analisis", [])):
             tabla.append({
+                "Fecha": a.get("fecha", ""),
                 "ID": f"{m['nombre']}__{i}",
                 "Nombre": m["nombre"],
                 "Tipo": a.get("tipo", ""),
                 "Valor": a.get("valor", ""),
-                "Fecha": a.get("fecha", ""),
                 "Observaciones": a.get("observaciones", "")
             })
 
@@ -244,6 +245,7 @@ with tab3:
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
     tipo_espectro = st.selectbox("Tipo de espectro", ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"])
     observaciones = st.text_area("Observaciones")
+    fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
     archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
 
     if archivo:
@@ -253,7 +255,7 @@ with tab3:
 
         st.markdown("### Vista previa")
         if es_imagen:
-            st.image(archivo, use_column_width=True)
+            st.image(archivo, use_container_width=True)
         else:
             try:
                 if extension == ".xlsx":
@@ -283,8 +285,9 @@ with tab3:
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
-            "contenido": archivo.getvalue().decode("latin1") if not es_imagen else archivo.getvalue().hex(),
+            "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8") if not es_imagen else archivo.getvalue().hex(),
             "es_imagen": es_imagen,
+            "fecha": str(fecha_espectro),
         }
         espectros.append(nuevo)
 
@@ -303,13 +306,18 @@ with tab3:
                 "Muestra": m["nombre"],
                 "Tipo": e.get("tipo", ""),
                 "Archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
                 "Observaciones": e.get("observaciones", ""),
                 "ID": f"{m['nombre']}__{i}"
             })
     df_esp_tabla = pd.DataFrame(filas)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
-        seleccion = st.selectbox("Eliminar espectro", df_esp_tabla["ID"])
+        seleccion = st.selectbox(
+            "Eliminar espectro",
+            df_esp_tabla["ID"],
+            format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
+        )
         if st.button("Eliminar espectro"):
             nombre, idx = seleccion.split("__")
             for m in muestras:
@@ -319,7 +327,12 @@ with tab3:
                     st.success("Espectro eliminado.")
                     st.rerun()
 
-        if st.button("📦 Descargar espectros"):
+        # --- DESCARGA DE ESPECTROS ---
+                # Lógica de descarga solo si se hace clic
+        if st.button("📦 Preparar descarga"):
+            from tempfile import TemporaryDirectory
+            import zipfile
+
             with TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
@@ -343,13 +356,22 @@ with tab3:
                                 if e.get("es_imagen"):
                                     file_out.write(bytes.fromhex(contenido))
                                 else:
-                                    file_out.write(contenido.encode("latin1"))
+                                    try:
+                                        file_out.write(base64.b64decode(contenido))
+                                    except Exception as error:
+                                        st.error(f"Error al decodificar archivo: {nombre} — {error}")
+                                        continue
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
-                    st.download_button("📦 Descargar espectros", data=final_zip.read(),
-                                       file_name=os.path.basename(zip_path),
-                                       mime="application/zip")
+                    st.session_state["zip_bytes"] = final_zip.read()
+                    st.session_state["zip_name"] = os.path.basename(zip_path)
+
+        # Botón de descarga fuera del evento
+        if "zip_bytes" in st.session_state:
+            st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
+                               file_name=st.session_state["zip_name"],
+                               mime="application/zip")
     else:
         st.info("No hay espectros cargados.")
 
@@ -376,6 +398,10 @@ with tab4:
             })
 
     df_esp = pd.DataFrame(espectros_info)
+    if df_esp.empty:
+        st.warning("No hay espectros cargados.")
+        st.stop()
+
 
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()
@@ -406,7 +432,7 @@ with tab4:
                     binario = BytesIO(bytes.fromhex(row["Contenido"]))
                     df_temp = pd.read_excel(binario)
                 else:
-                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+                    contenido = BytesIO(base64.b64decode(row["Contenido"]))
                     separadores = [",", "	", ";", " "]
                     for sep in separadores:
                         contenido.seek(0)

@@ -226,11 +226,6 @@ with tab2:
         ax.set_ylabel(tipo_y)
         st.pyplot(fig)
 
-            buf_png = BytesIO()
-            fig.savefig(buf_png, format="png", bbox_inches="tight")
-            st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
-                               file_name="grafico_combinado.png", mime="image/png")
-
         buf_img = BytesIO()
         fig.savefig(buf_img, format="png")
         st.download_button("📷 Descargar gráfico", buf_img.getvalue(),
@@ -279,11 +274,6 @@ with tab3:
                     ax.set_xlabel(col_x)
                     ax.set_ylabel(col_y)
                     st.pyplot(fig)
-
-            buf_png = BytesIO()
-            fig.savefig(buf_png, format="png", bbox_inches="tight")
-            st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
-                               file_name="grafico_combinado.png", mime="image/png")
                 else:
                     st.warning("El archivo debe tener al menos dos columnas.")
             except Exception as e:
@@ -498,11 +488,6 @@ with tab4:
             
             st.pyplot(fig)
 
-            buf_png = BytesIO()
-            fig.savefig(buf_png, format="png", bbox_inches="tight")
-            st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
-                               file_name="grafico_combinado.png", mime="image/png")
-
             # Exportar Excel con resumen y hojas individuales
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
@@ -530,10 +515,9 @@ with tab4:
                 st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
-    if descargar_zip:
+    if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
         st.subheader("Descargar imágenes seleccionadas")
-        descargar_zip = st.button("📥 Descargar tabla o imágenes")
-
+        if st.button("📥 Descargar imágenes"):
             from tempfile import TemporaryDirectory
             import zipfile
 

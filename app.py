@@ -250,7 +250,7 @@ with tab2:
                                             f"Y_{muestra}_{tipo}": y_filtrado})
                     df_full.to_excel(writer, index=False, sheet_name=hoja)
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
-            excel_buffer.seek(0)
+                excel_buffer.seek(0)
         st.download_button(
                 "📊 Descargar tabla",
                 data=excel_buffer.getvalue(),

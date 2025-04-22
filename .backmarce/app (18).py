@@ -271,10 +271,7 @@ with tab3:
                             df_esp = pd.read_csv(contenido, sep=sep, engine="python", header=None)
                             if df_esp.shape[1] >= 2:
                                 df_esp = df_esp.iloc[:, :2]
-                                
-                    if df_esp.shape[1] == 1:
-                        df_esp = df_esp[0].astype(str).str.split(";", expand=True)
-                    df_esp.columns = ["X", "Y"]
+                                df_esp.columns = ["X", "Y"]
                                 break
                         except:
                             continue

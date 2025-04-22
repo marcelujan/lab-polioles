@@ -333,7 +333,7 @@ with tab3:
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
 
                 with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
-                    df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")
+                    df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")  # Incluye columna "Fecha" automáticamente
 
                 with zipfile.ZipFile(zip_path, "w") as zipf:
                     zipf.write(excel_path, arcname="tabla_espectros.xlsx")

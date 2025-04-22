@@ -382,6 +382,10 @@ with tab4:
             })
 
     df_esp = pd.DataFrame(espectros_info)
+    if df_esp.empty:
+        st.warning("No hay espectros cargados.")
+        st.stop()
+
 
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()

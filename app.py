@@ -351,7 +351,14 @@ with tab3:
                                 if e.get("es_imagen"):
                                     file_out.write(bytes.fromhex(contenido))
                                 else:
-                                    file_out.write(contenido.encode("latin1"))
+                                    if e.get("es_imagen"):
+                                file_out.write(bytes.fromhex(contenido))
+                            else:
+                                try:
+                                    file_out.write(base64.b64decode(contenido))
+                                except Exception as error:
+                                    st.error(f"Error al decodificar archivo: {nombre} — {error}")
+                                    continue
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:

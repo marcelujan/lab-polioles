@@ -354,7 +354,6 @@ with tab3:
         st.info("No hay espectros cargados.")
 
 
-
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
@@ -377,10 +376,6 @@ with tab4:
             })
 
     df_esp = pd.DataFrame(espectros_info)
-    if df_esp.empty:
-        st.warning("No hay espectros cargados.")
-        st.stop()
-
 
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()
@@ -411,7 +406,7 @@ with tab4:
                     binario = BytesIO(bytes.fromhex(row["Contenido"]))
                     df_temp = pd.read_excel(binario)
                 else:
-                    contenido = BytesIO(base64.b64decode(row["Contenido"]))
+                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
                     separadores = [",", "	", ";", " "]
                     for sep in separadores:
                         contenido.seek(0)
@@ -430,9 +425,6 @@ with tab4:
                 df_temp[col_x] = pd.to_numeric(df_temp[col_x], errors="coerce")
                 df_temp[col_y] = pd.to_numeric(df_temp[col_y], errors="coerce")
                 df_temp = df_temp.dropna()
-            st.markdown(f"#### Vista previa: {row['Muestra']} – {row['Tipo']}")
-            st.write(df_temp.head())
-            st.write(df_temp.dtypes)
 
                 min_x, max_x = df_temp[col_x].agg(["min", "max"])
                 min_y, max_y = df_temp[col_y].agg(["min", "max"])

@@ -502,5 +502,13 @@ with tab4:
             ax.set_ylabel("Y")
             ax.legend()
             st.pyplot(fig)
+
+        if se_grafico_algo:
+            # Botón para descargar gráfico combinado
+            buffer_img = BytesIO()
+            fig.savefig(buffer_img, format="png")
+            st.download_button("🖼️ Descargar gráfico combinado", data=buffer_img.getvalue(),
+                               file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
+                               mime="image/png")
         else:
             st.warning("No se pudo graficar ningún espectro válido.")

@@ -484,7 +484,8 @@ with tab4:
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
             ax.legend()
-            
+            ax.set_xlabel("X")
+            ax.set_ylabel("Y")
             st.pyplot(fig)
 
     if not df_imagenes.empty:
@@ -493,34 +494,5 @@ with tab4:
             try:
                 imagen = BytesIO(base64.b64decode(row["Contenido"]))
                 st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
-    if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
-        st.subheader("Descargar imágenes seleccionadas")
-        if st.button("📥 Descargar imágenes"):
-            from tempfile import TemporaryDirectory
-            import zipfile
-
-            seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
-
-            with TemporaryDirectory() as tmpdir:
-                zip_path = os.path.join(tmpdir, f"imagenes_espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
-                with zipfile.ZipFile(zip_path, "w") as zipf:
-                    for _, row in seleccionadas.iterrows():
-                        carpeta = row["Muestra"]
-                        os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
-                        nombre = row["Nombre archivo"]
-                        path = os.path.join(tmpdir, carpeta, nombre)
-                        try:
-                            with open(path, "wb") as f:
-                                f.write(base64.b64decode(row["Contenido"]))
-                            zipf.write(path, arcname=os.path.join(carpeta, nombre))
-                        except Exception as error:
-                            st.warning(f"No se pudo incluir {nombre} — {error}")
-
-                with open(zip_path, "rb") as final_zip:
-                    st.download_button("📦 Descargar ZIP de imágenes",
-                                       data=final_zip.read(),
-                                       file_name=os.path.basename(zip_path),
-                                       mime="application/zip")
-
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")

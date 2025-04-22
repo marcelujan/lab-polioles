@@ -375,6 +375,7 @@ with tab3:
     else:
         st.info("No hay espectros cargados.")
 
+
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")

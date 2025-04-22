@@ -261,11 +261,7 @@ with tab3:
                 if extension == ".xlsx":
                     df_esp = pd.read_excel(archivo)
                 else:
-                    try:
                     df_esp = pd.read_csv(archivo, sep=None, engine="python")
-                except:
-                    archivo.seek(0)
-                    df_esp = pd.read_csv(archivo, sep=";", engine="python")
 
                 if df_esp.shape[1] >= 2:
                     colnames = df_esp.columns[:2].tolist()

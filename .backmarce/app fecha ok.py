@@ -323,8 +323,8 @@ with tab3:
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
 
-        seleccion = st.selectbox("Eliminar espectro", df_esp_tabla["ID"])
-        if st.button("Eliminar espectro"):
+        seleccion = st.selectbox("Eliminar espectro cargado", df_esp_tabla["ID"])
+        if st.button("Eliminar espectro cargado"):
             nombre, idx = seleccion.split("__")
             for m in muestras:
                 if m["nombre"] == nombre:

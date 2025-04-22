@@ -221,8 +221,8 @@ with tab2:
         ax.scatter(x, y)
         for i, txt in enumerate(nombres):
             ax.annotate(txt, (x[i], y[i]))
-        ax.set_xlabel(tipo_x)
-        ax.set_ylabel(tipo_y)
+        
+        
         st.pyplot(fig)
 
         buf_img = BytesIO()
@@ -269,8 +269,8 @@ with tab3:
 
                     fig, ax = plt.subplots()
                     ax.plot(df_filtrado[col_x], df_filtrado[col_y])
-                    ax.set_xlabel(col_x)
-                    ax.set_ylabel(col_y)
+                    
+                    
                     st.pyplot(fig)
                 else:
                     st.warning("El archivo debe tener al menos dos columnas.")
@@ -498,17 +498,31 @@ with tab4:
                     continue
 
         if se_grafico_algo:
-            ax.set_xlabel("X")
-            ax.set_ylabel("Y")
+            
+            
             ax.legend()
             st.pyplot(fig)
+            st.pyplot(fig)
 
-        if se_grafico_algo:
-            # Botón para descargar gráfico combinado
-            buffer_img = BytesIO()
-            fig.savefig(buffer_img, format="png")
-            st.download_button("🖼️ Descargar gráfico combinado", data=buffer_img.getvalue(),
-                               file_name=f"grafico_combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
-                               mime="image/png")
+            # Descargar imagen
+            buf_img = BytesIO()
+            fig.savefig(buf_img, format="png", bbox_inches="tight")
+            st.download_button("📷 Descargar PNG", data=buf_img.getvalue(),
+                               file_name="grafico_combinado.png", mime="image/png")
+
+            # Descargar tabla combinada
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                df_resumen = pd.DataFrame({'X': x_values})
+                for nombre, datos in muestras_individuales.items():
+                    df_resumen[nombre] = datos['Y']
+                    df_individual = pd.DataFrame({'X': datos['X'], 'Y': datos['Y']})
+                    hoja = f"{nombre}".replace(" ", "_")[:31]
+                    df_individual.to_excel(writer, sheet_name=hoja, index=False)
+                df_resumen.to_excel(writer, sheet_name="Resumen", index=False)
+            excel_buffer.seek(0)
+            st.download_button("📊 Descargar tabla", data=excel_buffer.getvalue(),
+                               file_name="espectros_combinados.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.warning("No se pudo graficar ningún espectro válido.")

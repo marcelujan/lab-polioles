@@ -265,21 +265,24 @@ with tab3:
                     from io import BytesIO
                     contenido = BytesIO(archivo.getvalue())
                     separadores = [",", ";", "\t", " "]
+                    from io import BytesIO
+                    contenido = BytesIO(archivo.getvalue())
+                    separadores = [",", ";", "\t", " "]
+                    df_esp = None
                     for sep in separadores:
                         contenido.seek(0)
                         try:
                             df_esp = pd.read_csv(contenido, sep=sep, engine="python", header=None)
+                            if df_esp.shape[1] == 1:
+                                df_esp = df_esp[0].astype(str).str.split(sep, expand=True)
                             if df_esp.shape[1] >= 2:
                                 df_esp = df_esp.iloc[:, :2]
-                                
-                    if df_esp.shape[1] == 1:
-                        df_esp = df_esp[0].astype(str).str.split(";", expand=True)
-                    df_esp.columns = ["X", "Y"]
+                                df_esp.columns = ["X", "Y"]
                                 break
                         except:
                             continue
                     else:
-                        raise ValueError("No se pudo interpretar el archivo con separadores comunes")
+                        raise ValueError("No se pudo interpretar el archivo con separadores comunes.")
 
 
                 if df_esp.shape[1] >= 2:

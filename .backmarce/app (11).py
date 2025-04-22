@@ -361,7 +361,6 @@ with tab3:
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
-    zip_bytes = final_zip.read()
                     st.session_state["zip_bytes"] = final_zip.read()
                     st.session_state["zip_name"] = os.path.basename(zip_path)
 
@@ -539,7 +538,6 @@ with tab4:
                             st.warning(f"No se pudo incluir {nombre} — {error}")
 
                 with open(zip_path, "rb") as final_zip:
-    zip_bytes = final_zip.read()
                     
                 # Descargar Excel con valores graficados
                 excel_buffer = BytesIO()
@@ -563,6 +561,6 @@ with tab4:
                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
                 st.download_button("📦 Descargar ZIP de imágenes",
-                                       data=zip_bytes,
+                                       data=final_zip.read(),
                                        file_name=os.path.basename(zip_path),
                                        mime="application/zip")

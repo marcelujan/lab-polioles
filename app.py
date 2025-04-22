@@ -523,6 +523,3 @@ with tab4:
                                        data=final_zip.read(),
                                        file_name=os.path.basename(zip_path),
                                        mime="application/zip")
-
-            except:
-                st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")

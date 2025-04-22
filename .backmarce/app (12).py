@@ -411,7 +411,7 @@ with tab4:
     df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
 
     if not df_datos.empty:
-        st.subheader("Espectros seleccionados")
+        st.subheader("Gráfico combinado de espectros numéricos")
 
         import matplotlib.pyplot as plt
         import pandas as pd
@@ -508,7 +508,7 @@ with tab4:
 
 
     if not df_imagenes.empty:
-        
+        st.subheader("Imágenes de espectros")
         for _, row in df_imagenes.iterrows():
             try:
                 imagen = BytesIO(base64.b64decode(row["Contenido"]))
@@ -516,8 +516,8 @@ with tab4:
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
     if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
-        st.subheader("Descargar")
-        if st.button("📥 Descargar tabla o imágenes"):
+        st.subheader("Descargar imágenes seleccionadas")
+        if st.button("📥 Descargar imágenes"):
             from tempfile import TemporaryDirectory
             import zipfile
 

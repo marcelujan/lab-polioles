@@ -536,10 +536,10 @@ with tab4:
                                 f.write(base64.b64decode(row["Contenido"]))
                             zipf.write(path, arcname=os.path.join(carpeta, nombre))
 
-# Guardar el gráfico combinado como imagen para incluir en ZIP
-grafico_png = os.path.join(tmpdir, "grafico_combinado.png")
-fig.savefig(grafico_png, format="png", bbox_inches="tight")
-zipf.write(grafico_png, arcname="grafico_combinado.png")
+                        # Guardar el gráfico combinado como imagen para incluir en ZIP
+                        grafico_png = os.path.join(tmpdir, "grafico_combinado.png")
+                        fig.savefig(grafico_png, format="png", bbox_inches="tight")
+                        zipf.write(grafico_png, arcname="grafico_combinado.png")
 
                         except Exception as error:
                             st.warning(f"No se pudo incluir {nombre} — {error}")

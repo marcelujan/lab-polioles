@@ -285,7 +285,7 @@ with tab3:
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
-            "contenido": archivo.getvalue().decode("latin1") if not es_imagen else archivo.getvalue().hex(),
+            "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8") if not es_imagen else archivo.getvalue().hex(),
             "es_imagen": es_imagen,
             "fecha": str(fecha_espectro),
         }
@@ -414,7 +414,7 @@ with tab4:
                     binario = BytesIO(bytes.fromhex(row["Contenido"]))
                     df_temp = pd.read_excel(binario)
                 else:
-                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
+                    contenido = BytesIO(base64.b64decode(row["Contenido"]))
                     separadores = [",", "	", ";", " "]
                     for sep in separadores:
                         contenido.seek(0)

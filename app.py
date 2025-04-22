@@ -487,6 +487,27 @@ with tab4:
             
             st.pyplot(fig)
 
+            # Exportar Excel con resumen y hojas individuales
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                resumen = pd.DataFrame()
+                for muestra, tipo, x, y in data_validos:
+                    x_filtrado = x[(x >= x_min) & (x <= x_max)]
+                    y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+                    df_tmp = pd.DataFrame({f"X_{muestra}_{tipo}": x_filtrado[:len(y_filtrado)],
+                                           f"Y_{muestra}_{tipo}": y_filtrado})
+                    df_tmp.to_excel(writer, index=False, sheet_name=f"{muestra[:15]}_{tipo[:10]}")
+                    if resumen.empty:
+                        resumen = df_tmp.copy()
+                    else:
+                        resumen = pd.concat([resumen, df_tmp], axis=1)
+                resumen.to_excel(writer, index=False, sheet_name="Resumen")
+            excel_buffer.seek(0)
+            st.download_button("📊 Descargar tabla", data=excel_buffer.getvalue(),
+                               file_name="espectros_combinados.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
     if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")
         for _, row in df_imagenes.iterrows():

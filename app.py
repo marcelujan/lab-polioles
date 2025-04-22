@@ -258,7 +258,7 @@ with tab3:
 
         st.markdown("### Vista previa")
         if es_imagen:
-            st.image(archivo, use_column_width=True)
+            st.image(archivo, use_container_width=True)
         else:
             try:
                 if extension == ".xlsx":
@@ -289,7 +289,7 @@ with tab3:
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
-            "contenido": archivo.getvalue().decode("latin1") if not es_imagen else archivo.getvalue().hex(),
+            "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8") if not es_imagen else archivo.getvalue().hex(),
             "es_imagen": es_imagen,
         }
         espectros.append(nuevo)
@@ -320,7 +320,7 @@ with tab3:
             })
     df_esp_tabla = pd.DataFrame(filas)
     if not df_esp_tabla.empty:
-        st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_column_width=True)
+        st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
 
         seleccion = st.selectbox("Eliminar espectro cargado", df_esp_tabla["ID"])
         if st.button("Eliminar espectro cargado"):
@@ -361,7 +361,7 @@ with tab3:
                                 if e.get("es_imagen"):
                                     file_out.write(bytes.fromhex(contenido))
                                 else:
-                                    file_out.write(contenido.encode("latin1"))
+                                    file_out.write(base64.b64decode(contenido))
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:

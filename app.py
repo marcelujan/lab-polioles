@@ -375,7 +375,6 @@ with tab3:
     else:
         st.info("No hay espectros cargados.")
 
-
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
@@ -447,6 +446,9 @@ with tab4:
                     df_temp[col] = df_temp[col].astype(str).str.replace(",", ".", regex=False)
                 df_temp[col] = pd.to_numeric(df_temp[col], errors="coerce")
             df_temp = df_temp.dropna()
+    st.markdown(f"#### Vista previa: {row['Muestra']} – {row['Tipo']}")
+    st.write(df_temp.head())
+    st.write(df_temp.dtypes)
 
             min_x, max_x = df_temp[col_x].agg(["min", "max"])
             min_y, max_y = df_temp[col_y].agg(["min", "max"])

@@ -513,20 +513,8 @@ with tab4:
             # Descargar tabla combinada
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                df_resumen = pd.DataFrame({'X': x_values})
-                for nombre, datos in muestras_individuales.items():
-                    df_resumen[nombre] = datos['Y']
-                    df_individual = pd.DataFrame({'X': datos['X'], 'Y': datos['Y']})
-                    hoja = f"{nombre}".replace(" ", "_")[:31]
-                    df_individual.to_excel(writer, sheet_name=hoja, index=False)
-                df_resumen.to_excel(writer, sheet_name="Resumen", index=False)
-            excel_buffer.seek(0)
-            st.download_button("📊 Descargar tabla", data=excel_buffer.getvalue(),
-                               file_name="espectros_combinados.xlsx",
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        else:
-            st.warning("No se pudo graficar ningún espectro válido.")
-
+# Línea comentada por error:                 df_resumen = pd.DataFrame({'X': x_values})
+df_resumen = pd.DataFrame()  # Corregir si se usa esta tabla más adelante
 
 # --- Descarga de Excel con resumen y hojas individuales ---
 if se_grafico_algo:
@@ -534,27 +522,8 @@ if se_grafico_algo:
     try:
         excel_buffer = BytesIO()
         with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-            df_resumen = pd.DataFrame({'X': None})
-            for _, row in df_filtrado.iterrows():
-                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-                if extension == ".xlsx":
-                    binario = BytesIO(bytes.fromhex(row["Contenido"]))
-                    df_data = pd.read_excel(binario)
-                else:
-                    from io import StringIO
-                    contenido = StringIO(bytes.fromhex(row["Contenido"]).decode("latin1"))
-                    separadores = [",", "\t", ";", " "]
-                    for sep in separadores:
-                        contenido.seek(0)
-                        try:
-                            df_data = pd.read_csv(contenido, sep=sep, engine="python")
-                            if df_data.shape[1] >= 2:
-                                break
-                        except:
-                            continue
-                    else:
-                        continue
-
+# Línea comentada por error:             df_resumen = pd.DataFrame({'X': None})
+df_resumen = pd.DataFrame()  # Corregir si se usa esta tabla más adelante
                 col_x, col_y = df_data.columns[:2]
                 df_data[col_x] = df_data[col_x].astype(str).str.replace(",", ".", regex=False)
                 df_data[col_y] = df_data[col_y].astype(str).str.replace(",", ".", regex=False)

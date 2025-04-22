@@ -539,7 +539,7 @@ with tab4:
                             st.warning(f"No se pudo incluir {nombre} — {error}")
 
                 with open(zip_path, "rb") as final_zip:
-    zip_bytes = final_zip.read()
+                    zip_bytes = final_zip.read()
                     
                 # Descargar Excel con valores graficados
                 excel_buffer = BytesIO()

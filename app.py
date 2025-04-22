@@ -226,7 +226,7 @@ with tab2:
         ax.set_ylabel(tipo_y)
         st.pyplot(fig)
 
-        buf_png = BytesIO()
+                buf_png = BytesIO()
         fig.savefig(buf_png, format="png", bbox_inches="tight")
         st.download_button(
                 "📷 Descargar gráfico combinado",
@@ -258,7 +258,7 @@ with tab2:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-        buf_png = BytesIO()
+                buf_png = BytesIO()
         fig.savefig(buf_png, format="png", bbox_inches="tight")
         st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
                                file_name="grafico_combinado.png", mime="image/png")
@@ -312,7 +312,7 @@ with tab3:
                     ax.set_ylabel(col_y)
                     st.pyplot(fig)
 
-        buf_png = BytesIO()
+                buf_png = BytesIO()
         fig.savefig(buf_png, format="png", bbox_inches="tight")
         st.download_button(
                 "📷 Descargar gráfico combinado",
@@ -344,7 +344,7 @@ with tab3:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-        buf_png = BytesIO()
+                buf_png = BytesIO()
         fig.savefig(buf_png, format="png", bbox_inches="tight")
         st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
                                file_name="grafico_combinado.png", mime="image/png")
@@ -562,7 +562,7 @@ with tab4:
             
             st.pyplot(fig)
 
-        buf_png = BytesIO()
+                buf_png = BytesIO()
         fig.savefig(buf_png, format="png", bbox_inches="tight")
         st.download_button(
                 "📷 Descargar gráfico combinado",
@@ -594,7 +594,7 @@ with tab4:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-        buf_png = BytesIO()
+                buf_png = BytesIO()
         fig.savefig(buf_png, format="png", bbox_inches="tight")
         st.download_button("📷 Descargar gráfico combinado", data=buf_png.getvalue(),
                                file_name="grafico_combinado.png", mime="image/png")

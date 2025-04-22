@@ -285,7 +285,7 @@ with tab3:
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
-            "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8")
+            "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8"),
             "es_imagen": es_imagen,
             "fecha": str(fecha_espectro),
         }

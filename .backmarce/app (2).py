@@ -243,7 +243,14 @@ with tab3:
 
     st.subheader("Subir nuevo espectro")
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
-    tipo_espectro = st.selectbox("Tipo de espectro", ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"])
+    tipos_espectro_base = ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"]
+    if "tipos_espectro" not in st.session_state:
+        st.session_state.tipos_espectro = tipos_espectro_base.copy()
+    tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
+    nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
+    if nuevo_tipo and nuevo_tipo not in st.session_state.tipos_espectro:
+        st.session_state.tipos_espectro.append(nuevo_tipo)
+        tipo_espectro = nuevo_tipo
     observaciones = st.text_area("Observaciones")
     fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
     archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])

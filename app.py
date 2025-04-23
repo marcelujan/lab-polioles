@@ -243,7 +243,10 @@ with tab3:
 
     st.subheader("Subir nuevo espectro")
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
-    tipos_espectro_base = ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"]
+    tipos_espectro_base = [
+        "FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR",
+        "RMN 1H", "RMN 13C", "RMN-LF 1H"
+    ]
     if "tipos_espectro" not in st.session_state:
         st.session_state.tipos_espectro = tipos_espectro_base.copy()
     tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)

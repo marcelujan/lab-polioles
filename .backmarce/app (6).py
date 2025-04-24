@@ -64,7 +64,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Laboratorio de Polioles",
     "Análisis de datos",
     "Carga de espectros",
-    "Análisis de espectros", "Sugerencias", "Consola"]
+    "Análisis de espectros", "Sugerencias"]
 )
 
 

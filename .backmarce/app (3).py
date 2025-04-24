@@ -60,11 +60,11 @@ def guardar_muestra(nombre, observacion, analisis, espectros=None):
     with open(backup_name, "w", encoding="utf-8") as f:
         json.dump(datos, f, ensure_ascii=False, indent=2)
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "Laboratorio de Polioles",
     "Análisis de datos",
     "Carga de espectros",
-    "Análisis de espectros", "Sugerencias"]
+    "Análisis de espectros"
 ])
 
 
@@ -576,38 +576,3 @@ with tab4:
                                        data=zip_bytes,
                                        file_name=os.path.basename(zip_path),
                                        mime="application/zip")
-
-# --- HOJA 5 ---
-with tab5:
-    st.title("Sugerencias y comentarios")
-
-    sugerencias_ref = db.collection("sugerencias")
-
-    st.subheader("Dejar una sugerencia")
-    comentario = st.text_area("Escribí tu sugerencia o comentario aquí:")
-    if st.button("Enviar sugerencia"):
-        if comentario.strip():
-            sugerencias_ref.add({
-                "comentario": comentario.strip(),
-                "fecha": datetime.now().isoformat()
-            })
-            st.success("Gracias por tu comentario.")
-            st.rerun()
-        else:
-            st.warning("El comentario no puede estar vacío.")
-
-    st.subheader("Comentarios recibidos")
-
-    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
-    sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
-
-    if not sugerencias:
-        st.info("Aún no hay comentarios.")
-    else:
-        for s in sugerencias:
-            with st.expander(f"{s['fecha'][:19].replace('T',' ')}"):
-                st.markdown(s["comentario"])
-                if st.button("Eliminar", key=f"del_{s['id']}"):
-                    sugerencias_ref.document(s["id"]).delete()
-                    st.success("Comentario eliminado.")
-                    st.rerun()

@@ -162,11 +162,11 @@ with tab1:
         with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
             df_vista.to_excel(writer, index=False, sheet_name="Muestras")
         if st.session_state.rol == "admin":
-        st.download_button("Descargar Excel",
-            data=buffer.getvalue(),
-            file_name=f"lab-polioles_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+            st.download_button("Descargar Excel",
+                data=buffer.getvalue(),
+                file_name=f"lab-polioles_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
     else:
         st.info("No hay análisis cargados.")
 

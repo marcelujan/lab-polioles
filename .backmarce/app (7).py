@@ -611,7 +611,6 @@ with tab5:
             st.rerun()
 
 
-
 # --- HOJA 6 ---
 with tab6:
     st.title("Consola")
@@ -631,17 +630,6 @@ with tab6:
                 for a in analisis:
                     st.markdown(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
 
-                import pandas as pd
-                from io import BytesIO
-                df_analisis = pd.DataFrame(analisis)
-                buffer = BytesIO()
-                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-                    df_analisis.to_excel(writer, index=False, sheet_name="Análisis")
-                st.download_button("⬇️ Descargar análisis",
-                    data=buffer.getvalue(),
-                    file_name=f"analisis_{muestra['nombre']}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
             espectros = muestra.get("espectros", [])
             if espectros:
                 st.markdown("🧪 **Espectros cargados:**")
@@ -651,30 +639,3 @@ with tab6:
                         st.markdown(f"🖼️ {etiqueta}")
                     else:
                         st.markdown(f"📈 {etiqueta}")
-
-                import zipfile, base64, os
-                from tempfile import TemporaryDirectory
-
-                if st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
-                    with TemporaryDirectory() as tmpdir:
-                        zip_path = os.path.join(tmpdir, f"espectros_{muestra['nombre']}.zip")
-                        with zipfile.ZipFile(zip_path, "w") as zipf:
-                            for e in espectros:
-                                contenido = e.get("contenido")
-                                if not contenido:
-                                    continue
-                                nombre = e.get("nombre_archivo", "espectro")
-                                ruta = os.path.join(tmpdir, nombre)
-                                with open(ruta, "wb") as f:
-                                    if e.get("es_imagen"):
-                                        f.write(bytes.fromhex(contenido))
-                                    else:
-                                        f.write(base64.b64decode(contenido))
-                                zipf.write(ruta, arcname=nombre)
-
-                        with open(zip_path, "rb") as final_zip:
-                            st.download_button("📦 Descargar ZIP de espectros",
-                                data=final_zip.read(),
-                                file_name=f"espectros_{muestra['nombre']}.zip",
-                                mime="application/zip",
-                                key=f"dl_zip_{muestra['nombre']}")

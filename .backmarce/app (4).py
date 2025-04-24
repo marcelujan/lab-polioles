@@ -596,17 +596,18 @@ with tab5:
         else:
             st.warning("El comentario no puede estar vacío.")
 
-
     st.subheader("Comentarios recibidos")
 
     docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
     sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-    for s in sugerencias:
-        st.markdown(f"**{s['fecha'][:19].replace('T',' ')}**")
-        st.markdown(s["comentario"])
-        if st.button("Eliminar", key=f"del_{s['id']}"):
-            sugerencias_ref.document(s["id"]).delete()
-            st.success("Comentario eliminado.")
-            st.rerun()
-
+    if not sugerencias:
+        st.info("Aún no hay comentarios.")
+    else:
+        for s in sugerencias:
+            with st.expander(f"{s['fecha'][:19].replace('T',' ')}"):
+                st.markdown(s["comentario"])
+                if st.button("Eliminar", key=f"del_{s['id']}"):
+                    sugerencias_ref.document(s["id"]).delete()
+                    st.success("Comentario eliminado.")
+                    st.rerun()

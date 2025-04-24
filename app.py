@@ -16,7 +16,8 @@ from tempfile import TemporaryDirectory
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 
 
-# --- Autenticación por rol ---
+
+# --- Autenticación por rol simplificada ---
 ADMIN_PASSWORD = "irqplantapiloto"
 VISITOR_PASSWORD = "sololectura"
 
@@ -25,14 +26,13 @@ if "rol" not in st.session_state:
 
 if st.session_state.rol is None:
     st.title("Ingreso al Laboratorio de Polioles")
-    rol = st.radio("Ingresar como:", ["Visitante", "Administrador"])
     pwd = st.text_input("Contraseña", type="password")
     if st.button("Ingresar"):
-        if rol == "Administrador" and pwd == ADMIN_PASSWORD:
+        if pwd == ADMIN_PASSWORD:
             st.session_state.rol = "admin"
             st.success("Bienvenido administrador")
             st.rerun()
-        elif rol == "Visitante" and pwd == VISITOR_PASSWORD:
+        elif pwd == VISITOR_PASSWORD:
             st.session_state.rol = "visitante"
             st.success("Bienvenido visitante")
             st.rerun()
@@ -40,19 +40,6 @@ if st.session_state.rol is None:
             st.error("Contraseña incorrecta")
     st.stop()
 
-config = toml.load("config.toml")
-PASSWORD = config["auth"]["password"]
-if "autenticado" not in st.session_state:
-    st.session_state.autenticado = False
-if not st.session_state.autenticado:
-    pwd = st.text_input("Contraseña de acceso", type="password")
-    if st.button("Ingresar"):
-        if pwd == PASSWORD:
-            st.session_state.autenticado = True
-            st.rerun()
-        else:
-            st.error("Contraseña incorrecta")
-    st.stop()
 
 # --- Firebase ---
 if "firebase_initialized" not in st.session_state:

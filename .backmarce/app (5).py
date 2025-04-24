@@ -60,7 +60,7 @@ def guardar_muestra(nombre, observacion, analisis, espectros=None):
     with open(backup_name, "w", encoding="utf-8") as f:
         json.dump(datos, f, ensure_ascii=False, indent=2)
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "Laboratorio de Polioles",
     "Análisis de datos",
     "Carga de espectros",
@@ -610,32 +610,3 @@ with tab5:
             st.success("Comentario eliminado.")
             st.rerun()
 
-
-# --- HOJA 6 ---
-with tab6:
-    st.title("Consola")
-
-    muestras = cargar_muestras()
-    if not muestras:
-        st.info("No hay muestras cargadas.")
-        st.stop()
-
-    for muestra in muestras:
-        with st.expander(f"📁 {muestra['nombre']}"):
-            st.markdown(f"📝 **Observación:** {muestra.get('observacion', '—')}")
-
-            analisis = muestra.get("analisis", [])
-            if analisis:
-                st.markdown("📊 **Análisis cargados:**")
-                for a in analisis:
-                    st.markdown(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
-
-            espectros = muestra.get("espectros", [])
-            if espectros:
-                st.markdown("🧪 **Espectros cargados:**")
-                for e in espectros:
-                    etiqueta = f"{e['tipo']} ({e['fecha']})"
-                    if e.get("es_imagen", False):
-                        st.markdown(f"🖼️ {etiqueta}")
-                    else:
-                        st.markdown(f"📈 {etiqueta}")

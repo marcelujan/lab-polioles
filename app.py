@@ -687,9 +687,9 @@ with tab6:
                                 zipf.write(ruta, arcname=nombre)
 
                         with open(zip_path, "rb") as final_zip:
-    if st.button("Cerrar sesión"):
-        st.session_state.rol = None
-        st.rerun()
+                            if st.button("Cerrar sesión"):
+                                st.session_state.rol = None
+                                st.rerun()
 
     st.download_button("📦 Descargar ZIP de espectros",
                                 data=final_zip.read(),

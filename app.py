@@ -15,11 +15,7 @@ from tempfile import TemporaryDirectory
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 
-if st.session_state.get("rol"):
-    st.sidebar.success(f"Rol: {st.session_state.rol}")
-    if st.sidebar.button("Cerrar sesión"):
-        st.session_state.rol = None
-        st.rerun()
+
 
 
 
@@ -691,7 +687,11 @@ with tab6:
                                 zipf.write(ruta, arcname=nombre)
 
                         with open(zip_path, "rb") as final_zip:
-                            st.download_button("📦 Descargar ZIP de espectros",
+    if st.button("Cerrar sesión"):
+        st.session_state.rol = None
+        st.rerun()
+
+    st.download_button("📦 Descargar ZIP de espectros",
                                 data=final_zip.read(),
                                 file_name=f"espectros_{muestra['nombre']}.zip",
                                 mime="application/zip",

@@ -634,9 +634,12 @@ if 'data_validos' in locals() and data_validos:
             "Señal 3548": round(y_3548, 4),
             "Señal 3611": round(y_3611, 4),
             "Integral en rango": round(integral, 4) if integral != "" else "",
+            "Área total": round(area_total, 4) if area_total != "" else "",
+            "% Área seleccionada": round(porcentaje_area, 2) if porcentaje_area != "" else "",
             "Índice OH (Acetato)": round(indice_oh_acetato, 4) if indice_oh_acetato != "" else "—",
             "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 4) if indice_oh_cloroformo != "" else "—"
         })
+
 
     df_resultados = pd.DataFrame(resultados)
     st.dataframe(df_resultados, use_container_width=True)

@@ -522,11 +522,11 @@ with tab4:
     if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")
         for _, row in df_imagenes.iterrows():
-    try:
-        imagen = BytesIO(base64.b64decode(row["Contenido"]))
-        st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
-    except:
-        st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
+            try:
+                imagen = BytesIO(base64.b64decode(row["Contenido"]))
+                st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
+            except:
+                st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
                 from tempfile import TemporaryDirectory
             import zipfile
 

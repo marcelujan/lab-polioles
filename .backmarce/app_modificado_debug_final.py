@@ -434,7 +434,57 @@ with tab4:
 
         data_validos = []
 
+        
         for _, row in df_datos.iterrows():
+            try:
+                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+                nombre_muestra = row["Muestra"]
+                tipo_muestra = row["Tipo"]
+
+                if extension == ".xlsx":
+                    binario = BytesIO(base64.b64decode(row["Contenido"]))
+                    df = pd.read_excel(binario)
+                    st.success(f"✅ Espectro {nombre_muestra} ({tipo_muestra}) leído como Excel.")
+                else:
+                    contenido = BytesIO(base64.b64decode(row["Contenido"]))
+                    sep_try = [",", ";", "\t", " "]
+                    df = None
+                    for sep in sep_try:
+                        contenido.seek(0)
+                        try:
+                            df_tmp = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df_tmp.shape[1] >= 2:
+                                df = df_tmp
+                                st.success(f"✅ Espectro {nombre_muestra} ({tipo_muestra}) leído con separador '{sep}'.")
+                                break
+                        except Exception as e:
+                            continue
+                    if df is None:
+                        st.warning(f"⚠️ No se pudo leer espectro {nombre_muestra} ({tipo_muestra}). Saltando.")
+                        continue
+
+                col_x, col_y = df.columns[:2]
+                for col in [col_x, col_y]:
+                    if df[col].dtype == object:
+                        df[col] = df[col].astype(str).str.replace(",", ".", regex=False)
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+                df = df.dropna()
+                if df.empty:
+                    st.warning(f"⚠️ Espectro {nombre_muestra} ({tipo_muestra}) está vacío después de limpiar.")
+                    continue
+
+                data_validos.append((nombre_muestra, tipo_muestra, df[col_x], df[col_y]))
+
+                rango_x[0] = min(rango_x[0], df[col_x].min())
+                rango_x[1] = max(rango_x[1], df[col_x].max())
+                rango_y[0] = min(rango_y[0], df[col_y].min())
+                rango_y[1] = max(rango_y[1], df[col_y].max())
+
+            except Exception as e:
+                st.error(f"❌ Error leyendo espectro {row['Nombre archivo']}: {e}")
+                continue
+
             try:
                 extension = os.path.splitext(row["Nombre archivo"])[1].lower()
                 if extension == ".xlsx":
@@ -576,55 +626,6 @@ with tab4:
                                        data=zip_bytes,
                                        file_name=os.path.basename(zip_path),
                                        mime="application/zip")
-
-
-
-# --- CÁLCULOS ADICIONALES ---
-if 'data_validos' in locals() and data_validos:
-    st.subheader("Cálculos adicionales")
-
-    valor_acetato = st.number_input("Señal de acetato a 3548 cm⁻¹", step=0.01, format="%.4f")
-    valor_cloroformo = st.number_input("Señal de cloroformo a 3611 cm⁻¹", step=0.01, format="%.4f")
-    peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
-
-    resultados = []
-    for muestra, tipo, x, y in data_validos:
-        y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
-        y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
-        x_filtrado = x[(x >= x_min) & (x <= x_max)]
-        y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-        integral = np.trapz(y_filtrado, x_filtrado) if not x_filtrado.empty else ""
-        indice_oh_acetato = ""
-        indice_oh_cloroformo = ""
-        if peso_muestra > 0:
-            if valor_acetato != 0:
-                indice_oh_acetato = (y_3548 - valor_acetato) * 52.5253 / peso_muestra
-            if valor_cloroformo != 0:
-                indice_oh_cloroformo = (y_3611 - valor_cloroformo) * 66.7324 / peso_muestra
-
-        resultados.append({
-            "Muestra": muestra,
-            "Tipo": tipo,
-            "Señal 3548": round(y_3548, 2),
-            "Señal 3611": round(y_3611, 2),
-            "Integral en rango": round(integral, 2) if integral != "" else "",
-            "Índice OH (Acetato)": round(indice_oh_acetato, 2) if indice_oh_acetato != "" else "",
-            "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 2) if indice_oh_cloroformo != "" else ""
-        })
-
-    df_resultados = pd.DataFrame(resultados)
-    st.dataframe(df_resultados, use_container_width=True)
-
-    with pd.ExcelWriter(excel_buffer, engine="xlsxwriter", mode="a") as writer:
-        df_resultados.to_excel(writer, index=False, sheet_name="Cálculos adicionales")
-
-    excel_buffer.seek(0)
-
-    st.download_button("📊 Descargar Excel completo",
-                       data=excel_buffer.getvalue(),
-                       file_name=f"espectros_calculados_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
 
 # --- HOJA 5 ---
 with tab5:

@@ -1,4 +1,4 @@
-Cerrar sesion
-Secion invitado
+Cerrar sesion al final de hoja 6
+Inicio de sesion invitado
 Obtencion de valor Y al preguntar por un x
 Calculo Indice OH

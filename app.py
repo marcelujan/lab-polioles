@@ -575,8 +575,30 @@ with tab4:
 
 
 
+
 if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
-        st.subheader("Descargar imágenes seleccionadas")
+    st.subheader("Descargar imágenes seleccionadas")
+    if st.button("📥 Descargar imágenes"):
+        seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
+        with TemporaryDirectory() as tmpdir:
+            zip_path = os.path.join(tmpdir, f"imagenes_espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
+            with zipfile.ZipFile(zip_path, "w") as zipf:
+                for _, row in seleccionadas.iterrows():
+                    carpeta = row["Muestra"]
+                    os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
+                    nombre = row["Nombre archivo"]
+                    path = os.path.join(tmpdir, carpeta, nombre)
+                    with open(path, "wb") as f:
+                        f.write(base64.b64decode(row["Contenido"]))
+                    zipf.write(path, arcname=os.path.join(carpeta, nombre))
+
+            with open(zip_path, "rb") as final_zip:
+                zip_bytes = final_zip.read()
+
+        st.download_button("📦 Descargar ZIP de imágenes",
+                           data=zip_bytes,
+                           file_name=os.path.basename(zip_path),
+                           mime="application/zip")
 
 
 # --- CÁLCULOS ADICIONALES ---

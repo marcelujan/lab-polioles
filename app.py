@@ -15,33 +15,20 @@ from tempfile import TemporaryDirectory
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 
-
-
-
-
-# --- Autenticación por rol simplificada ---
-ADMIN_PASSWORD = "irqplantapiloto"
-VISITOR_PASSWORD = "sololectura"
-
-if "rol" not in st.session_state:
-    st.session_state.rol = None
-
-if st.session_state.rol is None:
-    st.title("Ingreso al Laboratorio de Polioles")
-    pwd = st.text_input("Contraseña", type="password")
+# --- Autenticación ---
+config = toml.load("config.toml")
+PASSWORD = config["auth"]["password"]
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
+if not st.session_state.autenticado:
+    pwd = st.text_input("Contraseña de acceso", type="password")
     if st.button("Ingresar"):
-        if pwd == ADMIN_PASSWORD:
-            st.session_state.rol = "admin"
-            st.success("Bienvenido administrador")
-            st.rerun()
-        elif pwd == VISITOR_PASSWORD:
-            st.session_state.rol = "visitante"
-            st.success("Bienvenido visitante")
+        if pwd == PASSWORD:
+            st.session_state.autenticado = True
             st.rerun()
         else:
             st.error("Contraseña incorrecta")
     st.stop()
-
 
 # --- Firebase ---
 if "firebase_initialized" not in st.session_state:
@@ -108,7 +95,7 @@ with tab1:
     nuevos_analisis = st.data_editor(df, num_rows="dynamic", use_container_width=True,
         column_config={"Tipo": st.column_config.SelectboxColumn("Tipo", options=tipos)})
 
-    if st.button("Guardar análisis") and st.session_state.rol == "admin":
+    if st.button("Guardar análisis"):
         previos = muestra_existente["analisis"] if muestra_existente else []
         nuevos = []
         for _, row in nuevos_analisis.iterrows():
@@ -142,7 +129,7 @@ with tab1:
         st.subheader("Eliminar análisis")
         seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index,
             format_func=lambda i: f"{df_vista.at[i, 'Nombre']} – {df_vista.at[i, 'Tipo']} – {df_vista.at[i, 'Fecha']}")
-        if st.button("Eliminar análisis") and st.session_state.rol == "admin":
+        if st.button("Eliminar análisis"):
             elegido = df_vista.iloc[seleccion]
             for m in muestras:
                 if m["nombre"] == elegido["Nombre"]:
@@ -157,12 +144,11 @@ with tab1:
         buffer = BytesIO()
         with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
             df_vista.to_excel(writer, index=False, sheet_name="Muestras")
-        if st.session_state.rol == "admin":
-            st.download_button("Descargar Excel",
-                data=buffer.getvalue(),
-                file_name=f"lab-polioles_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+        st.download_button("Descargar Excel",
+            data=buffer.getvalue(),
+            file_name=f"lab-polioles_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
     else:
         st.info("No hay análisis cargados.")
 
@@ -303,7 +289,7 @@ with tab3:
             except Exception as e:
                 st.error(f"No se pudo leer el archivo: {e}")
 
-    if st.button("Guardar espectro") and archivo and st.session_state.rol == "admin":
+    if st.button("Guardar espectro") and archivo:
         espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])
         nuevo = {
             "tipo": tipo_espectro,
@@ -342,7 +328,7 @@ with tab3:
             df_esp_tabla["ID"],
             format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
         )
-        if st.button("Eliminar espectro") and st.session_state.rol == "admin":
+        if st.button("Eliminar espectro"):
             nombre, idx = seleccion.split("__")
             for m in muestras:
                 if m["nombre"] == nombre:
@@ -353,7 +339,7 @@ with tab3:
 
         # --- DESCARGA DE ESPECTROS ---
                 # Lógica de descarga solo si se hace clic
-        if st.button("📦 Preparar descarga") and st.session_state.rol == "admin":
+        if st.button("📦 Preparar descarga"):
             from tempfile import TemporaryDirectory
             import zipfile
 
@@ -385,15 +371,6 @@ with tab3:
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
-    st.download_button("📦 Descargar ZIP de espectros",
-        data=final_zip.read(),
-        file_name=f"espectros_{muestra[\'nombre\']}.zip",
-        mime="application/zip",
-        key=f"dl_zip_{muestra[\'nombre\']}")
-
-    if st.button("Cerrar sesión"):
-        st.session_state.rol = None
-        st.rerun()
                     zip_bytes = final_zip.read()
                     st.session_state["zip_bytes"] = final_zip.read()
                     st.session_state["zip_name"] = os.path.basename(zip_path)
@@ -572,15 +549,6 @@ with tab4:
                             st.warning(f"No se pudo incluir {nombre} — {error}")
 
                 with open(zip_path, "rb") as final_zip:
-    st.download_button("📦 Descargar ZIP de espectros",
-        data=final_zip.read(),
-        file_name=f"espectros_{muestra[\'nombre\']}.zip",
-        mime="application/zip",
-        key=f"dl_zip_{muestra[\'nombre\']}")
-
-    if st.button("Cerrar sesión"):
-        st.session_state.rol = None
-        st.rerun()
                     zip_bytes = final_zip.read()
                     
                 # Descargar Excel con valores graficados
@@ -687,7 +655,7 @@ with tab6:
                 import zipfile, base64, os
                 from tempfile import TemporaryDirectory
 
-                if st.session_state.rol == "admin" and st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
+                if st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
                     with TemporaryDirectory() as tmpdir:
                         zip_path = os.path.join(tmpdir, f"espectros_{muestra['nombre']}.zip")
                         with zipfile.ZipFile(zip_path, "w") as zipf:
@@ -705,20 +673,7 @@ with tab6:
                                 zipf.write(ruta, arcname=nombre)
 
                         with open(zip_path, "rb") as final_zip:
-    st.download_button("📦 Descargar ZIP de espectros",
-        data=final_zip.read(),
-        file_name=f"espectros_{muestra[\'nombre\']}.zip",
-        mime="application/zip",
-        key=f"dl_zip_{muestra[\'nombre\']}")
-
-    if st.button("Cerrar sesión"):
-        st.session_state.rol = None
-        st.rerun()
-                            if st.button("Cerrar sesión"):
-                                st.session_state.rol = None
-                                st.rerun()
-
-    st.download_button("📦 Descargar ZIP de espectros",
+                            st.download_button("📦 Descargar ZIP de espectros",
                                 data=final_zip.read(),
                                 file_name=f"espectros_{muestra['nombre']}.zip",
                                 mime="application/zip",

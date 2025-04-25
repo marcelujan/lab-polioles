@@ -550,8 +550,8 @@ st.download_button("📊 Descargar Excel completo",
 
 
             # Exportar Excel con resumen y hojas individuales
-            excel_buffer = BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+excel_buffer = BytesIO()
+with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 resumen = pd.DataFrame()
                 for muestra, tipo, x, y in data_validos:
                     x_filtrado = x[(x >= x_min) & (x <= x_max)]
@@ -564,11 +564,11 @@ st.download_button("📊 Descargar Excel completo",
                     else:
                         resumen = pd.concat([resumen, df_tmp], axis=1)
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
-            excel_buffer.seek(0)
+excel_buffer.seek(0)
             
 
 
-    if not df_imagenes.empty:
+if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")
         for _, row in df_imagenes.iterrows():
             try:
@@ -576,7 +576,7 @@ st.download_button("📊 Descargar Excel completo",
                 st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
-    if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
+if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
         st.subheader("Descargar imágenes seleccionadas")
         if st.button("📥 Descargar imágenes"):
             from tempfile import TemporaryDirectory

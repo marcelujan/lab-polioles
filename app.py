@@ -591,9 +591,19 @@ if 'data_validos' in locals() and data_validos:
         datos = input_data[idx]
         y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
         y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
+        # Cálculo del área asegurando orden creciente en X
         x_filtrado = x[(x >= x_min) & (x <= x_max)]
         y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-        integral = np.trapz(y_filtrado, x_filtrado) if not x_filtrado.empty else ""
+
+        if not x_filtrado.empty and not y_filtrado.empty:
+            # Ordenamos X e Y en base a X creciente
+            sort_idx = np.argsort(x_filtrado.values)
+            x_sorted = x_filtrado.values[sort_idx]
+            y_sorted = y_filtrado.values[sort_idx]
+            integral = np.trapz(y_sorted, x_sorted)
+        else:
+            integral = ""
+
 
         indice_oh_acetato = ""
         indice_oh_cloroformo = ""

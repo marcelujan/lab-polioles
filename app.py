@@ -385,6 +385,15 @@ with tab3:
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
+    st.download_button("📦 Descargar ZIP de espectros",
+        data=final_zip.read(),
+        file_name=f"espectros_{muestra[\'nombre\']}.zip",
+        mime="application/zip",
+        key=f"dl_zip_{muestra[\'nombre\']}")
+
+    if st.button("Cerrar sesión"):
+        st.session_state.rol = None
+        st.rerun()
                     zip_bytes = final_zip.read()
                     st.session_state["zip_bytes"] = final_zip.read()
                     st.session_state["zip_name"] = os.path.basename(zip_path)
@@ -563,6 +572,15 @@ with tab4:
                             st.warning(f"No se pudo incluir {nombre} — {error}")
 
                 with open(zip_path, "rb") as final_zip:
+    st.download_button("📦 Descargar ZIP de espectros",
+        data=final_zip.read(),
+        file_name=f"espectros_{muestra[\'nombre\']}.zip",
+        mime="application/zip",
+        key=f"dl_zip_{muestra[\'nombre\']}")
+
+    if st.button("Cerrar sesión"):
+        st.session_state.rol = None
+        st.rerun()
                     zip_bytes = final_zip.read()
                     
                 # Descargar Excel con valores graficados
@@ -687,6 +705,15 @@ with tab6:
                                 zipf.write(ruta, arcname=nombre)
 
                         with open(zip_path, "rb") as final_zip:
+    st.download_button("📦 Descargar ZIP de espectros",
+        data=final_zip.read(),
+        file_name=f"espectros_{muestra[\'nombre\']}.zip",
+        mime="application/zip",
+        key=f"dl_zip_{muestra[\'nombre\']}")
+
+    if st.button("Cerrar sesión"):
+        st.session_state.rol = None
+        st.rerun()
                             if st.button("Cerrar sesión"):
                                 st.session_state.rol = None
                                 st.rerun()

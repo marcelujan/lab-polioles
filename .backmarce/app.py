@@ -60,12 +60,12 @@ def guardar_muestra(nombre, observacion, analisis, espectros=None):
     with open(backup_name, "w", encoding="utf-8") as f:
         json.dump(datos, f, ensure_ascii=False, indent=2)
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Laboratorio de Polioles",
     "Análisis de datos",
     "Carga de espectros",
-    "Análisis de espectros"
-])
+    "Análisis de espectros", "Sugerencias", "Consola"]
+)
 
 
 # --- HOJA 1 ---
@@ -243,7 +243,17 @@ with tab3:
 
     st.subheader("Subir nuevo espectro")
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
-    tipo_espectro = st.selectbox("Tipo de espectro", ["FTIR", "LF-RMN", "RMN 1H", "UV-Vis", "DSC", "Otro espectro"])
+    tipos_espectro_base = [
+        "FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR",
+        "RMN 1H", "RMN 13C", "RMN-LF 1H"
+    ]
+    if "tipos_espectro" not in st.session_state:
+        st.session_state.tipos_espectro = tipos_espectro_base.copy()
+    tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
+    nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
+    if nuevo_tipo and nuevo_tipo not in st.session_state.tipos_espectro:
+        st.session_state.tipos_espectro.append(nuevo_tipo)
+        tipo_espectro = nuevo_tipo
     observaciones = st.text_area("Observaciones")
     fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
     archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
@@ -566,3 +576,109 @@ with tab4:
                                        data=zip_bytes,
                                        file_name=os.path.basename(zip_path),
                                        mime="application/zip")
+
+# --- HOJA 5 ---
+with tab5:
+    st.title("Sugerencias y comentarios")
+
+    sugerencias_ref = db.collection("sugerencias")
+
+    st.subheader("Dejar una sugerencia")
+    comentario = st.text_area("Escribí tu sugerencia o comentario aquí:")
+    if st.button("Enviar sugerencia"):
+        if comentario.strip():
+            sugerencias_ref.add({
+                "comentario": comentario.strip(),
+                "fecha": datetime.now().isoformat()
+            })
+            st.success("Gracias por tu comentario.")
+            st.rerun()
+        else:
+            st.warning("El comentario no puede estar vacío.")
+
+
+    st.subheader("Comentarios recibidos")
+
+    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
+    sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
+    for s in sugerencias:
+        st.markdown(f"**{s['fecha'][:19].replace('T',' ')}**")
+        st.markdown(s["comentario"])
+        if st.button("Eliminar", key=f"del_{s['id']}"):
+            sugerencias_ref.document(s["id"]).delete()
+            st.success("Comentario eliminado.")
+            st.rerun()
+
+
+
+# --- HOJA 6 ---
+with tab6:
+    st.title("Consola")
+
+    muestras = cargar_muestras()
+    if not muestras:
+        st.info("No hay muestras cargadas.")
+        st.stop()
+
+    for muestra in muestras:
+        with st.expander(f"📁 {muestra['nombre']}"):
+            st.markdown(f"📝 **Observación:** {muestra.get('observacion', '—')}")
+
+            analisis = muestra.get("analisis", [])
+            if analisis:
+                st.markdown("📊 **Análisis cargados:**")
+                for a in analisis:
+                    st.markdown(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
+
+                import pandas as pd
+                from io import BytesIO
+                df_analisis = pd.DataFrame(analisis)
+                buffer = BytesIO()
+                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+                    df_analisis.to_excel(writer, index=False, sheet_name="Análisis")
+                st.download_button("⬇️ Descargar análisis",
+                    data=buffer.getvalue(),
+                    file_name=f"analisis_{muestra['nombre']}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+            espectros = muestra.get("espectros", [])
+            if espectros:
+                st.markdown("🧪 **Espectros cargados:**")
+                for e in espectros:
+                    etiqueta = f"{e['tipo']} ({e['fecha']})"
+                    if e.get("es_imagen", False):
+                        st.markdown(f"🖼️ {etiqueta}")
+                    else:
+                        st.markdown(f"📈 {etiqueta}")
+
+                import zipfile, base64, os
+                from tempfile import TemporaryDirectory
+
+                if st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
+                    with TemporaryDirectory() as tmpdir:
+                        zip_path = os.path.join(tmpdir, f"espectros_{muestra['nombre']}.zip")
+                        with zipfile.ZipFile(zip_path, "w") as zipf:
+                            for e in espectros:
+                                contenido = e.get("contenido")
+                                if not contenido:
+                                    continue
+                                nombre = e.get("nombre_archivo", "espectro")
+                                ruta = os.path.join(tmpdir, nombre)
+                                with open(ruta, "wb") as f:
+                                    if e.get("es_imagen"):
+                                        f.write(bytes.fromhex(contenido))
+                                    else:
+                                        f.write(base64.b64decode(contenido))
+                                zipf.write(ruta, arcname=nombre)
+
+                        with open(zip_path, "rb") as final_zip:
+                            st.download_button("📦 Descargar ZIP de espectros",
+                                data=final_zip.read(),
+                                file_name=f"espectros_{muestra['nombre']}.zip",
+                                mime="application/zip",
+                                key=f"dl_zip_{muestra['nombre']}")
+    st.markdown("---")
+    if st.button("Cerrar sesión"):
+        st.session_state.autenticado = False
+        st.rerun()

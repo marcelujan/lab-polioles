@@ -498,60 +498,9 @@ with tab4:
             
             st.pyplot(fig)
 
-# --- CÁLCULOS ADICIONALES ---
-st.subheader("Cálculos adicionales")
-
-# Inputs manuales
-st.markdown("### Valores de referencia")
-valor_acetato = st.number_input("Señal de acetato a 3548 cm⁻¹", step=0.01, format="%.4f")
-valor_cloroformo = st.number_input("Señal de cloroformo a 3611 cm⁻¹", step=0.01, format="%.4f")
-peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
-
-# Procesar
-resultados = []
-for muestra, tipo, x, y in data_validos:
-    y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
-    y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
-    x_filtrado = x[(x >= x_min) & (x <= x_max)]
-    y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-    integral = np.trapz(y_filtrado, x_filtrado) if not x_filtrado.empty else ""
-    indice_oh_acetato = ""
-    indice_oh_cloroformo = ""
-    if peso_muestra > 0:
-        if valor_acetato != 0:
-            indice_oh_acetato = (y_3548 - valor_acetato) * 52.5253 / peso_muestra
-        if valor_cloroformo != 0:
-            indice_oh_cloroformo = (y_3611 - valor_cloroformo) * 66.7324 / peso_muestra
-
-    resultados.append({
-        "Muestra": muestra,
-        "Tipo": tipo,
-        "Señal 3548": round(y_3548, 2),
-        "Señal 3611": round(y_3611, 2),
-        "Integral en rango": round(integral, 2) if integral != "" else "",
-        "Índice OH (Acetato)": round(indice_oh_acetato, 2) if indice_oh_acetato != "" else "",
-        "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 2) if indice_oh_cloroformo != "" else ""
-    })
-
-df_resultados = pd.DataFrame(resultados)
-st.dataframe(df_resultados, use_container_width=True)
-
-# Añadir tabla al Excel exportado
-with pd.ExcelWriter(excel_buffer, engine="xlsxwriter", mode="a") as writer:
-    df_resultados.to_excel(writer, index=False, sheet_name="Cálculos adicionales")
-
-excel_buffer.seek(0)
-
-# Botón de descarga
-st.download_button("📊 Descargar Excel completo",
-                   data=excel_buffer.getvalue(),
-                   file_name=f"espectros_calculados_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-
             # Exportar Excel con resumen y hojas individuales
-excel_buffer = BytesIO()
-with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 resumen = pd.DataFrame()
                 for muestra, tipo, x, y in data_validos:
                     x_filtrado = x[(x >= x_min) & (x <= x_max)]
@@ -564,11 +513,11 @@ with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                     else:
                         resumen = pd.concat([resumen, df_tmp], axis=1)
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
-excel_buffer.seek(0)
+            excel_buffer.seek(0)
             
 
 
-if not df_imagenes.empty:
+    if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")
         for _, row in df_imagenes.iterrows():
             try:
@@ -576,7 +525,7 @@ if not df_imagenes.empty:
                 st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
-if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
+    if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
         st.subheader("Descargar imágenes seleccionadas")
         if st.button("📥 Descargar imágenes"):
             from tempfile import TemporaryDirectory
@@ -627,6 +576,59 @@ if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestra
                                        data=zip_bytes,
                                        file_name=os.path.basename(zip_path),
                                        mime="application/zip")
+
+
+
+# --- CÁLCULOS ADICIONALES ---
+st.subheader("Cálculos adicionales")
+
+# Inputs manuales
+st.markdown("### Valores de referencia")
+valor_acetato = st.number_input("Señal de acetato a 3548 cm⁻¹", step=0.01, format="%.4f")
+valor_cloroformo = st.number_input("Señal de cloroformo a 3611 cm⁻¹", step=0.01, format="%.4f")
+peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
+
+# Procesar
+resultados = []
+for muestra, tipo, x, y in data_validos:
+    y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
+    y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
+    x_filtrado = x[(x >= x_min) & (x <= x_max)]
+    y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+    integral = np.trapz(y_filtrado, x_filtrado) if not x_filtrado.empty else ""
+    indice_oh_acetato = ""
+    indice_oh_cloroformo = ""
+    if peso_muestra > 0:
+        if valor_acetato != 0:
+            indice_oh_acetato = (y_3548 - valor_acetato) * 52.5253 / peso_muestra
+        if valor_cloroformo != 0:
+            indice_oh_cloroformo = (y_3611 - valor_cloroformo) * 66.7324 / peso_muestra
+
+    resultados.append({
+        "Muestra": muestra,
+        "Tipo": tipo,
+        "Señal 3548": round(y_3548, 2),
+        "Señal 3611": round(y_3611, 2),
+        "Integral en rango": round(integral, 2) if integral != "" else "",
+        "Índice OH (Acetato)": round(indice_oh_acetato, 2) if indice_oh_acetato != "" else "",
+        "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 2) if indice_oh_cloroformo != "" else ""
+    })
+
+df_resultados = pd.DataFrame(resultados)
+st.dataframe(df_resultados, use_container_width=True)
+
+# Añadir tabla al Excel exportado
+with pd.ExcelWriter(excel_buffer, engine="xlsxwriter", mode="a") as writer:
+    df_resultados.to_excel(writer, index=False, sheet_name="Cálculos adicionales")
+
+excel_buffer.seek(0)
+
+# Botón de descarga
+st.download_button("📊 Descargar Excel completo",
+                   data=excel_buffer.getvalue(),
+                   file_name=f"espectros_calculados_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
 
 # --- HOJA 5 ---
 with tab5:

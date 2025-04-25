@@ -1,0 +1,4 @@
+Cerrar sesion
+Secion invitado
+Obtencion de valor Y al preguntar por un x
+Calculo Indice OH

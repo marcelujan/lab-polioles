@@ -528,7 +528,7 @@ with tab4:
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
             if st.button("📥 Descargar imágenes"):
-            from tempfile import TemporaryDirectory
+                from tempfile import TemporaryDirectory
             import zipfile
 
             seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
@@ -568,7 +568,7 @@ with tab4:
                         df_full.to_excel(writer, index=False, sheet_name=hoja)
                     resumen.to_excel(writer, index=False, sheet_name="Resumen")
                 excel_buffer.seek(0)
-                                st.download_button("📦 Descargar ZIP de imágenes",
+                st.download_button("📦 Descargar ZIP de imágenes",
                                        data=zip_bytes,
                                        file_name=os.path.basename(zip_path),
                                        mime="application/zip")

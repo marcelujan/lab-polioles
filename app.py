@@ -552,25 +552,37 @@ with tab4:
                                        mime="application/zip")
 
 
-
-
-
 if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
     st.subheader("Descargar imágenes seleccionadas")
-    if st.button("📥 Descargar imágenes", key="descargar_imagenes_2"):
+
+    if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
         seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
+        
         with TemporaryDirectory() as tmpdir:
-            zip_path = os.path.join(tmpdir, f"imagenes_espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
+            zip_path = os.path.join(tmpdir, f"imagenes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
             with zipfile.ZipFile(zip_path, "w") as zipf:
                 for _, row in seleccionadas.iterrows():
                     carpeta = row["Muestra"]
                     os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
-                    nombre = row["Nombre archivo"]
-                    path = os.path.join(tmpdir, carpeta, nombre)
-                    with open(path, "wb") as f:
+                    
+                    # Guardar imagen
+                    nombre_img = row["Nombre archivo"]
+                    path_img = os.path.join(tmpdir, carpeta, nombre_img)
+                    with open(path_img, "wb") as f:
                         f.write(base64.b64decode(row["Contenido"]))
-                    zipf.write(path, arcname=os.path.join(carpeta, nombre))
+                    zipf.write(path_img, arcname=os.path.join(carpeta, nombre_img))
 
+                    # Crear .txt de observaciones
+                    nombre_txt = os.path.splitext(nombre_img)[0] + ".txt"
+                    path_txt = os.path.join(tmpdir, carpeta, nombre_txt)
+                    with open(path_txt, "w", encoding="utf-8") as f:
+                        f.write(f"Nombre del archivo: {nombre_img}\n")
+                        f.write(f"Tipo de espectro: {row['Tipo']}\n")
+                        f.write(f"Fecha: {row['Fecha']}\n")
+                        f.write(f"Observaciones: {row['Observaciones']}\n")
+                    zipf.write(path_txt, arcname=os.path.join(carpeta, nombre_txt))
+
+            # Leer el ZIP y preparar para descarga
             with open(zip_path, "rb") as final_zip:
                 zip_bytes = final_zip.read()
 

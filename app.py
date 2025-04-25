@@ -497,7 +497,7 @@ with tab4:
             ax.legend()
             
             st.pyplot(fig)
-            
+
 # --- CÁLCULOS ADICIONALES ---
 st.subheader("Cálculos adicionales")
 
@@ -510,16 +510,11 @@ peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.
 # Procesar
 resultados = []
 for muestra, tipo, x, y in data_validos:
-    # Interpolar valores cercanos a 3548 y 3611 cm-1
     y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
     y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
-
-    # Integral en el rango
     x_filtrado = x[(x >= x_min) & (x <= x_max)]
     y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
     integral = np.trapz(y_filtrado, x_filtrado) if not x_filtrado.empty else ""
-
-    # Cálculos condicionales
     indice_oh_acetato = ""
     indice_oh_cloroformo = ""
     if peso_muestra > 0:
@@ -538,7 +533,6 @@ for muestra, tipo, x, y in data_validos:
         "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 2) if indice_oh_cloroformo != "" else ""
     })
 
-# Mostrar tabla
 df_resultados = pd.DataFrame(resultados)
 st.dataframe(df_resultados, use_container_width=True)
 
@@ -553,6 +547,7 @@ st.download_button("📊 Descargar Excel completo",
                    data=excel_buffer.getvalue(),
                    file_name=f"espectros_calculados_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
 
             # Exportar Excel con resumen y hojas individuales
             excel_buffer = BytesIO()

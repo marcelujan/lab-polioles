@@ -596,13 +596,28 @@ if 'data_validos' in locals() and data_validos:
         y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
 
         if not x_filtrado.empty and not y_filtrado.empty:
-            # Ordenamos X e Y en base a X creciente
+            # Ordenamos X e Y filtrados
             sort_idx = np.argsort(x_filtrado.values)
             x_sorted = x_filtrado.values[sort_idx]
             y_sorted = y_filtrado.values[sort_idx]
             integral = np.trapz(y_sorted, x_sorted)
         else:
             integral = ""
+
+        # Área total sobre todo el espectro (sin filtrar)
+        if not x.empty and not y.empty:
+            sort_idx_total = np.argsort(x.values)
+            x_total_sorted = x.values[sort_idx_total]
+            y_total_sorted = y.values[sort_idx_total]
+            area_total = np.trapz(y_total_sorted, x_total_sorted)
+        else:
+            area_total = ""
+
+        # Cálculo del porcentaje
+        if integral != "" and area_total != "" and area_total != 0:
+            porcentaje_area = (integral / area_total) * 100
+        else:
+            porcentaje_area = ""
 
 
         indice_oh_acetato = ""

@@ -497,6 +497,56 @@ with tab4:
             ax.legend()
             
             st.pyplot(fig)
+            
+# --- CÁLCULOS ADICIONALES ---
+st.subheader("Cálculos adicionales")
+
+# Inputs manuales
+st.markdown("### Valores de referencia")
+valor_acetato = st.number_input("Señal de acetato a 3548 cm⁻¹", step=0.01, format="%.4f")
+valor_cloroformo = st.number_input("Señal de cloroformo a 3611 cm⁻¹", step=0.01, format="%.4f")
+peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
+
+# Procesar
+resultados = []
+for muestra, tipo, x, y in data_validos:
+    # Interpolar valores cercanos a 3548 y 3611 cm-1
+    y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
+    y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
+
+    # Integral en el rango
+    x_filtrado = x[(x >= x_min) & (x <= x_max)]
+    y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+    integral = np.trapz(y_filtrado, x_filtrado) if not x_filtrado.empty else None
+
+    # Cálculos condicionales
+    indice_oh_acetato = ((y_3548 - valor_acetato) * 52.5253 / peso_muestra) if peso_muestra and valor_acetato else None
+    indice_oh_cloroformo = ((y_3611 - valor_cloroformo) * 66.7324 / peso_muestra) if peso_muestra and valor_cloroformo else None
+
+    resultados.append({
+        "Muestra": muestra,
+        "Tipo": tipo,
+        "Señal 3548": y_3548,
+        "Señal 3611": y_3611,
+        "Integral en rango": integral,
+        "Índice OH (Acetato)": indice_oh_acetato,
+        "Índice OH (Cloroformo)": indice_oh_cloroformo
+    })
+
+# Mostrar tabla
+df_resultados = pd.DataFrame(resultados)
+st.dataframe(df_resultados, use_container_width=True)
+
+# Añadir al Excel exportado
+with pd.ExcelWriter(excel_buffer, engine="xlsxwriter", mode="a") as writer:
+    df_resultados.to_excel(writer, index=False, sheet_name="Cálculos adicionales")
+excel_buffer.seek(0)
+
+# Botón de descarga
+st.download_button("📊 Descargar Excel completo",
+                   data=excel_buffer.getvalue(),
+                   file_name=f"espectros_calculados_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
             # Exportar Excel con resumen y hojas individuales
             excel_buffer = BytesIO()

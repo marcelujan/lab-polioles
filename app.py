@@ -226,28 +226,28 @@ with tab2:
         ax.set_ylabel(tipo_y)
         st.pyplot(fig)
 
-            # --- CONSULTAR Y DADO X ---
-            st.markdown("### Consultar valor de Y dado un valor de X")
-            x_consulta = st.number_input("Valor de X a consultar", value=(x_min + x_max) / 2)
+# --- CONSULTAR Y DADO X ---
+st.markdown("### Consultar valor de Y dado un valor de X")
+x_consulta = st.number_input("Valor de X a consultar", value=(x_min + x_max) / 2)
 
-            resultados = []
-            for muestra, tipo, x, y in data_validos:
-                x_filtrado = x[(x >= x_min) & (x <= x_max)]
-                y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-                if not y_filtrado.empty:
-                    x_interp = x_filtrado[:len(y_filtrado)].values
-                    y_interp = y_filtrado.values
-                    if len(x_interp) >= 2:
-                        try:
-                            y_val = float(
-                                pd.Series(y_interp, index=x_interp)
-                                .interpolate(method="linear")
-                                .reindex([x_consulta], method="nearest")
-                                .iloc[0]
-                            )
-                            resultados.append((f"{muestra} – {tipo}", y_val))
-                        except:
-                            resultados.append((f"{muestra} – {tipo}", "Error de interpolación"))
+resultados = []
+for muestra, tipo, x, y in data_validos:
+    x_filtrado = x[(x >= x_min) & (x <= x_max)]
+    y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+    if not y_filtrado.empty:
+        x_interp = x_filtrado[:len(y_filtrado)].values
+        y_interp = y_filtrado.values
+        if len(x_interp) >= 2:
+            try:
+                y_val = float(
+                    pd.Series(y_interp, index=x_interp)
+                    .interpolate(method="linear")
+                    .reindex([x_consulta], method="nearest")
+                    .iloc[0]
+                )
+                resultados.append((f"{muestra} – {tipo}", y_val))
+            except:
+                resultados.append((f"{muestra} – {tipo}", "Error de interpolación"))
 
             if resultados:
                 st.write("**Resultados aproximados:**")
@@ -282,11 +282,11 @@ if resultados:
     for etiqueta, valor in resultados:
         st.write(f"- {etiqueta}: {valor}")
 
-            st.markdown("### Consultar valor de Y dado un valor de X")
-            x_consulta = st.number_input("Valor de X a consultar", value=(x_min + x_max) / 2)
+        st.markdown("### Consultar valor de Y dado un valor de X")
+        x_consulta = st.number_input("Valor de X a consultar", value=(x_min + x_max) / 2)
 
-            resultados = []
-            for muestra, tipo, x, y in data_validos:
+        resultados = []
+        for muestra, tipo, x, y in data_validos:
                 x_filtrado = x[(x >= x_min) & (x <= x_max)]
                 y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
                 if not y_filtrado.empty:
@@ -298,7 +298,7 @@ if resultados:
                             resultados.append((f"{muestra} – {tipo}", y_val))
                         except:
                             resultados.append((f"{muestra} – {tipo}", "Error de interpolación"))
-            if resultados:
+        if resultados:
                 st.write("**Resultados aproximados:**")
                 for etiqueta, valor in resultados:
                     st.write(f"- {etiqueta}: {valor}")

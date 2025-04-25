@@ -385,7 +385,7 @@ with tab3:
                             zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
 
                 with open(zip_path, "rb") as final_zip:
-    st.download_button("📦 Descargar ZIP de espectros",
+                    st.download_button("📦 Descargar ZIP de espectros",
         data=final_zip.read(),
         file_name=f"espectros_{muestra[\'nombre\']}.zip",
         mime="application/zip",

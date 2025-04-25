@@ -678,3 +678,7 @@ with tab6:
                                 file_name=f"espectros_{muestra['nombre']}.zip",
                                 mime="application/zip",
                                 key=f"dl_zip_{muestra['nombre']}")
+    st.markdown("---")
+    if st.button("Cerrar sesión"):
+        st.session_state.autenticado = False
+        st.rerun()

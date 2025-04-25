@@ -20,22 +20,7 @@ config = toml.load("config.toml")
 PASSWORD = config["auth"]["password"]
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
-if "rol" not in st.session_state:
-    st.session_state.rol = None
 if not st.session_state.autenticado:
-    pwd = st.text_input("Contraseña de acceso", type="password")
-    if st.button("Ingresar"):
-        if pwd == PASSWORD:
-            st.session_state.autenticado = True
-            st.session_state.rol = "admin"
-            st.rerun()
-        elif pwd == "soloinvitado":
-            st.session_state.autenticado = True
-            st.session_state.rol = "invitado"
-            st.rerun()
-        else:
-            st.error("Contraseña incorrecta")
-    st.stop()
     pwd = st.text_input("Contraseña de acceso", type="password")
     if st.button("Ingresar"):
         if pwd == PASSWORD:

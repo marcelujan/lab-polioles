@@ -527,28 +527,7 @@ with tab4:
                 st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
-                from tempfile import TemporaryDirectory
-            import zipfile
-
-            seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
-
-            with TemporaryDirectory() as tmpdir:
-                zip_path = os.path.join(tmpdir, f"imagenes_espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
-                with zipfile.ZipFile(zip_path, "w") as zipf:
-                    for _, row in seleccionadas.iterrows():
-                        carpeta = row["Muestra"]
-                        os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
-                        nombre = row["Nombre archivo"]
-                        path = os.path.join(tmpdir, carpeta, nombre)
-                        try:
-                            with open(path, "wb") as f:
-                                f.write(base64.b64decode(row["Contenido"]))
-                            zipf.write(path, arcname=os.path.join(carpeta, nombre))
-                        except Exception as error:
-                            st.warning(f"No se pudo incluir {nombre} — {error}")
-
-                with open(zip_path, "rb") as final_zip:
-                    zip_bytes = final_zip.read()
+                
                     
                 # Descargar Excel con valores graficados
                 excel_buffer = BytesIO()

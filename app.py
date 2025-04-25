@@ -527,29 +527,6 @@ with tab4:
                 st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
-                
-                    
-                # Descargar Excel con valores graficados
-                excel_buffer = BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                    resumen = pd.DataFrame()
-                    for idx, (muestra, tipo, x, y) in enumerate(data_validos):
-                        x_filtrado = x[(x >= x_min) & (x <= x_max)]
-                        y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-                        df_tmp = pd.DataFrame({f"Y_{muestra}_{tipo}": y_filtrado.reset_index(drop=True)})
-                        if resumen.empty:
-                            resumen["X"] = x_filtrado.reset_index(drop=True)
-                        resumen[f"Y_{muestra}_{tipo}"] = y_filtrado.reset_index(drop=True)
-                        hoja = f"{muestra[:15]}_{tipo[:10]}"
-                        df_full = pd.DataFrame({f"X_{muestra}_{tipo}": x_filtrado[:len(y_filtrado)],
-                                                f"Y_{muestra}_{tipo}": y_filtrado})
-                        df_full.to_excel(writer, index=False, sheet_name=hoja)
-                    resumen.to_excel(writer, index=False, sheet_name="Resumen")
-                excel_buffer.seek(0)
-                st.download_button("📦 Descargar ZIP de imágenes",
-                                       data=zip_bytes,
-                                       file_name=os.path.basename(zip_path),
-                                       mime="application/zip")
 
 
 if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:

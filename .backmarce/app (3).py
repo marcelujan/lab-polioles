@@ -434,52 +434,7 @@ with tab4:
 
         data_validos = []
 
-        
-for _, row in df_datos.iterrows():
-    try:
-        extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-        nombre_muestra = row["Muestra"]
-        tipo_muestra = row["Tipo"]
-
-        if extension == ".xlsx":
-            binario = BytesIO(base64.b64decode(row["Contenido"]))
-            df = pd.read_excel(binario)
-            st.success(f"✅ Espectro {nombre_muestra} ({tipo_muestra}) leído como Excel.")
-        else:
-            contenido = BytesIO(base64.b64decode(row["Contenido"]))
-            sep_try = [",", ";", "\t", " "]
-            df = None
-            for sep in sep_try:
-                contenido.seek(0)
-                try:
-                    df_tmp = pd.read_csv(contenido, sep=sep, engine="python")
-                    if df_tmp.shape[1] >= 2:
-                        df = df_tmp
-                        st.success(f"✅ Espectro {nombre_muestra} ({tipo_muestra}) leído con separador '{sep}'.")
-                        break
-                except Exception as e:
-                    continue
-            if df is None:
-                st.warning(f"⚠️ No se pudo leer espectro {nombre_muestra} ({tipo_muestra}). Saltando.")
-                continue
-
-        col_x, col_y = df.columns[:2]
-        for col in [col_x, col_y]:
-            if df[col].dtype == object:
-                df[col] = df[col].astype(str).str.replace(",", ".", regex=False)
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-
-        df = df.dropna()
-        if df.empty:
-            st.warning(f"⚠️ Espectro {nombre_muestra} ({tipo_muestra}) está vacío después de limpiar.")
-            continue
-
-        data_validos.append((nombre_muestra, tipo_muestra, df[col_x], df[col_y]))
-
-    except Exception as e:
-        st.error(f"❌ Error leyendo espectro {row['Nombre archivo']}: {e}")
-        continue
-    
+        for _, row in df_datos.iterrows():
             try:
                 extension = os.path.splitext(row["Nombre archivo"])[1].lower()
                 if extension == ".xlsx":

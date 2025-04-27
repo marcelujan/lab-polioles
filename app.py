@@ -648,20 +648,20 @@ if resultados_acetato:
             st.markdown("### Resultados para FTIR-Acetato")
             df_resultados_acetato = pd.DataFrame(resultados_acetato)
             
-    def resaltar_manual(row):
+def resaltar_manual(row):
         color = '#003366' if 'Señal manual' in str(row['Modo cálculo']) else 'black'
         return ['color: {}'.format(color)] * len(row)
-    st.dataframe(df_resultados_acetato.style.apply(resaltar_manual, axis=1), use_container_width=True)
+st.dataframe(df_resultados_acetato.style.apply(resaltar_manual, axis=1), use_container_width=True)
     
 
-    if resultados_cloroformo:
+if resultados_cloroformo:
             st.markdown("### Resultados para FTIR-Cloroformo")
             df_resultados_cloroformo = pd.DataFrame(resultados_cloroformo)
             
-    def resaltar_manual_cloroformo(row):
+def resaltar_manual_cloroformo(row):
         color = '#003366' if 'Señal manual' in str(row['Modo cálculo']) else 'black'
         return ['color: {}'.format(color)] * len(row)
-    st.dataframe(df_resultados_cloroformo.style.apply(resaltar_manual_cloroformo, axis=1), use_container_width=True)
+st.dataframe(df_resultados_cloroformo.style.apply(resaltar_manual_cloroformo, axis=1), use_container_width=True)
     
 
 if not df_imagenes.empty:

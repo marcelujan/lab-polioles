@@ -645,7 +645,7 @@ with tab4:
     st.dataframe(df_resultados_acetato.style.apply(resaltar_manual, axis=1), use_container_width=True)
     
 
-        if resultados_cloroformo:
+    if resultados_cloroformo:
             st.markdown("### Resultados para FTIR-Cloroformo")
             df_resultados_cloroformo = pd.DataFrame(resultados_cloroformo)
             

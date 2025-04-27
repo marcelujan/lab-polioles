@@ -256,11 +256,11 @@ with tab3:
 valor_señal_manual = None
 peso_manual = None
 if tipo_espectro == "FTIR-Acetato":
-    valor_señal_manual = st.number_input("Señal de Acetato a 3548 cm⁻¹ (opcional)", step=0.0001, format="%.4f")
-    peso_manual = st.number_input("Peso de la muestra [g] (opcional)", step=0.0001, format="%.4f")
-if tipo_espectro == "FTIR-Cloroformo":
-    valor_señal_manual = st.number_input("Señal de Cloroformo a 3611 cm⁻¹ (opcional)", step=0.0001, format="%.4f")
-    peso_manual = st.number_input("Peso de la muestra [g] (opcional)", step=0.0001, format="%.4f")
+    valor_señal_manual = st.number_input("Señal Acetato a 3548 cm⁻¹", step=0.0001, format="%.4f")
+    peso_manual = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
+elif tipo_espectro == "FTIR-Cloroformo":
+    valor_señal_manual = st.number_input("Señal Cloroformo a 3611 cm⁻¹", step=0.0001, format="%.4f")
+    peso_manual = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
 
     nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
     if nuevo_tipo and nuevo_tipo not in st.session_state.tipos_espectro:
@@ -311,32 +311,18 @@ if tipo_espectro == "FTIR-Cloroformo":
             "es_imagen": es_imagen,
             "fecha": str(fecha_espectro),
         }
-nuevo["Señal manual"] = valor_señal_manual
-nuevo["Peso manual"] = peso_manual
+        espectros.append(nuevo)
 
-# Carga manual opcional para FTIR-Acetato y FTIR-Cloroformo
-valor_señal_manual = None
-peso_manual = None
-
-if nuevo["Tipo"] == "FTIR-Cloroformo":
-    valor_señal_manual = st.number_input("Señal de Cloroformo a 3611 cm⁻¹ (opcional)", step=0.0001, format="%.4f")
-    peso_manual = st.number_input("Peso de la muestra [g] (opcional)", step=0.0001, format="%.4f")
-
-nuevo["Señal manual"] = valor_señal_manual
-nuevo["Peso manual"] = peso_manual
-
-espectros.append(nuevo)
-
-for m in muestras:
+        for m in muestras:
             if m["nombre"] == nombre_sel:
                 m["espectros"] = espectros
                 guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
                 st.success("Espectro guardado.")
                 st.rerun()
 
-st.subheader("Espectros cargados")
-filas = []
-for m in muestras:
+    st.subheader("Espectros cargados")
+    filas = []
+    for m in muestras:
         for i, e in enumerate(m.get("espectros", [])):
             filas.append({
                 "Muestra": m["nombre"],
@@ -346,8 +332,8 @@ for m in muestras:
                 "Observaciones": e.get("observaciones", ""),
                 "ID": f"{m['nombre']}__{i}"
             })
-df_esp_tabla = pd.DataFrame(filas)
-if not df_esp_tabla.empty:
+    df_esp_tabla = pd.DataFrame(filas)
+    if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
         seleccion = st.selectbox(
             "Eliminar espectro",
@@ -406,8 +392,8 @@ if not df_esp_tabla.empty:
             st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
                                file_name=st.session_state["zip_name"],
                                mime="application/zip")
-        else:
-            st.info("No hay espectros cargados.")
+    else:
+        st.info("No hay espectros cargados.")
 
 # --- HOJA 4 ---
 with tab4:
@@ -595,7 +581,7 @@ if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestra
 
 
 
-# --- CÁLCULOS ADICIONALES POR TIPO DE ESPECTRO ---
+# --- CÁLCULOS ADICIONALES FTIR-Acetato y FTIR-Cloroformo ---
 if 'data_validos' in locals() and data_validos:
     st.subheader("Cálculos adicionales")
 
@@ -603,85 +589,67 @@ if 'data_validos' in locals() and data_validos:
 
     if "FTIR-Acetato" in tipos_presentes:
         st.markdown("### Cálculos adicionales FTIR-Acetato")
-        input_data_acetato = {}
+        x_manual_acetato = st.number_input("Ingresar valor X manual para FTIR-Acetato (cm⁻¹)", min_value=3000.0, max_value=3700.0, step=0.0001, format="%.4f")
+        resultados = []
         for idx, (muestra, tipo, x, y) in enumerate(data_validos):
             if tipo == "FTIR-Acetato":
-                with st.expander(f"{muestra} – {tipo}"):
-                    valor_acetato = st.number_input(f"Señal de acetato a 3548 cm⁻¹ ({muestra})", step=0.0001, format="%.4f", key=f"acetato_{idx}")
-                    peso_muestra = st.number_input(f"Peso de la muestra [g] ({muestra})", step=0.0001, format="%.4f", key=f"peso_acetato_{idx}")
-                    input_data_acetato[idx] = {"acetato": valor_acetato, "peso": peso_muestra}
-
-        resultados_acetato = []
-        for idx, (muestra, tipo, x, y) in enumerate(data_validos):
-            if tipo == "FTIR-Acetato":
-                datos = input_data_acetato[idx]
                 y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
-                x_filtrado = x[(x >= x_min) & (x <= x_max)]
-                y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+                y_x_manual = y.iloc[(x - x_manual_acetato).abs().argsort()[:1]].values[0]
+                df_info = df_datos[(df_datos["Muestra"] == muestra) & (df_datos["Tipo"] == tipo)]
+                señal_cargada = df_info.iloc[0]["Señal manual"] if "Señal manual" in df_info.columns else None
+                peso_cargado = df_info.iloc[0]["Peso manual"] if "Peso manual" in df_info.columns else None
+                indice_oh_cargado = (y_3548 - señal_cargada) * 52.5253 / peso_cargado if señal_cargada and peso_cargado and peso_cargado > 0 else "—"
+                indice_oh_manual = (y_x_manual - señal_cargada) * 52.5253 / peso_cargado if señal_cargada and peso_cargado and peso_cargado > 0 else "—"
 
-                if not x_filtrado.empty and not y_filtrado.empty:
-                    sort_idx = np.argsort(x_filtrado.values)
-                    x_sorted = x_filtrado.values[sort_idx]
-                    y_sorted = y_filtrado.values[sort_idx]
-                    integral = np.trapz(y_sorted, x_sorted)
-                else:
-                    integral = ""
-
-                indice_oh_acetato = ""
-                if datos["peso"] > 0 and datos["acetato"] != 0:
-                    indice_oh_acetato = (y_3548 - datos["acetato"]) * 52.5253 / datos["peso"]
-
-                resultados_acetato.append({
+                resultados.append({
                     "Muestra": muestra,
                     "Tipo": tipo,
                     "Señal 3548": round(y_3548, 4),
-                    "Integral en rango": round(integral, 4) if integral != "" else "",
-                    "Índice OH (Acetato)": round(indice_oh_acetato, 4) if indice_oh_acetato != "" else "—"
+                    "Integral en rango": "",
+                    "Índice OH (Acetato)": round(indice_oh_cargado, 4) if indice_oh_cargado != "—" else "—"
+                })
+                resultados.append({
+                    "Muestra": muestra,
+                    "Tipo": tipo,
+                    f"Señal {round(x_manual_acetato, 2)}": round(y_x_manual, 4),
+                    "Integral en rango": "",
+                    f"Índice OH ({round(x_manual_acetato,2)})": round(indice_oh_manual, 4) if indice_oh_manual != "—" else "—"
                 })
 
-        df_resultados_acetato = pd.DataFrame(resultados_acetato)
-        st.dataframe(df_resultados_acetato, use_container_width=True)
+        df_resultados = pd.DataFrame(resultados)
+        st.dataframe(df_resultados, use_container_width=True)
 
     if "FTIR-Cloroformo" in tipos_presentes:
         st.markdown("### Cálculos adicionales FTIR-Cloroformo")
-        input_data_cloroformo = {}
+        x_manual_cloro = st.number_input("Ingresar valor X manual para FTIR-Cloroformo (cm⁻¹)", min_value=3500.0, max_value=3800.0, step=0.0001, format="%.4f")
+        resultados = []
         for idx, (muestra, tipo, x, y) in enumerate(data_validos):
             if tipo == "FTIR-Cloroformo":
-                with st.expander(f"{muestra} – {tipo}"):
-                    valor_cloroformo = st.number_input(f"Señal de cloroformo a 3611 cm⁻¹ ({muestra})", step=0.0001, format="%.4f", key=f"cloroformo_{idx}")
-                    peso_muestra = st.number_input(f"Peso de la muestra [g] ({muestra})", step=0.0001, format="%.4f", key=f"peso_cloroformo_{idx}")
-                    input_data_cloroformo[idx] = {"cloroformo": valor_cloroformo, "peso": peso_muestra}
-
-        resultados_cloroformo = []
-        for idx, (muestra, tipo, x, y) in enumerate(data_validos):
-            if tipo == "FTIR-Cloroformo":
-                datos = input_data_cloroformo[idx]
                 y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
-                x_filtrado = x[(x >= x_min) & (x <= x_max)]
-                y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+                y_x_manual = y.iloc[(x - x_manual_cloro).abs().argsort()[:1]].values[0]
+                df_info = df_datos[(df_datos["Muestra"] == muestra) & (df_datos["Tipo"] == tipo)]
+                señal_cargada = df_info.iloc[0]["Señal manual"] if "Señal manual" in df_info.columns else None
+                peso_cargado = df_info.iloc[0]["Peso manual"] if "Peso manual" in df_info.columns else None
+                indice_oh_cargado = (y_3611 - señal_cargada) * 66.7324 / peso_cargado if señal_cargada and peso_cargado and peso_cargado > 0 else "—"
+                indice_oh_manual = (y_x_manual - señal_cargada) * 66.7324 / peso_cargado if señal_cargada and peso_cargado and peso_cargado > 0 else "—"
 
-                if not x_filtrado.empty and not y_filtrado.empty:
-                    sort_idx = np.argsort(x_filtrado.values)
-                    x_sorted = x_filtrado.values[sort_idx]
-                    y_sorted = y_filtrado.values[sort_idx]
-                    integral = np.trapz(y_sorted, x_sorted)
-                else:
-                    integral = ""
-
-                indice_oh_cloroformo = ""
-                if datos["peso"] > 0 and datos["cloroformo"] != 0:
-                    indice_oh_cloroformo = (y_3611 - datos["cloroformo"]) * 66.7324 / datos["peso"]
-
-                resultados_cloroformo.append({
+                resultados.append({
                     "Muestra": muestra,
                     "Tipo": tipo,
                     "Señal 3611": round(y_3611, 4),
-                    "Integral en rango": round(integral, 4) if integral != "" else "",
-                    "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 4) if indice_oh_cloroformo != "" else "—"
+                    "Integral en rango": "",
+                    "Índice OH (Cloroformo)": round(indice_oh_cargado, 4) if indice_oh_cargado != "—" else "—"
+                })
+                resultados.append({
+                    "Muestra": muestra,
+                    "Tipo": tipo,
+                    f"Señal {round(x_manual_cloro, 2)}": round(y_x_manual, 4),
+                    "Integral en rango": "",
+                    f"Índice OH ({round(x_manual_cloro,2)})": round(indice_oh_manual, 4) if indice_oh_manual != "—" else "—"
                 })
 
-        df_resultados_cloroformo = pd.DataFrame(resultados_cloroformo)
-        st.dataframe(df_resultados_cloroformo, use_container_width=True)
+        df_resultados = pd.DataFrame(resultados)
+        st.dataframe(df_resultados, use_container_width=True)
 
 
 # --- HOJA 5 ---

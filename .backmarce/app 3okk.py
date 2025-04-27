@@ -531,57 +531,45 @@ with tab4:
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
             excel_buffer.seek(0)
 
-    
-    
     # --- CÁLCULOS ADICIONALES ---
-    if 'data_validos' in locals() and data_validos and any(t in ['FTIR-Acetato'] for t in tipos_sel):
+    if 'data_validos' in locals() and data_validos and any(t in ['FTIR-Acetato', 'FTIR-Cloroformo'] for t in tipos_sel):
         st.subheader("Cálculos adicionales")
+        input_data = {}
+        for idx, (muestra, tipo, x, y) in enumerate(data_validos):
+            with st.expander(f"{muestra} – {tipo}"):
+                valor_acetato = st.number_input(f"Señal de acetato a 3548 cm⁻¹ ({muestra})", step=0.0001, format="%.4f", key=f"acetato_{idx}")
+                valor_cloroformo = st.number_input(f"Señal de cloroformo a 3611 cm⁻¹ ({muestra})", step=0.0001, format="%.4f", key=f"cloroformo_{idx}")
+                peso_muestra = st.number_input(f"Peso de la muestra [g] ({muestra})", step=0.0001, format="%.4f", key=f"peso_{idx}")
+                input_data[idx] = {
+                    "acetato": valor_acetato,
+                    "cloroformo": valor_cloroformo,
+                    "peso": peso_muestra
+                }
+
         resultados = []
-        for muestra, tipo, x, y in data_validos:
-            if tipo != 'FTIR-Acetato':
-                continue
-
-            y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0] if not x.empty and not y.empty else None
-
-            # Buscar datos auxiliares (senal_3548, peso_muestra, fecha) del espectro
-            espectro_muestra = next((e for e in muestras if e["nombre"] == muestra), None)
-            espectro_tipo = next((esp for esp in espectro_muestra.get("espectros", []) if esp.get("tipo") == tipo), None) if espectro_muestra else None
-
-            senal_3548 = espectro_tipo.get("senal_3548") if espectro_tipo else None
-            peso_muestra = espectro_tipo.get("peso_muestra") if espectro_tipo else None
-            fecha = espectro_tipo.get("fecha") if espectro_tipo else "—"
-
-            # Calcular Integral en rango
-            x_filtrado = x[(x >= x_min) & (x <= x_max)]
-            y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-
-            if not x_filtrado.empty and not y_filtrado.empty:
-                sort_idx = np.argsort(x_filtrado.values)
-                x_sorted = x_filtrado.values[sort_idx]
-                y_sorted = y_filtrado.values[sort_idx]
-                integral = np.trapz(y_sorted, x_sorted)
+        for idx, (muestra, tipo, x, y) in enumerate(data_validos):
+            datos = input_data[idx]
+            y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
+            y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
+            if datos["peso"] > 0:
+                indice_oh_acetato = (y_3548 - datos["acetato"]) * 52.5253 / datos["peso"] if datos["acetato"] != 0 else "—"
+                indice_oh_cloroformo = (y_3611 - datos["cloroformo"]) * 66.7324 / datos["peso"] if datos["cloroformo"] != 0 else "—"
             else:
-                integral = "—"
-
-            if y_3548 is not None and peso_muestra and senal_3548 is not None:
-                indice_oh_acetato = (y_3548 - senal_3548) * 52.5253 / peso_muestra
-            else:
-                indice_oh_acetato = "—"
-
+                indice_oh_acetato = indice_oh_cloroformo = "—"
             resultados.append({
                 "Muestra": muestra,
                 "Tipo": tipo,
-                "Fecha del espectro": fecha,
-                "Señal de Acetato a 3548 cm⁻¹": round(senal_3548, 4) if senal_3548 not in [None, "—"] else "—",
-                "Peso de muestra [g]": round(peso_muestra, 4) if peso_muestra not in [None, "—"] else "—",
-                "Integral en rango": round(integral, 4) if integral not in [None, "—"] else "—",
-                "Índice OH (Acetato)": round(indice_oh_acetato, 4) if indice_oh_acetato not in [None, "—"] else "—"
+                "Índice OH (Acetato)": round(indice_oh_acetato, 4) if indice_oh_acetato != "—" else "—",
+                "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 4) if indice_oh_cloroformo != "—" else "—"
             })
 
         df_resultados = pd.DataFrame(resultados)
         st.dataframe(df_resultados, use_container_width=True)
 
-if not df_imagenes.empty:
+            
+
+
+    if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")
         for _, row in df_imagenes.iterrows():
             try:
@@ -589,5 +577,46 @@ if not df_imagenes.empty:
                 st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
+
+
+if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
+    st.subheader("Descargar imágenes seleccionadas")
+
+    if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
+        seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
+        
+        with TemporaryDirectory() as tmpdir:
+            zip_path = os.path.join(tmpdir, f"imagenes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
+            with zipfile.ZipFile(zip_path, "w") as zipf:
+                for _, row in seleccionadas.iterrows():
+                    carpeta = row["Muestra"]
+                    os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
+                    
+                    # Guardar imagen
+                    nombre_img = row["Nombre archivo"]
+                    path_img = os.path.join(tmpdir, carpeta, nombre_img)
+                    with open(path_img, "wb") as f:
+                        f.write(base64.b64decode(row["Contenido"]))
+                    zipf.write(path_img, arcname=os.path.join(carpeta, nombre_img))
+
+                    # Crear .txt de observaciones
+                    nombre_txt = os.path.splitext(nombre_img)[0] + ".txt"
+                    path_txt = os.path.join(tmpdir, carpeta, nombre_txt)
+                    with open(path_txt, "w", encoding="utf-8") as f:
+                        f.write(f"Nombre del archivo: {nombre_img}\n")
+                        f.write(f"Tipo de espectro: {row['Tipo']}\n")
+                        f.write(f"Fecha: {row['Fecha']}\n")
+                        f.write(f"Observaciones: {row['Observaciones']}\n")
+                    zipf.write(path_txt, arcname=os.path.join(carpeta, nombre_txt))
+
+            # Leer el ZIP y preparar para descarga
+            with open(zip_path, "rb") as final_zip:
+                zip_bytes = final_zip.read()
+
+        st.download_button("📦 Descargar ZIP de imágenes",
+                           data=zip_bytes,
+                           file_name=os.path.basename(zip_path),
+                           mime="application/zip")
+
 
 

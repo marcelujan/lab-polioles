@@ -301,20 +301,6 @@ with tab3:
             "es_imagen": es_imagen,
             "fecha": str(fecha_espectro),
         }
-
-# Carga manual opcional para FTIR-Acetato y FTIR-Cloroformo
-valor_señal_manual = None
-peso_manual = None
-if nuevo["Tipo"] == "FTIR-Acetato":
-    valor_señal_manual = st.number_input("Señal de Acetato a 3548 cm⁻¹ (opcional)", step=0.0001, format="%.4f")
-    peso_manual = st.number_input("Peso de la muestra [g] (opcional)", step=0.0001, format="%.4f")
-if nuevo["Tipo"] == "FTIR-Cloroformo":
-    valor_señal_manual = st.number_input("Señal de Cloroformo a 3611 cm⁻¹ (opcional)", step=0.0001, format="%.4f")
-    peso_manual = st.number_input("Peso de la muestra [g] (opcional)", step=0.0001, format="%.4f")
-
-nuevo["Señal manual"] = valor_señal_manual
-nuevo["Peso manual"] = peso_manual
-
         espectros.append(nuevo)
 
         for m in muestras:

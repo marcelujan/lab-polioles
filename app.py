@@ -315,18 +315,18 @@ if nuevo["Tipo"] == "FTIR-Cloroformo":
 nuevo["Señal manual"] = valor_señal_manual
 nuevo["Peso manual"] = peso_manual
 
-        espectros.append(nuevo)
+espectros.append(nuevo)
 
-        for m in muestras:
+for m in muestras:
             if m["nombre"] == nombre_sel:
                 m["espectros"] = espectros
                 guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
                 st.success("Espectro guardado.")
                 st.rerun()
 
-    st.subheader("Espectros cargados")
-    filas = []
-    for m in muestras:
+st.subheader("Espectros cargados")
+filas = []
+for m in muestras:
         for i, e in enumerate(m.get("espectros", [])):
             filas.append({
                 "Muestra": m["nombre"],
@@ -336,8 +336,8 @@ nuevo["Peso manual"] = peso_manual
                 "Observaciones": e.get("observaciones", ""),
                 "ID": f"{m['nombre']}__{i}"
             })
-    df_esp_tabla = pd.DataFrame(filas)
-    if not df_esp_tabla.empty:
+df_esp_tabla = pd.DataFrame(filas)
+if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
         seleccion = st.selectbox(
             "Eliminar espectro",
@@ -396,8 +396,8 @@ nuevo["Peso manual"] = peso_manual
             st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
                                file_name=st.session_state["zip_name"],
                                mime="application/zip")
-    else:
-        st.info("No hay espectros cargados.")
+        else:
+            st.info("No hay espectros cargados.")
 
 # --- HOJA 4 ---
 with tab4:

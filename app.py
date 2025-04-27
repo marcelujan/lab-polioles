@@ -570,62 +570,89 @@ if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestra
 
 
 
-
-
-# --- CÁLCULOS ADICIONALES SOLO PARA FTIR-ACETATO Y FTIR-CLOROFORMO ---
+# --- CÁLCULOS ADICIONALES ---
 if 'data_validos' in locals() and data_validos:
-    tipos_presentes = set(tipo for _, tipo, _, _ in data_validos)
+    st.subheader("Cálculos adicionales")
 
-    tipos_validos = {"FTIR-Acetato", "FTIR-Cloroformo"}
-    tipos_interes = tipos_presentes.intersection(tipos_validos)
+    input_data = {}
+    for idx, (muestra, tipo, x, y) in enumerate(data_validos):
+        with st.expander(f"{muestra} – {tipo}"):
+            valor_acetato = st.number_input(f"Señal de acetato a 3548 cm⁻¹ ({muestra})", step=0.0001, format="%.4f", key=f"acetato_{idx}")
+            valor_cloroformo = st.number_input(f"Señal de cloroformo a 3611 cm⁻¹ ({muestra})", step=0.0001, format="%.4f", key=f"cloroformo_{idx}")
+            peso_muestra = st.number_input(f"Peso de la muestra [g] ({muestra})", step=0.0001, format="%.4f", key=f"peso_{idx}")
+            input_data[idx] = {
+                "acetato": valor_acetato,
+                "cloroformo": valor_cloroformo,
+                "peso": peso_muestra
+            }
 
-    if tipos_interes:
-        st.subheader("Cálculos adicionales")
+    resultados = []
+    for idx, (muestra, tipo, x, y) in enumerate(data_validos):
+        datos = input_data[idx]
+        y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
+        y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
+        # Cálculo del área asegurando orden creciente en X
+        x_filtrado = x[(x >= x_min) & (x <= x_max)]
+        y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
 
-        resultados = []
-        for idx, (muestra, tipo, x, y) in enumerate(data_validos):
-            if tipo in tipos_validos:
-                if tipo == "FTIR-Acetato":
-                    valor_x = 3548
-                    factor = 52.5253
-                elif tipo == "FTIR-Cloroformo":
-                    valor_x = 3611
-                    factor = 66.7324
-                else:
-                    continue  # solo FTIR-Acetato y FTIR-Cloroformo
+        if not x_filtrado.empty and not y_filtrado.empty:
+            # Ordenamos X e Y filtrados
+            sort_idx = np.argsort(x_filtrado.values)
+            x_sorted = x_filtrado.values[sort_idx]
+            y_sorted = y_filtrado.values[sort_idx]
+            integral = np.trapz(y_sorted, x_sorted)
+        else:
+            integral = ""
 
-                y_valor = y.iloc[(x - valor_x).abs().argsort()[:1]].values[0]
+        # Área total sobre todo el espectro (sin filtrar)
+        if not x.empty and not y.empty:
+            sort_idx_total = np.argsort(x.values)
+            x_total_sorted = x.values[sort_idx_total]
+            y_total_sorted = y.values[sort_idx_total]
+            area_total = np.trapz(y_total_sorted, x_total_sorted)
+        else:
+            area_total = ""
 
-                # Integral en rango: área bajo curva entre x_min y x_max
-                x_filtrado = x[(x >= x_min) & (x <= x_max)]
-                y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-                if not x_filtrado.empty and not y_filtrado.empty:
-                    sort_idx = np.argsort(x_filtrado.values)
-                    x_sorted = x_filtrado.values[sort_idx]
-                    y_sorted = y_filtrado.values[sort_idx]
-                    integral = np.trapz(y_sorted, x_sorted)
-                else:
-                    integral = ""
+        # Cálculo del porcentaje
+        if integral != "" and area_total != "" and area_total != 0:
+            porcentaje_area = (integral / area_total) * 100
+        else:
+            porcentaje_area = ""
 
-                # Buscar señal manual y peso
-                df_info = df_datos[(df_datos["Muestra"] == muestra) & (df_datos["Tipo"] == tipo)]
-                señal_manual = df_info.iloc[0].get("Señal manual", None)
-                peso_manual = df_info.iloc[0].get("Peso manual", None)
 
-                indice_oh = "—"
-                if señal_manual and peso_manual and peso_manual > 0:
-                    indice_oh = (y_valor - señal_manual) * factor / peso_manual
+        indice_oh_acetato = ""
+        indice_oh_cloroformo = ""
+        if datos["peso"] > 0:
+            if datos["acetato"] != 0:
+                indice_oh_acetato = (y_3548 - datos["acetato"]) * 52.5253 / datos["peso"]
+            if datos["cloroformo"] != 0:
+                indice_oh_cloroformo = (y_3611 - datos["cloroformo"]) * 66.7324 / datos["peso"]
 
-                resultados.append({
-                    "Muestra": muestra,
-                    "Tipo": tipo,
-                    "Señal": round(y_valor, 4),
-                    "Integral en rango": round(integral, 4) if integral != "" else "",
-                    "Índice OH": round(indice_oh, 4) if indice_oh != "—" else "—"
-                })
+        resultados.append({
+            "Muestra": muestra,
+            "Tipo": tipo,
+            "Señal 3548": round(y_3548, 4),
+            "Señal 3611": round(y_3611, 4),
+            "Integral en rango": round(integral, 4) if integral != "" else "",
+            "Área total": round(area_total, 4) if area_total != "" else "",
+            "% Área seleccionada": round(porcentaje_area, 2) if porcentaje_area != "" else "",
+            "Índice OH (Acetato)": round(indice_oh_acetato, 4) if indice_oh_acetato != "" else "—",
+            "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 4) if indice_oh_cloroformo != "" else "—"
+        })
 
-        df_resultados = pd.DataFrame(resultados)
-        st.dataframe(df_resultados, use_container_width=True)
+
+    df_resultados = pd.DataFrame(resultados)
+    st.dataframe(df_resultados, use_container_width=True)
+
+    with pd.ExcelWriter(excel_buffer, engine="openpyxl", mode="a") as writer:
+        df_resultados.to_excel(writer, index=False, sheet_name="Cálculos adicionales")
+
+    excel_buffer.seek(0)
+
+    st.download_button("📊 Descargar Excel completo",
+                       data=excel_buffer.getvalue(),
+                       file_name=f"espectros_calculados_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
 # --- HOJA 5 ---

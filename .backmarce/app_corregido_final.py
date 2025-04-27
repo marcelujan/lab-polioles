@@ -516,60 +516,6 @@ with tab4:
                         resumen = pd.concat([resumen, df_tmp], axis=1)
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
             excel_buffer.seek(0)
-            
-
-
-    if not df_imagenes.empty:
-        st.subheader("Imágenes de espectros")
-        for _, row in df_imagenes.iterrows():
-            try:
-                imagen = BytesIO(base64.b64decode(row["Contenido"]))
-                st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
-            except:
-                st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
-
-
-if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
-    st.subheader("Descargar imágenes seleccionadas")
-
-    if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
-        seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
-        
-        with TemporaryDirectory() as tmpdir:
-            zip_path = os.path.join(tmpdir, f"imagenes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
-            with zipfile.ZipFile(zip_path, "w") as zipf:
-                for _, row in seleccionadas.iterrows():
-                    carpeta = row["Muestra"]
-                    os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
-                    
-                    # Guardar imagen
-                    nombre_img = row["Nombre archivo"]
-                    path_img = os.path.join(tmpdir, carpeta, nombre_img)
-                    with open(path_img, "wb") as f:
-                        f.write(base64.b64decode(row["Contenido"]))
-                    zipf.write(path_img, arcname=os.path.join(carpeta, nombre_img))
-
-                    # Crear .txt de observaciones
-                    nombre_txt = os.path.splitext(nombre_img)[0] + ".txt"
-                    path_txt = os.path.join(tmpdir, carpeta, nombre_txt)
-                    with open(path_txt, "w", encoding="utf-8") as f:
-                        f.write(f"Nombre del archivo: {nombre_img}\n")
-                        f.write(f"Tipo de espectro: {row['Tipo']}\n")
-                        f.write(f"Fecha: {row['Fecha']}\n")
-                        f.write(f"Observaciones: {row['Observaciones']}\n")
-                    zipf.write(path_txt, arcname=os.path.join(carpeta, nombre_txt))
-
-            # Leer el ZIP y preparar para descarga
-            with open(zip_path, "rb") as final_zip:
-                zip_bytes = final_zip.read()
-
-        st.download_button("📦 Descargar ZIP de imágenes",
-                           data=zip_bytes,
-                           file_name=os.path.basename(zip_path),
-                           mime="application/zip")
-
-
-
 
 # --- CÁLCULOS ADICIONALES ---
 if 'data_validos' in locals() and data_validos and any(t in ['FTIR-Acetato', 'FTIR-Cloroformo'] for t in tipos_sel):
@@ -741,3 +687,59 @@ with tab6:
     if st.button("Cerrar sesión"):
         st.session_state.autenticado = False
         st.rerun()
+
+            
+
+
+    if not df_imagenes.empty:
+        st.subheader("Imágenes de espectros")
+        for _, row in df_imagenes.iterrows():
+            try:
+                imagen = BytesIO(base64.b64decode(row["Contenido"]))
+                st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
+            except:
+                st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
+
+
+if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
+    st.subheader("Descargar imágenes seleccionadas")
+
+    if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
+        seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
+        
+        with TemporaryDirectory() as tmpdir:
+            zip_path = os.path.join(tmpdir, f"imagenes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
+            with zipfile.ZipFile(zip_path, "w") as zipf:
+                for _, row in seleccionadas.iterrows():
+                    carpeta = row["Muestra"]
+                    os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
+                    
+                    # Guardar imagen
+                    nombre_img = row["Nombre archivo"]
+                    path_img = os.path.join(tmpdir, carpeta, nombre_img)
+                    with open(path_img, "wb") as f:
+                        f.write(base64.b64decode(row["Contenido"]))
+                    zipf.write(path_img, arcname=os.path.join(carpeta, nombre_img))
+
+                    # Crear .txt de observaciones
+                    nombre_txt = os.path.splitext(nombre_img)[0] + ".txt"
+                    path_txt = os.path.join(tmpdir, carpeta, nombre_txt)
+                    with open(path_txt, "w", encoding="utf-8") as f:
+                        f.write(f"Nombre del archivo: {nombre_img}\n")
+                        f.write(f"Tipo de espectro: {row['Tipo']}\n")
+                        f.write(f"Fecha: {row['Fecha']}\n")
+                        f.write(f"Observaciones: {row['Observaciones']}\n")
+                    zipf.write(path_txt, arcname=os.path.join(carpeta, nombre_txt))
+
+            # Leer el ZIP y preparar para descarga
+            with open(zip_path, "rb") as final_zip:
+                zip_bytes = final_zip.read()
+
+        st.download_button("📦 Descargar ZIP de imágenes",
+                           data=zip_bytes,
+                           file_name=os.path.basename(zip_path),
+                           mime="application/zip")
+
+
+
+

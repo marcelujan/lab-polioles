@@ -533,25 +533,21 @@ with tab4:
 
     
     
-    
     # --- CÁLCULOS ADICIONALES ---
-    if 'data_validos' in locals() and data_validos and any(t in ['FTIR-Acetato', 'FTIR-Cloroformo'] for t in tipos_sel):
+    if 'data_validos' in locals() and data_validos and any(t in ['FTIR-Acetato'] for t in tipos_sel):
         st.subheader("Cálculos adicionales")
-        resultados_acetato = []
-        resultados_cloroformo = []
+        resultados = []
         for muestra, tipo, x, y in data_validos:
-            if tipo not in ['FTIR-Acetato', 'FTIR-Cloroformo']:
+            if tipo != 'FTIR-Acetato':
                 continue
 
             y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0] if not x.empty and not y.empty else None
-            y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0] if not x.empty and not y.empty else None
 
-            # Buscar datos auxiliares (senal_3548, senal_3611, peso_muestra, fecha) del espectro
+            # Buscar datos auxiliares (senal_3548, peso_muestra, fecha) del espectro
             espectro_muestra = next((e for e in muestras if e["nombre"] == muestra), None)
             espectro_tipo = next((esp for esp in espectro_muestra.get("espectros", []) if esp.get("tipo") == tipo), None) if espectro_muestra else None
 
             senal_3548 = espectro_tipo.get("senal_3548") if espectro_tipo else None
-            senal_3611 = espectro_tipo.get("senal_3611") if espectro_tipo else None
             peso_muestra = espectro_tipo.get("peso_muestra") if espectro_tipo else None
             fecha = espectro_tipo.get("fecha") if espectro_tipo else "—"
 
@@ -567,47 +563,23 @@ with tab4:
             else:
                 integral = "—"
 
-            if tipo == "FTIR-Acetato":
-                if y_3548 is not None and peso_muestra and senal_3548 is not None:
-                    indice_oh_acetato = (y_3548 - senal_3548) * 52.5253 / peso_muestra
-                else:
-                    indice_oh_acetato = "—"
+            if y_3548 is not None and peso_muestra and senal_3548 is not None:
+                indice_oh_acetato = (y_3548 - senal_3548) * 52.5253 / peso_muestra
+            else:
+                indice_oh_acetato = "—"
 
-                resultados_acetato.append({
-                    "Muestra": muestra,
-                    "Tipo": tipo,
-                    "Fecha del espectro": fecha,
-                    "Señal de Acetato a 3548 cm⁻¹": round(senal_3548, 4) if senal_3548 not in [None, "—"] else "—",
-                    "Peso de muestra [g]": round(peso_muestra, 4) if peso_muestra not in [None, "—"] else "—",
-                    "Integral en rango": round(integral, 4) if integral not in [None, "—"] else "—",
-                    "Índice OH (Acetato)": round(indice_oh_acetato, 4) if indice_oh_acetato not in [None, "—"] else "—"
-                })
+            resultados.append({
+                "Muestra": muestra,
+                "Tipo": tipo,
+                "Fecha del espectro": fecha,
+                "Señal de Acetato a 3548 cm⁻¹": round(senal_3548, 4) if senal_3548 not in [None, "—"] else "—",
+                "Peso de muestra [g]": round(peso_muestra, 4) if peso_muestra not in [None, "—"] else "—",
+                "Integral en rango": round(integral, 4) if integral not in [None, "—"] else "—",
+                "Índice OH (Acetato)": round(indice_oh_acetato, 4) if indice_oh_acetato not in [None, "—"] else "—"
+            })
 
-            if tipo == "FTIR-Cloroformo":
-                if y_3611 is not None and peso_muestra and senal_3611 is not None:
-                    indice_oh_cloroformo = (y_3611 - senal_3611) * 66.7324 / peso_muestra
-                else:
-                    indice_oh_cloroformo = "—"
-
-                resultados_cloroformo.append({
-                    "Muestra": muestra,
-                    "Tipo": tipo,
-                    "Fecha del espectro": fecha,
-                    "Señal de Cloroformo a 3611 cm⁻¹": round(senal_3611, 4) if senal_3611 not in [None, "—"] else "—",
-                    "Peso de muestra [g]": round(peso_muestra, 4) if peso_muestra not in [None, "—"] else "—",
-                    "Integral en rango": round(integral, 4) if integral not in [None, "—"] else "—",
-                    "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 4) if indice_oh_cloroformo not in [None, "—"] else "—"
-                })
-
-        if resultados_acetato:
-            st.markdown("### Resultados para FTIR-Acetato")
-            df_resultados_acetato = pd.DataFrame(resultados_acetato)
-            st.dataframe(df_resultados_acetato, use_container_width=True)
-
-        if resultados_cloroformo:
-            st.markdown("### Resultados para FTIR-Cloroformo")
-            df_resultados_cloroformo = pd.DataFrame(resultados_cloroformo)
-            st.dataframe(df_resultados_cloroformo, use_container_width=True)
+        df_resultados = pd.DataFrame(resultados)
+        st.dataframe(df_resultados, use_container_width=True)
 
 if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")

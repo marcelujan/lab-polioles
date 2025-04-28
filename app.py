@@ -73,12 +73,6 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Consola"
 ])
 
-    "Laboratorio de Polioles",
-    "Análisis de datos",
-    "Carga de espectros",
-    "Análisis de espectros", "Sugerencias", "Consola"]
-)
-
 
 # --- HOJA 1 ---
 with tab1:

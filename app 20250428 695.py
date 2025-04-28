@@ -62,17 +62,7 @@ def guardar_muestra(nombre, observacion, analisis, espectros=None):
     with open(backup_name, "w", encoding="utf-8") as f:
         json.dump(datos, f, ensure_ascii=False, indent=2)
 
-
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "Laboratorio de Polioles",
-    "Análisis de datos",
-    "Carga de espectros",
-    "Análisis de espectros",
-    "Índice OH",
-    "Sugerencias y comentarios",
-    "Consola"
-])
-
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Laboratorio de Polioles",
     "Análisis de datos",
     "Carga de espectros",
@@ -598,14 +588,8 @@ with tab4:
                                data=zip_bytes,
                                file_name=os.path.basename(zip_path),
                                mime="application/zip")
-
 # --- HOJA 5 ---
 with tab5:
-    st.title("Índice OH")
-    st.info("Aquí podrás calcular y visualizar el Índice OH de tus espectros subidos.")
-    st.warning("Funcionalidad en construcción...")
-# --- HOJA 7 ---
-with tab7:
     st.title("Sugerencias y comentarios")
 
     sugerencias_ref = db.collection("sugerencias")

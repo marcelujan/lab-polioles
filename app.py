@@ -517,15 +517,12 @@ with tab4:
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
             excel_buffer.seek(0)
 
-st.download_button(
-    "📥 Exportar resumen a Excel",
-    data=excel_buffer.getvalue(),
-    file_name=f"espectros_resumen_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    st.download_button(
+        "📥 Exportar resumen a Excel",
+        data=excel_buffer.getvalue(),
+        file_name=f"espectros_resumen_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
-
-
-            
 
 
     if not df_imagenes.empty:

@@ -1,13 +1,65 @@
-
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import base64
-import os
+import toml
+import json
+import firebase_admin
+from firebase_admin import credentials, firestore
+from datetime import date, datetime
 from io import BytesIO
-from datetime import datetime, date
-from tempfile import TemporaryDirectory
+import os
+import base64
+import matplotlib.pyplot as plt
+import numpy as np
+
 import zipfile
+from tempfile import TemporaryDirectory
+
+st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
+
+# --- Autenticación ---
+config = toml.load("config.toml")
+PASSWORD = config["auth"]["password"]
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
+if not st.session_state.autenticado:
+    pwd = st.text_input("Contraseña de acceso", type="password")
+    if st.button("Ingresar"):
+        if pwd == PASSWORD:
+            st.session_state.autenticado = True
+            st.rerun()
+        else:
+            st.error("Contraseña incorrecta")
+    st.stop()
+
+# --- Firebase ---
+if "firebase_initialized" not in st.session_state:
+    cred_dict = json.loads(st.secrets["firebase_key"])
+    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+    cred = credentials.Certificate(cred_dict)
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
+        st.session_state.firebase_initialized = True
+db = firestore.client()
+
+# --- Funciones comunes ---
+def cargar_muestras():
+    try:
+        docs = db.collection("muestras").stream()
+        return [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
+    except:
+        return []
+
+def guardar_muestra(nombre, observacion, analisis, espectros=None):
+    datos = {
+        "observacion": observacion,
+        "analisis": analisis
+    }
+    if espectros is not None:
+        datos["espectros"] = espectros
+    db.collection("muestras").document(nombre).set(datos)
+    backup_name = f"muestras_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
+    with open(backup_name, "w", encoding="utf-8") as f:
+        json.dump(datos, f, ensure_ascii=False, indent=2)
 
 
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
@@ -15,10 +67,11 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Análisis de datos",
     "Carga de espectros",
     "Análisis de espectros",
-    "Índice OH",
+    "Índice OH espectroscópico",
     "Consola",
     "Sugerencias"
 ])
+
 
 # --- HOJA 1 ---
 with tab1:
@@ -350,113 +403,8 @@ with tab3:
     else:
         st.info("No hay espectros cargados.")
 
-
-
 # --- HOJA 4 ---
 with tab4:
-# --- HOJA 4 ---
-    st.title("Análisis de espectros")
-
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
-
-    if "muestras_sel" not in st.session_state:
-        st.session_state["muestras_sel"] = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state["tipos_sel"] = []
-
-    st.multiselect("Muestras", muestras_disp, default=st.session_state["muestras_sel"], key="muestras_sel")
-    st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state["tipos_sel"], key="tipos_sel")
-
-    muestras_sel = st.session_state.get("muestras_sel", [])
-    tipos_sel = st.session_state.get("tipos_sel", [])
-
-# --- HOJA 5 ---
-with tab5:
-# --- HOJA 4 ---
-
-    # --- Sincronización de selección usando session_state ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
-
-    if "muestras_sel" not in st.session_state:
-        st.session_state["muestras_sel"] = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state["tipos_sel"] = []
-
-    st.multiselect("Muestras", muestras_disp, default=st.session_state["muestras_sel"], key="muestras_sel")
-    st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state["tipos_sel"], key="tipos_sel")
-
-    muestras_sel = st.session_state.get("muestras_sel", [])
-    tipos_sel = st.session_state.get("tipos_sel", [])
-
-
-    # --- Sincronización de selección usando session_state ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
-
-    if "muestras_sel" not in st.session_state:
-        st.session_state["muestras_sel"] = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state["tipos_sel"] = []
-
-    st.multiselect("Muestras", muestras_disp, default=st.session_state.get("muestras_sel", []), key="muestras_sel")
-    st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.get("tipos_sel", []), key="tipos_sel")
-
-    muestras_sel = st.session_state.get("muestras_sel", [])
-    tipos_sel = st.session_state.get("tipos_sel", [])
-
-
-
-    # --- Sincronización de selección usando session_state ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
-
-    if "muestras_sel" not in st.session_state:
-        st.session_state.muestras_sel = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state.tipos_sel = []
-
-    st.session_state.muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
-    st.session_state.tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
-
-
     st.title("Análisis de espectros")
 
     muestras = cargar_muestras()
@@ -645,80 +593,158 @@ with tab5:
                                mime="application/zip")
 
 
+
 # --- HOJA 5 ---
 with tab5:
     st.title("Índice OH")
 
+    # --- Leer muestras disponibles de Firestore ---
     try:
         docs = db.collection("muestras").stream()
         muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
         muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
     except Exception as e:
         st.error(f"No se pudieron cargar las muestras: {e}")
         muestras = []
         muestras_disp = []
-        tipos_disp = []
 
+    # --- Selector de muestras y tipos directamente en Hoja 5 ---
     if "muestras_sel" not in st.session_state:
-        st.session_state["muestras_sel"] = []
+        st.session_state.muestras_sel = []
 
     if "tipos_sel" not in st.session_state:
-        st.session_state["tipos_sel"] = []
+        st.session_state.tipos_sel = []
 
-    st.multiselect("Muestras", muestras_disp, default=st.session_state["muestras_sel"], key="muestras_sel")
-    st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state["tipos_sel"], key="tipos_sel")
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
+    
+    tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
 
-    muestras_sel = st.session_state.get("muestras_sel", [])
-    tipos_sel = st.session_state.get("tipos_sel", [])
+    if not muestras_sel or not tipos_sel:
+        st.warning("Debes seleccionar muestras y tipos para continuar.")
+    else:
+        muestras_filtradas = []
+        for muestra in muestras:
+            if muestra["nombre"] in muestras_sel:
+                espectros_filtrados = [
+                    esp for esp in muestra.get("espectros", [])
+                    if esp.get("tipo", "") in tipos_sel
+                ]
+                if espectros_filtrados:
+                    for espectro in espectros_filtrados:
+                        muestras_filtradas.append({
+                            "Muestra": muestra["nombre"],
+                            "Tipo de espectro": espectro.get("tipo", "No definido"),
+                            "Señal 3548 cm⁻¹": espectro.get("senal_3548", "No disponible"),
+                            "Señal 3611 cm⁻¹": espectro.get("senal_3611", "No disponible"),
+                            "Peso muestra [g]": espectro.get("peso_muestra", "No disponible")
+                        })
 
-# --- HOJA 5 ---
+        if muestras_filtradas:
+            df_muestras = pd.DataFrame(muestras_filtradas)
+            st.dataframe(df_muestras, use_container_width=True)
+        else:
+            st.info("No se encontraron espectros disponibles para mostrar.")
+# --- HOJA 6 ---
+with tab6:
+    st.title("Consola")
 
-    # --- Sincronización de selección usando session_state ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
+    muestras = cargar_muestras()
+    if not muestras:
+        st.info("No hay muestras cargadas.")
+        st.stop()
 
-    if "muestras_sel" not in st.session_state:
-        st.session_state["muestras_sel"] = []
+    for muestra in muestras:
+        with st.expander(f"📁 {muestra['nombre']}"):
+            st.markdown(f"📝 **Observación:** {muestra.get('observacion', '—')}")
 
-    if "tipos_sel" not in st.session_state:
-        st.session_state["tipos_sel"] = []
+            analisis = muestra.get("analisis", [])
+            if analisis:
+                st.markdown("📊 **Análisis cargados:**")
+                for a in analisis:
+                    st.markdown(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
 
-    st.multiselect("Muestras", muestras_disp, default=st.session_state["muestras_sel"], key="muestras_sel")
-    st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state["tipos_sel"], key="tipos_sel")
+                import pandas as pd
+                from io import BytesIO
+                df_analisis = pd.DataFrame(analisis)
+                buffer = BytesIO()
+                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+                    df_analisis.to_excel(writer, index=False, sheet_name="Análisis")
+                st.download_button("⬇️ Descargar análisis",
+                    data=buffer.getvalue(),
+                    file_name=f"analisis_{muestra['nombre']}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-    muestras_sel = st.session_state.get("muestras_sel", [])
-    tipos_sel = st.session_state.get("tipos_sel", [])
+            espectros = muestra.get("espectros", [])
+            if espectros:
+                st.markdown("🧪 **Espectros cargados:**")
+                for e in espectros:
+                    etiqueta = f"{e['tipo']} ({e['fecha']})"
+                    if e.get("es_imagen", False):
+                        st.markdown(f"🖼️ {etiqueta}")
+                    else:
+                        st.markdown(f"📈 {etiqueta}")
+
+                import zipfile, base64, os
+                from tempfile import TemporaryDirectory
+
+                if st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
+                    with TemporaryDirectory() as tmpdir:
+                        zip_path = os.path.join(tmpdir, f"espectros_{muestra['nombre']}.zip")
+                        with zipfile.ZipFile(zip_path, "w") as zipf:
+                            for e in espectros:
+                                contenido = e.get("contenido")
+                                if not contenido:
+                                    continue
+                                nombre = e.get("nombre_archivo", "espectro")
+                                ruta = os.path.join(tmpdir, nombre)
+                                with open(ruta, "wb") as f:
+                                    if e.get("es_imagen"):
+                                        f.write(bytes.fromhex(contenido))
+                                    else:
+                                        f.write(base64.b64decode(contenido))
+                                zipf.write(ruta, arcname=nombre)
+
+                        with open(zip_path, "rb") as final_zip:
+                            st.download_button("📦 Descargar ZIP de espectros",
+                                data=final_zip.read(),
+                                file_name=f"espectros_{muestra['nombre']}.zip",
+                                mime="application/zip",
+                                key=f"dl_zip_{muestra['nombre']}")
+    st.markdown("---")
+    if st.button("Cerrar sesión"):
+        st.session_state.autenticado = False
+        st.rerun()
+
+# --- HOJA 7 ---
+with tab7:
+    st.title("Sugerencias")
+
+    sugerencias_ref = db.collection("sugerencias")
+
+    st.subheader("Dejar una sugerencia")
+    comentario = st.text_area("Escribí tu sugerencia o comentario aquí:")
+    if st.button("Enviar sugerencia"):
+        if comentario.strip():
+            sugerencias_ref.add({
+                "comentario": comentario.strip(),
+                "fecha": datetime.now().isoformat()
+            })
+            st.success("Gracias por tu comentario.")
+            st.rerun()
+        else:
+            st.warning("El comentario no puede estar vacío.")
 
 
-    # --- Sincronización de selección usando session_state ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
+    st.subheader("Comentarios recibidos")
 
-    if "muestras_sel" not in st.session_state:
-        st.session_state["muestras_sel"] = []
+    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
+    sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
-    if "tipos_sel" not in st.session_state:
-        st.session_state["tipos_sel"] = []
-
-    st.multiselect("Muestras", muestras_disp, default=st.session_state.get("muestras_sel", []), key="muestras_sel")
-    st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.get("tipos_sel", []), key="tipos_sel")
-
-    muestras_sel = st.session_state.get("muestras_sel", [])
-    tipos_sel = st.session_state.get("tipos_sel", [])
+    for s in sugerencias:
+        st.markdown(f"**{s['fecha'][:19].replace('T',' ')}**")
+        st.markdown(s["comentario"])
+        if st.button("Eliminar", key=f"del_{s['id']}"):
+            sugerencias_ref.document(s["id"]).delete()
+            st.success("Comentario eliminado.")
+            st.rerun()

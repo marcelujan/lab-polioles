@@ -405,30 +405,6 @@ with tab3:
 
 # --- HOJA 4 ---
 with tab4:
-
-    # --- Sincronización de selección usando session_state ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
-
-    if "muestras_sel" not in st.session_state:
-        st.session_state.muestras_sel = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state.tipos_sel = []
-
-    st.session_state.muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
-    st.session_state.tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
-
-
-with tab4:
     st.title("Análisis de espectros")
 
     muestras = cargar_muestras()
@@ -620,79 +596,82 @@ with tab4:
 
 # --- HOJA 5 ---
 with tab5:
-
-    # --- Sincronización de selección usando session_state ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
-
-    if "muestras_sel" not in st.session_state:
-        st.session_state.muestras_sel = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state.tipos_sel = []
-
-    st.session_state.muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
-    st.session_state.tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
-
-# --- HOJA 5 ---
-with tab5:
     st.title("Índice OH")
 
-    # --- Leer muestras disponibles de Firestore ---
     try:
         docs = db.collection("muestras").stream()
         muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
     except Exception as e:
         st.error(f"No se pudieron cargar las muestras: {e}")
         muestras = []
-        muestras_disp = []
 
-    # --- Selector de muestras y tipos directamente en Hoja 5 ---
-    if "muestras_sel" not in st.session_state:
-        st.session_state.muestras_sel = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state.tipos_sel = []
-
-    muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
-    
+    # Selección manual en Hoja 5
+    muestras_disp = [m["nombre"] for m in muestras]
     tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
 
-    if not muestras_sel or not tipos_sel:
-        st.warning("Debes seleccionar muestras y tipos para continuar.")
-    else:
-        muestras_filtradas = []
+    muestras_sel = st.multiselect("Muestras", muestras_disp, key="muestras_sel_hoja5")
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, key="tipos_sel_hoja5")
+
+    if muestras_sel and tipos_sel:
+        resultados = []
+
         for muestra in muestras:
             if muestra["nombre"] in muestras_sel:
-                espectros_filtrados = [
-                    esp for esp in muestra.get("espectros", [])
-                    if esp.get("tipo", "") in tipos_sel
-                ]
-                if espectros_filtrados:
-                    for espectro in espectros_filtrados:
-                        muestras_filtradas.append({
-                            "Muestra": muestra["nombre"],
-                            "Tipo de espectro": espectro.get("tipo", "No definido"),
-                            "Señal 3548 cm⁻¹": espectro.get("senal_3548", "No disponible"),
-                            "Señal 3611 cm⁻¹": espectro.get("senal_3611", "No disponible"),
-                            "Peso muestra [g]": espectro.get("peso_muestra", "No disponible")
-                        })
+                espectros = muestra.get("espectros", [])
+                for esp in espectros:
+                    tipo = esp.get("tipo", "")
+                    if tipo in tipos_sel:
+                        # Sólo procesamos espectros numéricos
+                        if isinstance(esp.get("contenido"), dict) and "datos" in esp["contenido"]:
+                            datos = esp["contenido"]["datos"]
+                            if isinstance(datos, list) and all(isinstance(x, list) and len(x) == 2 for x in datos):
+                                import numpy as np
+                                datos_np = np.array(datos)
+                                x_valores = datos_np[:,0]
+                                y_valores = datos_np[:,1]
 
-        if muestras_filtradas:
-            df_muestras = pd.DataFrame(muestras_filtradas)
-            st.dataframe(df_muestras, use_container_width=True)
+                                if tipo == "FTIR-Acetato":
+                                    objetivo_x = 3548
+                                    constante = 52.5253
+                                    senal_manual = esp.get("senal_3548", None)
+                                elif tipo == "FTIR-Cloroformo":
+                                    objetivo_x = 3611
+                                    constante = 66.7324
+                                    senal_manual = esp.get("senal_3611", None)
+                                else:
+                                    continue
+
+                                peso_muestra = esp.get("peso_muestra", None)
+
+                                # Buscar el valor Y más cercano
+                                idx_mas_cercano = np.argmin(np.abs(x_valores - objetivo_x))
+                                senal_grafica = y_valores[idx_mas_cercano]
+
+                                if senal_manual is not None and peso_muestra is not None and peso_muestra != 0:
+                                    indice_oh = ((senal_grafica - senal_manual) * constante) / peso_muestra
+                                    indice_oh = round(indice_oh, 4)
+                                else:
+                                    indice_oh = "No disponible"
+
+                                resultados.append({
+                                    "Muestra": muestra["nombre"],
+                                    "Tipo": tipo,
+                                    "Fecha del espectro": esp.get("fecha", "No disponible"),
+                                    "Señal gráfica": round(senal_grafica, 4),
+                                    "Señal manual": senal_manual if senal_manual is not None else "No disponible",
+                                    "Peso muestra [g]": peso_muestra if peso_muestra is not None else "No disponible",
+                                    "Índice OH": indice_oh
+                                })
+
+        if resultados:
+            import pandas as pd
+            df_resultados = pd.DataFrame(resultados)
+            st.dataframe(df_resultados, use_container_width=True)
         else:
-            st.info("No se encontraron espectros disponibles para mostrar.")
+            st.info("No se encontraron espectros numéricos válidos para calcular Índice OH.")
+    else:
+        st.warning("Debes seleccionar muestras y tipos para comenzar.")
+
 # --- HOJA 6 ---
 with tab6:
     st.title("Consola")

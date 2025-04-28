@@ -594,7 +594,6 @@ with tab4:
 
 
 
-
 # --- HOJA 5 ---
 with tab5:
     st.title("Índice OH")
@@ -668,30 +667,11 @@ with tab5:
             import pandas as pd
             df_resultados = pd.DataFrame(resultados)
             st.dataframe(df_resultados, use_container_width=True)
-
-            # --- Añadir botón de descarga de tabla en Excel ---
-            import io
-            from datetime import datetime
-
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                df_resultados.to_excel(writer, index=False, sheet_name="Índice OH")
-                writer.save()
-
-            fecha_hora_actual = datetime.now().strftime("%Y-%m-%d_%H-%M")
-            nombre_archivo = f"indice_oh_resultados_{fecha_hora_actual}.xlsx"
-
-            st.download_button(
-                label="📥 Descargar tabla en Excel",
-                data=buffer.getvalue(),
-                file_name=nombre_archivo,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
         else:
             st.info("No se encontraron espectros numéricos válidos para calcular Índice OH.")
     else:
         st.warning("Debes seleccionar muestras y tipos para comenzar.")
+
 # --- HOJA 6 ---
 with tab6:
     st.title("Consola")

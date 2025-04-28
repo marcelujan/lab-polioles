@@ -593,36 +593,23 @@ with tab4:
                                mime="application/zip")
 
 
-
 # --- HOJA 5 ---
 with tab5:
     st.title("Índice OH")
 
-    # --- Leer muestras disponibles de Firestore ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-
-    # --- Selector de muestras y tipos directamente en Hoja 5 ---
-    if "muestras_sel" not in st.session_state:
-        st.session_state.muestras_sel = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state.tipos_sel = []
-
-    muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
-    
-    tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
+    muestras_sel = st.session_state.get("muestras_sel", [])
+    tipos_sel = st.session_state.get("tipos_sel", [])
 
     if not muestras_sel or not tipos_sel:
-        st.warning("Debes seleccionar muestras y tipos para continuar.")
+        st.warning("Primero debes seleccionar muestras y tipos en la Hoja 4.")
     else:
+        try:
+            docs = db.collection("muestras").stream()
+            muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
+        except Exception as e:
+            st.error(f"No se pudieron cargar las muestras: {e}")
+            muestras = []
+
         muestras_filtradas = []
         for muestra in muestras:
             if muestra["nombre"] in muestras_sel:

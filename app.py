@@ -532,7 +532,7 @@ with tab4:
 if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
     st.subheader("Descargar imágenes seleccionadas")
     
-        if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
+    if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
             seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
             
             with TemporaryDirectory() as tmpdir:

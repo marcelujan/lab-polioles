@@ -593,7 +593,6 @@ with tab4:
                                mime="application/zip")
 
 
-
 # --- HOJA 5 ---
 with tab5:
     st.title("Índice OH espectroscópico")
@@ -663,7 +662,7 @@ with tab5:
                 "Muestra": m["nombre"],
                 "Tipo espectro": tipo,
                 "Fecha espectro": e.get("fecha", ""),
-                "Señal": valor_y_extraido,
+                "Señal gráfica": valor_y_extraido,
                 "Señal manual 3548": e.get("senal_3548", None),
                 "Señal manual 3611": e.get("senal_3611", None),
                 "Peso muestra [g]": e.get("peso_muestra", None)
@@ -675,26 +674,16 @@ with tab5:
         st.warning("No se encontraron espectros válidos para calcular Índice OH.")
         st.stop()
 
-    # Crear columna 'Señal solvente' unificando las manuales
-    def obtener_senal_solvente(row):
-        if row["Tipo espectro"] == "FTIR-Acetato":
-            return row["Señal manual 3548"]
-        elif row["Tipo espectro"] == "FTIR-Cloroformo":
-            return row["Señal manual 3611"]
-        else:
-            return None
-
-    df_muestras["Señal solvente"] = df_muestras.apply(obtener_senal_solvente, axis=1)
-
     # Calcular Índice OH real
     def calcular_indice_oh(row):
         tipo = row["Tipo espectro"]
         peso = row["Peso muestra [g]"]
-        senal_grafica = row["Señal"]
-        senal_manual = row["Señal solvente"]
+        senal_grafica = row["Señal gráfica"]
         if tipo == "FTIR-Acetato":
+            senal_manual = row["Señal manual 3548"]
             constante = 52.5253
         elif tipo == "FTIR-Cloroformo":
+            senal_manual = row["Señal manual 3611"]
             constante = 66.7324
         else:
             return "No disponible"
@@ -707,13 +696,7 @@ with tab5:
     df_muestras["Índice OH"] = df_muestras.apply(calcular_indice_oh, axis=1)
 
     # Mostrar resultados
-    columnas_mostrar = ["Muestra", "Tipo espectro", "Fecha espectro", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]
-    df_final = df_muestras[columnas_mostrar]
-    df_final = df_final.rename(columns={
-        "Tipo espectro": "Tipo",
-    })
-
-    st.dataframe(df_final, use_container_width=True)
+    st.dataframe(df_muestras, use_container_width=True)
 
 # --- HOJA 6 ---
 with tab6:

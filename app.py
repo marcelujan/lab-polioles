@@ -715,7 +715,12 @@ with tab5:
     df_final = df_final.rename(columns={
         "Tipo espectro": "Tipo",
     })
+    # Aplicar formato de decimales
+    df_final["Peso muestra [g]"] = df_final["Peso muestra [g]"].apply(lambda x: round(x, 4) if pd.notnull(x) else x)
+    df_final["Índice OH"] = df_final["Índice OH"].apply(lambda x: round(x, 2) if pd.notnull(x) else x)
 
+    # Mostrar tabla final
+    st.dataframe(df_final, use_container_width=True)
     st.dataframe(df_final, use_container_width=True)
 
 # --- HOJA 6 ---

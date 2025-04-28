@@ -400,10 +400,6 @@ with tab3:
         st.info("No hay espectros cargados.")
 
 
-tabs = st.tabs([
-tab1, tab2, tab3, tab4, tab5, tab6 = tabs
-
-
 with tab1:
     st.title("Laboratorio de Polioles")
     st.info("Contenido de la Hoja 1 en construcción...")
@@ -446,15 +442,15 @@ with tab4:
 
     # --- HOJA 4 ---
         
-            st.title("Análisis de espectros")
+    st.title("Análisis de espectros")
         
-            muestras = cargar_muestras()
-            if not muestras:
+    muestras = cargar_muestras()
+    if not muestras:
                 st.info("No hay muestras cargadas con espectros.")
                 st.stop()
         
-            espectros_info = []
-            for m in muestras:
+    espectros_info = []
+    for m in muestras:
                 for e in m.get("espectros", []):
                     espectros_info.append({
                         "Muestra": m["nombre"],
@@ -466,22 +462,22 @@ with tab4:
                         "Es imagen": e.get("es_imagen", False)
                     })
         
-            df_esp = pd.DataFrame(espectros_info)
-            if df_esp.empty:
+    df_esp = pd.DataFrame(espectros_info)
+    if df_esp.empty:
                 st.warning("No hay espectros cargados.")
                 st.stop()
         
-            st.subheader("Filtrar espectros")
-            muestras_disp = df_esp["Muestra"].unique().tolist()
-            tipos_disp = df_esp["Tipo"].unique().tolist()
-            muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
-            tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
+    st.subheader("Filtrar espectros")
+    muestras_disp = df_esp["Muestra"].unique().tolist()
+    tipos_disp = df_esp["Tipo"].unique().tolist()
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
         
-            df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
-            df_datos = df_filtrado[~df_filtrado["Es imagen"]]
-            df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
+    df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
+    df_datos = df_filtrado[~df_filtrado["Es imagen"]]
+    df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
         
-            if not df_datos.empty:
+    if not df_datos.empty:
                 st.subheader("Gráfico combinado de espectros numéricos")
         
                 import matplotlib.pyplot as plt
@@ -583,7 +579,7 @@ with tab4:
             
         
         # --- CÁLCULOS ADICIONALES ---
-        if 'data_validos' in locals() and data_validos and any(t in ['FTIR-Acetato', 'FTIR-Cloroformo'] for t in tipos_sel):
+    if 'data_validos' in locals() and data_validos and any(t in ['FTIR-Acetato', 'FTIR-Cloroformo'] for t in tipos_sel):
             st.subheader("Cálculos adicionales")
             valor_x_manual = st.number_input("Ingresar otro valor de cm⁻¹ para comparar Índice OH a otra longitud de onda", step=0.1, format="%.1f")
         

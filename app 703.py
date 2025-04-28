@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import toml
@@ -598,40 +597,6 @@ with tab5:
     st.title("Índice OH")
     st.info("Aquí podrás calcular y visualizar el Índice OH de tus espectros subidos.")
     st.warning("Funcionalidad en construcción...")
-# --- HOJA 7 ---
-with tab7:
-    st.title("Sugerencias y comentarios")
-
-    sugerencias_ref = db.collection("sugerencias")
-
-    st.subheader("Dejar una sugerencia")
-    comentario = st.text_area("Escribí tu sugerencia o comentario aquí:")
-    if st.button("Enviar sugerencia"):
-        if comentario.strip():
-            sugerencias_ref.add({
-                "comentario": comentario.strip(),
-                "fecha": datetime.now().isoformat()
-            })
-            st.success("Gracias por tu comentario.")
-            st.rerun()
-        else:
-            st.warning("El comentario no puede estar vacío.")
-
-
-    st.subheader("Comentarios recibidos")
-
-    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
-    sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
-
-    for s in sugerencias:
-        st.markdown(f"**{s['fecha'][:19].replace('T',' ')}**")
-        st.markdown(s["comentario"])
-        if st.button("Eliminar", key=f"del_{s['id']}"):
-            sugerencias_ref.document(s["id"]).delete()
-            st.success("Comentario eliminado.")
-            st.rerun()
-
-
 
 # --- HOJA 6 ---
 with tab6:
@@ -703,3 +668,36 @@ with tab6:
     if st.button("Cerrar sesión"):
         st.session_state.autenticado = False
         st.rerun()
+
+# --- HOJA 7 ---
+with tab7:
+    st.title("Sugerencias")
+
+    sugerencias_ref = db.collection("sugerencias")
+
+    st.subheader("Dejar una sugerencia")
+    comentario = st.text_area("Escribí tu sugerencia o comentario aquí:")
+    if st.button("Enviar sugerencia"):
+        if comentario.strip():
+            sugerencias_ref.add({
+                "comentario": comentario.strip(),
+                "fecha": datetime.now().isoformat()
+            })
+            st.success("Gracias por tu comentario.")
+            st.rerun()
+        else:
+            st.warning("El comentario no puede estar vacío.")
+
+
+    st.subheader("Comentarios recibidos")
+
+    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
+    sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
+    for s in sugerencias:
+        st.markdown(f"**{s['fecha'][:19].replace('T',' ')}**")
+        st.markdown(s["comentario"])
+        if st.button("Eliminar", key=f"del_{s['id']}"):
+            sugerencias_ref.document(s["id"]).delete()
+            st.success("Comentario eliminado.")
+            st.rerun()

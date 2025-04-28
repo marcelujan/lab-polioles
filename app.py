@@ -408,17 +408,6 @@ with tab3:
 with tab4:
     st.title("Análisis de espectros")
 
-    # --- Sincronización de selección usando session_state ---
-    if "muestras_sel" not in st.session_state:
-        st.session_state.muestras_sel = []
-    if "tipos_sel" not in st.session_state:
-        st.session_state.tipos_sel = []
-
-    muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
-    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
-
-
-
     muestras = cargar_muestras()
     if not muestras:
         st.info("No hay muestras cargadas con espectros.")
@@ -607,15 +596,6 @@ with tab4:
 # --- HOJA 5 ---
 with tab5:
     st.title("Índice OH")
-
-    # --- Reutilizar selección sincronizada en Hoja 5 ---
-    muestras_sel = st.session_state.get("muestras_sel", [])
-    tipos_sel = st.session_state.get("tipos_sel", [])
-
-    st.write("Muestras seleccionadas:", muestras_sel)
-    st.write("Tipos de espectro seleccionados:", tipos_sel)
-
-
     st.info("Aquí podrás calcular y visualizar el Índice OH de tus espectros subidos.")
     st.warning("Funcionalidad en construcción...")
 # --- HOJA 7 ---

@@ -399,279 +399,223 @@ with tab3:
     else:
         st.info("No hay espectros cargados.")
 
-
-)
-
-
-with tab1:
-    st.title("Laboratorio de Polioles")
-    st.info("Contenido en construcción...")
-
-
-with tab2:
-    st.title("Análisis de datos")
-    st.info("Contenido en construcción...")
-
-
-with tab3:
-    st.title("Carga de espectros")
-    st.info("Contenido en construcción...")
-
-
+# --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
 
-    # --- HOJA 4 ---
-        
-            st.title("Análisis de espectros")
-        
-            muestras = cargar_muestras()
-            if not muestras:
-                st.info("No hay muestras cargadas con espectros.")
-                st.stop()
-        
-            espectros_info = []
-            for m in muestras:
-                for e in m.get("espectros", []):
-                    espectros_info.append({
-                        "Muestra": m["nombre"],
-                        "Tipo": e.get("tipo", ""),
-                        "Nombre archivo": e.get("nombre_archivo", ""),
-                        "Fecha": e.get("fecha", ""),
-                        "Observaciones": e.get("observaciones", ""),
-                        "Contenido": e.get("contenido"),
-                        "Es imagen": e.get("es_imagen", False)
-                    })
-        
-            df_esp = pd.DataFrame(espectros_info)
-            if df_esp.empty:
-                st.warning("No hay espectros cargados.")
-                st.stop()
-        
-            st.subheader("Filtrar espectros")
-            muestras_disp = df_esp["Muestra"].unique().tolist()
-            tipos_disp = df_esp["Tipo"].unique().tolist()
-            muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
-            tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
-        
-            df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
-            df_datos = df_filtrado[~df_filtrado["Es imagen"]]
-            df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
-        
-            if not df_datos.empty:
-                st.subheader("Gráfico combinado de espectros numéricos")
-        
-                import matplotlib.pyplot as plt
-                import pandas as pd
-                from io import BytesIO
-                import base64
-        
-                fig, ax = plt.subplots()
-                rango_x = [float("inf"), float("-inf")]
-                rango_y = [float("inf"), float("-inf")]
-        
-                data_validos = []
-        
-                for _, row in df_datos.iterrows():
-                    try:
-                        extension = os.path.splitext(row["Nombre archivo"])[1].lower()
-                        if extension == ".xlsx":
-                            binario = BytesIO(base64.b64decode(row["Contenido"]))
-                            df = pd.read_excel(binario)
-                        else:
-                            contenido = BytesIO(base64.b64decode(row["Contenido"]))
-                            sep_try = [",", ";", "\t", " "]
-                            for sep in sep_try:
-                                contenido.seek(0)
-                                try:
-                                    df = pd.read_csv(contenido, sep=sep, engine="python")
-                                    if df.shape[1] >= 2:
-                                        break
-                                except:
-                                    continue
-                            else:
-                                continue
-        
-                        col_x, col_y = df.columns[:2]
-                        for col in [col_x, col_y]:
-                            if df[col].dtype == object:
-                                df[col] = df[col].astype(str).str.replace(",", ".", regex=False)
-                            df[col] = pd.to_numeric(df[col], errors="coerce")
-        
-                        df = df.dropna()
-                        if df.empty:
-                            continue
-        
-                        data_validos.append((row["Muestra"], row["Tipo"], df[col_x], df[col_y]))
-        
-                        rango_x[0] = min(rango_x[0], df[col_x].min())
-                        rango_x[1] = max(rango_x[1], df[col_x].max())
-                        rango_y[0] = min(rango_y[0], df[col_y].min())
-                        rango_y[1] = max(rango_y[1], df[col_y].max())
-                    except:
-                        continue
-        
-                if not data_validos:
-                    st.warning("No se pudo graficar ningún espectro válido.")
+    muestras = cargar_muestras()
+    if not muestras:
+        st.info("No hay muestras cargadas con espectros.")
+        st.stop()
+
+    espectros_info = []
+    for m in muestras:
+        for e in m.get("espectros", []):
+            espectros_info.append({
+                "Muestra": m["nombre"],
+                "Tipo": e.get("tipo", ""),
+                "Nombre archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
+                "Observaciones": e.get("observaciones", ""),
+                "Contenido": e.get("contenido"),
+                "Es imagen": e.get("es_imagen", False)
+            })
+
+    df_esp = pd.DataFrame(espectros_info)
+    if df_esp.empty:
+        st.warning("No hay espectros cargados.")
+        st.stop()
+
+    st.subheader("Filtrar espectros")
+    muestras_disp = df_esp["Muestra"].unique().tolist()
+    tipos_disp = df_esp["Tipo"].unique().tolist()
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
+
+    df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
+    df_datos = df_filtrado[~df_filtrado["Es imagen"]]
+    df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
+
+    if not df_datos.empty:
+        st.subheader("Gráfico combinado de espectros numéricos")
+
+        import matplotlib.pyplot as plt
+        import pandas as pd
+        from io import BytesIO
+        import base64
+
+        fig, ax = plt.subplots()
+        rango_x = [float("inf"), float("-inf")]
+        rango_y = [float("inf"), float("-inf")]
+
+        data_validos = []
+
+        for _, row in df_datos.iterrows():
+            try:
+                extension = os.path.splitext(row["Nombre archivo"])[1].lower()
+                if extension == ".xlsx":
+                    binario = BytesIO(base64.b64decode(row["Contenido"]))
+                    df = pd.read_excel(binario)
                 else:
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        x_min = st.number_input("X mínimo", value=rango_x[0])
-                    with col2:
-                        x_max = st.number_input("X máximo", value=rango_x[1])
-                    with col3:
-                        y_min = st.number_input("Y mínimo", value=rango_y[0])
-                    with col4:
-                        y_max = st.number_input("Y máximo", value=rango_y[1])
-        
-                    for muestra, tipo, x, y in data_validos:
-                        x_filtrado = x[(x >= x_min) & (x <= x_max)]
-                        y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-                        if not y_filtrado.empty:
-                            ax.plot(x_filtrado[:len(y_filtrado)], y_filtrado, label=f"{muestra} – {tipo}")
-        
-                    ax.set_xlim(x_min, x_max)
-                    ax.set_ylim(y_min, y_max)
-                    ax.legend()
-                    
-                    st.pyplot(fig)
-        
-                    # Exportar Excel con resumen y hojas individuales
-                    excel_buffer = BytesIO()
-                    with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                        resumen = pd.DataFrame()
-                        for muestra, tipo, x, y in data_validos:
-                            x_filtrado = x[(x >= x_min) & (x <= x_max)]
-                            y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-                            df_tmp = pd.DataFrame({f"X_{muestra}_{tipo}": x_filtrado[:len(y_filtrado)],
-                                                   f"Y_{muestra}_{tipo}": y_filtrado})
-                            df_tmp.to_excel(writer, index=False, sheet_name=f"{muestra[:15]}_{tipo[:10]}")
-                            if resumen.empty:
-                                resumen = df_tmp.copy()
-                            else:
-                                resumen = pd.concat([resumen, df_tmp], axis=1)
-                        resumen.to_excel(writer, index=False, sheet_name="Resumen")
-                    excel_buffer.seek(0)
-        
-            
-            
-            
-            
-            
-        
-        # --- CÁLCULOS ADICIONALES ---
-        if 'data_validos' in locals() and data_validos and any(t in ['FTIR-Acetato', 'FTIR-Cloroformo'] for t in tipos_sel):
-            st.subheader("Cálculos adicionales")
-            valor_x_manual = st.number_input("Ingresar otro valor de cm⁻¹ para comparar Índice OH a otra longitud de onda", step=0.1, format="%.1f")
-        
-            resultados_acetato = []
-            resultados_cloroformo = []
-        
-            for muestra, tipo, x, y in data_validos:
-                if tipo not in ['FTIR-Acetato', 'FTIR-Cloroformo']:
+                    contenido = BytesIO(base64.b64decode(row["Contenido"]))
+                    sep_try = [",", ";", "\t", " "]
+                    for sep in sep_try:
+                        contenido.seek(0)
+                        try:
+                            df = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        continue
+
+                col_x, col_y = df.columns[:2]
+                for col in [col_x, col_y]:
+                    if df[col].dtype == object:
+                        df[col] = df[col].astype(str).str.replace(",", ".", regex=False)
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+                df = df.dropna()
+                if df.empty:
                     continue
-        
-                y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0] if not x.empty and not y.empty else None
-                y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0] if not x.empty and not y.empty else None
-                y_manual = y.iloc[(x - valor_x_manual).abs().argsort()[:1]].values[0] if valor_x_manual and not x.empty and not y.empty else None
-        
-                espectro_muestra = next((e for e in muestras if e["nombre"] == muestra), None)
-                espectro_tipo = next((esp for esp in espectro_muestra.get("espectros", []) if esp.get("tipo") == tipo), None) if espectro_muestra else None
-        
-                senal_3548 = espectro_tipo.get("senal_3548") if espectro_tipo else None
-                senal_3611 = espectro_tipo.get("senal_3611") if espectro_tipo else None
-                peso_muestra = espectro_tipo.get("peso_muestra") if espectro_tipo else None
-                fecha = espectro_tipo.get("fecha") if espectro_tipo else "—"
-        
+
+                data_validos.append((row["Muestra"], row["Tipo"], df[col_x], df[col_y]))
+
+                rango_x[0] = min(rango_x[0], df[col_x].min())
+                rango_x[1] = max(rango_x[1], df[col_x].max())
+                rango_y[0] = min(rango_y[0], df[col_y].min())
+                rango_y[1] = max(rango_y[1], df[col_y].max())
+            except:
+                continue
+
+        if not data_validos:
+            st.warning("No se pudo graficar ningún espectro válido.")
+        else:
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                x_min = st.number_input("X mínimo", value=rango_x[0])
+            with col2:
+                x_max = st.number_input("X máximo", value=rango_x[1])
+            with col3:
+                y_min = st.number_input("Y mínimo", value=rango_y[0])
+            with col4:
+                y_max = st.number_input("Y máximo", value=rango_y[1])
+
+            for muestra, tipo, x, y in data_validos:
                 x_filtrado = x[(x >= x_min) & (x <= x_max)]
                 y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-        
-                if not x_filtrado.empty and not y_filtrado.empty:
-                    sort_idx = np.argsort(x_filtrado.values)
-                    x_sorted = x_filtrado.values[sort_idx]
-                    y_sorted = y_filtrado.values[sort_idx]
-                    integral = np.trapz(y_sorted, x_sorted)
+                if not y_filtrado.empty:
+                    ax.plot(x_filtrado[:len(y_filtrado)], y_filtrado, label=f"{muestra} – {tipo}")
+
+            ax.set_xlim(x_min, x_max)
+            ax.set_ylim(y_min, y_max)
+            ax.legend()
+            
+            st.pyplot(fig)
+
+            # Exportar Excel con resumen y hojas individuales
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                resumen = pd.DataFrame()
+                for muestra, tipo, x, y in data_validos:
+                    x_filtrado = x[(x >= x_min) & (x <= x_max)]
+                    y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+                    df_tmp = pd.DataFrame({f"X_{muestra}_{tipo}": x_filtrado[:len(y_filtrado)],
+                                           f"Y_{muestra}_{tipo}": y_filtrado})
+                    df_tmp.to_excel(writer, index=False, sheet_name=f"{muestra[:15]}_{tipo[:10]}")
+                    if resumen.empty:
+                        resumen = df_tmp.copy()
+                    else:
+                        resumen = pd.concat([resumen, df_tmp], axis=1)
+                resumen.to_excel(writer, index=False, sheet_name="Resumen")
+            excel_buffer.seek(0)
+
+    
+    
+    
+    # --- CÁLCULOS ADICIONALES ---
+    if 'data_validos' in locals() and data_validos and any(t in ['FTIR-Acetato', 'FTIR-Cloroformo'] for t in tipos_sel):
+        st.subheader("Cálculos adicionales")
+        resultados_acetato = []
+        resultados_cloroformo = []
+        for muestra, tipo, x, y in data_validos:
+            if tipo not in ['FTIR-Acetato', 'FTIR-Cloroformo']:
+                continue
+
+            y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0] if not x.empty and not y.empty else None
+            y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0] if not x.empty and not y.empty else None
+
+            # Buscar datos auxiliares (senal_3548, senal_3611, peso_muestra, fecha) del espectro
+            espectro_muestra = next((e for e in muestras if e["nombre"] == muestra), None)
+            espectro_tipo = next((esp for esp in espectro_muestra.get("espectros", []) if esp.get("tipo") == tipo), None) if espectro_muestra else None
+
+            senal_3548 = espectro_tipo.get("senal_3548") if espectro_tipo else None
+            senal_3611 = espectro_tipo.get("senal_3611") if espectro_tipo else None
+            peso_muestra = espectro_tipo.get("peso_muestra") if espectro_tipo else None
+            fecha = espectro_tipo.get("fecha") if espectro_tipo else "—"
+
+            # Calcular Integral en rango
+            x_filtrado = x[(x >= x_min) & (x <= x_max)]
+            y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
+
+            if not x_filtrado.empty and not y_filtrado.empty:
+                sort_idx = np.argsort(x_filtrado.values)
+                x_sorted = x_filtrado.values[sort_idx]
+                y_sorted = y_filtrado.values[sort_idx]
+                integral = np.trapz(y_sorted, x_sorted)
+            else:
+                integral = "—"
+
+            if tipo == "FTIR-Acetato":
+                if y_3548 is not None and peso_muestra and senal_3548 is not None:
+                    indice_oh_acetato = (y_3548 - senal_3548) * 52.5253 / peso_muestra
                 else:
-                    integral = "—"
-        
-                if tipo == "FTIR-Acetato":
-                    indice_normal = (y_3548 - senal_3548) * 52.5253 / peso_muestra if y_3548 is not None and peso_muestra and senal_3548 is not None else "—"
-                    resultados_acetato.append({
-                        "Muestra": muestra,
-                        "Tipo": tipo,
-                        "Modo cálculo": "Señal normal 3548 cm⁻¹",
-                        "Fecha del espectro": fecha,
-                        "Señal usada": round(y_3548, 4) if y_3548 else "—",
-                        "Peso de muestra [g]": round(peso_muestra, 4) if peso_muestra else "—",
-                        "Integral en rango": round(integral, 4) if integral != "—" else "—",
-                        "Índice OH (Acetato)": round(indice_normal, 4) if indice_normal != "—" else "—"
-                    })
-                    if valor_x_manual and y_manual is not None and peso_muestra and senal_3548 is not None:
-                        indice_manual = (y_manual - senal_3548) * 52.5253 / peso_muestra
-                        resultados_acetato.append({
-                            "Muestra": muestra,
-                            "Tipo": tipo,
-                            "Modo cálculo": f"Señal manual en {valor_x_manual} cm⁻¹",
-                            "Fecha del espectro": fecha,
-                            "Señal usada": round(y_manual, 4),
-                            "Peso de muestra [g]": round(peso_muestra, 4),
-                            "Integral en rango": round(integral, 4) if integral != "—" else "—",
-                            "Índice OH (Acetato)": round(indice_manual, 4)
-                        })
-        
-                if tipo == "FTIR-Cloroformo":
-                    indice_normal = (y_3611 - senal_3611) * 66.7324 / peso_muestra if y_3611 is not None and peso_muestra and senal_3611 is not None else "—"
-                    resultados_cloroformo.append({
-                        "Muestra": muestra,
-                        "Tipo": tipo,
-                        "Modo cálculo": "Señal normal 3611 cm⁻¹",
-                        "Fecha del espectro": fecha,
-                        "Señal usada": round(y_3611, 4) if y_3611 else "—",
-                        "Peso de muestra [g]": round(peso_muestra, 4) if peso_muestra else "—",
-                        "Integral en rango": round(integral, 4) if integral != "—" else "—",
-                        "Índice OH (Cloroformo)": round(indice_normal, 4) if indice_normal != "—" else "—"
-                    })
-                    if valor_x_manual and y_manual is not None and peso_muestra and senal_3611 is not None:
-                        indice_manual = (y_manual - senal_3611) * 66.7324 / peso_muestra
-                        resultados_cloroformo.append({
-                            "Muestra": muestra,
-                            "Tipo": tipo,
-                            "Modo cálculo": f"Señal manual en {valor_x_manual} cm⁻¹",
-                            "Fecha del espectro": fecha,
-                            "Señal usada": round(y_manual, 4),
-                            "Peso de muestra [g]": round(peso_muestra, 4),
-                            "Integral en rango": round(integral, 4) if integral != "—" else "—",
-                            "Índice OH (Cloroformo)": round(indice_manual, 4)
-                        })
-        
-            def resaltar_manual(row):
-                color = '#003366' if 'Señal manual' in str(row['Modo cálculo']) else 'black'
-                return ['color: {}'.format(color)] * len(row)
-        
-            if resultados_acetato:
-                st.markdown("### Resultados para FTIR-Acetato")
-                df_resultados_acetato = pd.DataFrame(resultados_acetato)
-                st.dataframe(df_resultados_acetato.style.apply(resaltar_manual, axis=1), use_container_width=True)
-        
-            if resultados_cloroformo:
-                st.markdown("### Resultados para FTIR-Cloroformo")
-                df_resultados_cloroformo = pd.DataFrame(resultados_cloroformo)
-                st.dataframe(df_resultados_cloroformo.style.apply(resaltar_manual, axis=1), use_container_width=True)
-    
-    with tab5:
-        st.title("Sugerencias")
-    
-        
-    
-    with tab6:
-        st.title("Consola")
+                    indice_oh_acetato = "—"
 
-with tab5:
-    st.title("Sugerencias")
+                resultados_acetato.append({
+                    "Muestra": muestra,
+                    "Tipo": tipo,
+                    "Fecha del espectro": fecha,
+                    "Señal de Acetato a 3548 cm⁻¹": round(senal_3548, 4) if senal_3548 not in [None, "—"] else "—",
+                    "Peso de muestra [g]": round(peso_muestra, 4) if peso_muestra not in [None, "—"] else "—",
+                    "Integral en rango": round(integral, 4) if integral not in [None, "—"] else "—",
+                    "Índice OH (Acetato)": round(indice_oh_acetato, 4) if indice_oh_acetato not in [None, "—"] else "—"
+                })
 
-    
+            if tipo == "FTIR-Cloroformo":
+                if y_3611 is not None and peso_muestra and senal_3611 is not None:
+                    indice_oh_cloroformo = (y_3611 - senal_3611) * 66.7324 / peso_muestra
+                else:
+                    indice_oh_cloroformo = "—"
 
-with tab6:
-    st.title("Consola")
+                resultados_cloroformo.append({
+                    "Muestra": muestra,
+                    "Tipo": tipo,
+                    "Fecha del espectro": fecha,
+                    "Señal de Cloroformo a 3611 cm⁻¹": round(senal_3611, 4) if senal_3611 not in [None, "—"] else "—",
+                    "Peso de muestra [g]": round(peso_muestra, 4) if peso_muestra not in [None, "—"] else "—",
+                    "Integral en rango": round(integral, 4) if integral not in [None, "—"] else "—",
+                    "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 4) if indice_oh_cloroformo not in [None, "—"] else "—"
+                })
 
-    
+        if resultados_acetato:
+            st.markdown("### Resultados para FTIR-Acetato")
+            df_resultados_acetato = pd.DataFrame(resultados_acetato)
+            st.dataframe(df_resultados_acetato, use_container_width=True)
+
+        if resultados_cloroformo:
+            st.markdown("### Resultados para FTIR-Cloroformo")
+            df_resultados_cloroformo = pd.DataFrame(resultados_cloroformo)
+            st.dataframe(df_resultados_cloroformo, use_container_width=True)
+
+if not df_imagenes.empty:
+        st.subheader("Imágenes de espectros")
+        for _, row in df_imagenes.iterrows():
+            try:
+                imagen = BytesIO(base64.b64decode(row["Contenido"]))
+                st.image(imagen, caption=f"{row['Muestra']} – {row['Tipo']} – {row['Fecha']}", use_container_width=True)
+            except:
+                st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
+
+

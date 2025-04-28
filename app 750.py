@@ -405,30 +405,6 @@ with tab3:
 
 # --- HOJA 4 ---
 with tab4:
-
-    # --- Sincronización de selección usando session_state ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
-
-    if "muestras_sel" not in st.session_state:
-        st.session_state.muestras_sel = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state.tipos_sel = []
-
-    st.session_state.muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
-    st.session_state.tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
-
-
-with tab4:
     st.title("Análisis de espectros")
 
     muestras = cargar_muestras()
@@ -617,30 +593,6 @@ with tab4:
                                mime="application/zip")
 
 
-
-# --- HOJA 5 ---
-with tab5:
-
-    # --- Sincronización de selección usando session_state ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-        tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
-        tipos_disp = []
-
-    if "muestras_sel" not in st.session_state:
-        st.session_state.muestras_sel = []
-
-    if "tipos_sel" not in st.session_state:
-        st.session_state.tipos_sel = []
-
-    st.session_state.muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
-    st.session_state.tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
 
 # --- HOJA 5 ---
 with tab5:

@@ -717,8 +717,8 @@ with tab5:
     })
     
     # Aplicar formato de decimales
-    df_final["Peso muestra [g]"] = df_final["Peso muestra [g]"].apply(lambda x: "{:.4f}".format(x) if pd.notnull(x) else "")
-    df_final["Índice OH"] = df_final["Índice OH"].apply(lambda x: "{:.2f}".format(x) if pd.notnull(x) else "")
+    df_final["Peso muestra [g]"] = df_final["Peso muestra [g]"].apply(lambda x: round(x, 4) if pd.notnull(x) else x)
+    df_final["Índice OH"] = df_final["Índice OH"].apply(lambda x: round(x, 2) if pd.notnull(x) else x)
 
     # Mostrar tabla final
     st.dataframe(df_final, use_container_width=True)

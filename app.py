@@ -237,7 +237,7 @@ with tab2:
         st.warning("Los datos seleccionados no son compatibles para graficar.")
 
 # --- HOJA 3 ---
-with tab3:
+with tab3:with tab3:
     st.title("Carga de espectros")
 
     muestras = cargar_muestras()
@@ -251,55 +251,17 @@ with tab3:
     ]
     if "tipos_espectro" not in st.session_state:
         st.session_state.tipos_espectro = tipos_espectro_base.copy()
-    tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
-    nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
-    if nuevo_tipo and nuevo_tipo not in st.session_state.tipos_espectro:
-        st.session_state.tipos_espectro.append(nuevo_tipo)
-        tipo_espectro = nuevo_tipo
-    observaciones = st.text_area("Observaciones")
-    fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
-    archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
-
-    if archivo:
-        nombre_archivo = archivo.name
-        extension = os.path.splitext(nombre_archivo)[1].lower()
-        es_imagen = extension in [".png", ".jpg", ".jpeg"]
-
-        st.markdown("### Vista previa")
-        if es_imagen:
-            st.image(archivo, use_container_width=True)
-        else:
-            try:
-                if extension == ".xlsx":
-                    df_esp = pd.read_excel(archivo)
-                else:
-                    df_esp = pd.read_csv(archivo, sep=None, engine="python")
-
-                if df_esp.shape[1] >= 2:
-                    col_x, col_y = df_esp.columns[:2]
-                    min_x, max_x = float(df_esp[col_x].min()), float(df_esp[col_x].max())
-                    x_range = st.slider("Rango eje X", min_value=min_x, max_value=max_x, value=(min_x, max_x))
-                    df_filtrado = df_esp[(df_esp[col_x] >= x_range[0]) & (df_esp[col_x] <= x_range[1])]
-
-                    fig, ax = plt.subplots()
-                    ax.plot(df_filtrado[col_x], df_filtrado[col_y])
-                    ax.set_xlabel(col_x)
-                    ax.set_ylabel(col_y)
-                    st.pyplot(fig)
-                else:
-                    st.warning("El archivo debe tener al menos dos columnas.")
-            except Exception as e:
-                st.error(f"No se pudo leer el archivo: {e}")
-
-    if st.button("Guardar espectro") and archivo:
-        espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])
-        nuevo = {
+    nuevo = {
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
             "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8"),
             "es_imagen": es_imagen,
             "fecha": str(fecha_espectro),
+    "senal_3548": senal_3548,
+    "senal_3611": senal_3611,
+    "peso_muestra": peso_muestra,
+
         }
         espectros.append(nuevo)
 

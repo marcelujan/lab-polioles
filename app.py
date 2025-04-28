@@ -603,79 +603,100 @@ with tab5:
         st.info("No hay muestras cargadas para analizar.")
         st.stop()
 
-    # Preparar información
-    muestras_info = []
+    import pandas as pd
+    import numpy as np
+    import base64
+    from io import BytesIO
+
+    espectros_info = []
+
     for m in muestras:
         espectros = m.get("espectros", [])
         for e in espectros:
-            muestras_info.append({
+            tipo = e.get("tipo", "")
+            if tipo not in ["FTIR-Acetato", "FTIR-Cloroformo"]:
+                continue
+
+            contenido = e.get("contenido")
+            es_imagen = e.get("es_imagen", False)
+
+            valor_y_extraido = None
+
+            if contenido and not es_imagen:
+                try:
+                    extension = e.get("nombre_archivo", "").split(".")[-1].lower()
+                    binario = BytesIO(base64.b64decode(contenido))
+
+                    if extension == "xlsx":
+                        df = pd.read_excel(binario, header=None)
+                    else:
+                        sep_try = [",", ";", "\t", " "]
+                        for sep in sep_try:
+                            binario.seek(0)
+                            try:
+                                df = pd.read_csv(binario, sep=sep, engine="python", header=None)
+                                if df.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            df = None
+
+                    if df is not None and df.shape[1] >= 2:
+                        df = df.dropna()
+                        x_valores = pd.to_numeric(df.iloc[:,0], errors='coerce')
+                        y_valores = pd.to_numeric(df.iloc[:,1], errors='coerce')
+                        df_limpio = pd.DataFrame({"X": x_valores, "Y": y_valores}).dropna()
+
+                        if tipo == "FTIR-Acetato":
+                            objetivo_x = 3548
+                        else:
+                            objetivo_x = 3611
+
+                        idx_cercano = (df_limpio["X"] - objetivo_x).abs().idxmin()
+                        valor_y_extraido = df_limpio.loc[idx_cercano, "Y"]
+                except Exception as err:
+                    valor_y_extraido = None
+
+            espectros_info.append({
                 "Muestra": m["nombre"],
-                "Tipo espectro": e.get("tipo", ""),
+                "Tipo espectro": tipo,
                 "Fecha espectro": e.get("fecha", ""),
-                "Señal 3548": e.get("senal_3548", None),
-                "Señal 3611": e.get("senal_3611", None),
+                "Señal gráfica": valor_y_extraido,
+                "Señal manual 3548": e.get("senal_3548", None),
+                "Señal manual 3611": e.get("senal_3611", None),
                 "Peso muestra [g]": e.get("peso_muestra", None)
             })
 
-    import pandas as pd
-    df_muestras = pd.DataFrame(muestras_info)
+    df_muestras = pd.DataFrame(espectros_info)
 
     if df_muestras.empty:
-        st.warning("No se encontraron datos de espectros cargados.")
+        st.warning("No se encontraron espectros válidos para calcular Índice OH.")
         st.stop()
 
-    # Calcular Índice OH
+    # Calcular Índice OH real
     def calcular_indice_oh(row):
         tipo = row["Tipo espectro"]
         peso = row["Peso muestra [g]"]
-        if peso is None or peso == 0:
-            return "No disponible"
+        senal_grafica = row["Señal gráfica"]
         if tipo == "FTIR-Acetato":
-            senal_grafica = row["Señal 3548"]
-            senal_manual = row["Señal 3548"]
-            if senal_grafica is None or senal_manual is None:
-                return "No disponible"
-            return round(((senal_grafica - senal_manual) * 52.5253) / peso, 4)
+            senal_manual = row["Señal manual 3548"]
+            constante = 52.5253
         elif tipo == "FTIR-Cloroformo":
-            senal_grafica = row["Señal 3611"]
-            senal_manual = row["Señal 3611"]
-            if senal_grafica is None or senal_manual is None:
-                return "No disponible"
-            return round(((senal_grafica - senal_manual) * 66.7324) / peso, 4)
+            senal_manual = row["Señal manual 3611"]
+            constante = 66.7324
         else:
             return "No disponible"
 
+        if peso is None or peso == 0 or senal_grafica is None or senal_manual is None:
+            return "No disponible"
+
+        return round(((senal_grafica - senal_manual) * constante) / peso, 4)
+
     df_muestras["Índice OH"] = df_muestras.apply(calcular_indice_oh, axis=1)
 
-    # Separar Acetato y Cloroformo
-    df_acetato = df_muestras[df_muestras["Tipo espectro"] == "FTIR-Acetato"]
-    df_cloroformo = df_muestras[df_muestras["Tipo espectro"] == "FTIR-Cloroformo"]
-
-    # Mostrar tabla Acetato
-    if not df_acetato.empty:
-        st.subheader("FTIR-Acetato")
-        df_acetato_mostrar = df_acetato[["Muestra", "Tipo espectro", "Fecha espectro", "Señal 3548", "Peso muestra [g]", "Índice OH"]]
-        df_acetato_mostrar = df_acetato_mostrar.rename(columns={
-            "Tipo espectro": "Tipo",
-            "Señal 3548": "Señal de Acetato a 3548 cm⁻¹",
-            "Índice OH": "Índice OH (Acetato)"
-        })
-        st.dataframe(df_acetato_mostrar, use_container_width=True)
-    else:
-        st.info("No se encontraron espectros FTIR-Acetato.")
-
-    # Mostrar tabla Cloroformo
-    if not df_cloroformo.empty:
-        st.subheader("FTIR-Cloroformo")
-        df_cloroformo_mostrar = df_cloroformo[["Muestra", "Tipo espectro", "Fecha espectro", "Señal 3611", "Peso muestra [g]", "Índice OH"]]
-        df_cloroformo_mostrar = df_cloroformo_mostrar.rename(columns={
-            "Tipo espectro": "Tipo",
-            "Señal 3611": "Señal de Cloroformo a 3611 cm⁻¹",
-            "Índice OH": "Índice OH (Cloroformo)"
-        })
-        st.dataframe(df_cloroformo_mostrar, use_container_width=True)
-    else:
-        st.info("No se encontraron espectros FTIR-Cloroformo.")
+    # Mostrar resultados
+    st.dataframe(df_muestras, use_container_width=True)
 
 # --- HOJA 6 ---
 with tab6:

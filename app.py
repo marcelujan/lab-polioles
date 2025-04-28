@@ -300,10 +300,6 @@ with tab3:
             "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8"),
             "es_imagen": es_imagen,
             "fecha": str(fecha_espectro),
-    "senal_3548": senal_3548,
-    "senal_3611": senal_3611,
-    "peso_muestra": peso_muestra,
-
         }
         espectros.append(nuevo)
 

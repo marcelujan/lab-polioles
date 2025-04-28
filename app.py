@@ -403,7 +403,6 @@ with tab3:
     else:
         st.info("No hay espectros cargados.")
 
-
 # --- HOJA 4 ---
 with tab4:
     st.title("Análisis de espectros")
@@ -434,13 +433,8 @@ with tab4:
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()
     tipos_disp = df_esp["Tipo"].unique().tolist()
-
-    # CORREGIDO: usar session_state
-    st.multiselect("Muestras", muestras_disp, key="muestras_sel")
-    st.multiselect("Tipo de espectro", tipos_disp, key="tipos_sel")
-
-    muestras_sel = st.session_state.get("muestras_sel", [])
-    tipos_sel = st.session_state.get("tipos_sel", [])
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
 
     df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
     df_datos = df_filtrado[~df_filtrado["Es imagen"]]
@@ -521,8 +515,10 @@ with tab4:
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
             ax.legend()
+            
             st.pyplot(fig)
 
+            # Exportar Excel con resumen y hojas individuales
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 resumen = pd.DataFrame()
@@ -544,7 +540,8 @@ with tab4:
                 data=excel_buffer.getvalue(),
                 file_name=f"espectros_resumen_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+)
+
 
     if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")
@@ -555,138 +552,99 @@ with tab4:
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
 
+
     if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
         st.subheader("Descargar imágenes seleccionadas")
-
+    
     if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
-        seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
-        
-        from tempfile import TemporaryDirectory
-        import zipfile
-        import os
+            seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
+            
+            with TemporaryDirectory() as tmpdir:
+                zip_path = os.path.join(tmpdir, f"imagenes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
+                with zipfile.ZipFile(zip_path, "w") as zipf:
+                    for _, row in seleccionadas.iterrows():
+                        carpeta = row["Muestra"]
+                        os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
+                        
+                        # Guardar imagen
+                        nombre_img = row["Nombre archivo"]
+                        path_img = os.path.join(tmpdir, carpeta, nombre_img)
+                        with open(path_img, "wb") as f:
+                            f.write(base64.b64decode(row["Contenido"]))
+                        zipf.write(path_img, arcname=os.path.join(carpeta, nombre_img))
+    
+                        # Crear .txt de observaciones
+                        nombre_txt = os.path.splitext(nombre_img)[0] + ".txt"
+                        path_txt = os.path.join(tmpdir, carpeta, nombre_txt)
+                        with open(path_txt, "w", encoding="utf-8") as f:
+                            f.write(f"Nombre del archivo: {nombre_img}\n")
+                            f.write(f"Tipo de espectro: {row['Tipo']}\n")
+                            f.write(f"Fecha: {row['Fecha']}\n")
+                            f.write(f"Observaciones: {row['Observaciones']}\n")
+                        zipf.write(path_txt, arcname=os.path.join(carpeta, nombre_txt))
+    
+                # Leer el ZIP y preparar para descarga
+                with open(zip_path, "rb") as final_zip:
+                    zip_bytes = final_zip.read()
+    
+            st.download_button("📦 Descargar ZIP de imágenes",
+                               data=zip_bytes,
+                               file_name=os.path.basename(zip_path),
+                               mime="application/zip")
 
-        with TemporaryDirectory() as tmpdir:
-            zip_path = os.path.join(tmpdir, f"imagenes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
-            with zipfile.ZipFile(zip_path, "w") as zipf:
-                for _, row in seleccionadas.iterrows():
-                    carpeta = row["Muestra"]
-                    os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
 
-                    nombre_img = row["Nombre archivo"]
-                    path_img = os.path.join(tmpdir, carpeta, nombre_img)
-                    with open(path_img, "wb") as f:
-                        f.write(base64.b64decode(row["Contenido"]))
-                    zipf.write(path_img, arcname=os.path.join(carpeta, nombre_img))
-
-                    nombre_txt = os.path.splitext(nombre_img)[0] + ".txt"
-                    path_txt = os.path.join(tmpdir, carpeta, nombre_txt)
-                    with open(path_txt, "w", encoding="utf-8") as f:
-                        f.write(f"Nombre del archivo: {nombre_img}")
-                        f.write(f"Tipo de espectro: {row['Tipo']}")
-                        f.write(f"Fecha: {row['Fecha']}")
-                        f.write(f"Observaciones: {row['Observaciones']}")
-                    zipf.write(path_txt, arcname=os.path.join(carpeta, nombre_txt))
-
-            with open(zip_path, "rb") as final_zip:
-                zip_bytes = final_zip.read()
-
-        st.download_button("📦 Descargar ZIP de imágenes",
-                           data=zip_bytes,
-                           file_name=os.path.basename(zip_path),
-                           mime="application/zip")
 
 # --- HOJA 5 ---
 with tab5:
-    st.title("Índice OH espectroscópico")
+    st.title("Índice OH")
 
+    # --- Leer muestras disponibles de Firestore ---
     try:
         docs = db.collection("muestras").stream()
         muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
+        muestras_disp = [m["nombre"] for m in muestras]
     except Exception as e:
         st.error(f"No se pudieron cargar las muestras: {e}")
         muestras = []
+        muestras_disp = []
 
-    muestras_sel = st.session_state.get("muestras_sel", [])
-    tipos_sel = st.session_state.get("tipos_sel", [])
+    # --- Selector de muestras y tipos directamente en Hoja 5 ---
+    if "muestras_sel" not in st.session_state:
+        st.session_state.muestras_sel = []
 
-    if muestras_sel and tipos_sel:
-        resultados = []
+    if "tipos_sel" not in st.session_state:
+        st.session_state.tipos_sel = []
 
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
+    
+    tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
+    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
+
+    if not muestras_sel or not tipos_sel:
+        st.warning("Debes seleccionar muestras y tipos para continuar.")
+    else:
+        muestras_filtradas = []
         for muestra in muestras:
             if muestra["nombre"] in muestras_sel:
-                espectros = muestra.get("espectros", [])
-                for esp in espectros:
-                    tipo = esp.get("tipo", "")
-                    if tipo in tipos_sel:
-                        if isinstance(esp.get("contenido"), dict) and "datos" in esp["contenido"]:
-                            datos = esp["contenido"]["datos"]
-                            if isinstance(datos, list) and all(isinstance(x, list) and len(x) == 2 for x in datos):
-                                import numpy as np
-                                datos_np = np.array(datos)
-                                x_valores = datos_np[:, 0]
-                                y_valores = datos_np[:, 1]
+                espectros_filtrados = [
+                    esp for esp in muestra.get("espectros", [])
+                    if esp.get("tipo", "") in tipos_sel
+                ]
+                if espectros_filtrados:
+                    for espectro in espectros_filtrados:
+                        muestras_filtradas.append({
+                            "Muestra": muestra["nombre"],
+                            "Tipo de espectro": espectro.get("tipo", "No definido"),
+                            "Señal 3548 cm⁻¹": espectro.get("senal_3548", "No disponible"),
+                            "Señal 3611 cm⁻¹": espectro.get("senal_3611", "No disponible"),
+                            "Peso muestra [g]": espectro.get("peso_muestra", "No disponible")
+                        })
 
-                                if tipo == "FTIR-Acetato":
-                                    objetivo_x = 3548
-                                    constante = 52.5253
-                                    senal_manual = esp.get("senal_3548", None)
-                                elif tipo == "FTIR-Cloroformo":
-                                    objetivo_x = 3611
-                                    constante = 66.7324
-                                    senal_manual = esp.get("senal_3611", None)
-                                else:
-                                    continue
-
-                                peso_muestra = esp.get("peso_muestra", None)
-
-                                idx_mas_cercano = np.argmin(np.abs(x_valores - objetivo_x))
-                                senal_grafica = y_valores[idx_mas_cercano]
-
-                                if senal_manual is not None and peso_muestra is not None and peso_muestra != 0:
-                                    indice_oh = ((senal_grafica - senal_manual) * constante) / peso_muestra
-                                    indice_oh = round(indice_oh, 4)
-                                else:
-                                    indice_oh = "No disponible"
-
-                                resultados.append({
-                                    "Muestra": muestra["nombre"],
-                                    "Tipo": tipo,
-                                    "Fecha del espectro": esp.get("fecha", "No disponible"),
-                                    "Señal gráfica": round(senal_grafica, 4),
-                                    "Señal manual": senal_manual if senal_manual is not None else "No disponible",
-                                    "Peso muestra [g]": peso_muestra if peso_muestra is not None else "No disponible",
-                                    "Índice OH": indice_oh
-                                })
-
-        if resultados:
-            import pandas as pd
-            import io
-            from datetime import datetime
-
-            df_resultados = pd.DataFrame(resultados)
-            st.dataframe(df_resultados, use_container_width=True)
-
-            # Botón para descargar Excel
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                df_resultados.to_excel(writer, index=False, sheet_name="Índice OH")
-                writer.save()
-
-            fecha_hora_actual = datetime.now().strftime("%Y-%m-%d_%H-%M")
-            nombre_archivo = f"indice_oh_resultados_{fecha_hora_actual}.xlsx"
-
-            st.download_button(
-                label="📥 Descargar tabla en Excel",
-                data=buffer.getvalue(),
-                file_name=nombre_archivo,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+        if muestras_filtradas:
+            df_muestras = pd.DataFrame(muestras_filtradas)
+            st.dataframe(df_muestras, use_container_width=True)
         else:
-            st.info("No se encontraron espectros numéricos válidos para calcular Índice OH.")
-    else:
-        st.warning("Primero debes seleccionar muestras y tipos en la Hoja 4.")
-
-
+            st.info("No se encontraron espectros disponibles para mostrar.")
 # --- HOJA 6 ---
 with tab6:
     st.title("Consola")

@@ -237,7 +237,7 @@ with tab2:
         st.warning("Los datos seleccionados no son compatibles para graficar.")
 
 # --- HOJA 3 ---
-with tab3:
+with tab3:with tab3:
     st.title("Carga de espectros")
 
     muestras = cargar_muestras()
@@ -251,55 +251,17 @@ with tab3:
     ]
     if "tipos_espectro" not in st.session_state:
         st.session_state.tipos_espectro = tipos_espectro_base.copy()
-    tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
-    nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
-    if nuevo_tipo and nuevo_tipo not in st.session_state.tipos_espectro:
-        st.session_state.tipos_espectro.append(nuevo_tipo)
-        tipo_espectro = nuevo_tipo
-    observaciones = st.text_area("Observaciones")
-    fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
-    archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
-
-    if archivo:
-        nombre_archivo = archivo.name
-        extension = os.path.splitext(nombre_archivo)[1].lower()
-        es_imagen = extension in [".png", ".jpg", ".jpeg"]
-
-        st.markdown("### Vista previa")
-        if es_imagen:
-            st.image(archivo, use_container_width=True)
-        else:
-            try:
-                if extension == ".xlsx":
-                    df_esp = pd.read_excel(archivo)
-                else:
-                    df_esp = pd.read_csv(archivo, sep=None, engine="python")
-
-                if df_esp.shape[1] >= 2:
-                    col_x, col_y = df_esp.columns[:2]
-                    min_x, max_x = float(df_esp[col_x].min()), float(df_esp[col_x].max())
-                    x_range = st.slider("Rango eje X", min_value=min_x, max_value=max_x, value=(min_x, max_x))
-                    df_filtrado = df_esp[(df_esp[col_x] >= x_range[0]) & (df_esp[col_x] <= x_range[1])]
-
-                    fig, ax = plt.subplots()
-                    ax.plot(df_filtrado[col_x], df_filtrado[col_y])
-                    ax.set_xlabel(col_x)
-                    ax.set_ylabel(col_y)
-                    st.pyplot(fig)
-                else:
-                    st.warning("El archivo debe tener al menos dos columnas.")
-            except Exception as e:
-                st.error(f"No se pudo leer el archivo: {e}")
-
-    if st.button("Guardar espectro") and archivo:
-        espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])
-        nuevo = {
+    nuevo = {
             "tipo": tipo_espectro,
             "observaciones": observaciones,
             "nombre_archivo": archivo.name,
             "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8"),
             "es_imagen": es_imagen,
             "fecha": str(fecha_espectro),
+    "senal_3548": senal_3548,
+    "senal_3611": senal_3611,
+    "peso_muestra": peso_muestra,
+
         }
         espectros.append(nuevo)
 
@@ -516,7 +478,13 @@ with tab4:
                         resumen = pd.concat([resumen, df_tmp], axis=1)
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
             excel_buffer.seek(0)
-            
+
+            st.download_button(
+                "📥 Exportar resumen a Excel",
+                data=excel_buffer.getvalue(),
+                file_name=f"espectros_resumen_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
 
 
     if not df_imagenes.empty:
@@ -529,132 +497,44 @@ with tab4:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
 
 
-if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
-    st.subheader("Descargar imágenes seleccionadas")
-
+    if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
+        st.subheader("Descargar imágenes seleccionadas")
+    
     if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
-        seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
-        
-        with TemporaryDirectory() as tmpdir:
-            zip_path = os.path.join(tmpdir, f"imagenes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
-            with zipfile.ZipFile(zip_path, "w") as zipf:
-                for _, row in seleccionadas.iterrows():
-                    carpeta = row["Muestra"]
-                    os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
-                    
-                    # Guardar imagen
-                    nombre_img = row["Nombre archivo"]
-                    path_img = os.path.join(tmpdir, carpeta, nombre_img)
-                    with open(path_img, "wb") as f:
-                        f.write(base64.b64decode(row["Contenido"]))
-                    zipf.write(path_img, arcname=os.path.join(carpeta, nombre_img))
-
-                    # Crear .txt de observaciones
-                    nombre_txt = os.path.splitext(nombre_img)[0] + ".txt"
-                    path_txt = os.path.join(tmpdir, carpeta, nombre_txt)
-                    with open(path_txt, "w", encoding="utf-8") as f:
-                        f.write(f"Nombre del archivo: {nombre_img}\n")
-                        f.write(f"Tipo de espectro: {row['Tipo']}\n")
-                        f.write(f"Fecha: {row['Fecha']}\n")
-                        f.write(f"Observaciones: {row['Observaciones']}\n")
-                    zipf.write(path_txt, arcname=os.path.join(carpeta, nombre_txt))
-
-            # Leer el ZIP y preparar para descarga
-            with open(zip_path, "rb") as final_zip:
-                zip_bytes = final_zip.read()
-
-        st.download_button("📦 Descargar ZIP de imágenes",
-                           data=zip_bytes,
-                           file_name=os.path.basename(zip_path),
-                           mime="application/zip")
-
-
-
-# --- CÁLCULOS ADICIONALES ---
-if 'data_validos' in locals() and data_validos:
-    st.subheader("Cálculos adicionales")
-
-    input_data = {}
-    for idx, (muestra, tipo, x, y) in enumerate(data_validos):
-        with st.expander(f"{muestra} – {tipo}"):
-            valor_acetato = st.number_input(f"Señal de acetato a 3548 cm⁻¹ ({muestra})", step=0.0001, format="%.4f", key=f"acetato_{idx}")
-            valor_cloroformo = st.number_input(f"Señal de cloroformo a 3611 cm⁻¹ ({muestra})", step=0.0001, format="%.4f", key=f"cloroformo_{idx}")
-            peso_muestra = st.number_input(f"Peso de la muestra [g] ({muestra})", step=0.0001, format="%.4f", key=f"peso_{idx}")
-            input_data[idx] = {
-                "acetato": valor_acetato,
-                "cloroformo": valor_cloroformo,
-                "peso": peso_muestra
-            }
-
-    resultados = []
-    for idx, (muestra, tipo, x, y) in enumerate(data_validos):
-        datos = input_data[idx]
-        y_3548 = y.iloc[(x - 3548).abs().argsort()[:1]].values[0]
-        y_3611 = y.iloc[(x - 3611).abs().argsort()[:1]].values[0]
-        # Cálculo del área asegurando orden creciente en X
-        x_filtrado = x[(x >= x_min) & (x <= x_max)]
-        y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
-
-        if not x_filtrado.empty and not y_filtrado.empty:
-            # Ordenamos X e Y filtrados
-            sort_idx = np.argsort(x_filtrado.values)
-            x_sorted = x_filtrado.values[sort_idx]
-            y_sorted = y_filtrado.values[sort_idx]
-            integral = np.trapz(y_sorted, x_sorted)
-        else:
-            integral = ""
-
-        # Área total sobre todo el espectro (sin filtrar)
-        if not x.empty and not y.empty:
-            sort_idx_total = np.argsort(x.values)
-            x_total_sorted = x.values[sort_idx_total]
-            y_total_sorted = y.values[sort_idx_total]
-            area_total = np.trapz(y_total_sorted, x_total_sorted)
-        else:
-            area_total = ""
-
-        # Cálculo del porcentaje
-        if integral != "" and area_total != "" and area_total != 0:
-            porcentaje_area = (integral / area_total) * 100
-        else:
-            porcentaje_area = ""
-
-
-        indice_oh_acetato = ""
-        indice_oh_cloroformo = ""
-        if datos["peso"] > 0:
-            if datos["acetato"] != 0:
-                indice_oh_acetato = (y_3548 - datos["acetato"]) * 52.5253 / datos["peso"]
-            if datos["cloroformo"] != 0:
-                indice_oh_cloroformo = (y_3611 - datos["cloroformo"]) * 66.7324 / datos["peso"]
-
-        resultados.append({
-            "Muestra": muestra,
-            "Tipo": tipo,
-            "Señal 3548": round(y_3548, 4),
-            "Señal 3611": round(y_3611, 4),
-            "Integral en rango": round(integral, 4) if integral != "" else "",
-            "Área total": round(area_total, 4) if area_total != "" else "",
-            "% Área seleccionada": round(porcentaje_area, 2) if porcentaje_area != "" else "",
-            "Índice OH (Acetato)": round(indice_oh_acetato, 4) if indice_oh_acetato != "" else "—",
-            "Índice OH (Cloroformo)": round(indice_oh_cloroformo, 4) if indice_oh_cloroformo != "" else "—"
-        })
-
-
-    df_resultados = pd.DataFrame(resultados)
-    st.dataframe(df_resultados, use_container_width=True)
-
-    with pd.ExcelWriter(excel_buffer, engine="openpyxl", mode="a") as writer:
-        df_resultados.to_excel(writer, index=False, sheet_name="Cálculos adicionales")
-
-    excel_buffer.seek(0)
-
-    st.download_button("📊 Descargar Excel completo",
-                       data=excel_buffer.getvalue(),
-                       file_name=f"espectros_calculados_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-
+            seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
+            
+            with TemporaryDirectory() as tmpdir:
+                zip_path = os.path.join(tmpdir, f"imagenes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
+                with zipfile.ZipFile(zip_path, "w") as zipf:
+                    for _, row in seleccionadas.iterrows():
+                        carpeta = row["Muestra"]
+                        os.makedirs(os.path.join(tmpdir, carpeta), exist_ok=True)
+                        
+                        # Guardar imagen
+                        nombre_img = row["Nombre archivo"]
+                        path_img = os.path.join(tmpdir, carpeta, nombre_img)
+                        with open(path_img, "wb") as f:
+                            f.write(base64.b64decode(row["Contenido"]))
+                        zipf.write(path_img, arcname=os.path.join(carpeta, nombre_img))
+    
+                        # Crear .txt de observaciones
+                        nombre_txt = os.path.splitext(nombre_img)[0] + ".txt"
+                        path_txt = os.path.join(tmpdir, carpeta, nombre_txt)
+                        with open(path_txt, "w", encoding="utf-8") as f:
+                            f.write(f"Nombre del archivo: {nombre_img}\n")
+                            f.write(f"Tipo de espectro: {row['Tipo']}\n")
+                            f.write(f"Fecha: {row['Fecha']}\n")
+                            f.write(f"Observaciones: {row['Observaciones']}\n")
+                        zipf.write(path_txt, arcname=os.path.join(carpeta, nombre_txt))
+    
+                # Leer el ZIP y preparar para descarga
+                with open(zip_path, "rb") as final_zip:
+                    zip_bytes = final_zip.read()
+    
+            st.download_button("📦 Descargar ZIP de imágenes",
+                               data=zip_bytes,
+                               file_name=os.path.basename(zip_path),
+                               mime="application/zip")
 # --- HOJA 5 ---
 with tab5:
     st.title("Sugerencias y comentarios")

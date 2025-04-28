@@ -440,6 +440,37 @@ with tab4:
     tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
 
     df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
+
+    # Filtrar espectros disponibles
+    espectros_info = []
+    for idx, row in df_filtrado.iterrows():
+        fecha = row.get("Fecha", "Sin fecha")
+        observaciones = row.get("Observaciones", "Sin observaciones")
+        if not observaciones:
+            observaciones = "Sin observaciones"
+        if len(observaciones) > 80:
+            observaciones = observaciones[:77] + "..."
+
+        nombre_espectro = f"{fecha} - {observaciones}"
+        espectros_info.append({
+            "identificador": idx,  # el índice real en df_filtrado
+            "nombre": nombre_espectro
+        })
+
+    if espectros_info:
+        espectros_nombres = [e["nombre"] for e in espectros_info]
+        seleccionados_nombres = st.multiselect(
+            "Seleccionar espectros a visualizar:", 
+            espectros_nombres, 
+            default=espectros_nombres
+        )
+
+        # Filtrar DataFrame según selección
+        seleccionados_idx = [e["identificador"] for e in espectros_info if e["nombre"] in seleccionados_nombres]
+        df_filtrado = df_filtrado.loc[seleccionados_idx]
+    else:
+        st.warning("No hay espectros disponibles para seleccionar.")
+
     df_datos = df_filtrado[~df_filtrado["Es imagen"]]
     df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
 

@@ -647,35 +647,7 @@ with tab5:
 
     df_muestras["Índice OH"] = df_muestras.apply(calcular_indice_oh, axis=1)
 
-    # Separar Acetato y Cloroformo
-    df_acetato = df_muestras[df_muestras["Tipo espectro"] == "FTIR-Acetato"]
-    df_cloroformo = df_muestras[df_muestras["Tipo espectro"] == "FTIR-Cloroformo"]
-
-    # Mostrar tabla Acetato
-    if not df_acetato.empty:
-        st.subheader("FTIR-Acetato")
-        df_acetato_mostrar = df_acetato[["Muestra", "Tipo espectro", "Fecha espectro", "Señal 3548", "Peso muestra [g]", "Índice OH"]]
-        df_acetato_mostrar = df_acetato_mostrar.rename(columns={
-            "Tipo espectro": "Tipo",
-            "Señal 3548": "Señal de Acetato a 3548 cm⁻¹",
-            "Índice OH": "Índice OH (Acetato)"
-        })
-        st.dataframe(df_acetato_mostrar, use_container_width=True)
-    else:
-        st.info("No se encontraron espectros FTIR-Acetato.")
-
-    # Mostrar tabla Cloroformo
-    if not df_cloroformo.empty:
-        st.subheader("FTIR-Cloroformo")
-        df_cloroformo_mostrar = df_cloroformo[["Muestra", "Tipo espectro", "Fecha espectro", "Señal 3611", "Peso muestra [g]", "Índice OH"]]
-        df_cloroformo_mostrar = df_cloroformo_mostrar.rename(columns={
-            "Tipo espectro": "Tipo",
-            "Señal 3611": "Señal de Cloroformo a 3611 cm⁻¹",
-            "Índice OH": "Índice OH (Cloroformo)"
-        })
-        st.dataframe(df_cloroformo_mostrar, use_container_width=True)
-    else:
-        st.info("No se encontraron espectros FTIR-Cloroformo.")
+    st.dataframe(df_muestras, use_container_width=True)
 
 # --- HOJA 6 ---
 with tab6:

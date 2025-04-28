@@ -68,8 +68,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Análisis de datos",
     "Carga de espectros",
     "Análisis de espectros",
-    "Índice OH",
-    "Sugerencias y comentarios",
+    "Índice OH espectroscopía",
+    "Sugerencias",
     "Consola"
 ])
 

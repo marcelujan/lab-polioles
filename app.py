@@ -593,58 +593,62 @@ with tab4:
                                mime="application/zip")
 
 
-
 # --- HOJA 5 ---
 with tab5:
-    st.title("Índice OH")
+    st.title("Índice OH espectroscópico")
 
-    # --- Leer muestras disponibles de Firestore ---
-    try:
-        docs = db.collection("muestras").stream()
-        muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-        muestras_disp = [m["nombre"] for m in muestras]
-    except Exception as e:
-        st.error(f"No se pudieron cargar las muestras: {e}")
-        muestras = []
-        muestras_disp = []
+    muestras = cargar_muestras()
 
-    # --- Selector de muestras y tipos directamente en Hoja 5 ---
-    if "muestras_sel" not in st.session_state:
-        st.session_state.muestras_sel = []
+    if not muestras:
+        st.info("No hay muestras cargadas para analizar.")
+        st.stop()
 
-    if "tipos_sel" not in st.session_state:
-        st.session_state.tipos_sel = []
+    # Preparar información
+    muestras_info = []
+    for m in muestras:
+        espectros = m.get("espectros", [])
+        for e in espectros:
+            muestras_info.append({
+                "Muestra": m["nombre"],
+                "Tipo espectro": e.get("tipo", ""),
+                "Fecha espectro": e.get("fecha", ""),
+                "Señal 3548": e.get("senal_3548", None),
+                "Señal 3611": e.get("senal_3611", None),
+                "Peso muestra [g]": e.get("peso_muestra", None)
+            })
 
-    muestras_sel = st.multiselect("Muestras", muestras_disp, default=st.session_state.muestras_sel, key="muestras_sel")
-    
-    tipos_disp = list({esp.get("tipo", "No definido") for m in muestras for esp in m.get("espectros", [])})
-    tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=st.session_state.tipos_sel, key="tipos_sel")
+    import pandas as pd
+    df_muestras = pd.DataFrame(muestras_info)
 
-    if not muestras_sel or not tipos_sel:
-        st.warning("Debes seleccionar muestras y tipos para continuar.")
-    else:
-        muestras_filtradas = []
-        for muestra in muestras:
-            if muestra["nombre"] in muestras_sel:
-                espectros_filtrados = [
-                    esp for esp in muestra.get("espectros", [])
-                    if esp.get("tipo", "") in tipos_sel
-                ]
-                if espectros_filtrados:
-                    for espectro in espectros_filtrados:
-                        muestras_filtradas.append({
-                            "Muestra": muestra["nombre"],
-                            "Tipo de espectro": espectro.get("tipo", "No definido"),
-                            "Señal 3548 cm⁻¹": espectro.get("senal_3548", "No disponible"),
-                            "Señal 3611 cm⁻¹": espectro.get("senal_3611", "No disponible"),
-                            "Peso muestra [g]": espectro.get("peso_muestra", "No disponible")
-                        })
+    if df_muestras.empty:
+        st.warning("No se encontraron datos de espectros cargados.")
+        st.stop()
 
-        if muestras_filtradas:
-            df_muestras = pd.DataFrame(muestras_filtradas)
-            st.dataframe(df_muestras, use_container_width=True)
+    # Calcular Índice OH
+    def calcular_indice_oh(row):
+        tipo = row["Tipo espectro"]
+        peso = row["Peso muestra [g]"]
+        if peso is None or peso == 0:
+            return "No disponible"
+        if tipo == "FTIR-Acetato":
+            senal_grafica = row["Señal 3548"]
+            senal_manual = row["Señal 3548"]
+            if senal_grafica is None or senal_manual is None:
+                return "No disponible"
+            return round(((senal_grafica - senal_manual) * 52.5253) / peso, 4)
+        elif tipo == "FTIR-Cloroformo":
+            senal_grafica = row["Señal 3611"]
+            senal_manual = row["Señal 3611"]
+            if senal_grafica is None or senal_manual is None:
+                return "No disponible"
+            return round(((senal_grafica - senal_manual) * 66.7324) / peso, 4)
         else:
-            st.info("No se encontraron espectros disponibles para mostrar.")
+            return "No disponible"
+
+    df_muestras["Índice OH"] = df_muestras.apply(calcular_indice_oh, axis=1)
+
+    st.dataframe(df_muestras, use_container_width=True)
+
 # --- HOJA 6 ---
 with tab6:
     st.title("Consola")

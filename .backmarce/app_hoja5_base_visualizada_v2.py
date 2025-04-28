@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import toml
@@ -69,8 +68,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Carga de espectros",
     "Análisis de espectros",
     "Índice OH espectroscópico",
-    "Sugerencias",
-    "Consola"
+    "Consola",
+    "Sugerencias"
 ])
 
 
@@ -593,46 +592,46 @@ with tab4:
                                file_name=os.path.basename(zip_path),
                                mime="application/zip")
 
+
 # --- HOJA 5 ---
 with tab5:
     st.title("Índice OH")
-    st.info("Aquí podrás calcular y visualizar el Índice OH de tus espectros subidos.")
-    st.warning("Funcionalidad en construcción...")
-# --- HOJA 7 ---
-with tab7:
-    st.title("Sugerencias y comentarios")
 
-    sugerencias_ref = db.collection("sugerencias")
+    muestras_sel = st.session_state.get("muestras_sel", [])
+    tipos_sel = st.session_state.get("tipos_sel", [])
 
-    st.subheader("Dejar una sugerencia")
-    comentario = st.text_area("Escribí tu sugerencia o comentario aquí:")
-    if st.button("Enviar sugerencia"):
-        if comentario.strip():
-            sugerencias_ref.add({
-                "comentario": comentario.strip(),
-                "fecha": datetime.now().isoformat()
-            })
-            st.success("Gracias por tu comentario.")
-            st.rerun()
+    if not muestras_sel or not tipos_sel:
+        st.warning("Primero debes seleccionar muestras y tipos en la Hoja 4.")
+    else:
+        try:
+            docs = db.collection("muestras").stream()
+            muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
+        except Exception as e:
+            st.error(f"No se pudieron cargar las muestras: {e}")
+            muestras = []
+
+        muestras_filtradas = []
+        for muestra in muestras:
+            if muestra["nombre"] in muestras_sel:
+                espectros_filtrados = [
+                    esp for esp in muestra.get("espectros", [])
+                    if esp.get("tipo", "") in tipos_sel
+                ]
+                if espectros_filtrados:
+                    for espectro in espectros_filtrados:
+                        muestras_filtradas.append({
+                            "Muestra": muestra["nombre"],
+                            "Tipo de espectro": espectro.get("tipo", "No definido"),
+                            "Señal 3548 cm⁻¹": espectro.get("senal_3548", "No disponible"),
+                            "Señal 3611 cm⁻¹": espectro.get("senal_3611", "No disponible"),
+                            "Peso muestra [g]": espectro.get("peso_muestra", "No disponible")
+                        })
+
+        if muestras_filtradas:
+            df_muestras = pd.DataFrame(muestras_filtradas)
+            st.dataframe(df_muestras, use_container_width=True)
         else:
-            st.warning("El comentario no puede estar vacío.")
-
-
-    st.subheader("Comentarios recibidos")
-
-    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
-    sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
-
-    for s in sugerencias:
-        st.markdown(f"**{s['fecha'][:19].replace('T',' ')}**")
-        st.markdown(s["comentario"])
-        if st.button("Eliminar", key=f"del_{s['id']}"):
-            sugerencias_ref.document(s["id"]).delete()
-            st.success("Comentario eliminado.")
-            st.rerun()
-
-
-
+            st.info("No se encontraron espectros disponibles para mostrar.")
 # --- HOJA 6 ---
 with tab6:
     st.title("Consola")
@@ -703,3 +702,36 @@ with tab6:
     if st.button("Cerrar sesión"):
         st.session_state.autenticado = False
         st.rerun()
+
+# --- HOJA 7 ---
+with tab7:
+    st.title("Sugerencias")
+
+    sugerencias_ref = db.collection("sugerencias")
+
+    st.subheader("Dejar una sugerencia")
+    comentario = st.text_area("Escribí tu sugerencia o comentario aquí:")
+    if st.button("Enviar sugerencia"):
+        if comentario.strip():
+            sugerencias_ref.add({
+                "comentario": comentario.strip(),
+                "fecha": datetime.now().isoformat()
+            })
+            st.success("Gracias por tu comentario.")
+            st.rerun()
+        else:
+            st.warning("El comentario no puede estar vacío.")
+
+
+    st.subheader("Comentarios recibidos")
+
+    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
+    sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
+    for s in sugerencias:
+        st.markdown(f"**{s['fecha'][:19].replace('T',' ')}**")
+        st.markdown(s["comentario"])
+        if st.button("Eliminar", key=f"del_{s['id']}"):
+            sugerencias_ref.document(s["id"]).delete()
+            st.success("Comentario eliminado.")
+            st.rerun()

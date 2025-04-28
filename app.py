@@ -592,12 +592,46 @@ with tab4:
                                file_name=os.path.basename(zip_path),
                                mime="application/zip")
 
+
 # --- HOJA 5 ---
 with tab5:
     st.title("Índice OH")
-    st.info("Aquí podrás calcular y visualizar el Índice OH de tus espectros subidos.")
-    st.warning("Funcionalidad en construcción...")
 
+    muestras_sel = st.session_state.get("muestras_sel", [])
+    tipos_sel = st.session_state.get("tipos_sel", [])
+
+    if not muestras_sel or not tipos_sel:
+        st.warning("Primero debes seleccionar muestras y tipos en la Hoja 4.")
+    else:
+        try:
+            docs = db.collection("muestras").stream()
+            muestras = [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
+        except Exception as e:
+            st.error(f"No se pudieron cargar las muestras: {e}")
+            muestras = []
+
+        muestras_filtradas = []
+        for muestra in muestras:
+            if muestra["nombre"] in muestras_sel:
+                espectros_filtrados = [
+                    esp for esp in muestra.get("espectros", [])
+                    if esp.get("tipo", "") in tipos_sel
+                ]
+                if espectros_filtrados:
+                    for espectro in espectros_filtrados:
+                        muestras_filtradas.append({
+                            "Muestra": muestra["nombre"],
+                            "Tipo de espectro": espectro.get("tipo", "No definido"),
+                            "Señal 3548 cm⁻¹": espectro.get("senal_3548", "No disponible"),
+                            "Señal 3611 cm⁻¹": espectro.get("senal_3611", "No disponible"),
+                            "Peso muestra [g]": espectro.get("peso_muestra", "No disponible")
+                        })
+
+        if muestras_filtradas:
+            df_muestras = pd.DataFrame(muestras_filtradas)
+            st.dataframe(df_muestras, use_container_width=True)
+        else:
+            st.info("No se encontraron espectros disponibles para mostrar.")
 # --- HOJA 6 ---
 with tab6:
     st.title("Consola")

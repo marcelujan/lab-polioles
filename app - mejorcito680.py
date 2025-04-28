@@ -252,21 +252,6 @@ with tab3:
     if "tipos_espectro" not in st.session_state:
         st.session_state.tipos_espectro = tipos_espectro_base.copy()
     tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
-
-    # Ingreso manual adicional para FTIR-Acetato y FTIR-Cloroformo
-    senal_3548 = None
-    senal_3611 = None
-    peso_muestra = None
-
-    if tipo_espectro == "FTIR-Acetato":
-        st.markdown("**Datos manuales opcionales para FTIR-Acetato:**")
-        senal_3548 = st.number_input("Señal de Acetato a 3548 cm⁻¹", step=0.0001, format="%.4f")
-        peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
-    elif tipo_espectro == "FTIR-Cloroformo":
-        st.markdown("**Datos manuales opcionales para FTIR-Cloroformo:**")
-        senal_3611 = st.number_input("Señal de Cloroformo a 3611 cm⁻¹", step=0.0001, format="%.4f")
-        peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
-
     nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
     if nuevo_tipo and nuevo_tipo not in st.session_state.tipos_espectro:
         st.session_state.tipos_espectro.append(nuevo_tipo)

@@ -847,3 +847,107 @@ with tab5:
             st.dataframe(df_muestras, use_container_width=True)
         else:
             st.info("No se encontraron espectros disponibles para mostrar.")
+
+# --- HOJA 6 ---
+with tab6:
+    st.title("Consola")
+
+    muestras = cargar_muestras()
+    if not muestras:
+        st.info("No hay muestras cargadas.")
+        st.stop()
+
+    for muestra in muestras:
+        with st.expander(f"📁 {muestra['nombre']}"):
+            st.markdown(f"📝 **Observación:** {muestra.get('observacion', '—')}")
+
+            analisis = muestra.get("analisis", [])
+            if analisis:
+                st.markdown("📊 **Análisis cargados:**")
+                for a in analisis:
+                    st.markdown(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
+
+                import pandas as pd
+                from io import BytesIO
+                df_analisis = pd.DataFrame(analisis)
+                buffer = BytesIO()
+                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+                    df_analisis.to_excel(writer, index=False, sheet_name="Análisis")
+                st.download_button("⬇️ Descargar análisis",
+                    data=buffer.getvalue(),
+                    file_name=f"analisis_{muestra['nombre']}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+            espectros = muestra.get("espectros", [])
+            if espectros:
+                st.markdown("🧪 **Espectros cargados:**")
+                for e in espectros:
+                    etiqueta = f"{e['tipo']} ({e['fecha']})"
+                    if e.get("es_imagen", False):
+                        st.markdown(f"🖼️ {etiqueta}")
+                    else:
+                        st.markdown(f"📈 {etiqueta}")
+
+                import zipfile, base64, os
+                from tempfile import TemporaryDirectory
+
+                if st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
+                    with TemporaryDirectory() as tmpdir:
+                        zip_path = os.path.join(tmpdir, f"espectros_{muestra['nombre']}.zip")
+                        with zipfile.ZipFile(zip_path, "w") as zipf:
+                            for e in espectros:
+                                contenido = e.get("contenido")
+                                if not contenido:
+                                    continue
+                                nombre = e.get("nombre_archivo", "espectro")
+                                ruta = os.path.join(tmpdir, nombre)
+                                with open(ruta, "wb") as f:
+                                    if e.get("es_imagen"):
+                                        f.write(bytes.fromhex(contenido))
+                                    else:
+                                        f.write(base64.b64decode(contenido))
+                                zipf.write(ruta, arcname=nombre)
+
+                        with open(zip_path, "rb") as final_zip:
+                            st.download_button("📦 Descargar ZIP de espectros",
+                                data=final_zip.read(),
+                                file_name=f"espectros_{muestra['nombre']}.zip",
+                                mime="application/zip",
+                                key=f"dl_zip_{muestra['nombre']}")
+    st.markdown("---")
+    if st.button("Cerrar sesión"):
+        st.session_state.autenticado = False
+        st.rerun()
+
+# --- HOJA 7 ---
+with tab7:
+    st.title("Sugerencias")
+
+    sugerencias_ref = db.collection("sugerencias")
+
+    st.subheader("Dejar una sugerencia")
+    comentario = st.text_area("Escribí tu sugerencia o comentario aquí:")
+    if st.button("Enviar sugerencia"):
+        if comentario.strip():
+            sugerencias_ref.add({
+                "comentario": comentario.strip(),
+                "fecha": datetime.now().isoformat()
+            })
+            st.success("Gracias por tu comentario.")
+            st.rerun()
+        else:
+            st.warning("El comentario no puede estar vacío.")
+
+
+    st.subheader("Comentarios recibidos")
+
+    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
+    sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
+    for s in sugerencias:
+        st.markdown(f"**{s['fecha'][:19].replace('T',' ')}**")
+        st.markdown(s["comentario"])
+        if st.button("Eliminar", key=f"del_{s['id']}"):
+            sugerencias_ref.document(s["id"]).delete()
+            st.success("Comentario eliminado.")
+            st.rerun()

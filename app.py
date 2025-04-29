@@ -130,19 +130,10 @@ with tab1:
     df_vista = pd.DataFrame(tabla)
     if not df_vista.empty:
         st.dataframe(df_vista, use_container_width=True)
-        
-        def format_analisis(i):
-            fila = df_vista.loc[i]
-            observacion = fila["Observaciones"]
-            if not isinstance(observacion, str):
-                observacion = str(observacion)
-            if len(observacion) > 80:
-                observacion = observacion[:77] + "..."
-            return f"{fila['Nombre']} – {fila['Tipo']} – {fila['Fecha']} – {observacion}"
 
         st.subheader("Eliminar análisis")
         seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index,
-            format_func=format_analisis)
+            format_func=lambda i: f"{df_vista.at[i, 'Nombre']} – {df_vista.at[i, 'Tipo']} – {df_vista.at[i, 'Fecha']}")
         if st.button("Eliminar análisis"):
             elegido = df_vista.iloc[seleccion]
             for m in muestras:
@@ -194,7 +185,7 @@ with tab2:
 
     st.subheader("Seleccionar análisis")
     seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df["ID"].tolist(),
-                               format_func=format_analisis)
+                               format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
 
     df_sel = df[df["ID"].isin(seleccion)]
     df_avg = df_sel.groupby(["Nombre", "Tipo"], as_index=False)["Valor"].mean()
@@ -358,7 +349,7 @@ with tab3:
         seleccion = st.selectbox(
             "Eliminar espectro",
             df_esp_tabla["ID"],
-            format_func=format_analisis
+            format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
         )
         if st.button("Eliminar espectro"):
             nombre, idx = seleccion.split("__")

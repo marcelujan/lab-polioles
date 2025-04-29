@@ -132,13 +132,13 @@ with tab1:
         st.dataframe(df_vista, use_container_width=True)
 
         st.subheader("Eliminar análisis")
+        seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index, format_func=format_analisis)
         def format_analisis(i):
             fila = df_vista.loc[i]
             obs = fila["Observaciones"]
             obs_corta = (obs[:77] + "...") if isinstance(obs, str) and len(obs) > 80 else (obs or "Sin observaciones")
             return f"{fila['Nombre']} – {fila['Tipo']} – {fila['Fecha']} – {obs_corta}"
-        seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index, format_func=format_analisis)
-        if st.button("Eliminar análisis"):
+         if st.button("Eliminar análisis"):
             elegido = df_vista.iloc[seleccion]
             for m in muestras:
                 if m["nombre"] == elegido["Nombre"]:

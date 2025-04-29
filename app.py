@@ -351,7 +351,7 @@ with tab3:
         seleccion = st.selectbox(
             "Eliminar espectro",
             df_esp_tabla["ID"],
-            format_func=format_analisis"
+            format_func=format_analisis
         )
         if st.button("Eliminar espectro"):
             nombre, idx = seleccion.split("__")

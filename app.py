@@ -451,7 +451,8 @@ with tab4:
         if len(observaciones) > 80:
             observaciones = observaciones[:77] + "..."
 
-        nombre_espectro = f"{row['Muestra']} – {row['Tipo']} – {fecha} – {observaciones}"
+        extension = os.path.splitext(row["Nombre archivo"])[1].lower().strip(".")
+        nombre_espectro = f"{row['Muestra']} – {row['Tipo']} – {fecha} – {observaciones} ({extension})"
         espectros_info.append({
             "identificador": idx,  # el índice real en df_filtrado
             "nombre": nombre_espectro

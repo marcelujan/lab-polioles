@@ -111,9 +111,14 @@ with tab1:
                     "fecha": str(row["Fecha"]),
                     "observaciones": row["Observaciones"]
                 })
-            nuevos_validos = [a for a in nuevos if a["tipo"] != "" and a["valor"] != 0]
-    guardar_muestra(nombre_muestra, observacion, previos + nuevos_validos, muestra_existente.get("espectros") if muestra_existente else [])
-nombre_muestra, observacion, previos + nuevos, muestra_existente.get("espectros") if muestra_existente else [])
+        nuevos_validos = [a for a in nuevos if a["tipo"] != "" and a["valor"] != 0]
+
+        guardar_muestra(
+            nombre_muestra,
+            observacion,
+            previos + nuevos_validos,
+            muestra_existente.get("espectros") if muestra_existente else []
+        )
         st.success("Análisis guardado.")
         st.rerun()
 
@@ -190,17 +195,7 @@ with tab2:
     st.dataframe(df.drop(columns=["ID"]), use_container_width=True)
 
     st.subheader("Seleccionar análisis")
-    
-def format_analisis_hoja2(i):
-    fila = df[df["ID"] == i].iloc[0]
-    obs = fila["Observaciones"]
-    if not isinstance(obs, str):
-        obs = str(obs)
-    obs_corta = (obs[:77] + "...") if len(obs) > 80 else (obs or "Sin observaciones")
-    return f"{fila['Nombre']} – {fila['Tipo']} – {fila['Fecha']} – {obs_corta}"
-
-
-seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df['ID'].tolist(), format_func=format_analisis_hoja2),
+    seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df["ID"].tolist(),
                                format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
 
     df_sel = df[df["ID"].isin(seleccion)]

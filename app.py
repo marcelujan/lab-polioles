@@ -352,15 +352,13 @@ with tab3:
             format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
         )
         if st.button("Eliminar espectro"):
-            confirmar = st.checkbox("✅ Confirmo que deseo eliminar este espectro")
-            if confirmar:
-                nombre, idx = seleccion.split("__")
-                for m in muestras:
-                    if m["nombre"] == nombre:
-                        m["espectros"].pop(int(idx))
-                        guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
-                        st.success("Espectro eliminado.")
-                        st.rerun()
+            nombre, idx = seleccion.split("__")
+            for m in muestras:
+                if m["nombre"] == nombre:
+                    m["espectros"].pop(int(idx))
+                    guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
+                    st.success("Espectro eliminado.")
+                    st.rerun()
 
         # --- DESCARGA DE ESPECTROS ---
                 # Lógica de descarga solo si se hace clic

@@ -138,7 +138,7 @@ with tab1:
             obs = fila["Observaciones"]
             obs_corta = (obs[:77] + "...") if isinstance(obs, str) and len(obs) > 80 else (obs or "Sin observaciones")
             return f"{fila['Nombre']} – {fila['Tipo']} – {fila['Fecha']} – {obs_corta}"
-         if st.button("Eliminar análisis"):
+        if st.button("Eliminar análisis"):
             elegido = df_vista.iloc[seleccion]
             for m in muestras:
                 if m["nombre"] == elegido["Nombre"]:

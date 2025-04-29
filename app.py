@@ -111,9 +111,14 @@ with tab1:
                     "fecha": str(row["Fecha"]),
                     "observaciones": row["Observaciones"]
                 })
-            nuevos_validos = [a for a in nuevos if a["tipo"] != "" and a["valor"] != 0]
-    guardar_muestra(nombre_muestra, observacion, previos + nuevos_validos, muestra_existente.get("espectros") if muestra_existente else [])
-nombre_muestra, observacion, previos + nuevos, muestra_existente.get("espectros") if muestra_existente else [])
+        nuevos_validos = [a for a in nuevos if a["tipo"] != "" and a["valor"] != 0]
+
+        guardar_muestra(
+            nombre_muestra,
+            observacion,
+            previos + nuevos_validos,
+            muestra_existente.get("espectros") if muestra_existente else []
+        )
         st.success("Análisis guardado.")
         st.rerun()
 
@@ -162,7 +167,6 @@ nombre_muestra, observacion, previos + nuevos, muestra_existente.get("espectros"
         )
     else:
         st.info("No hay análisis cargados.")
-
 
 # --- HOJA 2 ---
 with tab2:

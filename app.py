@@ -462,7 +462,7 @@ with tab4:
         seleccionados_nombres = st.multiselect(
             "Seleccionar espectros a visualizar:", 
             espectros_nombres, 
-            default=espectros_nombres
+            default=[]
         )
 
         # Filtrar DataFrame según selección

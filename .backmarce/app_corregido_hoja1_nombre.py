@@ -133,7 +133,7 @@ with tab1:
 
         st.subheader("Eliminar análisis")
         seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index,
-            format_func=lambda i: f"{df_vista.at[i, 'Nombre']} – {df_vista.at[i, 'Tipo']} – {df_vista.at[i, 'Fecha']}")
+            format_func=format_analisis)
         if st.button("Eliminar análisis"):
             elegido = df_vista.iloc[seleccion]
             for m in muestras:
@@ -185,7 +185,7 @@ with tab2:
 
     st.subheader("Seleccionar análisis")
     seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df["ID"].tolist(),
-                               format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
+                               format_func=format_analisis)
 
     df_sel = df[df["ID"].isin(seleccion)]
     df_avg = df_sel.groupby(["Nombre", "Tipo"], as_index=False)["Valor"].mean()
@@ -349,7 +349,7 @@ with tab3:
         seleccion = st.selectbox(
             "Eliminar espectro",
             df_esp_tabla["ID"],
-            format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
+            format_func=format_analisis
         )
         if st.button("Eliminar espectro"):
             nombre, idx = seleccion.split("__")

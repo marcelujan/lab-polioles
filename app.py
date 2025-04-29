@@ -146,10 +146,10 @@ with tab1:
             for m in muestras:
                 if m["nombre"] == elegido["Nombre"]:
                     m["analisis"] = [a for a in m["analisis"] if not (
-                        a["tipo"] == elegido["Tipo"] and
-                        str(a["fecha"]) == elegido["Fecha"] and
-                        a["valor"] == elegido["Valor"] and
-                        a["observaciones"] == elegido["Observaciones"]
+                        str(a.get("tipo", "")).strip() == str(elegido["Tipo"]).strip() and
+                        str(a.get("fecha", "")).strip() == str(elegido["Fecha"]).strip() and
+                        float(a.get("valor", 0)) == float(elegido["Valor"]) and
+                        str(a.get("observaciones", "")).strip() == str(elegido["Observaciones"]).strip()
                         )]
 
                     guardar_muestra(m["nombre"], m["observacion"], m["analisis"], m.get("espectros", []))

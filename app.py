@@ -130,6 +130,15 @@ with tab1:
     df_vista = pd.DataFrame(tabla)
     if not df_vista.empty:
         st.dataframe(df_vista, use_container_width=True)
+        
+        def format_analisis(i):
+            fila = df_vista.loc[i]
+            observacion = fila["Observaciones"]
+            if not isinstance(observacion, str):
+                observacion = str(observacion)
+            if len(observacion) > 80:
+                observacion = observacion[:77] + "..."
+            return f"{fila['Nombre']} – {fila['Tipo']} – {fila['Fecha']} – {observacion}"
 
         st.subheader("Eliminar análisis")
         seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index,

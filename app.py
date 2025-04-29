@@ -168,6 +168,7 @@ with tab1:
     else:
         st.info("No hay análisis cargados.")
 
+
 # --- HOJA 2 ---
 with tab2:
     st.title("Análisis de datos")
@@ -194,17 +195,7 @@ with tab2:
     st.dataframe(df.drop(columns=["ID"]), use_container_width=True)
 
     st.subheader("Seleccionar análisis")
-    
-def format_analisis_hoja2(i):
-    fila = df[df["ID"] == i].iloc[0]
-    obs = fila["Observaciones"]
-    if not isinstance(obs, str):
-        obs = str(obs)
-    obs_corta = (obs[:77] + "...") if len(obs) > 80 else (obs or "Sin observaciones")
-    return f"{fila['Nombre']} – {fila['Tipo']} – {fila['Fecha']} – {obs_corta}"
-
-
-seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df['ID'].tolist(), format_func=format_analisis_hoja2),
+    seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df["ID"].tolist(),
                                format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
 
     df_sel = df[df["ID"].isin(seleccion)]

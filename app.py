@@ -187,7 +187,7 @@ with tab2:
 
     st.subheader("Seleccionar análisis")
     seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df["ID"].tolist(),
-                               format_func=format_analisis")
+                               format_func=format_analisis)
 
     df_sel = df[df["ID"].isin(seleccion)]
     df_avg = df_sel.groupby(["Nombre", "Tipo"], as_index=False)["Valor"].mean()

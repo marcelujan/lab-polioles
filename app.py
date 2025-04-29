@@ -132,8 +132,7 @@ with tab1:
         st.dataframe(df_vista, use_container_width=True)
 
         st.subheader("Eliminar análisis")
-        seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index,
-            format_func=format_analisis")
+        seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index, format_func=format_analisis)
         if st.button("Eliminar análisis"):
             elegido = df_vista.iloc[seleccion]
             for m in muestras:

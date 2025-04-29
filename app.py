@@ -451,7 +451,7 @@ with tab4:
         if len(observaciones) > 80:
             observaciones = observaciones[:77] + "..."
 
-        nombre_espectro = f"{fecha} - {observaciones}"
+        nombre_espectro = f"{row['Muestra']} – {row['Tipo']} – {fecha} – {observaciones}"
         espectros_info.append({
             "identificador": idx,  # el índice real en df_filtrado
             "nombre": nombre_espectro

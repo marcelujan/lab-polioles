@@ -104,11 +104,7 @@ for m in muestras:
         if isinstance(t, str) and t.strip():
             tipos_en_bd.add(t.strip())
 
-tipos = sorted(set(tipos_base).union(tipos_en_bd))", "Índice OH [mg KHO/g]",
-        "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/100g]",
-        "Humedad [%]", "PM [g/mol]", "Funcionalidad [#]",
-        "Viscosidad dinámica [cP]", "Densidad [g/mL]", "Otro análisis"
-    ]
+    tipos = sorted(set(tipos_base).union(tipos_en_bd)), ["Índice OH [mg KHO/g]", "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/'100g']","Humedad [%]", "PM [g/mol]", "Funcionalidad ['#']","Viscosidad dinámica [cP]", "Densidad [g/mL]", "Otro análisis"]
     df = pd.DataFrame([{"Tipo": "", "Valor": 0.0, "Fecha": date.today(), "Observaciones": ""}])
     nuevos_analisis = st.data_editor(df, num_rows="dynamic", use_container_width=True,
         column_config={"Tipo": st.column_config.TextColumn("Tipo", help="Sugerencias: " + ", ".join(tipos))})

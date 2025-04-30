@@ -90,50 +90,15 @@ with tab1:
     observacion = st.text_area("Observaciones", value=muestra_existente["observacion"] if muestra_existente else "", height=150)
 
     st.subheader("Nuevo análisis")
-    tipos_base = [
-    "Índice de yodo [% p/p I2 abs]", "Índice OH [mg KHO/g]",
-    "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/100g]",
-    "Humedad [%]", "PM [g/mol]", "Funcionalidad [#]",
-    "Viscosidad dinámica [cP]", "Densidad [g/mL]", "Otro análisis"
-]
-
-tipos_en_bd = set()
-for m in muestras:
-    for a in m.get("analisis", []):
-        t = a.get("tipo", "")
-        if isinstance(t, str) and t.strip():
-            tipos_en_bd.add(t.strip())
-
-tipos = sorted(set(tipos_base).union(tipos_en_bd))
+    tipos = [
+        "Índice de yodo [% p/p I2 abs]", "Índice OH [mg KHO/g]",
         "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/100g]",
         "Humedad [%]", "PM [g/mol]", "Funcionalidad [#]",
         "Viscosidad dinámica [cP]", "Densidad [g/mL]", "Otro análisis"
     ]
     df = pd.DataFrame([{"Tipo": "", "Valor": 0.0, "Fecha": date.today(), "Observaciones": ""}])
-    
-tipos_base = [
-    "Índice de yodo [% p/p I2 abs]", "Índice OH [mg KHO/g]",
-    "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/100g]",
-    "Humedad [%]", "PM [g/mol]", "Funcionalidad [#]",
-    "Viscosidad dinámica [cP]", "Densidad [g/mL]", "Otro análisis"
-]
-
-tipos_en_bd = set()
-for m in muestras:
-    for a in m.get("analisis", []):
-        t = a.get("tipo", "")
-        if isinstance(t, str) and t.strip():
-            tipos_en_bd.add(t.strip())
-
-tipos = sorted(set(tipos_base).union(tipos_en_bd))
-
-tipo_nuevo = st.selectbox("Tipo de análisis", tipos + ["Otro..."])
-if tipo_nuevo == "Otro...":
-    tipo_nuevo = st.text_input("Escriba un nuevo tipo de análisis")
-
-
-nuevos_analisis = st.data_editor(df, num_rows="dynamic", use_container_width=True,
-        column_config={)})
+    nuevos_analisis = st.data_editor(df, num_rows="dynamic", use_container_width=True,
+        column_config={"Tipo": st.column_config.TextColumn("Tipo", help="Ejemplos: Índice de yodo, Índice OH, Humedad, PM, Viscosidad")})
 
     if st.button("Guardar análisis"):
         previos = muestra_existente["analisis"] if muestra_existente else []

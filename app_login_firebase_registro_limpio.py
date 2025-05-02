@@ -61,6 +61,10 @@ if "token" not in st.session_state:
             st.session_state["token"] = token
             st.rerun()
     
+
+
+
+    
 st.markdown("---")
 st.markdown("### ¿No tenés cuenta? Registrate aquí:")
 with st.form("registro"):
@@ -232,7 +236,11 @@ with tab2:
     df = pd.DataFrame(tabla)
     if df.empty:
         st.info("No hay análisis cargados.")
-        st.stop()
+        
+
+
+
+    st.stop()
 
     st.subheader("Tabla completa de análisis")
     st.dataframe(df.drop(columns=["ID"]), use_container_width=True)
@@ -467,7 +475,11 @@ with tab4:
     muestras = cargar_muestras()
     if not muestras:
         st.info("No hay muestras cargadas con espectros.")
-        st.stop()
+        
+
+
+
+    st.stop()
 
     espectros_info = []
     for m in muestras:
@@ -485,7 +497,11 @@ with tab4:
     df_esp = pd.DataFrame(espectros_info)
     if df_esp.empty:
         st.warning("No hay espectros cargados.")
-        st.stop()
+        
+
+
+
+    st.stop()
 
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()
@@ -691,7 +707,11 @@ with tab5:
 
     if not muestras:
         st.info("No hay muestras cargadas para analizar.")
-        st.stop()
+        
+
+
+
+    st.stop()
 
     import pandas as pd
     import numpy as np
@@ -762,7 +782,11 @@ with tab5:
 
     if df_muestras.empty:
         st.warning("No se encontraron espectros válidos para calcular Índice OH.")
-        st.stop()
+        
+
+
+
+    st.stop()
 
     # Crear columna 'Señal solvente' unificando las manuales
     def obtener_senal_solvente(row):
@@ -816,7 +840,11 @@ with tab6:
     muestras = cargar_muestras()
     if not muestras:
         st.info("No hay muestras cargadas.")
-        st.stop()
+        
+
+
+
+    st.stop()
 
     for muestra in muestras:
         with st.expander(f"📁 {muestra['nombre']}"):
@@ -877,7 +905,7 @@ with tab6:
                                 key=f"dl_zip_{muestra['nombre']}")
     st.markdown("---")
     if st.button("Cerrar sesión"):
-        st.session_state.autenticado = False
+        st.session_state.pop("token", None)
         st.rerun()
 
 # --- HOJA 7 ---

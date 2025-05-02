@@ -59,6 +59,7 @@ if "token" not in st.session_state:
         token = iniciar_sesion(email, password)
         if token:
             st.session_state["token"] = token
+            st.success("Inicio de sesión exitoso.")
             st.rerun()
     
 st.markdown("---")

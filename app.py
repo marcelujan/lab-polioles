@@ -61,22 +61,22 @@ if "token" not in st.session_state:
             st.session_state["token"] = token
             st.success("Inicio de sesión exitoso.")
             st.rerun()
-    
-st.markdown("---")
-st.markdown("### ¿No tenés cuenta? Registrate aquí:")
-with st.form("registro"):
-    nuevo_email = st.text_input("Nuevo correo")
-    nueva_clave = st.text_input("Nueva contraseña", type="password")
-    submit_registro = st.form_submit_button("Registrar")
-    if submit_registro:
-        registrar_usuario(nuevo_email, nueva_clave)
-        token = iniciar_sesion(nuevo_email, nueva_clave)
-        if token:
-            st.session_state["token"] = token
-            st.success("Registro e inicio de sesión exitoso.")
-            st.rerun()
 
-st.stop()
+    st.markdown("---")
+    st.markdown("### ¿No tenés cuenta? Registrate aquí:")
+    with st.form("registro"):
+        nuevo_email = st.text_input("Nuevo correo")
+        nueva_clave = st.text_input("Nueva contraseña", type="password")
+        submit_registro = st.form_submit_button("Registrar")
+        if submit_registro:
+            registrar_usuario(nuevo_email, nueva_clave)
+            token = iniciar_sesion(nuevo_email, nueva_clave)
+            if token:
+                st.session_state["token"] = token
+                st.success("Registro e inicio de sesión exitoso.")
+                st.rerun()
+
+    st.stop()
 
 
 # --- Firebase ---

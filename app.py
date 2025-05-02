@@ -71,7 +71,7 @@ with st.form("registro"):
         registrar_usuario(nuevo_email, nueva_clave)
 
 
-    st.stop()
+st.stop()
 
 
 # --- Firebase ---
@@ -877,7 +877,7 @@ with tab6:
                                 key=f"dl_zip_{muestra['nombre']}")
     st.markdown("---")
     if st.button("Cerrar sesión"):
-        st.session_state.autenticado = False
+        st.session_state.pop("token", None)
         st.rerun()
 
 # --- HOJA 7 ---

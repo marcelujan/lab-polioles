@@ -70,9 +70,11 @@ with st.form("registro"):
     submit_registro = st.form_submit_button("Registrar")
     if submit_registro:
         registrar_usuario(nuevo_email, nueva_clave)
-        st.success("Registrado correctamente. Ahora podés iniciar sesión.")
-        st.rerun()
-
+        token = iniciar_sesion(nuevo_email, nueva_clave)
+        if token:
+            st.session_state["token"] = token
+            st.success("Registro e inicio de sesión exitoso.")
+            st.rerun()
 
 st.stop()
 

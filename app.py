@@ -52,7 +52,7 @@ def iniciar_sesion(email, password):
 
 # --- Autenticación ---
 if "token" not in st.session_state:
-    st.title("Iniciar sesión en la app")
+    st.markdown("### Iniciar sesión")
     email = st.text_input("Correo electrónico")
     password = st.text_input("Contraseña", type="password")
     if st.button("Iniciar sesión"):

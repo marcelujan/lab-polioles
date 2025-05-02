@@ -21,6 +21,21 @@ import requests
 
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]  # clave secreta de Firebase
 
+
+def registrar_usuario(email, password):
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
+    payload = {
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    }
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+        st.success("Usuario registrado correctamente. Ahora puede iniciar sesión.")
+    else:
+        st.error("No se pudo registrar. El correo puede estar en uso o la contraseña es débil.")
+
+
 def iniciar_sesion(email, password):
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
     payload = {
@@ -45,6 +60,17 @@ if "token" not in st.session_state:
         if token:
             st.session_state["token"] = token
             st.rerun()
+    
+st.markdown("---")
+st.markdown("### ¿No tenés cuenta? Registrate aquí:")
+with st.form("registro"):
+    nuevo_email = st.text_input("Nuevo correo")
+    nueva_clave = st.text_input("Nueva contraseña", type="password")
+    submit_registro = st.form_submit_button("Registrar")
+    if submit_registro:
+        registrar_usuario(nuevo_email, nueva_clave)
+
+
     st.stop()
 
 
@@ -206,7 +232,18 @@ with tab2:
     df = pd.DataFrame(tabla)
     if df.empty:
         st.info("No hay análisis cargados.")
-        st.stop()
+        
+st.markdown("---")
+st.markdown("### ¿No tenés cuenta? Registrate aquí:")
+with st.form("registro"):
+    nuevo_email = st.text_input("Nuevo correo")
+    nueva_clave = st.text_input("Nueva contraseña", type="password")
+    submit_registro = st.form_submit_button("Registrar")
+    if submit_registro:
+        registrar_usuario(nuevo_email, nueva_clave)
+
+
+    st.stop()
 
     st.subheader("Tabla completa de análisis")
     st.dataframe(df.drop(columns=["ID"]), use_container_width=True)
@@ -441,7 +478,18 @@ with tab4:
     muestras = cargar_muestras()
     if not muestras:
         st.info("No hay muestras cargadas con espectros.")
-        st.stop()
+        
+st.markdown("---")
+st.markdown("### ¿No tenés cuenta? Registrate aquí:")
+with st.form("registro"):
+    nuevo_email = st.text_input("Nuevo correo")
+    nueva_clave = st.text_input("Nueva contraseña", type="password")
+    submit_registro = st.form_submit_button("Registrar")
+    if submit_registro:
+        registrar_usuario(nuevo_email, nueva_clave)
+
+
+    st.stop()
 
     espectros_info = []
     for m in muestras:
@@ -459,7 +507,18 @@ with tab4:
     df_esp = pd.DataFrame(espectros_info)
     if df_esp.empty:
         st.warning("No hay espectros cargados.")
-        st.stop()
+        
+st.markdown("---")
+st.markdown("### ¿No tenés cuenta? Registrate aquí:")
+with st.form("registro"):
+    nuevo_email = st.text_input("Nuevo correo")
+    nueva_clave = st.text_input("Nueva contraseña", type="password")
+    submit_registro = st.form_submit_button("Registrar")
+    if submit_registro:
+        registrar_usuario(nuevo_email, nueva_clave)
+
+
+    st.stop()
 
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()
@@ -665,7 +724,18 @@ with tab5:
 
     if not muestras:
         st.info("No hay muestras cargadas para analizar.")
-        st.stop()
+        
+st.markdown("---")
+st.markdown("### ¿No tenés cuenta? Registrate aquí:")
+with st.form("registro"):
+    nuevo_email = st.text_input("Nuevo correo")
+    nueva_clave = st.text_input("Nueva contraseña", type="password")
+    submit_registro = st.form_submit_button("Registrar")
+    if submit_registro:
+        registrar_usuario(nuevo_email, nueva_clave)
+
+
+    st.stop()
 
     import pandas as pd
     import numpy as np
@@ -736,7 +806,18 @@ with tab5:
 
     if df_muestras.empty:
         st.warning("No se encontraron espectros válidos para calcular Índice OH.")
-        st.stop()
+        
+st.markdown("---")
+st.markdown("### ¿No tenés cuenta? Registrate aquí:")
+with st.form("registro"):
+    nuevo_email = st.text_input("Nuevo correo")
+    nueva_clave = st.text_input("Nueva contraseña", type="password")
+    submit_registro = st.form_submit_button("Registrar")
+    if submit_registro:
+        registrar_usuario(nuevo_email, nueva_clave)
+
+
+    st.stop()
 
     # Crear columna 'Señal solvente' unificando las manuales
     def obtener_senal_solvente(row):
@@ -790,7 +871,18 @@ with tab6:
     muestras = cargar_muestras()
     if not muestras:
         st.info("No hay muestras cargadas.")
-        st.stop()
+        
+st.markdown("---")
+st.markdown("### ¿No tenés cuenta? Registrate aquí:")
+with st.form("registro"):
+    nuevo_email = st.text_input("Nuevo correo")
+    nueva_clave = st.text_input("Nueva contraseña", type="password")
+    submit_registro = st.form_submit_button("Registrar")
+    if submit_registro:
+        registrar_usuario(nuevo_email, nueva_clave)
+
+
+    st.stop()
 
     for muestra in muestras:
         with st.expander(f"📁 {muestra['nombre']}"):

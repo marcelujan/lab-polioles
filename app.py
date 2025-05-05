@@ -323,16 +323,18 @@ with tab3:
     datos_difusividad = []
     if tipo_espectro == "RMN 1H":
         st.markdown("### Difusividad – RMN 1H")
-        num_registros = st.number_input("Cantidad de registros de difusividad", min_value=1, max_value=20, value=6)
+        num_registros = st.number_input("Cantidad de registros de difusividad", min_value=0, max_value=20, value=0)
         for i in range(int(num_registros)):
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 d_val = st.text_input(f"D [{i+1}] [m²/s]", key=f"d_val_{i}")
             with col2:
-                x_min = st.number_input(f"Xmin [{i+1}]", key=f"xmin_{i}")
+                t2_val = st.text_input(f"T2 [{i+1}] [s]", key=f"t2_val_{i}")
             with col3:
+                x_min = st.number_input(f"Xmin [{i+1}]", key=f"xmin_{i}")
+            with col4:
                 x_max = st.number_input(f"Xmax [{i+1}]", key=f"xmax_{i}")
-            datos_difusividad.append({"D": d_val, "Xmin": x_min, "Xmax": x_max})
+            datos_difusividad.append({"D": d_val, "T2": t2_val, "Xmin": x_min, "Xmax": x_max})
 
     # Ingreso manual adicional para FTIR-Acetato y FTIR-Cloroformo
     senal_3548 = None

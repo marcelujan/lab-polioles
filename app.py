@@ -55,6 +55,10 @@ if "token" not in st.session_state:
     st.markdown("### Iniciar sesión")
     email = st.text_input("Correo electrónico")
     password = st.text_input("Contraseña", type="password")
+
+    if email and password:
+        st.warning("Si usás autocompletar, verificá que los campos estén visibles antes de continuar.")
+
     if st.button("Iniciar sesión"):
         token = iniciar_sesion(email, password)
         if token:

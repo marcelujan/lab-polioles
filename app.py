@@ -318,6 +318,21 @@ with tab3:
         st.session_state.tipos_espectro = tipos_espectro_base.copy()
     tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
 
+    # Ingreso manual adicional para RMN 1H
+    datos_difusividad = []
+    if tipo_espectro == "RMN 1H":
+        st.markdown("### Difusividad – RMN 1H")
+        num_registros = st.number_input("Cantidad de registros de difusividad", min_value=1, max_value=20, value=6)
+        for i in range(int(num_registros)):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                d_val = st.text_input(f"D [{i+1}] [m²/s]", key=f"d_val_{i}")
+            with col2:
+                x_min = st.number_input(f"Xmin [{i+1}]", key=f"xmin_{i}")
+            with col3:
+                x_max = st.number_input(f"Xmax [{i+1}]", key=f"xmax_{i}")
+            datos_difusividad.append({"D": d_val, "Xmin": x_min, "Xmax": x_max})
+
     # Ingreso manual adicional para FTIR-Acetato y FTIR-Cloroformo
     senal_3548 = None
     senal_3611 = None
@@ -332,10 +347,12 @@ with tab3:
         senal_3611 = st.number_input("Señal de Cloroformo a 3611 cm⁻¹", step=0.0001, format="%.4f")
         peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
 
+    #Agregar nuevo tipo de espectro
     nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
     if nuevo_tipo and nuevo_tipo not in st.session_state.tipos_espectro:
         st.session_state.tipos_espectro.append(nuevo_tipo)
         tipo_espectro = nuevo_tipo
+
     observaciones = st.text_area("Observaciones")
     fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
     archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
@@ -383,7 +400,9 @@ with tab3:
             "senal_3548": senal_3548,
             "senal_3611": senal_3611,
             "peso_muestra": peso_muestra
-        }
+        }        
+        if tipo_espectro == "RMN 1H" and "datos_difusividad":
+            nuevo["difusividad"] = datos_difusividad
         espectros.append(nuevo)
 
         for m in muestras:
@@ -423,7 +442,6 @@ with tab3:
                     st.rerun()
 
         # --- DESCARGA DE ESPECTROS ---
-                # Lógica de descarga solo si se hace clic
         if st.button("📦 Preparar descarga"):
             from tempfile import TemporaryDirectory
             import zipfile
@@ -434,6 +452,26 @@ with tab3:
 
                 with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
                     df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")
+
+                    # Hoja excel con datos de difusividad si aplica
+                    filas_dif = []
+                    for m in muestras:
+                        for e in m.get("espectros", []):
+                            if e.get("tipo") == "RMN 1H" and e.get("difusividad"):
+                                for d in e["difusividad"]:
+                                    filas_dif.append({
+                                        "Muestra": m["nombre"],
+                                        "Tipo": e.get("tipo"),
+                                        "Fecha": e.get("fecha"),
+                                        "Archivo": e.get("nombre_archivo"),
+                                        "D [m²/s]": d.get("D"),
+                                        "Xmin": d.get("Xmin"),
+                                        "Xmax": d.get("Xmax"),
+                                        "Observaciones": e.get("observaciones")
+                                    })
+                    if filas_dif:
+                        df_dif = pd.DataFrame(filas_dif)
+                        df_dif.to_excel(writer, index=False, sheet_name="Difusividad")
 
                 with zipfile.ZipFile(zip_path, "w") as zipf:
                     zipf.write(excel_path, arcname="tabla_espectros.xlsx")
@@ -457,14 +495,13 @@ with tab3:
 
                 with open(zip_path, "rb") as final_zip:
                     zip_bytes = final_zip.read()
-                    st.session_state["zip_bytes"] = final_zip.read()
+                    st.session_state["zip_bytes"] = zip_bytes
                     st.session_state["zip_name"] = os.path.basename(zip_path)
 
         # Botón de descarga fuera del evento
         if "zip_bytes" in st.session_state:
             st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
-                               file_name=st.session_state["zip_name"],
-                               mime="application/zip")
+                               file_name=st.session_state["zip_name"], mime="application/zip")
     else:
         st.info("No hay espectros cargados.")
 

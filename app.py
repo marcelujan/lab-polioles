@@ -301,6 +301,7 @@ with tab2:
     else:
         st.warning("Los datos seleccionados no son compatibles para graficar.")
 
+
 # --- HOJA 3 ---
 with tab3:
     st.title("Carga de espectros")

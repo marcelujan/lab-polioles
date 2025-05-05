@@ -415,7 +415,39 @@ with tab3:
                 st.success("Espectro guardado.")
                 st.rerun()
 
-    if st.button("📦 Preparar descarga"):
+
+
+    st.subheader("Espectros cargados")
+    filas = []
+    for m in muestras:
+        for i, e in enumerate(m.get("espectros", [])):
+            filas.append({
+                "Muestra": m["nombre"],
+                "Tipo": e.get("tipo", ""),
+                "Archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
+                "Observaciones": e.get("observaciones", ""),
+                "ID": f"{m['nombre']}__{i}"
+            })
+    df_esp_tabla = pd.DataFrame(filas)
+    if not df_esp_tabla.empty:
+        st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
+        seleccion = st.selectbox(
+            "Eliminar espectro",
+            df_esp_tabla["ID"],
+            format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
+        )
+        if st.button("Eliminar espectro"):
+            nombre, idx = seleccion.split("__")
+            for m in muestras:
+                if m["nombre"] == nombre:
+                    m["espectros"].pop(int(idx))
+                    guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
+                    st.success("Espectro eliminado.")
+                    st.rerun()
+
+        # --- DESCARGA DE ESPECTROS ---
+        if st.button("📦 Preparar descarga"):
             from tempfile import TemporaryDirectory
             import zipfile
 
@@ -424,20 +456,9 @@ with tab3:
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
 
                 with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
-                    # Tabla general
-                    filas_general = []
-                    for m in muestras:
-                        for e in m.get("espectros", []):
-                            filas_general.append({
-                                "Muestra": m["nombre"],
-                                "Tipo": e.get("tipo", ""),
-                                "Archivo": e.get("nombre_archivo", ""),
-                                "Fecha": e.get("fecha", ""),
-                                "Observaciones": e.get("observaciones", "")
-                            })
-                    pd.DataFrame(filas_general).to_excel(writer, index=False, sheet_name="Espectros")
+                    df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")
 
-                    # Difusividad con T2
+                    # Hoja excel con datos de difusividad si aplica
                     filas_dif = []
                     for m in muestras:
                         for e in m.get("espectros", []):
@@ -449,15 +470,14 @@ with tab3:
                                         "Fecha": e.get("fecha"),
                                         "Archivo": e.get("nombre_archivo"),
                                         "D [m²/s]": d.get("D"),
-                                        "T2 [s]": d.get("T2"),
                                         "Xmin": d.get("Xmin"),
                                         "Xmax": d.get("Xmax"),
                                         "Observaciones": e.get("observaciones")
                                     })
                     if filas_dif:
-                        pd.DataFrame(filas_dif).to_excel(writer, index=False, sheet_name="Difusividad")
+                        df_dif = pd.DataFrame(filas_dif)
+                        df_dif.to_excel(writer, index=False, sheet_name="Difusividad")
 
-                # ZIP
                 with zipfile.ZipFile(zip_path, "w") as zipf:
                     zipf.write(excel_path, arcname="tabla_espectros.xlsx")
                     for m in muestras:
@@ -483,10 +503,12 @@ with tab3:
                     st.session_state["zip_bytes"] = zip_bytes
                     st.session_state["zip_name"] = os.path.basename(zip_path)
 
-            if "zip_bytes" in st.session_state:
-                st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
-                    file_name=st.session_state["zip_name"], mime="application/zip")
-
+        # Botón de descarga fuera del evento
+        if "zip_bytes" in st.session_state:
+            st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
+                               file_name=st.session_state["zip_name"], mime="application/zip")
+    else:
+        st.info("No hay espectros cargados.")
 
 # --- HOJA 4 ---
 with tab4:

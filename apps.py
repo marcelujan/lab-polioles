@@ -912,7 +912,6 @@ with tab6:
         st.session_state.pop("token", None)
         st.rerun()
 
-
 # --- HOJA 7 --- "Sugerencias" ---
 with tab7:
     st.title("Sugerencias")   # Título principal de la hoja

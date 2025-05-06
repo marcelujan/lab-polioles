@@ -301,7 +301,6 @@ with tab2:
     else:
         st.warning("Los datos seleccionados no son compatibles para graficar.")
 
-
 # --- HOJA 3 ---
 with tab3:
     st.title("Carga de espectros")
@@ -319,23 +318,6 @@ with tab3:
         st.session_state.tipos_espectro = tipos_espectro_base.copy()
     tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
 
-    # Ingreso manual adicional para RMN 1H
-    datos_difusividad = []
-    if tipo_espectro == "RMN 1H":
-        st.markdown("### Difusividad y Tiempo de relajación – RMN 1H")
-        num_registros = st.number_input("Cantidad de registros de difusividad", min_value=0, max_value=20, value=0)
-        for i in range(int(num_registros)):
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                d_val = st.text_input(f"D [{i+1}] [m²/s]", key=f"d_val_{i}")
-            with col2:
-                t2_val = st.text_input(f"T2 [{i+1}] [s]", key=f"t2_val_{i}")
-            with col3:
-                x_min = st.number_input(f"Xmin [{i+1}]", key=f"xmin_{i}")
-            with col4:
-                x_max = st.number_input(f"Xmax [{i+1}]", key=f"xmax_{i}")
-            datos_difusividad.append({"D": d_val, "T2": t2_val, "Xmin": x_min, "Xmax": x_max})
-
     # Ingreso manual adicional para FTIR-Acetato y FTIR-Cloroformo
     senal_3548 = None
     senal_3611 = None
@@ -350,12 +332,10 @@ with tab3:
         senal_3611 = st.number_input("Señal de Cloroformo a 3611 cm⁻¹", step=0.0001, format="%.4f")
         peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
 
-    #Agregar nuevo tipo de espectro
     nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
     if nuevo_tipo and nuevo_tipo not in st.session_state.tipos_espectro:
         st.session_state.tipos_espectro.append(nuevo_tipo)
         tipo_espectro = nuevo_tipo
-
     observaciones = st.text_area("Observaciones")
     fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
     archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
@@ -403,9 +383,7 @@ with tab3:
             "senal_3548": senal_3548,
             "senal_3611": senal_3611,
             "peso_muestra": peso_muestra
-        }        
-        if tipo_espectro == "RMN 1H" and "datos_difusividad":
-            nuevo["difusividad"] = datos_difusividad
+        }
         espectros.append(nuevo)
 
         for m in muestras:
@@ -415,46 +393,48 @@ with tab3:
                 st.success("Espectro guardado.")
                 st.rerun()
 
-    if st.button("📦 Preparar descarga"):
+    st.subheader("Espectros cargados")
+    filas = []
+    for m in muestras:
+        for i, e in enumerate(m.get("espectros", [])):
+            filas.append({
+                "Muestra": m["nombre"],
+                "Tipo": e.get("tipo", ""),
+                "Archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
+                "Observaciones": e.get("observaciones", ""),
+                "ID": f"{m['nombre']}__{i}"
+            })
+    df_esp_tabla = pd.DataFrame(filas)
+    if not df_esp_tabla.empty:
+        st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
+        seleccion = st.selectbox(
+            "Eliminar espectro",
+            df_esp_tabla["ID"],
+            format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
+        )
+        if st.button("Eliminar espectro"):
+            nombre, idx = seleccion.split("__")
+            for m in muestras:
+                if m["nombre"] == nombre:
+                    m["espectros"].pop(int(idx))
+                    guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
+                    st.success("Espectro eliminado.")
+                    st.rerun()
+
+        # --- DESCARGA DE ESPECTROS ---
+                # Lógica de descarga solo si se hace clic
+        if st.button("📦 Preparar descarga"):
+            from tempfile import TemporaryDirectory
+            import zipfile
+
             with TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
 
                 with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
-                    # Tabla general
-                    filas_general = []
-                    for m in muestras:
-                        for e in m.get("espectros", []):
-                            filas_general.append({
-                                "Muestra": m["nombre"],
-                                "Tipo": e.get("tipo", ""),
-                                "Archivo": e.get("nombre_archivo", ""),
-                                "Fecha": e.get("fecha", ""),
-                                "Observaciones": e.get("observaciones", "")
-                            })
-                    pd.DataFrame(filas_general).to_excel(writer, index=False, sheet_name="Espectros")
+                    df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")
 
-                    # Difusividad con T2
-                    filas_dif = []
-                    for m in muestras:
-                        for e in m.get("espectros", []):
-                            if e.get("tipo") == "RMN 1H" and e.get("difusividad"):
-                                for d in e["difusividad"]:
-                                    filas_dif.append({
-                                        "Muestra": m["nombre"],
-                                        "Tipo": e.get("tipo"),
-                                        "Fecha": e.get("fecha"),
-                                        "Archivo": e.get("nombre_archivo"),
-                                        "D [m²/s]": d.get("D"),
-                                        "T2 [s]": d.get("T2"),
-                                        "Xmin": d.get("Xmin"),
-                                        "Xmax": d.get("Xmax"),
-                                        "Observaciones": e.get("observaciones")
-                                    })
-                    if filas_dif:
-                        pd.DataFrame(filas_dif).to_excel(writer, index=False, sheet_name="Difusividad")
-
-                # ZIP
                 with zipfile.ZipFile(zip_path, "w") as zipf:
                     zipf.write(excel_path, arcname="tabla_espectros.xlsx")
                     for m in muestras:
@@ -477,13 +457,16 @@ with tab3:
 
                 with open(zip_path, "rb") as final_zip:
                     zip_bytes = final_zip.read()
-                    st.session_state["zip_bytes"] = zip_bytes
+                    st.session_state["zip_bytes"] = final_zip.read()
                     st.session_state["zip_name"] = os.path.basename(zip_path)
 
-            if "zip_bytes" in st.session_state:
-                st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
-                    file_name=st.session_state["zip_name"], mime="application/zip")
-
+        # Botón de descarga fuera del evento
+        if "zip_bytes" in st.session_state:
+            st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
+                               file_name=st.session_state["zip_name"],
+                               mime="application/zip")
+    else:
+        st.info("No hay espectros cargados.")
 
 # --- HOJA 4 ---
 with tab4:
@@ -556,7 +539,12 @@ with tab4:
 
     if not df_datos.empty:
         st.subheader("Gráfico combinado de espectros numéricos")
-        
+
+        import matplotlib.pyplot as plt
+        import pandas as pd
+        from io import BytesIO
+        import base64
+
         fig, ax = plt.subplots()
         rango_x = [float("inf"), float("-inf")]
         rango_y = [float("inf"), float("-inf")]
@@ -712,6 +700,12 @@ with tab5:
     if not muestras:
         st.info("No hay muestras cargadas para analizar.")
         st.stop()
+
+    import pandas as pd
+    import numpy as np
+    import base64
+    from io import BytesIO
+
     espectros_info = []
 
     for m in muestras:
@@ -841,6 +835,9 @@ with tab6:
                 st.markdown("📊 **Análisis cargados:**")
                 for a in analisis:
                     st.markdown(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
+
+                import pandas as pd
+                from io import BytesIO
                 df_analisis = pd.DataFrame(analisis)
                 buffer = BytesIO()
                 with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
@@ -859,6 +856,10 @@ with tab6:
                         st.markdown(f"🖼️ {etiqueta}")
                     else:
                         st.markdown(f"📈 {etiqueta}")
+
+                import zipfile, base64, os
+                from tempfile import TemporaryDirectory
+
                 if st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
                     with TemporaryDirectory() as tmpdir:
                         zip_path = os.path.join(tmpdir, f"espectros_{muestra['nombre']}.zip")

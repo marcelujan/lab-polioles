@@ -851,21 +851,19 @@ with tab6:
 
     # --- TABLA 1 ---
     st.subheader("📋 Descargas por muestra")
-    tabla1 = []
-    for m in muestras:
-        tabla1.append({
-            "Muestra": m["nombre"],
-            "Análisis": len(m.get("analisis", [])),
-            "Espectros": len(m.get("espectros", []))
-        })
-    df1 = pd.DataFrame(tabla1)
-    for i, row in df1.iterrows():
-        col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
-        col1.markdown(f"**{row['Muestra']}**")
-        col2.markdown(f"{row['Análisis']}")
-        col3.markdown(f"{row['Espectros']}")
-        col4.download_button("Excel", data=b"", file_name=f"analisis_{row['Muestra']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel1_{i}", use_container_width=True)
-        col5.download_button("ZIP", data=b"", file_name=f"espectros_{row['Muestra']}.zip", mime="application/zip", key=f"zip1_{i}", use_container_width=True)
+    header1 = st.columns([2, 1, 1])
+    header1[0].markdown("**Muestra**")
+    header1[1].markdown("**📥 Excel**")
+    header1[2].markdown("**📦 ZIP**")
+
+    for i, m in enumerate(muestras):
+        col1, col2, col3 = st.columns([2, 1, 1])
+        nombre = m["nombre"]
+        analisis = len(m.get("analisis", []))
+        espectros = len(m.get("espectros", []))
+        col1.markdown(f"**{nombre}**")
+        col2.download_button(f"📥 {analisis}", data=b"", file_name=f"analisis_{nombre}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel1_{i}", use_container_width=True)
+        col3.download_button(f"📦 {espectros}", data=b"", file_name=f"espectros_{nombre}.zip", mime="application/zip", key=f"zip1_{i}", use_container_width=True)
 
     st.markdown("---")
 
@@ -881,11 +879,13 @@ with tab6:
                 if tipo:
                     conteo_analisis[tipo] = conteo_analisis.get(tipo, 0) + 1
         df2 = pd.DataFrame([{"Tipo de Análisis": k, "Muestras": v} for k, v in conteo_analisis.items()])
+        header2 = st.columns([3, 1])
+        header2[0].markdown("**Tipo de Análisis**")
+        header2[1].markdown("**📥 Excel**")
         for i, row in df2.iterrows():
-            col1, col2, col3 = st.columns([3, 1, 1])
-            col1.markdown(f"**{row['Tipo de Análisis']}**")
-            col2.markdown(f"{row['Muestras']}")
-            col3.download_button("Excel", data=b"", file_name=f"analisis_{row['Tipo de Análisis']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel2_{i}", use_container_width=True)
+            col1, col2 = st.columns([3, 1])
+            col1.markdown(f"**{row['Tipo de Análisis']}** ({row['Muestras']})")
+            col2.download_button("📥", data=b"", file_name=f"analisis_{row['Tipo de Análisis']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel2_{i}", use_container_width=True)
 
     with colB:
         st.subheader("🟣 Descargas por espectros")
@@ -896,11 +896,13 @@ with tab6:
                 if tipo:
                     conteo_espectros[tipo] = conteo_espectros.get(tipo, 0) + 1
         df3 = pd.DataFrame([{"Tipo de Espectro": k, "Muestras": v} for k, v in conteo_espectros.items()])
+        header3 = st.columns([3, 1])
+        header3[0].markdown("**Tipo de Espectro**")
+        header3[1].markdown("**📦 ZIP**")
         for i, row in df3.iterrows():
-            col1, col2, col3 = st.columns([3, 1, 1])
-            col1.markdown(f"**{row['Tipo de Espectro']}**")
-            col2.markdown(f"{row['Muestras']}")
-            col3.download_button("ZIP", data=b"", file_name=f"espectros_{row['Tipo de Espectro']}.zip", mime="application/zip", key=f"zip3_{i}", use_container_width=True)
+            col1, col2 = st.columns([3, 1])
+            col1.markdown(f"**{row['Tipo de Espectro']}** ({row['Muestras']})")
+            col2.download_button("📦", data=b"", file_name=f"espectros_{row['Tipo de Espectro']}.zip", mime="application/zip", key=f"zip3_{i}", use_container_width=True)
 
     st.markdown("---")
     st.download_button("📦 Descargar TODO", data=b"", file_name="todo_muestras.zip", mime="application/zip")
@@ -909,6 +911,7 @@ with tab6:
     if st.button("Cerrar sesión"):
         st.session_state.pop("token", None)
         st.rerun()
+
 
 # --- HOJA 7 --- "Sugerencias" ---
 with tab7:

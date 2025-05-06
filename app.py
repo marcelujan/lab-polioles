@@ -1,27 +1,28 @@
-import streamlit as st
-import pandas as pd
-import toml
-import json
-import firebase_admin
-from firebase_admin import credentials, firestore
-from datetime import date, datetime
-from io import BytesIO
-import os
-import base64
-import matplotlib.pyplot as plt
-import numpy as np
-#prueba de actualizacion
-import zipfile
-from tempfile import TemporaryDirectory
-
-st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
-
-
+# Importación de librerías necesarias para el funcionamiento de la app
+import streamlit as st  # - streamlit: interfaz web
+import pandas as pd     # - pandas: manejo de datos en tablas
+import toml             # - toml: lectura de archivos de configuración y datos
+import json             # - json: lectura de archivos de configuración y datos
+import firebase_admin   # - firebase_admin: conexión con base de datos Firestore
+from firebase_admin import credentials, firestore   
+from datetime import date, datetime     # - datetime: manejo de fechas, archivos en memoria y sistema
+from io import BytesIO  # - BytesIO: manejo de fechas, archivos en memoria y sistema
+import os               # - os: manejo de fechas, archivos en memoria y sistema
+import base64           # - base64: codificación/decodificación de archivos binarios
+import matplotlib.pyplot as plt         # - matplotlib: generación de gráficos
+import numpy as np      # - numpy: generación de gráficos
+import zipfile          # - zipfile: creación de archivos comprimidos temporales para descarga
+from tempfile import TemporaryDirectory # - TemporaryDirectory: creación de archivos comprimidos temporales para descarga
 import requests
 
+# Configuración inicial de la página de Streamlit
+st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
+
+# Clave API de Firebase, almacenada de forma segura en los secretos de Streamlit
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]  # clave secreta de Firebase
 
-
+# Función para registrar un nuevo usuario usando Firebase Authentication
+# Se envía una solicitud POST a la API REST de Firebase con correo y contraseña
 def registrar_usuario(email, password):
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
     payload = {
@@ -35,7 +36,8 @@ def registrar_usuario(email, password):
     else:
         st.error("No se pudo registrar. El correo puede estar en uso o la contraseña es débil.")
 
-
+# Función para iniciar sesión con correo y contraseña utilizando la API REST de Firebase
+# Si es exitoso, devuelve el token de autenticación del usuario
 def iniciar_sesion(email, password):
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
     payload = {

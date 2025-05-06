@@ -216,7 +216,6 @@ with tab1:
     else:
         st.info("No hay análisis cargados.")  # Mensaje si no hay datos cargados aún
 
-
 # --- HOJA 2 --- "Análisis de datos" ---
 with tab2:
     st.title("Análisis de datos")  # Título principal de la hoja

@@ -852,46 +852,61 @@ with tab6:
         st.session_state.pop("token", None)
         st.rerun()
 
-    # --- BLOQUES RESUMEN EN TRES COLUMNAS ---
+    # --- TABLA 1 ---
     st.markdown("---")
-    st.subheader("📊 Vistas resumidas")
-    col1, col2, col3 = st.columns(3)
+    st.subheader("📋 Tabla 1 — Vista por muestra")
+    tabla1 = []
+    for m in muestras:
+        tabla1.append({
+            "Muestra": m["nombre"],
+            "Análisis": len(m.get("analisis", [])),
+            "Espectros": len(m.get("espectros", []))
+        })
+    df1 = pd.DataFrame(tabla1)
+    for i, row in df1.iterrows():
+        col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
+        col1.markdown(f"**{row['Muestra']}**")
+        col2.markdown(f"{row['Análisis']}")
+        col3.markdown(f"{row['Espectros']}")
+        col4.download_button("📥 Excel", data=b"", file_name=f"analisis_{row['Muestra']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel1_{i}")
+        col5.download_button("📦 ZIP", data=b"", file_name=f"espectros_{row['Muestra']}.zip", mime="application/zip", key=f"zip1_{i}")
 
-    with col1:
-        st.markdown("### 🔵 Por muestra")
-        for m in muestras:
-            analisis = len(m.get("analisis", []))
-            espectros = len(m.get("espectros", []))
-            st.markdown(f"**{m['nombre']}**\n- Análisis: {analisis}\n- Espectros: {espectros}")
-            st.download_button("📥 Excel", data=b"", file_name=f"analisis_{m['nombre']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel_muestra_{m['nombre']}")
-            st.download_button("📦 ZIP", data=b"", file_name=f"espectros_{m['nombre']}.zip", mime="application/zip", key=f"zip_muestra_{m['nombre']}")
+    st.markdown("---")
+    st.download_button("📦 Descargar TODO en carpetas por muestra", data=b"", file_name="todo_muestras.zip", mime="application/zip")
 
-    with col2:
-        st.markdown("### 🟢 Por análisis")
+    # --- TABLAS 2 y 3 LADO A LADO ---
+    st.markdown("---")
+    colA, colB = st.columns(2)
+
+    with colA:
+        st.subheader("🟢 Tabla 2 — Vista por análisis")
         conteo_analisis = {}
         for m in muestras:
             for a in m.get("analisis", []):
                 tipo = a.get("tipo", "")
                 if tipo:
                     conteo_analisis[tipo] = conteo_analisis.get(tipo, 0) + 1
-        for tipo, count in conteo_analisis.items():
-            st.markdown(f"**{tipo}**\n- Muestras: {count}")
-            st.download_button("📥 Excel", data=b"", file_name=f"analisis_{tipo}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel_tipo_{tipo}")
+        df2 = pd.DataFrame([{"Tipo de Análisis": k, "Muestras": v} for k, v in conteo_analisis.items()])
+        for i, row in df2.iterrows():
+            col1, col2, col3 = st.columns([3, 1, 1])
+            col1.markdown(f"**{row['Tipo de Análisis']}**")
+            col2.markdown(f"{row['Muestras']}")
+            col3.download_button("📥 Excel", data=b"", file_name=f"analisis_{row['Tipo de Análisis']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel2_{i}")
 
-    with col3:
-        st.markdown("### 🟣 Por espectros")
+    with colB:
+        st.subheader("🟣 Tabla 3 — Vista por espectros")
         conteo_espectros = {}
         for m in muestras:
             for e in m.get("espectros", []):
                 tipo = e.get("tipo", "")
                 if tipo:
                     conteo_espectros[tipo] = conteo_espectros.get(tipo, 0) + 1
-        for tipo, count in conteo_espectros.items():
-            st.markdown(f"**{tipo}**\n- Muestras: {count}")
-            st.download_button("📦 ZIP", data=b"", file_name=f"espectros_{tipo}.zip", mime="application/zip", key=f"zip_tipo_{tipo}")
-
-    st.markdown("---")
-    st.download_button("📦 Descargar TODO en carpetas por muestra", data=b"", file_name="todo_muestras.zip", mime="application/zip")
+        df3 = pd.DataFrame([{"Tipo de Espectro": k, "Muestras": v} for k, v in conteo_espectros.items()])
+        for i, row in df3.iterrows():
+            col1, col2, col3 = st.columns([3, 1, 1])
+            col1.markdown(f"**{row['Tipo de Espectro']}**")
+            col2.markdown(f"{row['Muestras']}")
+            col3.download_button("📦 ZIP", data=b"", file_name=f"espectros_{row['Tipo de Espectro']}.zip", mime="application/zip", key=f"zip3_{i}")
 
 # --- HOJA 7 --- "Sugerencias" ---
 with tab7:

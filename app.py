@@ -122,7 +122,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 
 # --- HOJA 1 --- "Laboratorio de Polioles" ---
 with tab1:
-    st.title("Laboratorio de Polioles")         # Título principal de la pestaña
+    st.title("Laboratorio de Polioles")         # Título principal de la hoja
     muestras = cargar_muestras()                # Carga todas las muestras desde Firestore
     st.subheader("Añadir muestra")              # Sección para crear o editar una muestra existente
     nombres = [m["nombre"] for m in muestras]   # Lista de nombres de muestras ya guardadas
@@ -219,7 +219,7 @@ with tab1:
 
 # --- HOJA 2 --- "Análisis de datos" ---
 with tab2:
-    st.title("Análisis de datos")  # Título principal de la pestaña
+    st.title("Análisis de datos")  # Título principal de la hoja
     muestras = cargar_muestras()   # Se cargan todas las muestras desde Firestore
     tabla = []
     for m in muestras:
@@ -300,9 +300,9 @@ with tab2:
 
 # --- HOJA 3 --- "Carga de espectros" ---
 with tab3:
-    st.title("Carga de espectros")  # Título principal de la pestaña
+    st.title("Carga de espectros")  # Título principal de la hoja
 
-    muestras = cargar_muestras()  # Se cargan todas las muestras desde Firestore
+    muestras = cargar_muestras()    # Se cargan todas las muestras desde Firestore
     nombres_muestras = [m["nombre"] for m in muestras]  # Lista de nombres para el selector
 
     st.subheader("Subir nuevo espectro")
@@ -311,8 +311,8 @@ with tab3:
         "FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR",
         "RMN 1H", "RMN 13C", "RMN-LF 1H"
     ]
-    if "tipos_espectro" not in st.session_state: # Tipos básicos de espectros disponibles
-        st.session_state.tipos_espectro = tipos_espectro_base.copy()
+    if "tipos_espectro" not in st.session_state: # Si es la primera vez que se abre la app, se inicializa la lista de tipos de espectro
+        st.session_state.tipos_espectro = tipos_espectro_base.copy() # Garantiza persistencia dinámica de tipos agregados por el usuario
     tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
 
     # Variables opcionales de ingreso manual para cálculos específicos en FTIR
@@ -372,7 +372,7 @@ with tab3:
             except Exception as e:
                 st.error(f"No se pudo leer el archivo: {e}")
 
-    if st.button("Guardar espectro") and archivo:
+    if st.button("Guardar espectro") and archivo:  # Guardar espectro
         espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])
         nuevo = {
             "tipo": tipo_espectro,
@@ -394,7 +394,7 @@ with tab3:
                 st.success("Espectro guardado.")
                 st.rerun()
 
-    st.subheader("Espectros cargados")
+    st.subheader("Espectros cargados")   # Tabla de espectros ya cargados
     filas = []
     for m in muestras:
         for i, e in enumerate(m.get("espectros", [])):
@@ -406,7 +406,8 @@ with tab3:
                 "Observaciones": e.get("observaciones", ""),
                 "ID": f"{m['nombre']}__{i}"
             })
-    df_esp_tabla = pd.DataFrame(filas)
+
+    df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
         seleccion = st.selectbox(
@@ -414,7 +415,7 @@ with tab3:
             df_esp_tabla["ID"],
             format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
         )
-        if st.button("Eliminar espectro"):
+        if st.button("Eliminar espectro"):  # Eliminar espectros (Botón)
             nombre, idx = seleccion.split("__")
             for m in muestras:
                 if m["nombre"] == nombre:
@@ -423,9 +424,7 @@ with tab3:
                     st.success("Espectro eliminado.")
                     st.rerun()
 
-        # --- DESCARGA DE ESPECTROS ---
-                # Lógica de descarga solo si se hace clic
-        if st.button("📦 Preparar descarga"):
+        if st.button("📦 Preparar descarga"):   #Preparar descarga de espectros (Excel y ZIP)
             with TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
@@ -455,27 +454,26 @@ with tab3:
 
                 with open(zip_path, "rb") as final_zip:
                     zip_bytes = final_zip.read()
-                    st.session_state["zip_bytes"] = final_zip.read()
+                    st.session_state["zip_bytes"] = zip_bytes
                     st.session_state["zip_name"] = os.path.basename(zip_path)
 
-        # Botón de descarga fuera del evento
-        if "zip_bytes" in st.session_state:
+        if "zip_bytes" in st.session_state:   # Botón de descarga del ZIP preparado
             st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
                                file_name=st.session_state["zip_name"],
                                mime="application/zip")
     else:
         st.info("No hay espectros cargados.")
 
-# --- HOJA 4 ---
+# --- HOJA 4 --- "Análisis de espectros" ---
 with tab4:
-    st.title("Análisis de espectros")
+    st.title("Análisis de espectros")  # Título principal de la hoja
 
-    muestras = cargar_muestras()
+    muestras = cargar_muestras()  # Cargar todas las muestras desde Firestore
     if not muestras:
         st.info("No hay muestras cargadas con espectros.")
         st.stop()
 
-    espectros_info = []
+    espectros_info = []     # Consolidar la información de todos los espectros en una tabla plana
     for m in muestras:
         for e in m.get("espectros", []):
             espectros_info.append({
@@ -487,21 +485,20 @@ with tab4:
                 "Contenido": e.get("contenido"),
                 "Es imagen": e.get("es_imagen", False)
             })
-
     df_esp = pd.DataFrame(espectros_info)
     if df_esp.empty:
         st.warning("No hay espectros cargados.")
         st.stop()
 
+    # Filtros de búsqueda de espectros
     st.subheader("Filtrar espectros")
     muestras_disp = df_esp["Muestra"].unique().tolist()
     tipos_disp = df_esp["Tipo"].unique().tolist()
     muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
     tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
-
     df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
 
-    # Filtrar espectros disponibles
+    # Generar nombres para cada espectro disponible
     espectros_info = []
     for idx, row in df_filtrado.iterrows():
         fecha = row.get("Fecha", "Sin fecha")
@@ -510,14 +507,14 @@ with tab4:
             observaciones = "Sin observaciones"
         if len(observaciones) > 80:
             observaciones = observaciones[:77] + "..."
-
         extension = os.path.splitext(row["Nombre archivo"])[1].lower().strip(".")
         nombre_espectro = f"{row['Muestra']} – {row['Tipo']} – {fecha} – {observaciones} ({extension})"
         espectros_info.append({
-            "identificador": idx,  # el índice real en df_filtrado
+            "identificador": idx,
             "nombre": nombre_espectro
         })
 
+    # Selección de espectros a visualizar
     if espectros_info:
         espectros_nombres = [e["nombre"] for e in espectros_info]
         seleccionados_nombres = st.multiselect(
@@ -525,24 +522,24 @@ with tab4:
             espectros_nombres, 
             default=[]
         )
-
-        # Filtrar DataFrame según selección
         seleccionados_idx = [e["identificador"] for e in espectros_info if e["nombre"] in seleccionados_nombres]
         df_filtrado = df_filtrado.loc[seleccionados_idx]
     else:
         st.warning("No hay espectros disponibles para seleccionar.")
 
+    # Separar espectros numéricos y espectros en imagen
     df_datos = df_filtrado[~df_filtrado["Es imagen"]]
     df_imagenes = df_filtrado[df_filtrado["Es imagen"]]
 
+    # Gráfico combinado para espectros numéricos
     if not df_datos.empty:
         st.subheader("Gráfico combinado de espectros numéricos")
         fig, ax = plt.subplots()
         rango_x = [float("inf"), float("-inf")]
         rango_y = [float("inf"), float("-inf")]
-
         data_validos = []
 
+        # Decodificación y limpieza de cada archivo
         for _, row in df_datos.iterrows():
             try:
                 extension = os.path.splitext(row["Nombre archivo"])[1].lower()
@@ -562,19 +559,19 @@ with tab4:
                             continue
                     else:
                         continue
-
                 col_x, col_y = df.columns[:2]
+
+                # Conversión forzada a numérico (corrige errores de coma como decimal)
                 for col in [col_x, col_y]:
                     if df[col].dtype == object:
                         df[col] = df[col].astype(str).str.replace(",", ".", regex=False)
                     df[col] = pd.to_numeric(df[col], errors="coerce")
-
                 df = df.dropna()
                 if df.empty:
                     continue
-
                 data_validos.append((row["Muestra"], row["Tipo"], df[col_x], df[col_y]))
 
+                # Ajustar rango global automático
                 rango_x[0] = min(rango_x[0], df[col_x].min())
                 rango_x[1] = max(rango_x[1], df[col_x].max())
                 rango_y[0] = min(rango_y[0], df[col_y].min())
@@ -582,9 +579,11 @@ with tab4:
             except:
                 continue
 
+        # Graficar solo si hay datos válidos
         if not data_validos:
             st.warning("No se pudo graficar ningún espectro válido.")
         else:
+            # Selección de rangos de visualización
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 x_min = st.number_input("X mínimo", value=rango_x[0])
@@ -595,19 +594,18 @@ with tab4:
             with col4:
                 y_max = st.number_input("Y máximo", value=rango_y[1])
 
+            # Graficar todos los espectros seleccionados
             for muestra, tipo, x, y in data_validos:
                 x_filtrado = x[(x >= x_min) & (x <= x_max)]
                 y_filtrado = y[(x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)]
                 if not y_filtrado.empty:
                     ax.plot(x_filtrado[:len(y_filtrado)], y_filtrado, label=f"{muestra} – {tipo}")
-
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
-            ax.legend()
-            
+            ax.legend()            
             st.pyplot(fig)
 
-            # Exportar Excel con resumen y hojas individuales
+            # Exportar resumen y hojas individuales en Excel
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 resumen = pd.DataFrame()
@@ -624,14 +622,14 @@ with tab4:
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
             excel_buffer.seek(0)
 
-            st.download_button(
+            st.download_button(     # Boton para exportar a excel
                 "📥 Exportar resumen a Excel",
                 data=excel_buffer.getvalue(),
                 file_name=f"espectros_resumen_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-
+    # Mostrar imágenes cargadas
     if not df_imagenes.empty:
         st.subheader("Imágenes de espectros")
         for _, row in df_imagenes.iterrows():
@@ -641,13 +639,12 @@ with tab4:
             except:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
 
-
+    # Descarga agrupada de imágenes seleccionadas + info TXT
     if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
         st.subheader("Descargar imágenes seleccionadas")
     
     if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
-            seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]
-            
+            seleccionadas = df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)]            
             with TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, f"imagenes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
                 with zipfile.ZipFile(zip_path, "w") as zipf:
@@ -662,7 +659,7 @@ with tab4:
                             f.write(base64.b64decode(row["Contenido"]))
                         zipf.write(path_img, arcname=os.path.join(carpeta, nombre_img))
     
-                        # Crear .txt de observaciones
+                        # Guardar archivo TXT con metadatos
                         nombre_txt = os.path.splitext(nombre_img)[0] + ".txt"
                         path_txt = os.path.join(tmpdir, carpeta, nombre_txt)
                         with open(path_txt, "w", encoding="utf-8") as f:
@@ -676,41 +673,37 @@ with tab4:
                 with open(zip_path, "rb") as final_zip:
                     zip_bytes = final_zip.read()
     
-            st.download_button("📦 Descargar ZIP de imágenes",
+            st.download_button("📦 Descargar ZIP de imágenes",  # Boton para descargar ZIP
                                data=zip_bytes,
                                file_name=os.path.basename(zip_path),
                                mime="application/zip")
 
-
-
-# --- HOJA 5 ---
+# --- HOJA 5 --- "Índice OH espectroscópico"
 with tab5:
-    st.title("Índice OH espectroscópico")
-
-    muestras = cargar_muestras()
-
+    st.title("Índice OH espectroscópico")  # Título principal de la hoja
+    muestras = cargar_muestras()  # Cargar todas las muestras con espectros
     if not muestras:
         st.info("No hay muestras cargadas para analizar.")
         st.stop()
-    espectros_info = []
+    espectros_info = [] # Lista que almacenará los datos procesados por muestra
 
+    # Recorrer todas las muestras para identificar espectros relevantes
     for m in muestras:
         espectros = m.get("espectros", [])
         for e in espectros:
             tipo = e.get("tipo", "")
-            if tipo not in ["FTIR-Acetato", "FTIR-Cloroformo"]:
+            if tipo not in ["FTIR-Acetato", "FTIR-Cloroformo"]:  # Solo calcular índice OH para estos tipos de espectro
                 continue
 
             contenido = e.get("contenido")
             es_imagen = e.get("es_imagen", False)
-
             valor_y_extraido = None
 
+            # Intentar extraer el valor Y cercano a 3548 o 3611 del archivo numérico
             if contenido and not es_imagen:
                 try:
                     extension = e.get("nombre_archivo", "").split(".")[-1].lower()
                     binario = BytesIO(base64.b64decode(contenido))
-
                     if extension == "xlsx":
                         df = pd.read_excel(binario, header=None)
                     else:
@@ -731,17 +724,16 @@ with tab5:
                         x_valores = pd.to_numeric(df.iloc[:,0], errors='coerce')
                         y_valores = pd.to_numeric(df.iloc[:,1], errors='coerce')
                         df_limpio = pd.DataFrame({"X": x_valores, "Y": y_valores}).dropna()
-
                         if tipo == "FTIR-Acetato":
                             objetivo_x = 3548
                         else:
                             objetivo_x = 3611
-
                         idx_cercano = (df_limpio["X"] - objetivo_x).abs().idxmin()
                         valor_y_extraido = df_limpio.loc[idx_cercano, "Y"]
                 except Exception as err:
                     valor_y_extraido = None
 
+            # Agregar a la tabla intermedia
             espectros_info.append({
                 "Muestra": m["nombre"],
                 "Tipo espectro": tipo,
@@ -758,7 +750,7 @@ with tab5:
         st.warning("No se encontraron espectros válidos para calcular Índice OH.")
         st.stop()
 
-    # Crear columna 'Señal solvente' unificando las manuales
+    # Crear columna 'Señal solvente' unificando los datos manuales ingresados
     def obtener_senal_solvente(row):
         if row["Tipo espectro"] == "FTIR-Acetato":
             return row["Señal manual 3548"]
@@ -769,7 +761,7 @@ with tab5:
 
     df_muestras["Señal solvente"] = df_muestras.apply(obtener_senal_solvente, axis=1)
 
-    # Calcular Índice OH real
+    # Calcular Índice OH
     def calcular_indice_oh(row):
         tipo = row["Tipo espectro"]
         peso = row["Peso muestra [g]"]
@@ -781,15 +773,13 @@ with tab5:
             constante = 66.7324
         else:
             return "No disponible"
-
         if peso is None or peso == 0 or senal_grafica is None or senal_manual is None:
             return "No disponible"
-
         return round(((senal_grafica - senal_manual) * constante) / peso, 4)
 
     df_muestras["Índice OH"] = df_muestras.apply(calcular_indice_oh, axis=1)
 
-    # Mostrar resultados
+    # Crear tabla
     columnas_mostrar = ["Muestra", "Tipo espectro", "Fecha espectro", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]
     df_final = df_muestras[columnas_mostrar]
     df_final = df_final.rename(columns={
@@ -803,24 +793,27 @@ with tab5:
     # Mostrar tabla final
     st.dataframe(df_final, use_container_width=True)
 
-# --- HOJA 6 ---
+# --- HOJA 6 --- "Consola" ---
 with tab6:
-    st.title("Consola")
-
-    muestras = cargar_muestras()
+    st.title("Consola")   # Título principal de la hoja
+    muestras = cargar_muestras()  # Cargar todas las muestras existentes
     if not muestras:
         st.info("No hay muestras cargadas.")
         st.stop()
 
+    # Recorrer todas las muestras disponibles
     for muestra in muestras:
         with st.expander(f"📁 {muestra['nombre']}"):
             st.markdown(f"📝 **Observación:** {muestra.get('observacion', '—')}")
 
+            # Análisis cargados
             analisis = muestra.get("analisis", [])
             if analisis:
                 st.markdown("📊 **Análisis cargados:**")
                 for a in analisis:
                     st.markdown(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
+
+                # Permite descargar todos los análisis de esa muestra como Excel
                 df_analisis = pd.DataFrame(analisis)
                 buffer = BytesIO()
                 with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
@@ -830,15 +823,18 @@ with tab6:
                     file_name=f"analisis_{muestra['nombre']}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
+            # Espectros cargados
             espectros = muestra.get("espectros", [])
             if espectros:
                 st.markdown("🧪 **Espectros cargados:**")
                 for e in espectros:
                     etiqueta = f"{e['tipo']} ({e['fecha']})"
                     if e.get("es_imagen", False):
-                        st.markdown(f"🖼️ {etiqueta}")
+                        st.markdown(f"🖼️ {etiqueta}")  # Ícono para imágenes
                     else:
-                        st.markdown(f"📈 {etiqueta}")
+                        st.markdown(f"📈 {etiqueta}")  # Ícono para espectros numéricos
+
+                # Botón para descargar todos los espectros de esa muestra como un ZIP
                 if st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
                     with TemporaryDirectory() as tmpdir:
                         zip_path = os.path.join(tmpdir, f"espectros_{muestra['nombre']}.zip")
@@ -850,10 +846,7 @@ with tab6:
                                 nombre = e.get("nombre_archivo", "espectro")
                                 ruta = os.path.join(tmpdir, nombre)
                                 with open(ruta, "wb") as f:
-                                    if e.get("es_imagen"):
-                                        f.write(bytes.fromhex(contenido))
-                                    else:
-                                        f.write(base64.b64decode(contenido))
+                                    f.write(base64.b64decode(contenido))
                                 zipf.write(ruta, arcname=nombre)
 
                         with open(zip_path, "rb") as final_zip:
@@ -863,13 +856,15 @@ with tab6:
                                 mime="application/zip",
                                 key=f"dl_zip_{muestra['nombre']}")
     st.markdown("---")
+
+    # Cierre de sesión
     if st.button("Cerrar sesión"):
         st.session_state.pop("token", None)
         st.rerun()
 
-# --- HOJA 7 ---
+# --- HOJA 7 --- "Sugerencias" ---
 with tab7:
-    st.title("Sugerencias")
+    st.title("Sugerencias")   # Título principal de la hoja
 
     sugerencias_ref = db.collection("sugerencias")
 

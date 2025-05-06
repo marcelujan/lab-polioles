@@ -4,7 +4,7 @@ import pandas as pd     # - pandas: manejo de datos en tablas
 import toml             # - toml: lectura de archivos de configuración y datos
 import json             # - json: lectura de archivos de configuración y datos
 import firebase_admin   # - firebase_admin: conexión con base de datos Firestore
-from firebase_admin import credentials, firestore   
+from firebase_admin import credentials, firestore   # 'credentials': permite inicializar Firebase con las credenciales del proyecto (clave privada) # 'firestore': permite interactuar con la base de datos NoSQL de Firebase (Firestore)
 from datetime import date, datetime     # - datetime: manejo de fechas, archivos en memoria y sistema
 from io import BytesIO  # - BytesIO: manejo de fechas, archivos en memoria y sistema
 import os               # - os: manejo de fechas, archivos en memoria y sistema
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt         # - matplotlib: generación de gráficos
 import numpy as np      # - numpy: generación de gráficos
 import zipfile          # - zipfile: creación de archivos comprimidos temporales para descarga
 from tempfile import TemporaryDirectory # - TemporaryDirectory: creación de archivos comprimidos temporales para descarga
-import requests
+import requests         # 'requests': permite enviar solicitudes HTTP, utilizado aquí para autenticar usuarios con la API REST de Firebase
 
 # Configuración inicial de la página de Streamlit
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
@@ -36,6 +36,7 @@ def registrar_usuario(email, password):
     else:
         st.error("No se pudo registrar. El correo puede estar en uso o la contraseña es débil.")
 
+# --- Iniciar sesión ---
 # Función para iniciar sesión con correo y contraseña utilizando la API REST de Firebase
 # Si es exitoso, devuelve el token de autenticación del usuario
 def iniciar_sesion(email, password):
@@ -54,17 +55,16 @@ def iniciar_sesion(email, password):
 
 # --- Autenticación ---
 if "token" not in st.session_state:
-    st.markdown("### Iniciar sesión")
+    st.markdown("### Iniciar sesión")   # Si el usuario aún no está autenticado, se muestra la interfaz de inicio de sesión
     email = st.text_input("Correo electrónico")
-    password = st.text_input("Contraseña", type="password")
-
+    password = st.text_input("Contraseña", type="password") # Se guardará el token en session_state para mantener la sesión activa
     st.warning("Si usás autocompletar, verificá que los campos estén visibles antes de continuar.")
 
-    if st.button("Iniciar sesión"):
+    if st.button("Iniciar sesión"):     # Al hacer clic en "Iniciar sesión", se valida el usuario.
         token = iniciar_sesion(email, password)
         if token:
             st.session_state["token"] = token
-            st.success("Inicio de sesión exitoso.")
+            st.success("Inicio de sesión exitoso.")     # Si es correcto, se guarda el token y se reinicia la app para mostrar las pestañas
             st.rerun()
 
     st.markdown("---")

@@ -920,9 +920,35 @@ with tab6:
         h2[0].markdown("**Tipo de Análisis**")
         h2[1].markdown("**📥 Excel**")
         for i, row in df2.iterrows():
+            tipo = row["Tipo de Análisis"]
             c1, c2 = st.columns([3, 1])
-            c1.markdown(f"**{row['Tipo de Análisis']}** ({row['Muestras']})")
-            c2.download_button(f"📥 {row['Muestras']}", data=b"", file_name=f"analisis_{row['Tipo de Análisis']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel2_{i}", use_container_width=True)
+            c1.markdown(f"**{tipo}** ({row['Muestras']})")
+
+            # Reunir todos los análisis de ese tipo
+            filas = []
+            for m in muestras:
+                for a in m.get("analisis", []):
+                    if a.get("tipo") == tipo:
+                        fila = a.copy()
+                        fila["Muestra"] = m["nombre"]
+                        filas.append(fila)
+
+            df_filtrado = pd.DataFrame(filas)
+
+            # Generar Excel
+            buffer_excel = BytesIO()
+            with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+                df_filtrado.to_excel(writer, index=False, sheet_name="Análisis")
+            buffer_excel.seek(0)
+
+            c2.download_button(
+                f"📥 {row['Muestras']}",
+                data=buffer_excel.getvalue(),
+                file_name=f"analisis_{tipo}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key=f"excel2_{i}"
+            )
 
     with col3:
         st.subheader("🟣 Descargas por espectros")
@@ -937,12 +963,84 @@ with tab6:
         h3[0].markdown("**Tipo de Espectro**")
         h3[1].markdown("**📦 ZIP**")
         for i, row in df3.iterrows():
+            tipo = row["Tipo de Espectro"]
             c1, c2 = st.columns([3, 1])
-            c1.markdown(f"**{row['Tipo de Espectro']}** ({row['Muestras']})")
-            c2.download_button(f"📦 {row['Muestras']}", data=b"", file_name=f"espectros_{row['Tipo de Espectro']}.zip", mime="application/zip", key=f"zip3_{i}", use_container_width=True)
+            c1.markdown(f"**{tipo}** ({row['Muestras']})")
+
+            # Reunir todos los espectros de ese tipo
+            buffer_zip = BytesIO()
+            with zipfile.ZipFile(buffer_zip, "w") as zipf:
+                for m in muestras:
+                    for e in m.get("espectros", []):
+                        if e.get("tipo") == tipo:
+                            nombre_archivo = e.get("nombre_archivo", "espectro")
+                            contenido = e.get("contenido")
+                            if not contenido:
+                                continue
+                            try:
+                                binario = base64.b64decode(contenido)
+                                ruta = f"{m['nombre']}_{nombre_archivo}"
+                                zipf.writestr(ruta, binario)
+                            except Exception:
+                                continue
+            buffer_zip.seek(0)
+
+            c2.download_button(
+                f"📦 {row['Muestras']}",
+                data=buffer_zip.getvalue(),
+                file_name=f"espectros_{tipo}.zip",
+                mime="application/zip",
+                use_container_width=True,
+                key=f"zip3_{i}"
+            )
 
     st.markdown("---")
-    st.download_button("📦 Descargar TODO", data=b"", file_name="todo_muestras.zip", mime="application/zip")
+    from tempfile import TemporaryDirectory
+
+    with TemporaryDirectory() as tmpdir:
+        for m in muestras:
+            nombre = m["nombre"]
+            carpeta = os.path.join(tmpdir, nombre)
+            os.makedirs(carpeta, exist_ok=True)
+
+            # Guardar análisis
+            df_analisis = pd.DataFrame(m.get("analisis", []))
+            path_excel = os.path.join(carpeta, "analisis.xlsx")
+            with pd.ExcelWriter(path_excel, engine="xlsxwriter") as writer:
+                df_analisis.to_excel(writer, index=False, sheet_name="Análisis")
+
+            # Guardar espectros
+            carpeta_espectros = os.path.join(carpeta, "espectros")
+            os.makedirs(carpeta_espectros, exist_ok=True)
+            for e in m.get("espectros", []):
+                nombre_archivo = e.get("nombre_archivo", "espectro")
+                contenido = e.get("contenido")
+                if not contenido:
+                    continue
+                try:
+                    binario = base64.b64decode(contenido)
+                    ruta_archivo = os.path.join(carpeta_espectros, nombre_archivo)
+                    with open(ruta_archivo, "wb") as f:
+                        f.write(binario)
+                except Exception:
+                    continue
+
+        # Empaquetar todo en ZIP
+        buffer_zip = BytesIO()
+        with zipfile.ZipFile(buffer_zip, "w") as zipf:
+            for root, _, files in os.walk(tmpdir):
+                for archivo in files:
+                    full_path = os.path.join(root, archivo)
+                    rel_path = os.path.relpath(full_path, tmpdir)
+                    zipf.write(full_path, arcname=rel_path)
+        buffer_zip.seek(0)
+
+        st.download_button(
+            "📦 Descargar TODO",
+            data=buffer_zip.getvalue(),
+            file_name="todo_muestras.zip",
+            mime="application/zip"
+        )
 
     st.markdown("---")
     if st.button("Cerrar sesión"):

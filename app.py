@@ -16,20 +16,71 @@ from tempfile import TemporaryDirectory
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 
+
+import requests
+
+FIREBASE_API_KEY = st.secrets["firebase_api_key"]  # clave secreta de Firebase
+
+
+def registrar_usuario(email, password):
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
+    payload = {
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    }
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+        st.success("Usuario registrado correctamente. Ahora puede iniciar sesión.")
+    else:
+        st.error("No se pudo registrar. El correo puede estar en uso o la contraseña es débil.")
+
+
+def iniciar_sesion(email, password):
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+    payload = {
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    }
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+        return response.json()["idToken"]
+    else:
+        st.error("Credenciales incorrectas o cuenta no existente.")
+        return None
+
 # --- Autenticación ---
-config = toml.load("config.toml")
-PASSWORD = config["auth"]["password"]
-if "autenticado" not in st.session_state:
-    st.session_state.autenticado = False
-if not st.session_state.autenticado:
-    pwd = st.text_input("Contraseña de acceso", type="password")
-    if st.button("Ingresar"):
-        if pwd == PASSWORD:
-            st.session_state.autenticado = True
+if "token" not in st.session_state:
+    st.markdown("### Iniciar sesión")
+    email = st.text_input("Correo electrónico")
+    password = st.text_input("Contraseña", type="password")
+
+    st.warning("Si usás autocompletar, verificá que los campos estén visibles antes de continuar.")
+
+    if st.button("Iniciar sesión"):
+        token = iniciar_sesion(email, password)
+        if token:
+            st.session_state["token"] = token
+            st.success("Inicio de sesión exitoso.")
             st.rerun()
-        else:
-            st.error("Contraseña incorrecta")
+
+    st.markdown("---")
+    st.markdown("### ¿No tenés cuenta? Registrate aquí:")
+    with st.form("registro"):
+        nuevo_email = st.text_input("Nuevo correo")
+        nueva_clave = st.text_input("Nueva contraseña", type="password")
+        submit_registro = st.form_submit_button("Registrar")
+        if submit_registro:
+            registrar_usuario(nuevo_email, nueva_clave)
+            token = iniciar_sesion(nuevo_email, nueva_clave)
+            if token:
+                st.session_state["token"] = token
+                st.success("Registro e inicio de sesión exitoso.")
+                st.rerun()
+
     st.stop()
+
 
 # --- Firebase ---
 if "firebase_initialized" not in st.session_state:
@@ -834,7 +885,7 @@ with tab6:
                                 key=f"dl_zip_{muestra['nombre']}")
     st.markdown("---")
     if st.button("Cerrar sesión"):
-        st.session_state.autenticado = False
+        st.session_state.pop("token", None)
         st.rerun()
 
 # --- HOJA 7 ---

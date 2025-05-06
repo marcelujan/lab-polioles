@@ -865,8 +865,47 @@ with tab6:
             analisis = len(m.get("analisis", []))
             espectros = len(m.get("espectros", []))
             c1.markdown(f"**{nombre}**")
-            c2.download_button(f"📥 {analisis}", data=b"", file_name=f"analisis_{nombre}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel1_{i}", use_container_width=True)
-            c3.download_button(f"📦 {espectros}", data=b"", file_name=f"espectros_{nombre}.zip", mime="application/zip", key=f"zip1_{i}", use_container_width=True)
+
+            # Generar Excel de análisis
+            df_analisis = pd.DataFrame(m.get("analisis", []))
+            buffer_excel = BytesIO()
+            with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+                df_analisis.to_excel(writer, index=False, sheet_name="Análisis")
+            buffer_excel.seek(0)
+
+            # Generar ZIP de espectros
+            buffer_zip = BytesIO()
+            with zipfile.ZipFile(buffer_zip, "w") as zipf:
+                for e in m.get("espectros", []):
+                    nombre_archivo = e.get("nombre_archivo", "espectro")
+                    contenido = e.get("contenido")
+                    if not contenido:
+                        continue
+                    try:
+                        binario = base64.b64decode(contenido)
+                        zipf.writestr(nombre_archivo, binario)
+                    except Exception as err:
+                        continue
+            buffer_zip.seek(0)
+
+            # Botones de descarga reales
+            c2.download_button(
+                f"📥 {analisis}",
+                data=buffer_excel.getvalue(),
+                file_name=f"analisis_{nombre}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key=f"excel1_{i}"
+            )
+
+            c3.download_button(
+                f"📦 {espectros}",
+                data=buffer_zip.getvalue(),
+                file_name=f"espectros_{nombre}.zip",
+                mime="application/zip",
+                use_container_width=True,
+                key=f"zip1_{i}"
+            )
 
     with col2:
         st.subheader("🟢 Descargas por análisis")

@@ -425,9 +425,6 @@ with tab3:
         # --- DESCARGA DE ESPECTROS ---
                 # Lógica de descarga solo si se hace clic
         if st.button("📦 Preparar descarga"):
-            from tempfile import TemporaryDirectory
-            import zipfile
-
             with TemporaryDirectory() as tmpdir:
                 zip_path = os.path.join(tmpdir, f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
@@ -539,12 +536,6 @@ with tab4:
 
     if not df_datos.empty:
         st.subheader("Gráfico combinado de espectros numéricos")
-
-        import matplotlib.pyplot as plt
-        import pandas as pd
-        from io import BytesIO
-        import base64
-
         fig, ax = plt.subplots()
         rango_x = [float("inf"), float("-inf")]
         rango_y = [float("inf"), float("-inf")]
@@ -700,12 +691,6 @@ with tab5:
     if not muestras:
         st.info("No hay muestras cargadas para analizar.")
         st.stop()
-
-    import pandas as pd
-    import numpy as np
-    import base64
-    from io import BytesIO
-
     espectros_info = []
 
     for m in muestras:
@@ -835,9 +820,6 @@ with tab6:
                 st.markdown("📊 **Análisis cargados:**")
                 for a in analisis:
                     st.markdown(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
-
-                import pandas as pd
-                from io import BytesIO
                 df_analisis = pd.DataFrame(analisis)
                 buffer = BytesIO()
                 with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
@@ -856,10 +838,6 @@ with tab6:
                         st.markdown(f"🖼️ {etiqueta}")
                     else:
                         st.markdown(f"📈 {etiqueta}")
-
-                import zipfile, base64, os
-                from tempfile import TemporaryDirectory
-
                 if st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
                     with TemporaryDirectory() as tmpdir:
                         zip_path = os.path.join(tmpdir, f"espectros_{muestra['nombre']}.zip")

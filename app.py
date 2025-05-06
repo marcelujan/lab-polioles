@@ -864,6 +864,39 @@ with tab6:
         st.session_state.pop("token", None)
         st.rerun()
 
+    st.markdown("---")
+    st.subheader("📥 Backup completo de la base de datos (sin archivos adjuntos)")
+
+    if st.button("📦 Generar y descargar JSON de respaldo"):
+        try:
+            respaldo = {}
+            for muestra in muestras:
+                datos = {
+                    "observacion": muestra.get("observacion", ""),
+                    "analisis": muestra.get("analisis", []),
+                    # Se omiten los archivos base64 para no hacer el archivo gigante
+                    "espectros": [
+                        {
+                            "tipo": e.get("tipo", ""),
+                            "fecha": e.get("fecha", ""),
+                            "observaciones": e.get("observaciones", ""),
+                            "nombre_archivo": e.get("nombre_archivo", ""),
+                            "es_imagen": e.get("es_imagen", False)
+                        }
+                        for e in muestra.get("espectros", [])
+                    ]
+                }
+                respaldo[muestra["nombre"]] = datos
+
+            json_bytes = json.dumps(respaldo, indent=2, ensure_ascii=False).encode("utf-8")
+            st.download_button("⬇️ Descargar backup JSON",
+                               data=json_bytes,
+                               file_name=f"backup_muestras_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json",
+                               mime="application/json")
+        except Exception as e:
+            st.error(f"No se pudo generar el backup: {e}")
+
+
 # --- HOJA 7 ---
 with tab7:
     st.title("Sugerencias")

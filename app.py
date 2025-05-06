@@ -1,7 +1,6 @@
 # Importación de librerías necesarias para el funcionamiento de la app
 import streamlit as st  # - streamlit: interfaz web
 import pandas as pd     # - pandas: manejo de datos en tablas
-import toml             # - toml: lectura de archivos de configuración y datos
 import json             # - json: lectura de archivos de configuración y datos
 import firebase_admin   # - firebase_admin: conexión con base de datos Firestore
 from firebase_admin import credentials, firestore   # 'credentials': permite inicializar Firebase con las credenciales del proyecto (clave privada) # 'firestore': permite interactuar con la base de datos NoSQL de Firebase (Firestore)

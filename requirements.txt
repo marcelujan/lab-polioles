@@ -1,7 +1,7 @@
 streamlit
 pandas
-toml
 firebase-admin
 xlsxwriter
 matplotlib
 openpyxl
+requests

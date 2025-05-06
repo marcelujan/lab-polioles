@@ -826,26 +826,29 @@ with tab6:
                 for e in espectros:
                     etiqueta = f"{e['tipo']} ({e['fecha']})"
                     st.markdown(f"🖼️ {etiqueta}" if e.get("es_imagen", False) else f"📈 {etiqueta}")
-                if st.button(f"⬇️ Descargar espectros ZIP", key=f"zip_{muestra['nombre']}"):
-                    with TemporaryDirectory() as tmpdir:
-                        zip_path = os.path.join(tmpdir, f"espectros_{muestra['nombre']}.zip")
-                        with zipfile.ZipFile(zip_path, "w") as zipf:
-                            for e in espectros:
-                                contenido = e.get("contenido")
-                                if not contenido:
-                                    continue
-                                nombre = e.get("nombre_archivo", "espectro")
-                                ruta = os.path.join(tmpdir, nombre)
-                                with open(ruta, "wb") as f:
-                                    f.write(base64.b64decode(contenido))
-                                zipf.write(ruta, arcname=nombre)
 
-                        with open(zip_path, "rb") as final_zip:
-                            st.download_button("📦 Descargar ZIP de espectros",
-                                data=final_zip.read(),
-                                file_name=f"espectros_{muestra['nombre']}.zip",
-                                mime="application/zip",
-                                key=f"dl_zip_{muestra['nombre']}")
+                # Generar ZIP al vuelo
+                buffer_zip = BytesIO()
+                with zipfile.ZipFile(buffer_zip, "w") as zipf:
+                    for e in espectros:
+                        nombre_archivo = e.get("nombre_archivo", "espectro")
+                        contenido = e.get("contenido")
+                        if not contenido:
+                            continue
+                        try:
+                            binario = base64.b64decode(contenido)
+                            zipf.writestr(nombre_archivo, binario)
+                        except Exception:
+                            continue
+                buffer_zip.seek(0)
+
+                st.download_button(
+                    "📦 Descargar ZIP de espectros",
+                    data=buffer_zip.getvalue(),
+                    file_name=f"espectros_{muestra['nombre']}.zip",
+                    mime="application/zip",
+                    key=f"dl_zip_{muestra['nombre']}"
+                )
 
     st.markdown("---")
 

@@ -848,13 +848,9 @@ with tab6:
                                 key=f"dl_zip_{muestra['nombre']}")
 
     st.markdown("---")
-    if st.button("Cerrar sesión"):
-        st.session_state.pop("token", None)
-        st.rerun()
 
     # --- TABLA 1 ---
-    st.markdown("---")
-    st.subheader("📋 Tabla 1 — Vista por muestra")
+    st.subheader("📋 Descargas por muestra")
     tabla1 = []
     for m in muestras:
         tabla1.append({
@@ -868,18 +864,16 @@ with tab6:
         col1.markdown(f"**{row['Muestra']}**")
         col2.markdown(f"{row['Análisis']}")
         col3.markdown(f"{row['Espectros']}")
-        col4.download_button("📥 Excel", data=b"", file_name=f"analisis_{row['Muestra']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel1_{i}")
-        col5.download_button("📦 ZIP", data=b"", file_name=f"espectros_{row['Muestra']}.zip", mime="application/zip", key=f"zip1_{i}")
+        col4.download_button("Excel", data=b"", file_name=f"analisis_{row['Muestra']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel1_{i}", use_container_width=True)
+        col5.download_button("ZIP", data=b"", file_name=f"espectros_{row['Muestra']}.zip", mime="application/zip", key=f"zip1_{i}", use_container_width=True)
 
     st.markdown("---")
-    st.download_button("📦 Descargar TODO en carpetas por muestra", data=b"", file_name="todo_muestras.zip", mime="application/zip")
 
     # --- TABLAS 2 y 3 LADO A LADO ---
-    st.markdown("---")
     colA, colB = st.columns(2)
 
     with colA:
-        st.subheader("🟢 Tabla 2 — Vista por análisis")
+        st.subheader("🟢 Descargas por análisis")
         conteo_analisis = {}
         for m in muestras:
             for a in m.get("analisis", []):
@@ -891,10 +885,10 @@ with tab6:
             col1, col2, col3 = st.columns([3, 1, 1])
             col1.markdown(f"**{row['Tipo de Análisis']}**")
             col2.markdown(f"{row['Muestras']}")
-            col3.download_button("📥 Excel", data=b"", file_name=f"analisis_{row['Tipo de Análisis']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel2_{i}")
+            col3.download_button("Excel", data=b"", file_name=f"analisis_{row['Tipo de Análisis']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"excel2_{i}", use_container_width=True)
 
     with colB:
-        st.subheader("🟣 Tabla 3 — Vista por espectros")
+        st.subheader("🟣 Descargas por espectros")
         conteo_espectros = {}
         for m in muestras:
             for e in m.get("espectros", []):
@@ -906,7 +900,15 @@ with tab6:
             col1, col2, col3 = st.columns([3, 1, 1])
             col1.markdown(f"**{row['Tipo de Espectro']}**")
             col2.markdown(f"{row['Muestras']}")
-            col3.download_button("📦 ZIP", data=b"", file_name=f"espectros_{row['Tipo de Espectro']}.zip", mime="application/zip", key=f"zip3_{i}")
+            col3.download_button("ZIP", data=b"", file_name=f"espectros_{row['Tipo de Espectro']}.zip", mime="application/zip", key=f"zip3_{i}", use_container_width=True)
+
+    st.markdown("---")
+    st.download_button("📦 Descargar TODO", data=b"", file_name="todo_muestras.zip", mime="application/zip")
+
+    st.markdown("---")
+    if st.button("Cerrar sesión"):
+        st.session_state.pop("token", None)
+        st.rerun()
 
 # --- HOJA 7 --- "Sugerencias" ---
 with tab7:

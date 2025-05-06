@@ -815,10 +815,14 @@ with tab6:
                 buffer = BytesIO()
                 with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
                     df_analisis.to_excel(writer, index=False, sheet_name="Análisis")
-                st.download_button("⬇️ Descargar análisis",
+                buffer.seek(0)  # 🔧 Esto garantiza que el archivo se lea desde el principio
+
+                st.download_button(
+                    "⬇️ Descargar análisis",
                     data=buffer.getvalue(),
                     file_name=f"analisis_{muestra['nombre']}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
             espectros = muestra.get("espectros", [])
             if espectros:

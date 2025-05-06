@@ -67,53 +67,49 @@ if "token" not in st.session_state:
             st.success("Inicio de sesión exitoso.")     # Si es correcto, se guarda el token y se reinicia la app para mostrar las pestañas
             st.rerun()
 
-    st.markdown("---")
+    st.markdown("---")      # Se separa visualmente del login con una línea horizontal ("---")
     st.markdown("### ¿No tenés cuenta? Registrate aquí:")
-    with st.form("registro"):
+    with st.form("registro"):   # Formulario para registrar una nueva cuenta
         nuevo_email = st.text_input("Nuevo correo")
         nueva_clave = st.text_input("Nueva contraseña", type="password")
         submit_registro = st.form_submit_button("Registrar")
         if submit_registro:
-            registrar_usuario(nuevo_email, nueva_clave)
+            registrar_usuario(nuevo_email, nueva_clave) 
             token = iniciar_sesion(nuevo_email, nueva_clave)
-            if token:
+            if token:       # Si se registra correctamente, el usuario se autentica automáticamente
                 st.session_state["token"] = token
                 st.success("Registro e inicio de sesión exitoso.")
-                st.rerun()
-
-    st.stop()
+                st.rerun()  # Se reinicia la app para mostrar el contenido autenticado
+    st.stop()   # Detiene la ejecución de Streamlit si no se ha iniciado sesión, para evitar mostrar el resto de la app
 
 
 # --- Firebase ---
-if "firebase_initialized" not in st.session_state:
-    cred_dict = json.loads(st.secrets["firebase_key"])
-    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
-    cred = credentials.Certificate(cred_dict)
-    if not firebase_admin._apps:
+if "firebase_initialized" not in st.session_state:  # Inicializa Firebase solo una vez por sesión de Streamlit
+    cred_dict = json.loads(st.secrets["firebase_key"])  # 1. Se cargan las credenciales del archivo secreto de Firebase desde st.secrets
+    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")    #se corrige el formato de la clave privada reemplazando '\n' por saltos reales
+    cred = credentials.Certificate(cred_dict)   # 2. Se crea el objeto de credenciales para autenticar la conexión
+    if not firebase_admin._apps:    # 3. Se inicializa Firebase si no ha sido inicializado aún
         firebase_admin.initialize_app(cred)
         st.session_state.firebase_initialized = True
-db = firestore.client()
+db = firestore.client()     # 4. Se crea el cliente de Firestore para interactuar con la base de datos
 
 # --- Funciones comunes ---
-def cargar_muestras():
+def cargar_muestras():      # Función para obtener todas las muestras almacenadas en la colección "muestras" de Firestore
     try:
-        docs = db.collection("muestras").stream()
+        docs = db.collection("muestras").stream()   # Devuelve una lista de diccionarios, cada uno con los datos de la muestra y su ID como "nombre"
+
         return [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
     except:
-        return []
+        return []       # Si hay un error (por ejemplo, si Firestore no responde), devuelve una lista vacía
 
-def guardar_muestra(nombre, observacion, analisis, espectros=None):
+def guardar_muestra(nombre, observacion, analisis, espectros=None): # Función para guardar o actualizar una muestra en la base de datos
     datos = {
-        "observacion": observacion,
-        "analisis": analisis
+        "observacion": observacion, # - 'observacion' y 'analisis' se guardan siempre
+        "analisis": analisis        # - 'observacion' y 'analisis' se guardan siempre
     }
-    if espectros is not None:
+    if espectros is not None:       # - 'espectros' se incluye solo si está definido
         datos["espectros"] = espectros
-    db.collection("muestras").document(nombre).set(datos)
-    backup_name = f"muestras_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-    with open(backup_name, "w", encoding="utf-8") as f:
-        json.dump(datos, f, ensure_ascii=False, indent=2)
-
+    db.collection("muestras").document(nombre).set(datos)   # - 'nombre' se usa como ID del documento en Firestore
 
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "Laboratorio de Polioles",

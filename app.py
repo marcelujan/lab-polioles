@@ -1053,6 +1053,26 @@ with tab7:
                     etiqueta = f"{e['tipo']} ({e['fecha']})"
                     st.markdown(f"🖼️ {etiqueta}" if e.get("es_imagen", False) else f"📈 {etiqueta}")
 
+                filas_mascaras = []
+                for e in espectros:
+                    if e.get("mascaras"):
+                        for j, mascara in enumerate(e["mascaras"]):
+                            filas_mascaras.append({
+                                "Archivo": e.get("nombre_archivo", ""),
+                                "Máscara N°": j + 1,
+                                "D [m2/s]": mascara.get("difusividad"),
+                                "T2 [s]": mascara.get("t2"),
+                                "Xmin [ppm]": mascara.get("x_min"),
+                                "Xmax [ppm]": mascara.get("x_max")
+                            })
+                df_mascaras = pd.DataFrame(filas_mascaras)
+                buffer = BytesIO()
+                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+                    df_mascaras.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
+                buffer.seek(0)
+                if not df_mascaras.empty:
+                    st.download_button("📑 Descargar máscaras RMN 1H", data=buffer.getvalue(), file_name=f"mascaras_{muestra['nombre']}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"dl_mask_{muestra['nombre']}")
+
                 # Generar ZIP
                 buffer_zip = BytesIO()
                 with zipfile.ZipFile(buffer_zip, "w") as zipf:

@@ -962,7 +962,7 @@ with tab6:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
     # --- ZONA IMÁGENES ---
-    st.subheader("🖼️ Espectros RMN cargados como imagen")
+    st.subheader("🖼️ Espectros imagen")
     if df_rmn_img.empty:
         st.info("No hay espectros RMN en formato imagen.")
     else:

@@ -912,7 +912,10 @@ with tab6:
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
-        activar_mascaras = st.checkbox("Aplicar todas las máscaras D/T2", value=False)
+        st.markdown("**Activar/desactivar máscaras**")
+        usar_mascara = {}
+        for _, row in df_rmn1H.iterrows():
+            usar_mascara[row["id"]] = st.checkbox(f"{row['muestra']} – {row['archivo']}", value=False, key=f"chk_mask_{row['id']}")
         fig, ax = plt.subplots()
 
         for _, row in df_rmn1H.iterrows():
@@ -941,7 +944,7 @@ with tab6:
 
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}")
 
-                if activar_mascaras:
+                if usar_mascara.get(row["id"], False):
                     for mascara in row.get("mascaras", []):
                         x0 = mascara.get("x_min")
                         x1 = mascara.get("x_max")
@@ -950,8 +953,8 @@ with tab6:
                         if x0 is not None and x1 is not None:
                             ax.axvspan(x0, x1, color="orange", alpha=0.3)
                             if d and t2:
-                                ax.text((x0+x1)/2, max(df[col_y])*0.9,
-                                        f"D={d:.1e}, T2={t2:.1e}", ha="center", fontsize=8, color="black")
+                               ax.text((x0+x1)/2, max(df[col_y])*0.9,
+                                        f"D={d:.1e}\nT2={t2:.3f}", ha="center", fontsize=8, color="black", rotation=90)
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 

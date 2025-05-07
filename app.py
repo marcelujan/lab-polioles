@@ -1086,6 +1086,10 @@ with tab7:
                             zipf.writestr(nombre_archivo, binario)
                         except Exception:
                             continue
+
+                    # Añadir archivo Excel con máscaras si existen
+                    if not df_mascaras.empty:
+                        zipf.writestr("mascaras_rmn1h.xlsx", buffer.getvalue())
                 buffer_zip.seek(0)
 
                 st.download_button(

@@ -916,7 +916,6 @@ with tab6:
         usar_mascara = {}
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
-        filas_mascaras = []
 
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
             color = colores[idx % len(colores)]
@@ -947,7 +946,7 @@ with tab6:
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)
 
                 if usar_mascara.get(row["id"], False):
-                    for j, mascara in enumerate(row.get("mascaras", [])):
+                    for mascara in row.get("mascaras", []):
                         x0 = mascara.get("x_min")
                         x1 = mascara.get("x_max")
                         d = mascara.get("difusividad")
@@ -957,15 +956,6 @@ with tab6:
                             if d and t2:
                                 ax.text((x0+x1)/2, max(df[col_y])*0.9,
                                         f"D={d:.1e}     T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
-                                filas_mascaras.append({
-                                    "Muestra": row["muestra"],
-                                    "Archivo": row["archivo"],
-                                    "Máscara N°": j + 1,
-                                    "D [m2/s]": d,
-                                    "T2 [s]": t2,
-                                    "Xmin [ppm]": x0,
-                                    "Xmax [ppm]": x1
-                                })
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
@@ -973,10 +963,6 @@ with tab6:
         ax.set_ylabel("Y")
         ax.legend()
         st.pyplot(fig)
-
-        if filas_mascaras:
-            st.markdown("### Máscaras aplicadas")
-            st.dataframe(pd.DataFrame(filas_mascaras))
 
     # --- ZONA RMN 13C ---
     st.subheader("🧪 RMN 13C")

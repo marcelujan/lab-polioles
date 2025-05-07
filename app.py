@@ -975,8 +975,9 @@ with tab6:
         st.pyplot(fig)
 
         if filas_mascaras:
+            df_tabla = pd.DataFrame(filas_mascaras)            
             st.markdown("### Máscaras aplicadas")
-            st.dataframe(pd.DataFrame(filas_mascaras))
+            st.dataframe(df_tabla, use_container_width=True)
 
     # --- ZONA RMN 13C ---
     st.subheader("🧪 RMN 13C")

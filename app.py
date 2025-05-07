@@ -968,15 +968,16 @@ with tab6:
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
+        ax.set_xlabel("[ppm]")
+        ax.set_ylabel("Señal")
         ax.legend()
         st.pyplot(fig)
 
         if filas_mascaras:
             df_tabla = pd.DataFrame(filas_mascaras)            
-            st.dataframe(df_tabla.style.set_properties(**{'text-align': 'center'}), use_container_width=True)
-
+            st.dataframe(df_tabla.style.set_properties(**{'text-align': 'center'}).set_table_styles([
+                {'selector': 'th', 'props': [('text-align', 'center')]}]), use_container_width=True)
+            
     # --- ZONA RMN 13C ---
     st.subheader("🧪 RMN 13C")
     df_rmn13C = df_sel[(df_sel["tipo"] == "RMN 13C") & (~df_sel["es_imagen"])]
@@ -1011,8 +1012,8 @@ with tab6:
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
-        ax13.set_xlabel("X")
-        ax13.set_ylabel("Y")
+        ax13.set_xlabel("[ppm]")
+        ax13.set_ylabel("Señal")
         ax13.legend()
         st.pyplot(fig13)
 

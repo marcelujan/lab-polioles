@@ -439,7 +439,7 @@ with tab3:
         seleccion = st.selectbox(
             "Eliminar espectro",
             df_esp_tabla["ID"],
-            format_func=lambda i: f"{df_esp_tabla[df_esp_tabla['ID'] == i]['Muestra'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Tipo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]} – {df_esp_tabla[df_esp_tabla['ID'] == i]['Fecha'].values[0]}"
+            format_func=lambda i: df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]
         )
         if st.button("Eliminar espectro"):  # Eliminar espectros (Botón)
             nombre, idx = seleccion.split("__")

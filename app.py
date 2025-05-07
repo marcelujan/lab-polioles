@@ -907,7 +907,23 @@ with tab6:
 
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))
-                df = pd.read_csv(contenido, sep=None, engine="python")
+                extension = os.path.splitext(row["archivo"])[1].lower()
+
+                if extension == ".xlsx":
+                    df = pd.read_excel(contenido)
+                else:
+                    sep_try = [",", ";", "\t", " "]
+                    for sep in sep_try:
+                        contenido.seek(0)
+                        try:
+                            df = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        raise ValueError("No se pudo leer el archivo.")
+
                 if df.shape[1] < 2:
                     continue
                 col_x, col_y = df.columns[:2]

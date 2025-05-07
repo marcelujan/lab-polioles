@@ -975,7 +975,7 @@ with tab6:
 
         if filas_mascaras:
             df_tabla = pd.DataFrame(filas_mascaras)            
-            st.dataframe(df_tabla, use_container_width=True)
+            st.dataframe(df_tabla.style.set_properties(**{'text-align': 'center'}), use_container_width=True)
 
     # --- ZONA RMN 13C ---
     st.subheader("🧪 RMN 13C")

@@ -857,7 +857,7 @@ with tab6:
     df_rmn_img = df_rmn[df_rmn["es_imagen"]]
 
     # --- ZONA RMN 1H ---
-    st.subheader("🔬 RMN 1H (Numéricos con máscara D/T2)")
+    st.subheader("🔬 RMN 1H ")
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos.")
     else:
@@ -907,7 +907,7 @@ with tab6:
                 st.error(f"No se pudo graficar: {e}")
 
     # --- ZONA RMN 13C ---
-    st.subheader("🧪 RMN 13C (Solo visualización)")
+    st.subheader("🧪 RMN 13C ")
     if df_rmn13C.empty:
         st.info("No hay espectros RMN 13C numéricos.")
     else:
@@ -934,7 +934,7 @@ with tab6:
                 st.error(f"No se pudo graficar: {e}")
 
     # --- ZONA IMÁGENES ---
-    st.subheader("🖼️ Espectros RMN cargados como imagen")
+    st.subheader("🖼️ Espectros imagen")
     if df_rmn_img.empty:
         st.info("No hay espectros RMN en formato imagen.")
     else:

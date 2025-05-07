@@ -846,6 +846,10 @@ with tab6:
                     "senal_3548": e.get("senal_3548"),
                     "senal_3611": e.get("senal_3611"),
                     "peso_muestra": e.get("peso_muestra"),
+                    "difusividad": e.get("difusividad"),
+                    "t2": e.get("t2"),
+                    "x_min": e.get("x_min"),
+                    "x_max": e.get("x_max"),
                     "id": f"{m['nombre']}__{i}"
                 })
 
@@ -856,8 +860,8 @@ with tab6:
     df_rmn13C = df_rmn[(df_rmn["tipo"] == "RMN 13C") & (~df_rmn["es_imagen"])]
     df_rmn_img = df_rmn[df_rmn["es_imagen"]]
 
-    # --- ZONA RMN 1H ---
-    st.subheader("🔬 RMN 1H ")
+# --- ZONA RMN 1H ---
+    st.subheader("🔬 RMN 1H (Numéricos con máscara D/T2)")
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos.")
     else:
@@ -871,13 +875,26 @@ with tab6:
 
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                D = st.number_input("Difusividad D", key=f"D_{sid}", format="%.5e")
+                D = st.number_input("Difusividad D", key=f"D_{sid}", value=row.get("difusividad") or 0.0, format="%.5e")
             with col2:
-                T2 = st.number_input("T2 [s]", key=f"T2_{sid}", format="%.3e")
+                T2 = st.number_input("T2 [s]", key=f"T2_{sid}", value=row.get("t2") or 0.0, format="%.3e")
             with col3:
-                Xmin = st.number_input("X min", key=f"Xmin_{sid}")
+                Xmin = st.number_input("X min", key=f"Xmin_{sid}", value=row.get("x_min") or 0.0)
             with col4:
-                Xmax = st.number_input("X max", key=f"Xmax_{sid}")
+                Xmax = st.number_input("X max", key=f"Xmax_{sid}", value=row.get("x_max") or 0.0)
+
+            # Botón para guardar cambios
+            if st.button("💾 Guardar cambios", key=f"guardar_{sid}"):
+                for m in muestras:
+                    if m["nombre"] == row["muestra"]:
+                        espectros = m.get("espectros", [])
+                        idx = int(sid.split("__")[1])
+                        espectros[idx]["difusividad"] = D
+                        espectros[idx]["t2"] = T2
+                        espectros[idx]["x_min"] = Xmin
+                        espectros[idx]["x_max"] = Xmax
+                        guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
+                        st.success("Cambios guardados.")
 
             # Intentar graficar el espectro
             try:
@@ -905,7 +922,7 @@ with tab6:
                 st.pyplot(fig)
             except Exception as e:
                 st.error(f"No se pudo graficar: {e}")
-
+                
     # --- ZONA RMN 13C ---
     st.subheader("🧪 RMN 13C ")
     if df_rmn13C.empty:

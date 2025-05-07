@@ -151,24 +151,35 @@ with tab1:
     if st.button("Guardar análisis"):
         previos = muestra_existente["analisis"] if muestra_existente else []
         nuevos = []
+
         for _, row in nuevos_analisis.iterrows():
             if row["Tipo"] != "":
-                nuevos.append({
-                    "tipo": row["Tipo"],
-                    "valor": row["Valor"],
-                    "fecha": str(row["Fecha"]),
-                    "observaciones": row["Observaciones"]
-                })
-        nuevos_validos = [a for a in nuevos if a["tipo"] != "" and a["valor"] != 0]   # Se filtran los análisis con tipo no vacío y valor distinto de cero
+                tipo = row["Tipo"]
+                valor = row["Valor"]
+                fecha = str(row["Fecha"])
+                obs = row["Observaciones"]
+                resumen_obs = obs.replace("\n", " ").strip()[:30].replace(" ", "_")
 
-        guardar_muestra(    # Guarda los análisis combinando los anteriores y los nuevos válidos
+                id_unico = f"{tipo}-{valor}-{fecha}-{resumen_obs}"
+
+                nuevos.append({
+                    "tipo": tipo,
+                    "valor": valor,
+                    "fecha": fecha,
+                    "observaciones": obs,
+                    "id": id_unico  # nuevo campo
+                })
+
+        nuevos_validos = [a for a in nuevos if a["tipo"] != "" and a["valor"] != 0]
+
+        guardar_muestra(
             nombre_muestra,
             observacion,
             previos + nuevos_validos,
             muestra_existente.get("espectros") if muestra_existente else []
         )
         st.success("Análisis guardado.")
-        st.rerun()          # Se recarga la página para ver los cambios
+        st.rerun()       # Se recarga la página para ver los cambios
 
     st.subheader("Análisis cargados")
     muestras = cargar_muestras()    # Recarga las muestras después de guardar

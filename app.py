@@ -923,6 +923,44 @@ with tab6:
         ax.legend()
         st.pyplot(fig)
 
+    # --- ZONA RMN 13C ---
+    st.subheader("🧪 RMN 13C")
+    df_rmn13C = df_sel[(df_sel["tipo"] == "RMN 13C") & (~df_sel["es_imagen"])]
+    if df_rmn13C.empty:
+        st.info("No hay espectros RMN 13C numéricos seleccionados.")
+    else:
+        for _, row in df_rmn13C.iterrows():
+            st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
+            try:
+                contenido = BytesIO(base64.b64decode(row["contenido"]))
+                extension = os.path.splitext(row["archivo"])[1].lower()
+                if extension == ".xlsx":
+                    df = pd.read_excel(contenido)
+                else:
+                    sep_try = [",", ";", "\t", " "]
+                    for sep in sep_try:
+                        contenido.seek(0)
+                        try:
+                            df = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        raise ValueError("No se pudo leer el archivo.")
+
+                col_x, col_y = df.columns[:2]
+                df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                df = df.dropna()
+                fig, ax = plt.subplots()
+                ax.plot(df[col_x], df[col_y])
+                ax.set_xlabel(col_x)
+                ax.set_ylabel(col_y)
+                st.pyplot(fig)
+            except:
+                st.warning(f"No se pudo graficar espectro: {row['archivo']}")
+
 # --- HOJA 7 --- "Consola" ---
 with tab7:
     st.title("Consola")  # Título principal de la hoja

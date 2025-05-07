@@ -960,11 +960,10 @@ with tab6:
                                 filas_mascaras.append({
                                     "Muestra": row["muestra"],
                                     "Archivo": row["archivo"],
-                                    "Máscara N°": j + 1,
-                                    "D [m2/s]": d,
-                                    "T2 [s]": t2,
-                                    "Xmin [ppm]": x0,
-                                    "Xmax [ppm]": x1
+                                    "D [m2/s]": f"{d:.1e}",
+                                    "T2 [s]": round(t2, 3),
+                                    "Xmin [ppm]": round(x0, 2),
+                                    "Xmax [ppm]": round(x1, 2)
                                 })
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
@@ -976,7 +975,6 @@ with tab6:
 
         if filas_mascaras:
             df_tabla = pd.DataFrame(filas_mascaras)            
-            st.markdown("### Máscaras aplicadas")
             st.dataframe(df_tabla, use_container_width=True)
 
     # --- ZONA RMN 13C ---

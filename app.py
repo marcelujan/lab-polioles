@@ -830,7 +830,7 @@ with tab6:
         st.info("No hay muestras cargadas.")
         st.stop()
 
-    # --- FILTRAR ESPECTROS TIPO RMN ---
+    # --- FILTRAR MUESTRAS Y ESPECTROS ---
     espectros_rmn = []
     for m in muestras:
         for i, e in enumerate(m.get("espectros", [])):
@@ -855,21 +855,31 @@ with tab6:
 
     df_rmn = pd.DataFrame(espectros_rmn)
 
-    # --- SEPARAR EN 3 GRUPOS ---
-    df_rmn1H = df_rmn[(df_rmn["tipo"] == "RMN 1H") & (~df_rmn["es_imagen"])]
-    df_rmn13C = df_rmn[(df_rmn["tipo"] == "RMN 13C") & (~df_rmn["es_imagen"])]
-    df_rmn_img = df_rmn[df_rmn["es_imagen"]]
+    st.subheader("Filtrar espectros")
+    muestras_disp = sorted(df_rmn["muestra"].unique())
+    muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
 
-# --- ZONA RMN 1H ---
-    st.subheader("🔬 RMN 1H (Numéricos con máscara D/T2)")
+    df_filtrado = df_rmn[df_rmn["muestra"].isin(muestras_sel)]
+
+    espectros_info = []
+    for idx, row in df_filtrado.iterrows():
+        nombre = f"{row['muestra']} – {row['archivo']}"
+        espectros_info.append({"id": row["id"], "nombre": nombre})
+
+    seleccionados = st.multiselect("Seleccionar espectros a visualizar:",
+        options=[e["id"] for e in espectros_info],
+        format_func=lambda i: next(e["nombre"] for e in espectros_info if e["id"] == i))
+
+    df_sel = df_filtrado[df_filtrado["id"].isin(seleccionados)]
+
+    # --- ZONA RMN 1H ---
+    st.subheader("🔬 RMN 1H")
+    df_rmn1H = df_sel[(df_sel["tipo"] == "RMN 1H") & (~df_sel["es_imagen"])]
     if df_rmn1H.empty:
-        st.info("No hay espectros RMN 1H numéricos.")
+        st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
-        seleccionados = st.multiselect("Seleccionar espectros RMN 1H", df_rmn1H["id"],
-            format_func=lambda i: f"{df_rmn1H[df_rmn1H['id']==i]['muestra'].values[0]} - {df_rmn1H[df_rmn1H['id']==i]['archivo'].values[0]}")
-
-        for sid in seleccionados:
-            row = df_rmn1H[df_rmn1H["id"] == sid].iloc[0]
+        for _, row in df_rmn1H.iterrows():
+            sid = row["id"]
             st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
             activar = st.checkbox("Aplicar máscara D/T2", key=f"activar_{sid}", value=True)
 
@@ -883,7 +893,6 @@ with tab6:
             with col4:
                 Xmax = st.number_input("X max", key=f"Xmax_{sid}", value=row.get("x_max") or 0.0)
 
-            # Botón para guardar cambios
             if st.button("💾 Guardar cambios", key=f"guardar_{sid}"):
                 for m in muestras:
                     if m["nombre"] == row["muestra"]:
@@ -896,43 +905,34 @@ with tab6:
                         guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
                         st.success("Cambios guardados.")
 
-            # Intentar graficar el espectro
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))
                 df = pd.read_csv(contenido, sep=None, engine="python")
                 if df.shape[1] < 2:
-                    st.warning("El archivo no tiene al menos 2 columnas.")
                     continue
-
                 col_x, col_y = df.columns[:2]
                 df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
                 df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
                 df = df.dropna()
-
                 fig, ax = plt.subplots()
                 ax.plot(df[col_x], df[col_y], label="Espectro")
-
                 if activar:
                     ax.axvspan(Xmin, Xmax, color="orange", alpha=0.3)
                     ax.text((Xmin+Xmax)/2, max(df[col_y])*0.9,
                             f"D={D:.1e}, T2={T2:.1e}", ha="center", fontsize=8, color="black")
-
                 ax.set_xlabel(col_x)
                 ax.set_ylabel(col_y)
                 st.pyplot(fig)
-            except Exception as e:
-                st.error(f"No se pudo graficar: {e}")
-                
-    # --- ZONA RMN 13C ---
-    st.subheader("🧪 RMN 13C ")
-    if df_rmn13C.empty:
-        st.info("No hay espectros RMN 13C numéricos.")
-    else:
-        seleccionados13C = st.multiselect("Seleccionar espectros RMN 13C", df_rmn13C["id"],
-            format_func=lambda i: f"{df_rmn13C[df_rmn13C['id']==i]['muestra'].values[0]} - {df_rmn13C[df_rmn13C['id']==i]['archivo'].values[0]}")
+            except:
+                st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
-        for sid in seleccionados13C:
-            row = df_rmn13C[df_rmn13C["id"] == sid].iloc[0]
+    # --- ZONA RMN 13C ---
+    st.subheader("🧪 RMN 13C")
+    df_rmn13C = df_sel[(df_sel["tipo"] == "RMN 13C") & (~df_sel["es_imagen"])]
+    if df_rmn13C.empty:
+        st.info("No hay espectros RMN 13C numéricos seleccionados.")
+    else:
+        for _, row in df_rmn13C.iterrows():
             st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))
@@ -947,20 +947,22 @@ with tab6:
                     ax.set_xlabel(col_x)
                     ax.set_ylabel(col_y)
                     st.pyplot(fig)
-            except Exception as e:
-                st.error(f"No se pudo graficar: {e}")
+            except:
+                st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
     # --- ZONA IMÁGENES ---
     st.subheader("🖼️ Espectros imagen")
+    df_rmn_img = df_sel[df_sel["es_imagen"]]
     if df_rmn_img.empty:
-        st.info("No hay espectros RMN en formato imagen.")
+        st.info("No hay espectros RMN en formato imagen seleccionados.")
     else:
         for _, row in df_rmn_img.iterrows():
             try:
                 imagen = BytesIO(base64.b64decode(row["contenido"]))
                 st.image(imagen, caption=f"{row['muestra']} – {row['archivo']} ({row['fecha']})", use_container_width=True)
-            except Exception as e:
-                st.warning(f"No se pudo mostrar imagen: {e}")
+            except:
+                st.warning(f"No se pudo mostrar imagen: {row['archivo']}")
+
 
 # --- HOJA 7 --- "Consola" ---
 with tab7:

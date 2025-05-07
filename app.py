@@ -444,14 +444,19 @@ with tab3:
     filas = []
     for m in muestras:
         for i, e in enumerate(m.get("espectros", [])):
-            filas.append({
+            fila = {
                 "Muestra": m["nombre"],
                 "Tipo": e.get("tipo", ""),
                 "Archivo": e.get("nombre_archivo", ""),
                 "Fecha": e.get("fecha", ""),
                 "Observaciones": e.get("observaciones", ""),
                 "ID": f"{m['nombre']}__{i}"
-            })
+            }
+            if e.get("mascaras"):
+                fila["Máscaras"] = json.dumps(e["mascaras"])
+            else:
+                fila["Máscaras"] = ""
+            filas.append(fila)
 
     df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
     if not df_esp_tabla.empty:

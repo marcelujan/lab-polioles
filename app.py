@@ -1092,15 +1092,32 @@ with tab7:
         for i, m in enumerate(muestras):
             c1, c2, c3 = st.columns([2, 1, 1])
             nombre = m["nombre"]
-            analisis = len(m.get("analisis", []))
-            espectros = len(m.get("espectros", []))
             c1.markdown(f"**{nombre}**")
 
             # Generar Excel de análisis
             df_analisis = pd.DataFrame(m.get("analisis", []))
+            df_espectros = pd.DataFrame(m.get("espectros", []))
+
+            filas_mascaras = []
+            for e in m.get("espectros", []):
+                if e.get("mascaras"):
+                    for j, mascara in enumerate(e["mascaras"]):
+                        filas_mascaras.append({
+                            "Archivo": e.get("nombre_archivo", ""),
+                            "Máscara N°": j + 1,
+                            "D [m2/s]": mascara.get("difusividad"),
+                            "T2 [s]": mascara.get("t2"),
+                            "Xmin [ppm]": mascara.get("x_min"),
+                            "Xmax [ppm]": mascara.get("x_max")
+                        })
+            df_mascaras = pd.DataFrame(filas_mascaras)
+
             buffer_excel = BytesIO()
             with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
                 df_analisis.to_excel(writer, index=False, sheet_name="Análisis")
+                df_espectros.to_excel(writer, index=False, sheet_name="Espectros")
+                if not df_mascaras.empty:
+                    df_mascaras.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")                
             buffer_excel.seek(0)
 
             # Generar ZIP de espectros
@@ -1119,23 +1136,8 @@ with tab7:
             buffer_zip.seek(0)
 
             # Botones de descarga
-            c2.download_button(
-                f"📥 {analisis}",
-                data=buffer_excel.getvalue(),
-                file_name=f"analisis_{nombre}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                key=f"excel1_{i}"
-            )
-
-            c3.download_button(
-                f"📦 {espectros}",
-                data=buffer_zip.getvalue(),
-                file_name=f"espectros_{nombre}.zip",
-                mime="application/zip",
-                use_container_width=True,
-                key=f"zip1_{i}"
-            )
+            c2.download_button(f"📥 {len(df_analisis)}", data=buffer_excel.getvalue(), file_name=f"analisis_{nombre}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key=f"excel1_{i}")
+            c3.download_button(f"📦 {len(m.get('espectros', []))}", data=buffer_zip.getvalue(), file_name=f"espectros_{nombre}.zip", mime="application/zip", use_container_width=True, key=f"zip1_{i}")
 
     # Tabla 2: Descargas por análisis
     with col2:

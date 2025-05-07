@@ -794,18 +794,19 @@ with tab5:
 
 # --- HOJA 6 --- "Consola" ---
 with tab6:
-    st.title("Consola")  # Título principal de la pestaña
+    st.title("Consola")  # Título principal de la hoja
 
     muestras = cargar_muestras()
     if not muestras:
         st.info("No hay muestras cargadas.")
         st.stop()
 
-    # --- BLOQUE ORIGINAL DE EXPANSORES ---
+    # BLOQUE CON EXPANSORES DETALLADOS POR MUESTRA
     for muestra in muestras:
         with st.expander(f"📁 {muestra['nombre']}"):
             st.markdown(f"📝 **Observación:** {muestra.get('observacion', '—')}")
 
+            # Mostrar y permitir descarga de análisis
             analisis = muestra.get("analisis", [])
             if analisis:
                 st.markdown("📊 **Análisis cargados:**")
@@ -824,6 +825,7 @@ with tab6:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
+            # Mostrar y permitir descarga de espectros
             espectros = muestra.get("espectros", [])
             if espectros:
                 st.markdown("🧪 **Espectros cargados:**")
@@ -831,7 +833,7 @@ with tab6:
                     etiqueta = f"{e['tipo']} ({e['fecha']})"
                     st.markdown(f"🖼️ {etiqueta}" if e.get("es_imagen", False) else f"📈 {etiqueta}")
 
-                # Generar ZIP al vuelo
+                # Generar ZIP
                 buffer_zip = BytesIO()
                 with zipfile.ZipFile(buffer_zip, "w") as zipf:
                     for e in espectros:
@@ -856,9 +858,10 @@ with tab6:
 
     st.markdown("---")
 
-    # --- TABLAS 1, 2 y 3 EN PARALELO ---
+    # Las 3 tablas en columnas
     col1, col2, col3 = st.columns(3)
 
+    # Tabla 1: Descargas por muestra
     with col1:
         st.subheader("📋 Descargas por muestra")
         header1 = st.columns([2, 1, 1])
@@ -895,7 +898,7 @@ with tab6:
                         continue
             buffer_zip.seek(0)
 
-            # Botones de descarga reales
+            # Botones de descarga
             c2.download_button(
                 f"📥 {analisis}",
                 data=buffer_excel.getvalue(),
@@ -914,6 +917,7 @@ with tab6:
                 key=f"zip1_{i}"
             )
 
+    # Tabla 2: Descargas por análisis
     with col2:
         st.subheader("🟢 Descargas por análisis")
         conteo_analisis = {}
@@ -957,6 +961,7 @@ with tab6:
                 key=f"excel2_{i}"
             )
 
+    # Tabla 3: Descargas por espectros
     with col3:
         st.subheader("🟣 Descargas por espectros")
         conteo_espectros = {}
@@ -1002,6 +1007,8 @@ with tab6:
             )
 
     st.markdown("---")
+
+    # Botón Descargar T0D0
     from tempfile import TemporaryDirectory
 
     with TemporaryDirectory() as tmpdir:
@@ -1053,8 +1060,6 @@ with tab6:
     if st.button("Cerrar sesión"):
         st.session_state.pop("token", None)
         st.rerun()
-
-
 
 # --- HOJA 7 --- "Sugerencias" ---
 with tab7:

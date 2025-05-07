@@ -433,6 +433,7 @@ with tab3:
                 "ID": f"{m['nombre']}__{i}"
             })
 
+
     df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)

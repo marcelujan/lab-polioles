@@ -929,8 +929,8 @@ with tab6:
     if df_rmn13C.empty:
         st.info("No hay espectros RMN 13C numéricos seleccionados.")
     else:
+        fig13, ax13 = plt.subplots()
         for _, row in df_rmn13C.iterrows():
-            st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))
                 extension = os.path.splitext(row["archivo"])[1].lower()
@@ -953,25 +953,27 @@ with tab6:
                 df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
                 df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
                 df = df.dropna()
-                fig, ax = plt.subplots()
-                ax.plot(df[col_x], df[col_y])
-                ax.set_xlabel(col_x)
-                ax.set_ylabel(col_y)
-                st.pyplot(fig)
+                ax13.plot(df[col_x], df[col_y], label=f"{row['muestra']}")
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
+        ax13.set_xlabel("X")
+        ax13.set_ylabel("Y")
+        ax13.legend()
+        st.pyplot(fig13)
+
     # --- ZONA IMÁGENES ---
     st.subheader("🖼️ Espectros imagen")
+    df_rmn_img = df_sel[df_sel["es_imagen"]]
     if df_rmn_img.empty:
-        st.info("No hay espectros RMN en formato imagen.")
+        st.info("No hay espectros RMN en formato imagen seleccionados.")
     else:
         for _, row in df_rmn_img.iterrows():
             try:
                 imagen = BytesIO(base64.b64decode(row["contenido"]))
                 st.image(imagen, caption=f"{row['muestra']} – {row['archivo']} ({row['fecha']})", use_container_width=True)
-            except Exception as e:
-                st.warning(f"No se pudo mostrar imagen: {e}")
+            except:
+                st.warning(f"No se pudo mostrar imagen: {row['archivo']}")
 
 # --- HOJA 7 --- "Consola" ---
 with tab7:

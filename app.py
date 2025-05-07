@@ -912,13 +912,14 @@ with tab6:
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
-        st.markdown("**Activar/desactivar máscaras**")
+        st.markdown("**Activar/desactivar visualización de máscaras por espectro:**")
         usar_mascara = {}
-        for _, row in df_rmn1H.iterrows():
-            usar_mascara[row["id"]] = st.checkbox(f"{row['muestra']} – {row['archivo']}", value=False, key=f"chk_mask_{row['id']}")
+        colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
 
-        for _, row in df_rmn1H.iterrows():
+        for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
+            color = colores[idx % len(colores)]
+            usar_mascara[row["id"]] = st.checkbox(f"{row['muestra']} – {row['archivo']}", value=False, key=f"chk_mask_{row['id']}")
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))
                 extension = os.path.splitext(row["archivo"])[1].lower()
@@ -942,7 +943,7 @@ with tab6:
                 df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
                 df = df.dropna()
 
-                ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}")
+                ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)
 
                 if usar_mascara.get(row["id"], False):
                     for mascara in row.get("mascaras", []):
@@ -951,7 +952,7 @@ with tab6:
                         d = mascara.get("difusividad")
                         t2 = mascara.get("t2")
                         if x0 is not None and x1 is not None:
-                            ax.axvspan(x0, x1, color="orange", alpha=0.3)
+                            ax.axvspan(x0, x1, color=color, alpha=0.3)
                             if d and t2:
                                ax.text((x0+x1)/2, max(df[col_y])*0.9,
                                         f"D={d:.1e}\nT2={t2:.3f}", ha="center", fontsize=8, color="black", rotation=90)

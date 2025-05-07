@@ -912,7 +912,7 @@ with tab6:
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
-        st.markdown("**Activar/desactivar visualización de máscaras por espectro:**")
+        st.markdown("**Máscaras D/T2**")
         usar_mascara = {}
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
@@ -961,9 +961,9 @@ with tab6:
                                     "Muestra": row["muestra"],
                                     "Archivo": row["archivo"],
                                     "D [m2/s]": f"{d:.1e}",
-                                    "T2 [s]": round(t2, 3),
-                                    "Xmin [ppm]": round(x0, 2),
-                                    "Xmax [ppm]": round(x1, 2)
+                                    "T2 [s]": f"{t2:.3f}",
+                                    "Xmin [ppm]": f"{x0:.2f}",
+                                    "Xmax [ppm]": f"{x1:.2f}"
                                 })
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")

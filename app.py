@@ -330,18 +330,36 @@ with tab3:
     senal_3548 = None
     senal_3611 = None
     peso_muestra = None
+    mascaras_rmn1h = []
 
-   # Campos específicos si el espectro es FTIR-Acetato
+    # Campos específicos si el espectro es FTIR-Acetato
     if tipo_espectro == "FTIR-Acetato":
         st.markdown("**Datos manuales opcionales para FTIR-Acetato:**")
         senal_3548 = st.number_input("Señal de Acetato a 3548 cm⁻¹", step=0.0001, format="%.4f")
         peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
 
-   # Campos específicos si el espectro es FTIR-Cloroformo
+    # Campos específicos si el espectro es FTIR-Cloroformo
     elif tipo_espectro == "FTIR-Cloroformo":
         st.markdown("**Datos manuales opcionales para FTIR-Cloroformo:**")
         senal_3611 = st.number_input("Señal de Cloroformo a 3611 cm⁻¹", step=0.0001, format="%.4f")
         peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
+
+    # Máscara D/T2
+    elif tipo_espectro == "RMN 1H":
+        st.markdown("**Máscaras D/T2 (opcional):**")
+        n_mascaras = st.number_input("Cantidad de conjuntos D, T2, Xmin, Xmax", min_value=0, max_value=30, step=1, value=6)
+        for i in range(n_mascaras):
+            st.markdown(f"Máscara {i+1}:")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                d = st.number_input(f"D {i+1}", key=f"d_{i}", format="%.2e")
+            with col2:
+                t2 = st.number_input(f"T2 {i+1}", key=f"t2_{i}", format="%.2e")
+            with col3:
+                xmin = st.number_input(f"Xmin {i+1}", key=f"xmin_{i}")
+            with col4:
+                xmax = st.number_input(f"Xmax {i+1}", key=f"xmax_{i}")
+            mascaras_rmn1h.append({"difusividad": d, "t2": t2, "x_min": xmin, "x_max": xmax})
 
     # Permite agregar un nuevo tipo de espectro personalizado
     nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
@@ -409,7 +427,8 @@ with tab3:
             "fecha": str(fecha_espectro),
             "senal_3548": senal_3548,
             "senal_3611": senal_3611,
-            "peso_muestra": peso_muestra
+            "peso_muestra": peso_muestra,
+            "mascaras": mascaras_rmn1h if tipo_espectro == "RMN 1H" else []
         }
 
         espectros.append(nuevo)
@@ -434,7 +453,6 @@ with tab3:
                 "ID": f"{m['nombre']}__{i}"
             })
 
-
     df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
@@ -442,7 +460,7 @@ with tab3:
             "Eliminar espectro",
             df_esp_tabla["ID"],
             format_func=lambda i: df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]
-        )
+            )
         if st.button("Eliminar espectro"):  # Eliminar espectros (Botón)
             nombre, idx = seleccion.split("__")
             for m in muestras:

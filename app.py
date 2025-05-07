@@ -954,8 +954,8 @@ with tab6:
                         if x0 is not None and x1 is not None:
                             ax.axvspan(x0, x1, color=color, alpha=0.3)
                             if d and t2:
-                               ax.text((x0+x1)/2, max(df[col_y])*0.9,
-                                        f"D={d:.1e}\nT2={t2:.3f}", ha="center", fontsize=8, color="black", rotation=90)
+                                ax.text((x0+x1)/2, max(df[col_y])*0.9,
+                                        f"D={d:.1e} T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 

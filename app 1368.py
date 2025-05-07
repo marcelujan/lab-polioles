@@ -912,7 +912,7 @@ with tab6:
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
-        st.markdown("**Máscara D/T2:**")
+        st.markdown("**Máscaras D/T2**")
         usar_mascara = {}
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
@@ -971,6 +971,8 @@ with tab6:
         ax.set_xlabel("[ppm]")
         ax.set_ylabel("Señal")
         ax.legend()
+        img_buffer = BytesIO()
+        fig.savefig(img_buffer, format="png")
         st.pyplot(fig)
 
         if filas_mascaras:
@@ -979,19 +981,8 @@ with tab6:
                 {'selector': 'th', 'props': [('text-align', 'center')]},
                 {'selector': 'td', 'props': [('text-align', 'center')]}
             ]), use_container_width=True)
-
-            # Botón de descarga de tabla de máscaras
-            buffer_excel = BytesIO()
-            with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                df_tabla.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
-            buffer_excel.seek(0)
-            st.download_button("📑 Descargar máscaras D/T2", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-        # Botón para descargar imagen del gráfico RMN 1H
-        buffer_img = BytesIO()
-        fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
-        st.download_button("📷 Descargar gráfico RMN 1H", data=buffer_img.getvalue(), file_name="grafico_rmn1h.png", mime="image/png")            
-
+        st.download_button("📥 Descargar gráfico RMN 1H", data=img_buffer.getvalue(), file_name="grafico_rmn1h.png", mime="image/png")
+            
     # --- ZONA RMN 13C ---
     st.subheader("🧪 RMN 13C")
     df_rmn13C = df_sel[(df_sel["tipo"] == "RMN 13C") & (~df_sel["es_imagen"])]
@@ -1029,12 +1020,11 @@ with tab6:
         ax13.set_xlabel("[ppm]")
         ax13.set_ylabel("Señal")
         ax13.legend()
+        
+        img_buffer_13C = BytesIO()
+        fig13.savefig(img_buffer_13C, format="png")
         st.pyplot(fig13)
-
-        # Botón para descargar imagen del gráfico RMN 13C
-        buffer_img13 = BytesIO()
-        fig13.savefig(buffer_img13, format="png", dpi=300, bbox_inches="tight")
-        st.download_button("📷 Descargar gráfico RMN 13C", data=buffer_img13.getvalue(), file_name="grafico_rmn13c.png", mime="image/png")
+        st.download_button("📥 Descargar gráfico RMN 13C", data=img_buffer_13C.getvalue(), file_name="grafico_rmn13c.png", mime="image/png")
 
     # --- ZONA IMÁGENES ---
     st.subheader("🖼️ Espectros imagen")
@@ -1049,26 +1039,6 @@ with tab6:
             except:
                 st.warning(f"No se pudo mostrar imagen: {row['archivo']}")
 
-        # Botón para descargar ZIP con todas las imágenes mostradas
-        with TemporaryDirectory() as tmpdir:
-            zip_path = os.path.join(tmpdir, f"imagenes_rmn_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip")
-            with zipfile.ZipFile(zip_path, "w") as zipf:
-                for _, row in df_rmn_img.iterrows():
-                    nombre = row["archivo"]
-                    contenido = row["contenido"]
-                    if not contenido:
-                        continue
-                    try:
-                        img_bytes = base64.b64decode(contenido)
-                        ruta = os.path.join(tmpdir, nombre)
-                        with open(ruta, "wb") as f:
-                            f.write(img_bytes)
-                        zipf.write(ruta, arcname=nombre)
-                    except:
-                        continue
-            with open(zip_path, "rb") as final_zip:
-                st.download_button("📦 Descargar imágenes RMN", data=final_zip.read(), file_name=os.path.basename(zip_path), mime="application/zip")
-                
 # --- HOJA 7 --- "Consola" ---
 with tab7:
     st.title("Consola")  # Título principal de la hoja

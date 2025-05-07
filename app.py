@@ -371,11 +371,11 @@ with tab3:
             except Exception as e:
                 st.error(f"No se pudo leer el archivo: {e}")
 
-     # Generar nuevo nombre de archivo basado en muestra, tipo, fecha y resumen de observaciones
-    extension = os.path.splitext(archivo.name)[1].lower().strip(".")
-    resumen_obs = observaciones.replace("\n", " ").strip()[:30].replace(" ", "_")
-    fecha_str = fecha_espectro.strftime("%Y-%m-%d")
-    nombre_generado = f"{nombre_sel}_{tipo_espectro}_{fecha_str}.{extension}-{resumen_obs}"
+        # Generar nuevo nombre de archivo basado en muestra, tipo, fecha y resumen de observaciones
+        extension = os.path.splitext(archivo.name)[1].lower().strip(".")
+        resumen_obs = observaciones.replace("\n", " ").strip()[:30].replace(" ", "_")
+        fecha_str = fecha_espectro.strftime("%Y-%m-%d")
+        nombre_generado = f"{nombre_sel}_{tipo_espectro}_{fecha_str}.{extension}-{resumen_obs}"
 
     # Mostrar nombre final antes de guardar
     st.markdown(f"**🆔 Nuevo nombre asignado al archivo para su descarga:** `{nombre_generado}`")

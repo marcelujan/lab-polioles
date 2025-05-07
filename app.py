@@ -347,18 +347,18 @@ with tab3:
     # Máscara D/T2
     elif tipo_espectro == "RMN 1H":
         st.markdown("**Máscaras D/T2 (opcional):**")
-        n_mascaras = st.number_input("Cantidad de conjuntos D, T2, Xmin, Xmax", min_value=0, max_value=30, step=1, value=6)
+        n_mascaras = st.number_input("Cantidad de conjuntos D, T2, Xmin, Xmax", min_value=0, max_value=30, step=1, value=0)
         for i in range(n_mascaras):
             st.markdown(f"Máscara {i+1}:")
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                d = st.number_input(f"D {i+1}", key=f"d_{i}", format="%.2e")
+                d = st.number_input(f"D [m2/s] {i+1}", key=f"d_{i}", format="%.2e")
             with col2:
-                t2 = st.number_input(f"T2 {i+1}", key=f"t2_{i}", format="%.2e")
+                t2 = st.number_input(f"T2 [s] {i+1}", key=f"t2_{i}", format="%.3f")
             with col3:
-                xmin = st.number_input(f"Xmin {i+1}", key=f"xmin_{i}")
+                xmin = st.number_input(f"Xmin [ppm] {i+1}", key=f"xmin_{i}")
             with col4:
-                xmax = st.number_input(f"Xmax {i+1}", key=f"xmax_{i}")
+                xmax = st.number_input(f"Xmax [ppm] {i+1}", key=f"xmax_{i}")
             mascaras_rmn1h.append({"difusividad": d, "t2": t2, "x_min": xmin, "x_max": xmax})
 
     # Permite agregar un nuevo tipo de espectro personalizado

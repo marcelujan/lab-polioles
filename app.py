@@ -1122,9 +1122,8 @@ with tab7:
             st.success("Comentario eliminado.")
             st.rerun()
 
-
-# --- HOJA 7 --- "Análisis RMN" ---
-with tab7:
+# --- HOJA 8 --- "Análisis RMN" ---
+with tab8:
     st.title("Análisis RMN")
 
     muestras = cargar_muestras()

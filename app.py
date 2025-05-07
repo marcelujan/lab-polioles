@@ -442,6 +442,7 @@ with tab3:
 
     st.subheader("Espectros cargados")   # Tabla de espectros ya cargados
     filas = []
+    filas_mascaras = []
     for m in muestras:
         for i, e in enumerate(m.get("espectros", [])):
             fila = {
@@ -454,11 +455,22 @@ with tab3:
             }
             if e.get("mascaras"):
                 fila["Máscaras"] = json.dumps(e["mascaras"])
+                for j, mascara in enumerate(e["mascaras"]):
+                    filas_mascaras.append({
+                        "Muestra": m["nombre"],
+                        "Archivo": e.get("nombre_archivo", ""),
+                        "Máscara N°": j+1,
+                        "D [m2/s]": mascara.get("difusividad"),
+                        "T2 [s]": mascara.get("t2"),
+                        "Xmin [ppm]": mascara.get("x_min"),
+                        "Xmax [ppm]": mascara.get("x_max")
+                    })
             else:
                 fila["Máscaras"] = ""
             filas.append(fila)
 
     df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
+    df_mascaras = pd.DataFrame(filas_mascaras)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
         seleccion = st.selectbox(
@@ -482,7 +494,9 @@ with tab3:
 
                 with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
                     df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")
-
+                    if not df_mascaras.empty:
+                        df_mascaras.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
+                        
                 with zipfile.ZipFile(zip_path, "w") as zipf:
                     zipf.write(excel_path, arcname="tabla_espectros.xlsx")
                     for m in muestras:

@@ -110,12 +110,13 @@ def guardar_muestra(nombre, observacion, analisis, espectros=None): # Función p
     db.collection("muestras").document(nombre).set(datos)   # - 'nombre' se usa como ID del documento en Firestore
 
 # Definición de las hojas principales de la aplicación
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "Laboratorio de Polioles",
     "Análisis de datos",
     "Carga de espectros",
     "Análisis de espectros",
     "Índice OH espectroscópico",
+    "Análisis RMN"
     "Consola",
     "Sugerencias"
 ])
@@ -820,8 +821,132 @@ with tab5:
     # Mostrar tabla final
     st.dataframe(df_final, use_container_width=True)
 
-# --- HOJA 6 --- "Consola" ---
+# --- HOJA 6 --- "Análisis RMN" ---
 with tab6:
+    st.title("Análisis RMN")
+
+    muestras = cargar_muestras()
+    if not muestras:
+        st.info("No hay muestras cargadas.")
+        st.stop()
+
+    # --- FILTRAR ESPECTROS TIPO RMN ---
+    espectros_rmn = []
+    for m in muestras:
+        for i, e in enumerate(m.get("espectros", [])):
+            tipo = e.get("tipo", "").upper()
+            if "RMN" in tipo:
+                espectros_rmn.append({
+                    "muestra": m["nombre"],
+                    "tipo": tipo,
+                    "es_imagen": e.get("es_imagen", False),
+                    "archivo": e.get("nombre_archivo", ""),
+                    "contenido": e.get("contenido"),
+                    "fecha": e.get("fecha"),
+                    "senal_3548": e.get("senal_3548"),
+                    "senal_3611": e.get("senal_3611"),
+                    "peso_muestra": e.get("peso_muestra"),
+                    "id": f"{m['nombre']}__{i}"
+                })
+
+    df_rmn = pd.DataFrame(espectros_rmn)
+
+    # --- SEPARAR EN 3 GRUPOS ---
+    df_rmn1H = df_rmn[(df_rmn["tipo"] == "RMN 1H") & (~df_rmn["es_imagen"])]
+    df_rmn13C = df_rmn[(df_rmn["tipo"] == "RMN 13C") & (~df_rmn["es_imagen"])]
+    df_rmn_img = df_rmn[df_rmn["es_imagen"]]
+
+    # --- ZONA RMN 1H ---
+    st.subheader("🔬 RMN 1H (Numéricos con máscara D/T2)")
+    if df_rmn1H.empty:
+        st.info("No hay espectros RMN 1H numéricos.")
+    else:
+        seleccionados = st.multiselect("Seleccionar espectros RMN 1H", df_rmn1H["id"],
+            format_func=lambda i: f"{df_rmn1H[df_rmn1H['id']==i]['muestra'].values[0]} - {df_rmn1H[df_rmn1H['id']==i]['archivo'].values[0]}")
+
+        for sid in seleccionados:
+            row = df_rmn1H[df_rmn1H["id"] == sid].iloc[0]
+            st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
+            activar = st.checkbox("Aplicar máscara D/T2", key=f"activar_{sid}", value=True)
+
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                D = st.number_input("Difusividad D", key=f"D_{sid}", format="%.5e")
+            with col2:
+                T2 = st.number_input("T2 [s]", key=f"T2_{sid}", format="%.3e")
+            with col3:
+                Xmin = st.number_input("X min", key=f"Xmin_{sid}")
+            with col4:
+                Xmax = st.number_input("X max", key=f"Xmax_{sid}")
+
+            # Intentar graficar el espectro
+            try:
+                contenido = BytesIO(base64.b64decode(row["contenido"]))
+                df = pd.read_csv(contenido, sep=None, engine="python")
+                if df.shape[1] < 2:
+                    st.warning("El archivo no tiene al menos 2 columnas.")
+                    continue
+
+                col_x, col_y = df.columns[:2]
+                df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                df = df.dropna()
+
+                fig, ax = plt.subplots()
+                ax.plot(df[col_x], df[col_y], label="Espectro")
+
+                if activar:
+                    ax.axvspan(Xmin, Xmax, color="orange", alpha=0.3)
+                    ax.text((Xmin+Xmax)/2, max(df[col_y])*0.9,
+                            f"D={D:.1e}, T2={T2:.1e}", ha="center", fontsize=8, color="black")
+
+                ax.set_xlabel(col_x)
+                ax.set_ylabel(col_y)
+                st.pyplot(fig)
+            except Exception as e:
+                st.error(f"No se pudo graficar: {e}")
+
+    # --- ZONA RMN 13C ---
+    st.subheader("🧪 RMN 13C (Solo visualización)")
+    if df_rmn13C.empty:
+        st.info("No hay espectros RMN 13C numéricos.")
+    else:
+        seleccionados13C = st.multiselect("Seleccionar espectros RMN 13C", df_rmn13C["id"],
+            format_func=lambda i: f"{df_rmn13C[df_rmn13C['id']==i]['muestra'].values[0]} - {df_rmn13C[df_rmn13C['id']==i]['archivo'].values[0]}")
+
+        for sid in seleccionados13C:
+            row = df_rmn13C[df_rmn13C["id"] == sid].iloc[0]
+            st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
+            try:
+                contenido = BytesIO(base64.b64decode(row["contenido"]))
+                df = pd.read_csv(contenido, sep=None, engine="python")
+                if df.shape[1] >= 2:
+                    col_x, col_y = df.columns[:2]
+                    df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                    df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                    df = df.dropna()
+                    fig, ax = plt.subplots()
+                    ax.plot(df[col_x], df[col_y])
+                    ax.set_xlabel(col_x)
+                    ax.set_ylabel(col_y)
+                    st.pyplot(fig)
+            except Exception as e:
+                st.error(f"No se pudo graficar: {e}")
+
+    # --- ZONA IMÁGENES ---
+    st.subheader("🖼️ Espectros RMN cargados como imagen")
+    if df_rmn_img.empty:
+        st.info("No hay espectros RMN en formato imagen.")
+    else:
+        for _, row in df_rmn_img.iterrows():
+            try:
+                imagen = BytesIO(base64.b64decode(row["contenido"]))
+                st.image(imagen, caption=f"{row['muestra']} – {row['archivo']} ({row['fecha']})", use_container_width=True)
+            except Exception as e:
+                st.warning(f"No se pudo mostrar imagen: {e}")
+
+# --- HOJA 7 --- "Consola" ---
+with tab7:
     st.title("Consola")  # Título principal de la hoja
 
     muestras = cargar_muestras()
@@ -1089,8 +1214,8 @@ with tab6:
         st.session_state.pop("token", None)
         st.rerun()
 
-# --- HOJA 7 --- "Sugerencias" ---
-with tab7:
+# --- HOJA 8 --- "Sugerencias" ---
+with tab8:
     st.title("Sugerencias")   # Título principal de la hoja
 
     sugerencias_ref = db.collection("sugerencias")
@@ -1121,127 +1246,3 @@ with tab7:
             sugerencias_ref.document(s["id"]).delete()
             st.success("Comentario eliminado.")
             st.rerun()
-
-# --- HOJA 8 --- "Análisis RMN" ---
-with tab8:
-    st.title("Análisis RMN")
-
-    muestras = cargar_muestras()
-    if not muestras:
-        st.info("No hay muestras cargadas.")
-        st.stop()
-
-    # --- FILTRAR ESPECTROS TIPO RMN ---
-    espectros_rmn = []
-    for m in muestras:
-        for i, e in enumerate(m.get("espectros", [])):
-            tipo = e.get("tipo", "").upper()
-            if "RMN" in tipo:
-                espectros_rmn.append({
-                    "muestra": m["nombre"],
-                    "tipo": tipo,
-                    "es_imagen": e.get("es_imagen", False),
-                    "archivo": e.get("nombre_archivo", ""),
-                    "contenido": e.get("contenido"),
-                    "fecha": e.get("fecha"),
-                    "senal_3548": e.get("senal_3548"),
-                    "senal_3611": e.get("senal_3611"),
-                    "peso_muestra": e.get("peso_muestra"),
-                    "id": f"{m['nombre']}__{i}"
-                })
-
-    df_rmn = pd.DataFrame(espectros_rmn)
-
-    # --- SEPARAR EN 3 GRUPOS ---
-    df_rmn1H = df_rmn[(df_rmn["tipo"] == "RMN 1H") & (~df_rmn["es_imagen"])]
-    df_rmn13C = df_rmn[(df_rmn["tipo"] == "RMN 13C") & (~df_rmn["es_imagen"])]
-    df_rmn_img = df_rmn[df_rmn["es_imagen"]]
-
-    # --- ZONA RMN 1H ---
-    st.subheader("🔬 RMN 1H (Numéricos con máscara D/T2)")
-    if df_rmn1H.empty:
-        st.info("No hay espectros RMN 1H numéricos.")
-    else:
-        seleccionados = st.multiselect("Seleccionar espectros RMN 1H", df_rmn1H["id"],
-            format_func=lambda i: f"{df_rmn1H[df_rmn1H['id']==i]['muestra'].values[0]} - {df_rmn1H[df_rmn1H['id']==i]['archivo'].values[0]}")
-
-        for sid in seleccionados:
-            row = df_rmn1H[df_rmn1H["id"] == sid].iloc[0]
-            st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
-            activar = st.checkbox("Aplicar máscara D/T2", key=f"activar_{sid}", value=True)
-
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                D = st.number_input("Difusividad D", key=f"D_{sid}", format="%.5e")
-            with col2:
-                T2 = st.number_input("T2 [s]", key=f"T2_{sid}", format="%.3e")
-            with col3:
-                Xmin = st.number_input("X min", key=f"Xmin_{sid}")
-            with col4:
-                Xmax = st.number_input("X max", key=f"Xmax_{sid}")
-
-            # Intentar graficar el espectro
-            try:
-                contenido = BytesIO(base64.b64decode(row["contenido"]))
-                df = pd.read_csv(contenido, sep=None, engine="python")
-                if df.shape[1] < 2:
-                    st.warning("El archivo no tiene al menos 2 columnas.")
-                    continue
-
-                col_x, col_y = df.columns[:2]
-                df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
-                df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
-                df = df.dropna()
-
-                fig, ax = plt.subplots()
-                ax.plot(df[col_x], df[col_y], label="Espectro")
-
-                if activar:
-                    ax.axvspan(Xmin, Xmax, color="orange", alpha=0.3)
-                    ax.text((Xmin+Xmax)/2, max(df[col_y])*0.9,
-                            f"D={D:.1e}, T2={T2:.1e}", ha="center", fontsize=8, color="black")
-
-                ax.set_xlabel(col_x)
-                ax.set_ylabel(col_y)
-                st.pyplot(fig)
-            except Exception as e:
-                st.error(f"No se pudo graficar: {e}")
-
-    # --- ZONA RMN 13C ---
-    st.subheader("🧪 RMN 13C (Solo visualización)")
-    if df_rmn13C.empty:
-        st.info("No hay espectros RMN 13C numéricos.")
-    else:
-        seleccionados13C = st.multiselect("Seleccionar espectros RMN 13C", df_rmn13C["id"],
-            format_func=lambda i: f"{df_rmn13C[df_rmn13C['id']==i]['muestra'].values[0]} - {df_rmn13C[df_rmn13C['id']==i]['archivo'].values[0]}")
-
-        for sid in seleccionados13C:
-            row = df_rmn13C[df_rmn13C["id"] == sid].iloc[0]
-            st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
-            try:
-                contenido = BytesIO(base64.b64decode(row["contenido"]))
-                df = pd.read_csv(contenido, sep=None, engine="python")
-                if df.shape[1] >= 2:
-                    col_x, col_y = df.columns[:2]
-                    df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
-                    df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
-                    df = df.dropna()
-                    fig, ax = plt.subplots()
-                    ax.plot(df[col_x], df[col_y])
-                    ax.set_xlabel(col_x)
-                    ax.set_ylabel(col_y)
-                    st.pyplot(fig)
-            except Exception as e:
-                st.error(f"No se pudo graficar: {e}")
-
-    # --- ZONA IMÁGENES ---
-    st.subheader("🖼️ Espectros RMN cargados como imagen")
-    if df_rmn_img.empty:
-        st.info("No hay espectros RMN en formato imagen.")
-    else:
-        for _, row in df_rmn_img.iterrows():
-            try:
-                imagen = BytesIO(base64.b64decode(row["contenido"]))
-                st.image(imagen, caption=f"{row['muestra']} – {row['archivo']} ({row['fecha']})", use_container_width=True)
-            except Exception as e:
-                st.warning(f"No se pudo mostrar imagen: {e}")

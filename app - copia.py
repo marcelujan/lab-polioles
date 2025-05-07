@@ -846,7 +846,10 @@ with tab6:
                     "senal_3548": e.get("senal_3548"),
                     "senal_3611": e.get("senal_3611"),
                     "peso_muestra": e.get("peso_muestra"),
-                    "mascaras": e.get("mascaras", []),
+                    "difusividad": e.get("difusividad"),
+                    "t2": e.get("t2"),
+                    "x_min": e.get("x_min"),
+                    "x_max": e.get("x_max"),
                     "id": f"{m['nombre']}__{i}"
                 })
 
@@ -875,10 +878,33 @@ with tab6:
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
-        activar_mascaras = st.checkbox("Aplicar todas las máscaras D/T2", value=False)
-        fig, ax = plt.subplots()
-
         for _, row in df_rmn1H.iterrows():
+            sid = row["id"]
+            st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
+            activar = st.checkbox("Aplicar máscara D/T2", key=f"activar_{sid}", value=True)
+
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                D = st.number_input("Difusividad D", key=f"D_{sid}", value=row.get("difusividad") or 0.0, format="%.5e")
+            with col2:
+                T2 = st.number_input("T2 [s]", key=f"T2_{sid}", value=row.get("t2") or 0.0, format="%.3e")
+            with col3:
+                Xmin = st.number_input("X min", key=f"Xmin_{sid}", value=row.get("x_min") or 0.0)
+            with col4:
+                Xmax = st.number_input("X max", key=f"Xmax_{sid}", value=row.get("x_max") or 0.0)
+
+            if st.button("💾 Guardar cambios", key=f"guardar_{sid}"):
+                for m in muestras:
+                    if m["nombre"] == row["muestra"]:
+                        espectros = m.get("espectros", [])
+                        idx = int(sid.split("__")[1])
+                        espectros[idx]["difusividad"] = D
+                        espectros[idx]["t2"] = T2
+                        espectros[idx]["x_min"] = Xmin
+                        espectros[idx]["x_max"] = Xmax
+                        guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
+                        st.success("Cambios guardados.")
+
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))
                 extension = os.path.splitext(row["archivo"])[1].lower()
@@ -901,27 +927,55 @@ with tab6:
                 df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
                 df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
                 df = df.dropna()
-
-                ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}")
-
-                if activar_mascaras:
-                    for mascara in row.get("mascaras", []):
-                        x0 = mascara.get("x_min")
-                        x1 = mascara.get("x_max")
-                        d = mascara.get("difusividad")
-                        t2 = mascara.get("t2")
-                        if x0 is not None and x1 is not None:
-                            ax.axvspan(x0, x1, color="orange", alpha=0.3)
-                            if d and t2:
-                                ax.text((x0+x1)/2, max(df[col_y])*0.9,
-                                        f"D={d:.1e}, T2={t2:.1e}", ha="center", fontsize=8, color="black")
+                fig, ax = plt.subplots()
+                ax.plot(df[col_x], df[col_y], label="Espectro")
+                if activar:
+                    ax.axvspan(Xmin, Xmax, color="orange", alpha=0.3)
+                    ax.text((Xmin+Xmax)/2, max(df[col_y])*0.9,
+                            f"D={D:.1e}, T2={T2:.1e}", ha="center", fontsize=8, color="black")
+                ax.set_xlabel(col_x)
+                ax.set_ylabel(col_y)
+                st.pyplot(fig)
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.legend()
-        st.pyplot(fig)
+    # --- ZONA RMN 13C ---
+    st.subheader("🧪 RMN 13C")
+    df_rmn13C = df_sel[(df_sel["tipo"] == "RMN 13C") & (~df_sel["es_imagen"])]
+    if df_rmn13C.empty:
+        st.info("No hay espectros RMN 13C numéricos seleccionados.")
+    else:
+        for _, row in df_rmn13C.iterrows():
+            st.markdown(f"**📁 {row['muestra']} – {row['archivo']}**")
+            try:
+                contenido = BytesIO(base64.b64decode(row["contenido"]))
+                extension = os.path.splitext(row["archivo"])[1].lower()
+                if extension == ".xlsx":
+                    df = pd.read_excel(contenido)
+                else:
+                    sep_try = [",", ";", "\t", " "]
+                    for sep in sep_try:
+                        contenido.seek(0)
+                        try:
+                            df = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        raise ValueError("No se pudo leer el archivo.")
+
+                col_x, col_y = df.columns[:2]
+                df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                df = df.dropna()
+                fig, ax = plt.subplots()
+                ax.plot(df[col_x], df[col_y])
+                ax.set_xlabel(col_x)
+                ax.set_ylabel(col_y)
+                st.pyplot(fig)
+            except:
+                st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
 # --- HOJA 7 --- "Consola" ---
 with tab7:

@@ -961,6 +961,18 @@ with tab6:
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
+    # --- ZONA IMÁGENES ---
+    st.subheader("🖼️ Espectros RMN cargados como imagen")
+    if df_rmn_img.empty:
+        st.info("No hay espectros RMN en formato imagen.")
+    else:
+        for _, row in df_rmn_img.iterrows():
+            try:
+                imagen = BytesIO(base64.b64decode(row["contenido"]))
+                st.image(imagen, caption=f"{row['muestra']} – {row['archivo']} ({row['fecha']})", use_container_width=True)
+            except Exception as e:
+                st.warning(f"No se pudo mostrar imagen: {e}")
+
 # --- HOJA 7 --- "Consola" ---
 with tab7:
     st.title("Consola")  # Título principal de la hoja

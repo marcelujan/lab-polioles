@@ -377,8 +377,8 @@ with tab3:
         fecha_str = fecha_espectro.strftime("%Y-%m-%d")
         nombre_generado = f"{nombre_sel}_{tipo_espectro}_{fecha_str}.{extension}-{resumen_obs}"
 
-    # Mostrar nombre final antes de guardar
-    st.markdown(f"**🆔 Nuevo nombre asignado al archivo para su descarga:** `{nombre_generado}`")
+        # Mostrar nombre final antes de guardar
+        st.markdown(f"**🆔 Nuevo nombre asignado al archivo para su descarga:** `{nombre_generado}`")
 
     if st.button("Guardar espectro") and archivo:
         espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])

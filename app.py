@@ -971,12 +971,17 @@ with tab6:
         ax.set_xlabel("[ppm]")
         ax.set_ylabel("Señal")
         ax.legend()
+        img_buffer = BytesIO()
+        fig.savefig(img_buffer, format="png")
         st.pyplot(fig)
 
         if filas_mascaras:
             df_tabla = pd.DataFrame(filas_mascaras)            
-            st.dataframe(df_tabla.style.set_properties(**{'text-align': 'center'}).set_table_styles([
-                {'selector': 'th', 'props': [('text-align', 'center')]}]), use_container_width=True)
+            st.dataframe(df_tabla.style.set_table_styles([
+                {'selector': 'th', 'props': [('text-align', 'center')]},
+                {'selector': 'td', 'props': [('text-align', 'center')]}
+            ]), use_container_width=True)
+        st.download_button("📥 Descargar gráfico RMN 1H", data=img_buffer.getvalue(), file_name="grafico_rmn1h.png", mime="image/png")
             
     # --- ZONA RMN 13C ---
     st.subheader("🧪 RMN 13C")
@@ -1015,7 +1020,11 @@ with tab6:
         ax13.set_xlabel("[ppm]")
         ax13.set_ylabel("Señal")
         ax13.legend()
+        
+        img_buffer_13C = BytesIO()
+        fig13.savefig(img_buffer_13C, format="png")
         st.pyplot(fig13)
+        st.download_button("📥 Descargar gráfico RMN 13C", data=img_buffer_13C.getvalue(), file_name="grafico_rmn13c.png", mime="image/png")
 
     # --- ZONA IMÁGENES ---
     st.subheader("🖼️ Espectros imagen")

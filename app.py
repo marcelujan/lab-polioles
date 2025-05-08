@@ -992,17 +992,17 @@ with tab6:
                         filas_mascaras.append({
                             "Muestra": row["muestra"],
                             "Archivo": row["archivo"],
-                            "D [m2/s]": f"{d:.2e}",
-                            "T2 [s]": f"{t2:.3f}",
-                            "Xmin [ppm]": f"{x0:.2f}",
-                            "Xmax [ppm]": f"{x1:.2f}",
-                            "Área": f"{area:.2f}",
-                            "H": f"{h:.2f}" if not np.isnan(h) else "—",
+                            "D [m2/s]": d,
+                            "T2 [s]": t2,
+                            "Xmin [ppm]": round(x0, 2),
+                            "Xmax [ppm]": round(x1, 2),
+                            "Área": round(area, 2),
+                            "H": round(h, 2) if not np.isnan(h) else "—",
                             "Observación": obs
                         })
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
-                
+
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             x_min_v = st.number_input("X mínimo", value=rango_x[0])

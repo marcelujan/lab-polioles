@@ -963,6 +963,7 @@ with tab6:
         tabla_path_rmn1h = "tabla_editable_rmn1h"
         doc_tabla = db.collection("configuracion_global").document(tabla_path_rmn1h).get()
         if not doc_tabla.exists:
+ #           tabla_funcional_path = "tabla_funcional_global"
             db.collection("configuracion_global").document(tabla_path_rmn1h).set({"filas": []})
 
         columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
@@ -992,40 +993,6 @@ with tab6:
 
         if not df_edit_rmn1h.equals(df_rmn1h_tabla):
             db.collection("configuracion_global").document(tabla_path_rmn1h).set({"filas": df_edit_rmn1h.to_dict(orient="records")})
-
-        # Leer desde Firestore si existe
-        doc_ref = db.collection("configuracion_global").document(tabla_funcional_path)
-        doc = doc_ref.get()
-        columnas = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
-        if doc.exists:
-            datos_guardados = doc.to_dict().get("filas", [])
-        else:
-            datos_guardados = []
-
-        df_funcional_global = pd.DataFrame(datos_guardados)
-        for col in columnas:
-            if col not in df_funcional_global.columns:
-                df_funcional_global[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
-        df_funcional_global = df_funcional_global[columnas]  # asegurar orden
-
-        df_funcional_global = pd.DataFrame(datos_guardados)
-        columnas = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
-        for col in columnas:
-            if col not in df_funcional_global.columns:
-                df_funcional_global[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
-
-        df_funcional_edit = st.data_editor(
-            df_funcional_global[columnas],
-            use_container_width=True,
-            hide_index=True,
-            num_rows="dynamic",
-            key="editor_funcional_global",
-            column_config={
-                "X min": st.column_config.NumberColumn(format="%.2f"),
-                "X pico": st.column_config.NumberColumn(format="%.2f"),
-                "X max": st.column_config.NumberColumn(format="%.2f")
-            }
-        )
 
         # Guardar en Firestore si cambió
         if not df_funcional_edit.equals(df_funcional_global[columnas]):

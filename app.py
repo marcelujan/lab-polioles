@@ -959,23 +959,24 @@ with tab6:
         st.pyplot(fig)
 
         # --- Tabla nueva debajo del gráfico RMN 1H ---
-#        st.markdown("**Tabla nueva editable RMN 1H:**")
         tabla_path_rmn1h = "tabla_editable_rmn1h"
-        doc_tabla = db.collection("configuracion_global").document(tabla_path_rmn1h).get()
-        if not doc_tabla.exists:
-            db.collection("configuracion_global").document(tabla_path_rmn1h).set({"filas": []})
+        doc_ref = db.collection("configuracion_global").document(tabla_path_rmn1h)
+
+        # Crear documento si no existe
+        if not doc_ref.get().exists:
+            doc_ref.set({"filas": []})
+
+        # Obtener el documento actualizado
+        doc_tabla = doc_ref.get()
 
         columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
-        if doc_tabla.exists:
-            filas_rmn1h = doc_tabla.to_dict().get("filas", [])
-        else:
-            filas_rmn1h = []
+        filas_rmn1h = doc_tabla.to_dict().get("filas", []) if doc_tabla.exists else []
 
         df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
         for col in columnas_rmn1h:
             if col not in df_rmn1h_tabla.columns:
                 df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
-        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
+        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]  # asegurar orden
 
         df_edit_rmn1h = st.data_editor(
             df_rmn1h_tabla,
@@ -989,10 +990,10 @@ with tab6:
                 "X max": st.column_config.NumberColumn(format="%.2f")
             }
         )
+
+        # Guardar si hay cambios
         if not df_edit_rmn1h.equals(df_rmn1h_tabla):
-            db.collection("configuracion_global").document(tabla_path_rmn1h).set(
-                {"filas": df_edit_rmn1h.to_dict(orient="records")}
-            )
+            doc_ref.set({"filas": df_edit_rmn1h.to_dict(orient="records")})
 
         # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
         if any(usar_mascara.values()):

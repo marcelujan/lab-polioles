@@ -705,7 +705,7 @@ with tab4:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
 
     # Descarga agrupada de imágenes seleccionadas + info TXT
-    if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
+    if not df_imagetabla_funcional_pathnes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
         st.subheader("Descargar imágenes seleccionadas")
     
     if st.button("📥 Descargar imágenes", key="descargar_imagenes"):
@@ -989,6 +989,10 @@ with tab6:
                 "X max": st.column_config.NumberColumn(format="%.2f")
             }
         )
+        if not df_edit_rmn1h.equals(df_rmn1h_tabla):
+            db.collection("configuracion_global").document(tabla_path_rmn1h).set(
+                {"filas": df_edit_rmn1h.to_dict(orient="records")}
+            )
 
         # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
         if any(usar_mascara.values()):

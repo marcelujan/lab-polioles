@@ -913,17 +913,13 @@ with tab6:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
         st.markdown("**Máscara D/T2:**")
-        usar_mascara = {}
-        activar_edicion_asignacion = False
-        for row in df_rmn1H.itertuples():
-            if row.mascaras:
-                activar_edicion_asignacion = True
-                break
+        usar_mascara = {}        
+        activar_edicion_asignacion = any(bool(row.mascaras) for row in df_rmn1H.itertuples())
 
         h_config = {"H": 1.0, "Xmin": 4.8, "Xmax": 5.6}
         if activar_edicion_asignacion:
             st.markdown("**Asignación para cuantificación**")
-            df_asignacion = pd.DataFrame([{"H": 1, "X mínimo": 4.8, "X máximo": 5.6}])
+            df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
             df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True)
             h_config["H"] = float(df_asignacion_edit.iloc[0]["H"])
             h_config["Xmin"] = float(df_asignacion_edit.iloc[0]["X mínimo"])
@@ -932,8 +928,7 @@ with tab6:
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
         filas_mascaras = []
-        rango_x = [float("inf"), float("-inf")]
-        rango_y = [float("inf"), float("-inf")]
+        mapa_mascaras = {}
 
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
             color = colores[idx % len(colores)]
@@ -974,6 +969,7 @@ with tab6:
                 rango_y[1] = max(rango_y[1], df[col_y].max())
 
                 if usar_mascara.get(row["id"], False):
+                    nuevas_mascaras = []
                     for j, mascara in enumerate(row.get("mascaras", [])):
                         x0 = mascara.get("x_min")
                         x1 = mascara.get("x_max")
@@ -989,7 +985,15 @@ with tab6:
                         if d and t2:
                             ax.text((x0+x1)/2, max(df[col_y])*0.9,
                                         f"D={d:.1e}     T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
+                        nuevas_mascaras.append({
+                            "difusividad": d,
+                            "t2": t2,
+                            "x_min": x0,
+                            "x_max": x1,
+                            "observacion": obs
+                        })
                         filas_mascaras.append({
+                            "ID espectro": row["id"],
                             "Muestra": row["muestra"],
                             "Archivo": row["archivo"],
                             "D [m2/s]": d,
@@ -1000,35 +1004,47 @@ with tab6:
                             "H": round(h, 2) if not np.isnan(h) else "—",
                             "Observación": obs
                         })
+                    mapa_mascaras[row["id"]] = nuevas_mascaras
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            x_min_v = st.number_input("X mínimo", value=rango_x[0])
-        with col2:
-            x_max_v = st.number_input("X máximo", value=rango_x[1])
-        with col3:
-            y_min_v = st.number_input("Y mínimo", value=rango_y[0])
-        with col4:
-            y_max_v = st.number_input("Y máximo", value=rango_y[1])
-
-        ax.set_xlim(x_min_v, x_max_v)
-        ax.set_ylim(y_min_v, y_max_v)
         ax.set_xlabel("[ppm]")
         ax.set_ylabel("Señal")
         ax.legend()
         st.pyplot(fig)
 
         if filas_mascaras:
-            df_tabla = pd.DataFrame(filas_mascaras)
-            st.dataframe(df_tabla, use_container_width=True)
+            df_editable = pd.DataFrame(filas_mascaras)
+            df_editable_display = st.data_editor(
+                df_editable,
+                column_config={"D [m2/s]": st.column_config.NumberColumn(format="%.2e"),
+                               "Xmin [ppm]": st.column_config.NumberColumn(format="%.2f"),
+                               "Xmax [ppm]": st.column_config.NumberColumn(format="%.2f"),
+                               "Área": st.column_config.NumberColumn(format="%.2f"),
+                               "H": st.column_config.NumberColumn(format="%.2f"),
+                               "T2 [s]": st.column_config.NumberColumn(format="%.3f")},
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key="editor_mascaras"
+            )
+
+            for i, row in df_editable_display.iterrows():
+                id_esp = row["ID espectro"]
+                idx = int(id_esp.split("__")[1])
+                for m in muestras:
+                    if m["nombre"] == id_esp.split("__")[0]:
+                        espectros = m.get("espectros", [])
+                        if idx < len(espectros):
+                            espectros[idx]["mascaras"] = mapa_mascaras.get(id_esp, [])
+                            guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
+
             st.caption(f"*Asignación: {int(h_config['H'])} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
 
             # Botón de descarga de tabla de máscaras
             buffer_excel = BytesIO()
             with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                df_tabla.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
+                df_editable_display.drop(columns=["ID espectro"]).to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
             buffer_excel.seek(0)
             st.download_button("📑 Descargar máscaras D/T2", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 

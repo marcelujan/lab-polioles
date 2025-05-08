@@ -915,16 +915,6 @@ with tab6:
         st.markdown("**Máscara D/T2:**")
         usar_mascara = {}        
         activar_edicion_asignacion = any(bool(row.mascaras) for row in df_rmn1H.itertuples())
-
-        h_config = {"H": 1.0, "Xmin": 4.8, "Xmax": 5.6}
-        if activar_edicion_asignacion:
-            st.markdown("**Asignación para cuantificación**")
-            df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
-            df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True, key="asignacion")
-            h_config["H"] = float(df_asignacion_edit.iloc[0]["H"])
-            h_config["Xmin"] = float(df_asignacion_edit.iloc[0]["X mínimo"])
-            h_config["Xmax"] = float(df_asignacion_edit.iloc[0]["X máximo"])
-
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
         filas_mascaras = []
@@ -933,6 +923,20 @@ with tab6:
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
             color = colores[idx % len(colores)]
             usar_mascara[row["id"]] = st.checkbox(f"{row['muestra']} – {row['archivo']}", value=False, key=f"chk_mask_{row['id']}")
+        if any(usar_mascara.values()):
+            st.markdown("**Asignación para cuantificación**")
+            df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
+            df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True, key="asignacion")
+            h_config = {
+                "H": float(df_asignacion_edit.iloc[0]["H"]),
+                "Xmin": float(df_asignacion_edit.iloc[0]["X mínimo"]),
+                "Xmax": float(df_asignacion_edit.iloc[0]["X máximo"])
+            }
+        else:
+            h_config = {"H": 1.0, "Xmin": 4.8, "Xmax": 5.6}
+
+        for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
+            color = colores[idx % len(colores)]
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))
                 extension = os.path.splitext(row["archivo"])[1].lower()

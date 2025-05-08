@@ -922,8 +922,8 @@ with tab6:
 
         h_config = {"H": 1.0, "Xmin": 4.8, "Xmax": 5.6}
         if activar_edicion_asignacion:
-            st.markdown("**Asignación**")
-            df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
+            st.markdown("**Asignación para cuantificación**")
+            df_asignacion = pd.DataFrame([{"H": 1, "X mínimo": 4.8, "X máximo": 5.6}])
             df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True)
             h_config["H"] = float(df_asignacion_edit.iloc[0]["H"])
             h_config["Xmin"] = float(df_asignacion_edit.iloc[0]["X mínimo"])
@@ -984,14 +984,14 @@ with tab6:
                         filas_mascaras.append({
                             "Muestra": row["muestra"],
                             "Archivo": row["archivo"],
-                            "D [m2/s]": d,
-                            "T2 [s]": t2,
-                            "Xmin [ppm]": x0,
-                            "Xmax [ppm]": x1,
-                            "Área": round(area, 2),
-                            "H": round(h, 2) if not np.isnan(h) else "—",
+                            "D [m2/s]": f"{d:.1e}",
+                            "T2 [s]": f"{t2:.3f}",
+                            "Xmin [ppm]": f"{x0:.2f}",
+                            "Xmax [ppm]": f"{x1:.2f}",
+                            "Área": f"{area:.2f}",
+                            "H": f"{h:.2f}" if not np.isnan(h) else "—",
                             "Observación": obs
-                            })
+                        })
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
@@ -1003,7 +1003,7 @@ with tab6:
         if filas_mascaras:
             df_tabla = pd.DataFrame(filas_mascaras)
             st.dataframe(df_tabla, use_container_width=True)
-            st.caption(f"*Asignación: {h_config['H']} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
+            st.caption(f"*Asignación: {int(h_config['H'])} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
 
             # Botón de descarga de tabla de máscaras
             buffer_excel = BytesIO()

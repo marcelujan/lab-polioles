@@ -958,6 +958,41 @@ with tab6:
         ax.legend()
         st.pyplot(fig)
 
+        # --- Tabla de anotación funcional global ---
+        st.markdown("**Asignación funcional global (editable):**")
+        tabla_funcional_path = "tabla_funcional_global"
+
+        # Leer desde Firestore si existe
+        doc_ref = db.collection("configuracion_global").document(tabla_funcional_path)
+        doc = doc_ref.get()
+        if doc.exists:
+            datos_guardados = doc.to_dict().get("filas", [])
+        else:
+            datos_guardados = []
+
+        df_funcional_global = pd.DataFrame(datos_guardados)
+        columnas = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
+        for col in columnas:
+            if col not in df_funcional_global.columns:
+                df_funcional_global[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
+
+        df_funcional_edit = st.data_editor(
+            df_funcional_global[columnas],
+            use_container_width=True,
+            hide_index=True,
+            num_rows="dynamic",
+            key="editor_funcional_global",
+            column_config={
+                "X min": st.column_config.NumberColumn(format="%.2f"),
+                "X pico": st.column_config.NumberColumn(format="%.2f"),
+                "X max": st.column_config.NumberColumn(format="%.2f")
+            }
+        )
+
+        # Guardar en Firestore si cambió
+        if not df_funcional_edit.equals(df_funcional_global[columnas]):
+            doc_ref.set({"filas": df_funcional_edit.to_dict(orient="records")})
+
         # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
         if any(usar_mascara.values()):
             st.markdown("**Asignación para cuantificación**")

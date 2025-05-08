@@ -914,7 +914,6 @@ with tab6:
     else:
         st.markdown("**Máscara D/T2:**")
         usar_mascara = {}        
-        activar_edicion_asignacion = any(bool(row.mascaras) for row in df_rmn1H.itertuples())
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
         filas_mascaras = []

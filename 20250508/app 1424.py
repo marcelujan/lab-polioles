@@ -922,8 +922,8 @@ with tab6:
 
         h_config = {"H": 1.0, "Xmin": 4.8, "Xmax": 5.6}
         if activar_edicion_asignacion:
-            st.markdown("**Asignación para cuantificación**")
-            df_asignacion = pd.DataFrame([{"H": 1, "X mínimo": 4.8, "X máximo": 5.6}])
+            st.markdown("**Asignación**")
+            df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
             df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True)
             h_config["H"] = float(df_asignacion_edit.iloc[0]["H"])
             h_config["Xmin"] = float(df_asignacion_edit.iloc[0]["X mínimo"])
@@ -932,8 +932,6 @@ with tab6:
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
         filas_mascaras = []
-        rango_x = [float("inf"), float("-inf")]
-        rango_y = [float("inf"), float("-inf")]
 
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
             color = colores[idx % len(colores)]
@@ -967,12 +965,6 @@ with tab6:
 
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)
 
-                # Actualizar rangos
-                rango_x[0] = min(rango_x[0], df[col_x].min())
-                rango_x[1] = max(rango_x[1], df[col_x].max())
-                rango_y[0] = min(rango_y[0], df[col_y].min())
-                rango_y[1] = max(rango_y[1], df[col_y].max())
-
                 if usar_mascara.get(row["id"], False):
                     for j, mascara in enumerate(row.get("mascaras", [])):
                         x0 = mascara.get("x_min")
@@ -992,29 +984,17 @@ with tab6:
                         filas_mascaras.append({
                             "Muestra": row["muestra"],
                             "Archivo": row["archivo"],
-                            "D [m2/s]": f"{d:.2e}",
-                            "T2 [s]": f"{t2:.3f}",
-                            "Xmin [ppm]": f"{x0:.2f}",
-                            "Xmax [ppm]": f"{x1:.2f}",
-                            "Área": f"{area:.2f}",
-                            "H": f"{h:.2f}" if not np.isnan(h) else "—",
+                            "D [m2/s]": d,
+                            "T2 [s]": t2,
+                            "Xmin [ppm]": x0,
+                            "Xmax [ppm]": x1,
+                            "Área": round(area, 2),
+                            "H": round(h, 2) if not np.isnan(h) else "—",
                             "Observación": obs
-                        })
+                            })
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
-                
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            x_min_v = st.number_input("X mínimo", value=rango_x[0])
-        with col2:
-            x_max_v = st.number_input("X máximo", value=rango_x[1])
-        with col3:
-            y_min_v = st.number_input("Y mínimo", value=rango_y[0])
-        with col4:
-            y_max_v = st.number_input("Y máximo", value=rango_y[1])
 
-        ax.set_xlim(x_min_v, x_max_v)
-        ax.set_ylim(y_min_v, y_max_v)
         ax.set_xlabel("[ppm]")
         ax.set_ylabel("Señal")
         ax.legend()
@@ -1023,7 +1003,7 @@ with tab6:
         if filas_mascaras:
             df_tabla = pd.DataFrame(filas_mascaras)
             st.dataframe(df_tabla, use_container_width=True)
-            st.caption(f"*Asignación: {int(h_config['H'])} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
+            st.caption(f"*Asignación: {h_config['H']} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
 
             # Botón de descarga de tabla de máscaras
             buffer_excel = BytesIO()

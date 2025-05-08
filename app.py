@@ -958,9 +958,38 @@ with tab6:
         ax.legend()
         st.pyplot(fig)
 
-        # --- Tabla de anotación funcional global ---
-        st.markdown("**Asignación funcional global (editable):**")
-        tabla_funcional_path = "tabla_funcional_global"
+        # --- Tabla nueva debajo del gráfico RMN 1H ---
+        st.markdown("**Tabla nueva editable RMN 1H:**")
+        tabla_path_rmn1h = "tabla_editable_rmn1h"
+        doc_tabla = db.collection("configuracion_global").document(tabla_path_rmn1h).get()
+
+        columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
+        if doc_tabla.exists:
+            filas_rmn1h = doc_tabla.to_dict().get("filas", [])
+        else:
+            filas_rmn1h = []
+
+        df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
+        for col in columnas_rmn1h:
+            if col not in df_rmn1h_tabla.columns:
+                df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
+        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
+
+        df_edit_rmn1h = st.data_editor(
+            df_rmn1h_tabla,
+            use_container_width=True,
+            hide_index=True,
+            num_rows="dynamic",
+            key="editor_tabla_rmn1h",
+            column_config={
+                "X min": st.column_config.NumberColumn(format="%.2f"),
+                "X pico": st.column_config.NumberColumn(format="%.2f"),
+                "X max": st.column_config.NumberColumn(format="%.2f")
+            }
+        )
+
+        if not df_edit_rmn1h.equals(df_rmn1h_tabla):
+            db.collection("configuracion_global").document(tabla_path_rmn1h).set({"filas": df_edit_rmn1h.to_dict(orient="records")})
 
         # Leer desde Firestore si existe
         doc_ref = db.collection("configuracion_global").document(tabla_funcional_path)

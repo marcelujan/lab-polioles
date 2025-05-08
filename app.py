@@ -983,7 +983,9 @@ with tab6:
         st.pyplot(fig)
 
         if filas_mascaras:
-            df_tabla = pd.DataFrame(filas_mascaras)            
+            df_tabla = pd.DataFrame(filas_mascaras)      
+            st.write("DEBUG: df_tabla.columns", df_tabla.columns.tolist())
+            st.write("DEBUG: Primeras filas", df_tabla.head())
             st.dataframe(df_tabla.style.set_table_styles([
                 {'selector': 'th', 'props': [('text-align', 'center')]},
                 {'selector': 'td', 'props': [('text-align', 'center')]}

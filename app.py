@@ -705,7 +705,7 @@ with tab4:
                 st.warning(f"No se pudo mostrar la imagen: {row['Nombre archivo']}")
 
     # Descarga agrupada de imágenes seleccionadas + info TXT
-    if not df_imagetabla_funcional_pathnes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
+    if not df_imagenes.empty and not df_imagenes[df_imagenes["Muestra"].isin(muestras_sel) & df_imagenes["Tipo"].isin(tipos_sel)].empty:
         st.subheader("Descargar imágenes seleccionadas")
     
     if st.button("📥 Descargar imágenes", key="descargar_imagenes"):

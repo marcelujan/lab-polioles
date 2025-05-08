@@ -908,7 +908,7 @@ with tab6:
 
     # --- ZONA RMN 1H ---
     st.subheader("🔬 RMN 1H")
-    df_rmn1H = df_sel[(df_sel["tipo"] == "RMN 1H") & (~df_sel["es_imagen"])]
+    df_rmn1H = df_sel[(df_sel["tipo"] == "RMN 1H") & (~df_sel["es_imagen"])].copy()
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:

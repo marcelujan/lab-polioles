@@ -972,12 +972,12 @@ with tab6:
                                 filas_mascaras.append({
                                     "Muestra": row["muestra"],
                                     "Archivo": row["archivo"],
-                                    "D [m2/s]": f"{d:.1e}",
-                                    "T2 [s]": f"{t2:.3f}",
-                                    "Xmin [ppm]": f"{x0:.2f}",
-                                    "Xmax [ppm]": f"{x1:.2f}",
-                                    "Área": f"{area:.2f}",
-                                    "H": f"{h:.2f}" if not np.isnan(h) else "—",
+                                    "D [m2/s]": d,
+                                    "T2 [s]": t2,
+                                    "Xmin [ppm]": x0,
+                                    "Xmax [ppm]": x1,
+                                    "Área": round(area, 2),
+                                    "H": round(h, 2) if not np.isnan(h) else "—",
                                     "Observación": obs_edit
                                 })
 
@@ -1006,10 +1006,7 @@ with tab6:
 
         if filas_mascaras:
             df_tabla = pd.DataFrame(filas_mascaras)      
-            st.dataframe(df_tabla.style.set_table_styles([
-                {'selector': 'th', 'props': [('text-align', 'center')]},
-                {'selector': 'td', 'props': [('text-align', 'center')]}
-            ]), use_container_width=True)
+            st.data_editor(df_tabla, use_container_width=True, disabled=["Muestra", "Archivo", "Área", "H"])
             st.caption("*Asignación: 1 H = integral entre x = 4,8 y x = 5,6")
 
             # Botón de descarga de tabla de máscaras

@@ -991,13 +991,6 @@ with tab6:
             }
         )
 
-        if not df_edit_rmn1h.equals(df_rmn1h_tabla):
-            db.collection("configuracion_global").document(tabla_path_rmn1h).set({"filas": df_edit_rmn1h.to_dict(orient="records")})
-
-        # Guardar en Firestore si cambió
-        if not df_funcional_edit.equals(df_funcional_global[columnas]):
-            doc_ref.set({"filas": df_funcional_edit.to_dict(orient="records")})
-
         # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
         if any(usar_mascara.values()):
             st.markdown("**Asignación para cuantificación**")

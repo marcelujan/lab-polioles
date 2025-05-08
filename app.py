@@ -959,11 +959,10 @@ with tab6:
         st.pyplot(fig)
 
         # --- Tabla nueva debajo del gráfico RMN 1H ---
-        st.markdown("**Tabla nueva editable RMN 1H:**")
+#        st.markdown("**Tabla nueva editable RMN 1H:**")
         tabla_path_rmn1h = "tabla_editable_rmn1h"
         doc_tabla = db.collection("configuracion_global").document(tabla_path_rmn1h).get()
         if not doc_tabla.exists:
- #           tabla_funcional_path = "tabla_funcional_global"
             db.collection("configuracion_global").document(tabla_path_rmn1h).set({"filas": []})
 
         columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]

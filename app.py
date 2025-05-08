@@ -913,6 +913,8 @@ with tab6:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
         st.markdown("**Máscara D/T2:**")
+        x_hmin = st.number_input("X mínimo (H)", value=4.8, step=0.1, format="%.1f")
+        x_hmax = st.number_input("X máximo (H)", value=5.6, step=0.1, format="%.1f")
         usar_mascara = {}
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
@@ -945,7 +947,7 @@ with tab6:
                 df = df.dropna()
 
                 # Calcular área de asignación H entre 4.8 y 5.6
-                df_h = df[(df[col_x] >= 4.8) & (df[col_x] <= 5.6)]
+                df_h = df[(df[col_x] >= x_hmin) & (df[col_x] <= x_hmax)]
                 asignacion_h = np.trapz(df_h[col_y], df_h[col_x]) if not df_h.empty else np.nan
 
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)

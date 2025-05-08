@@ -954,12 +954,12 @@ with tab6:
 
                 if usar_mascara.get(row["id"], False):
                     for j, mascara in enumerate(row.get("mascaras", [])):
-                        x0 = mascara.get("x_min")
-                        x1 = mascara.get("x_max")
-                        d = mascara.get("difusividad")
-                        t2 = mascara.get("t2")
-                        obs = mascara.get("observacion", "")
-                        obs_edit = st.text_input(f"Observación máscara {j+1} ({row['muestra']})", value=obs, key=f"obs_{row['id']}_{j}")
+                        col1, col2, col3, col4 = st.columns(4)
+                        d = col1.number_input(f"D [m2/s] {j+1} ({row['muestra']})", value=float(mascara.get("difusividad", 0)), key=f"d_{row['id']}_{j}", format="%.2e")
+                        t2 = col2.number_input(f"T2 [s] {j+1}", value=float(mascara.get("t2", 0)), key=f"t2_{row['id']}_{j}", format="%.3f")
+                        x0 = col3.number_input(f"Xmin [ppm] {j+1}", value=float(mascara.get("x_min", 0)), key=f"xmin_{row['id']}_{j}", format="%.2f")
+                        x1 = col4.number_input(f"Xmax [ppm] {j+1}", value=float(mascara.get("x_max", 0)), key=f"xmax_{row['id']}_{j}", format="%.2f")
+                        obs_edit = st.text_input(f"Observación máscara {j+1} ({row['muestra']})", value=mascara.get("observacion", ""), key=f"obs_{row['id']}_{j}")
                         
                         if x0 is not None and x1 is not None:
                             sub_df = df[(df[col_x] >= min(x0, x1)) & (df[col_x] <= max(x0, x1))]
@@ -987,7 +987,13 @@ with tab6:
                                 idx_m = int(row["id"].split("__")[1])
                                 if "mascaras" in m["espectros"][idx_m]:
                                     if j < len(m["espectros"][idx_m]["mascaras"]):
-                                        m["espectros"][idx_m]["mascaras"][j]["observacion"] = obs_edit
+                                        m["espectros"][idx_m]["mascaras"][j].update({
+                                            "difusividad": d,
+                                            "t2": t2,
+                                            "x_min": x0,
+                                            "x_max": x1,
+                                            "observacion": obs_edit
+                                        })
                                 guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
 
             except:

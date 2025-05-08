@@ -922,18 +922,8 @@ with tab6:
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
             color = colores[idx % len(colores)]
             usar_mascara[row["id"]] = st.checkbox(f"{row['muestra']} – {row['archivo']}", value=False, key=f"chk_mask_{row['id']}")
-        if any(usar_mascara.values()):
-            st.markdown("**Asignación para cuantificación**")
-            df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
-            df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True, key="asignacion")
-            h_config = {
-                "H": float(df_asignacion_edit.iloc[0]["H"]),
-                "Xmin": float(df_asignacion_edit.iloc[0]["X mínimo"]),
-                "Xmax": float(df_asignacion_edit.iloc[0]["X máximo"])
-            }
-        else:
-            h_config = {"H": 1.0, "Xmin": 4.8, "Xmax": 5.6}
 
+        # Gráfico primero
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
             color = colores[idx % len(colores)]
             try:
@@ -959,13 +949,54 @@ with tab6:
                 df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
                 df = df.dropna()
 
-                # Calcular área de asignación H
-                df_h = df[(df[col_x] >= h_config["Xmin"]) & (df[col_x] <= h_config["Xmax"])]
-                integracion_h = np.trapz(df_h[col_y], df_h[col_x]) if not df_h.empty else np.nan
-
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)
+            except:
+                st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
-                if usar_mascara.get(row["id"], False):
+        ax.set_xlabel("[ppm]")
+        ax.set_ylabel("Señal")
+        ax.legend()
+        st.pyplot(fig)
+
+        # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
+        if any(usar_mascara.values()):
+            st.markdown("**Asignación para cuantificación**")
+            df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
+            df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True, key="asignacion")
+            h_config = {
+                "H": float(df_asignacion_edit.iloc[0]["H"]),
+                "Xmin": float(df_asignacion_edit.iloc[0]["X mínimo"]),
+                "Xmax": float(df_asignacion_edit.iloc[0]["X máximo"])
+            }
+
+            for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
+                color = colores[idx % len(colores)]
+                try:
+                    contenido = BytesIO(base64.b64decode(row["contenido"]))
+                    extension = os.path.splitext(row["archivo"])[1].lower()
+                    if extension == ".xlsx":
+                        df = pd.read_excel(contenido)
+                    else:
+                        sep_try = [",", ";", "\t", " "]
+                        for sep in sep_try:
+                            contenido.seek(0)
+                            try:
+                                df = pd.read_csv(contenido, sep=sep, engine="python")
+                                if df.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            raise ValueError("No se pudo leer el archivo.")
+
+                    col_x, col_y = df.columns[:2]
+                    df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                    df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                    df = df.dropna()
+
+                    # Calcular área de asignación H
+                    df_h = df[(df[col_x] >= h_config["Xmin"]) & (df[col_x] <= h_config["Xmax"])]
+                    integracion_h = np.trapz(df_h[col_y], df_h[col_x]) if not df_h.empty else np.nan
                     nuevas_mascaras = []
                     for j, mascara in enumerate(row.get("mascaras", [])):
                         x0 = mascara.get("x_min")
@@ -981,7 +1012,7 @@ with tab6:
                         ax.axvspan(x0, x1, color=color, alpha=0.3)
                         if d and t2:
                             ax.text((x0+x1)/2, max(df[col_y])*0.9,
-                                        f"D={d:.1e}     T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
+                                    f"D={d:.1e}     T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
                         nuevas_mascaras.append({
                             "difusividad": d,
                             "t2": t2,
@@ -1002,15 +1033,9 @@ with tab6:
                             "Observación": obs
                         })
                     mapa_mascaras[row["id"]] = nuevas_mascaras
-            except:
-                st.warning(f"No se pudo graficar espectro: {row['archivo']}")
+                except:
+                    continue
 
-        ax.set_xlabel("[ppm]")
-        ax.set_ylabel("Señal")
-        ax.legend()
-        st.pyplot(fig)
-
-        if filas_mascaras:
             df_editable = pd.DataFrame(filas_mascaras)
             df_editable_display = st.data_editor(
                 df_editable,

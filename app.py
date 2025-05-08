@@ -944,6 +944,10 @@ with tab6:
                 df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
                 df = df.dropna()
 
+                # Calcular área de asignación H entre 4.8 y 5.6
+                df_h = df[(df[col_x] >= 4.8) & (df[col_x] <= 5.6)]
+                asignacion_h = np.trapz(df_h[col_y], df_h[col_x]) if not df_h.empty else np.nan
+
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)
 
                 if usar_mascara.get(row["id"], False):
@@ -953,6 +957,9 @@ with tab6:
                         d = mascara.get("difusividad")
                         t2 = mascara.get("t2")
                         if x0 is not None and x1 is not None:
+                            sub_df = df[(df[col_x] >= min(x0, x1)) & (df[col_x] <= max(x0, x1))]
+                            area = np.trapz(sub_df[col_y], sub_df[col_x]) if not sub_df.empty else 0
+                            h = area / asignacion_h if asignacion_h else np.nan
                             ax.axvspan(x0, x1, color=color, alpha=0.3)
                             if d and t2:
                                 ax.text((x0+x1)/2, max(df[col_y])*0.9,
@@ -963,7 +970,9 @@ with tab6:
                                     "D [m2/s]": f"{d:.1e}",
                                     "T2 [s]": f"{t2:.3f}",
                                     "Xmin [ppm]": f"{x0:.2f}",
-                                    "Xmax [ppm]": f"{x1:.2f}"
+                                    "Xmax [ppm]": f"{x1:.2f}",
+                                    "Área": f"{area:.2f}",
+                                    "H": f"{h:.2f}" if not np.isnan(h) else "—"
                                 })
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
@@ -979,6 +988,7 @@ with tab6:
                 {'selector': 'th', 'props': [('text-align', 'center')]},
                 {'selector': 'td', 'props': [('text-align', 'center')]}
             ]), use_container_width=True)
+            st.caption("*Asignación: 1 H = integral entre x = 4,8 y x = 5,6")
 
             # Botón de descarga de tabla de máscaras
             buffer_excel = BytesIO()

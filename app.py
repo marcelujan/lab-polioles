@@ -965,10 +965,17 @@ with tab6:
         # Leer desde Firestore si existe
         doc_ref = db.collection("configuracion_global").document(tabla_funcional_path)
         doc = doc_ref.get()
+        columnas = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
         if doc.exists:
             datos_guardados = doc.to_dict().get("filas", [])
         else:
             datos_guardados = []
+
+        df_funcional_global = pd.DataFrame(datos_guardados)
+        for col in columnas:
+            if col not in df_funcional_global.columns:
+                df_funcional_global[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
+        df_funcional_global = df_funcional_global[columnas]  # asegurar orden
 
         df_funcional_global = pd.DataFrame(datos_guardados)
         columnas = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]

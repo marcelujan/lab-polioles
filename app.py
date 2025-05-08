@@ -956,6 +956,9 @@ with tab6:
                         x1 = mascara.get("x_max")
                         d = mascara.get("difusividad")
                         t2 = mascara.get("t2")
+                        obs = mascara.get("observacion", "")
+                        obs_edit = st.text_input(f"Observación máscara {j+1} ({row['muestra']})", value=obs, key=f"obs_{row['id']}_{j}")
+                        
                         if x0 is not None and x1 is not None:
                             sub_df = df[(df[col_x] >= min(x0, x1)) & (df[col_x] <= max(x0, x1))]
                             area = np.trapz(sub_df[col_y], sub_df[col_x]) if not sub_df.empty else 0
@@ -972,8 +975,19 @@ with tab6:
                                     "Xmin [ppm]": f"{x0:.2f}",
                                     "Xmax [ppm]": f"{x1:.2f}",
                                     "Área": f"{area:.2f}",
-                                    "H": f"{h:.2f}" if not np.isnan(h) else "—"
+                                    "H": f"{h:.2f}" if not np.isnan(h) else "—",
+                                    "Observación": obs_edit
                                 })
+
+                        # Guardar cambios en Firestore
+                        for m in muestras:
+                            if m["nombre"] == row["muestra"]:
+                                idx_m = int(row["id"].split("__")[1])
+                                if "mascaras" in m["espectros"][idx_m]:
+                                    if j < len(m["espectros"][idx_m]["mascaras"]):
+                                        m["espectros"][idx_m]["mascaras"][j]["observacion"] = obs_edit
+                                guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
+
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 

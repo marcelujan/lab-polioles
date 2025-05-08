@@ -968,9 +968,8 @@ with tab6:
 
         # Obtener el documento actualizado
         doc_tabla = doc_ref.get()
-
         columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
-        filas_rmn1h = doc_tabla.to_dict().get("filas", []) if doc_tabla.exists else []
+        filas_rmn1h = doc_tabla.to_dict().get("filas", [])
 
         df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
         for col in columnas_rmn1h:

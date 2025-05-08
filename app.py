@@ -913,9 +913,22 @@ with tab6:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
         st.markdown("**Máscara D/T2:**")
-        x_hmin = st.number_input("X mínimo (H)", value=4.8, step=0.1, format="%.1f")
-        x_hmax = st.number_input("X máximo (H)", value=5.6, step=0.1, format="%.1f")
         usar_mascara = {}
+        activar_edicion_asignacion = False
+        for row in df_rmn1H.itertuples():
+            if row.mascaras:
+                activar_edicion_asignacion = True
+                break
+
+        h_config = {"H": 1.0, "Xmin": 4.8, "Xmax": 5.6}
+        if activar_edicion_asignacion:
+            st.markdown("**Asignación**")
+            df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
+            df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True)
+            h_config["H"] = float(df_asignacion_edit.iloc[0]["H"])
+            h_config["Xmin"] = float(df_asignacion_edit.iloc[0]["X mínimo"])
+            h_config["Xmax"] = float(df_asignacion_edit.iloc[0]["X máximo"])
+
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
         filas_mascaras = []
@@ -946,29 +959,29 @@ with tab6:
                 df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
                 df = df.dropna()
 
-                # Calcular área de asignación H entre 4.8 y 5.6
-                df_h = df[(df[col_x] >= x_hmin) & (df[col_x] <= x_hmax)]
-                asignacion_h = np.trapz(df_h[col_y], df_h[col_x]) if not df_h.empty else np.nan
+                # Calcular área de asignación H
+                df_h = df[(df[col_x] >= h_config["Xmin"]) & (df[col_x] <= h_config["Xmax"])]
+                integracion_h = np.trapz(df_h[col_y], df_h[col_x]) if not df_h.empty else np.nan
 
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)
 
                 if usar_mascara.get(row["id"], False):
                     for j, mascara in enumerate(row.get("mascaras", [])):
-                        d = float(mascara.get("difusividad", 0))
-                        t2 = float(mascara.get("t2", 0))
-                        x0 = float(mascara.get("x_min", 0))
-                        x1 = float(mascara.get("x_max", 0))
-                        obs_edit = mascara.get("observacion", "")
+                        x0 = mascara.get("x_min")
+                        x1 = mascara.get("x_max")
+                        d = mascara.get("difusividad")
+                        t2 = mascara.get("t2")
+                        obs = mascara.get("observacion", "")
 
                         sub_df = df[(df[col_x] >= min(x0, x1)) & (df[col_x] <= max(x0, x1))]
                         area = np.trapz(sub_df[col_y], sub_df[col_x]) if not sub_df.empty else 0
-                        h = area / asignacion_h if asignacion_h else np.nan
+                        h = (area * h_config["H"]) / integracion_h if integracion_h else np.nan
+
                         ax.axvspan(x0, x1, color=color, alpha=0.3)
-                        ax.text((x0+x1)/2, max(df[col_y])*0.9,
+                        if d and t2:
+                            ax.text((x0+x1)/2, max(df[col_y])*0.9,
                                         f"D={d:.1e}     T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
                         filas_mascaras.append({
-                            "ID": row["id"],
-                            "Índice": j,
                             "Muestra": row["muestra"],
                             "Archivo": row["archivo"],
                             "D [m2/s]": d,
@@ -977,7 +990,7 @@ with tab6:
                             "Xmax [ppm]": x1,
                             "Área": round(area, 2),
                             "H": round(h, 2) if not np.isnan(h) else "—",
-                            "Observación": obs_edit
+                            "Observación": obs
                             })
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
@@ -989,28 +1002,13 @@ with tab6:
 
         if filas_mascaras:
             df_tabla = pd.DataFrame(filas_mascaras)
-            df_edit = st.data_editor(df_tabla.drop(columns=["ID", "Índice"]), use_container_width=True, num_rows="dynamic", disabled=["Muestra", "Archivo", "Área", "H"])
-
-            for i, fila in df_edit.iterrows():
-                for m in muestras:
-                    if m["nombre"] == df_tabla.at[i, "Muestra"]:
-                        idx_m = int(df_tabla.at[i, "ID"].split("__")[1])
-                        j = df_tabla.at[i, "Índice"]
-                        if "mascaras" in m["espectros"][idx_m] and j < len(m["espectros"][idx_m]["mascaras"]):
-                            m["espectros"][idx_m]["mascaras"][j].update({
-                                "difusividad": fila["D [m2/s]"],
-                                "t2": fila["T2 [s]"],
-                                "x_min": fila["Xmin [ppm]"],
-                                "x_max": fila["Xmax [ppm]"],
-                                "observacion": fila["Observación"]
-                            })
-                        guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
-            st.caption("*Asignación: 1 H = integral entre x = 4,8 y x = 5,6")
+            st.dataframe(df_tabla, use_container_width=True)
+            st.caption(f"*Asignación: {h_config['H']} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
 
             # Botón de descarga de tabla de máscaras
             buffer_excel = BytesIO()
             with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                df_tabla.drop(columns=["ID", "Índice"]).to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
+                df_tabla.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
             buffer_excel.seek(0)
             st.download_button("📑 Descargar máscaras D/T2", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 

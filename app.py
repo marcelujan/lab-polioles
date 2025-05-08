@@ -954,48 +954,31 @@ with tab6:
 
                 if usar_mascara.get(row["id"], False):
                     for j, mascara in enumerate(row.get("mascaras", [])):
-                        col1, col2, col3, col4 = st.columns(4)
-                        d = col1.number_input(f"D [m2/s] {j+1} ({row['muestra']})", value=float(mascara.get("difusividad", 0)), key=f"d_{row['id']}_{j}", format="%.2e")
-                        t2 = col2.number_input(f"T2 [s] {j+1}", value=float(mascara.get("t2", 0)), key=f"t2_{row['id']}_{j}", format="%.3f")
-                        x0 = col3.number_input(f"Xmin [ppm] {j+1}", value=float(mascara.get("x_min", 0)), key=f"xmin_{row['id']}_{j}", format="%.2f")
-                        x1 = col4.number_input(f"Xmax [ppm] {j+1}", value=float(mascara.get("x_max", 0)), key=f"xmax_{row['id']}_{j}", format="%.2f")
-                        obs_edit = st.text_input(f"Observación máscara {j+1} ({row['muestra']})", value=mascara.get("observacion", ""), key=f"obs_{row['id']}_{j}")
-                        
-                        if x0 is not None and x1 is not None:
-                            sub_df = df[(df[col_x] >= min(x0, x1)) & (df[col_x] <= max(x0, x1))]
-                            area = np.trapz(sub_df[col_y], sub_df[col_x]) if not sub_df.empty else 0
-                            h = area / asignacion_h if asignacion_h else np.nan
-                            ax.axvspan(x0, x1, color=color, alpha=0.3)
-                            if d and t2:
-                                ax.text((x0+x1)/2, max(df[col_y])*0.9,
+                        d = float(mascara.get("difusividad", 0))
+                        t2 = float(mascara.get("t2", 0))
+                        x0 = float(mascara.get("x_min", 0))
+                        x1 = float(mascara.get("x_max", 0))
+                        obs_edit = mascara.get("observacion", "")
+
+                        sub_df = df[(df[col_x] >= min(x0, x1)) & (df[col_x] <= max(x0, x1))]
+                        area = np.trapz(sub_df[col_y], sub_df[col_x]) if not sub_df.empty else 0
+                        h = area / asignacion_h if asignacion_h else np.nan
+                        ax.axvspan(x0, x1, color=color, alpha=0.3)
+                        ax.text((x0+x1)/2, max(df[col_y])*0.9,
                                         f"D={d:.1e}     T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
-                                filas_mascaras.append({
-                                    "Muestra": row["muestra"],
-                                    "Archivo": row["archivo"],
-                                    "D [m2/s]": d,
-                                    "T2 [s]": t2,
-                                    "Xmin [ppm]": x0,
-                                    "Xmax [ppm]": x1,
-                                    "Área": round(area, 2),
-                                    "H": round(h, 2) if not np.isnan(h) else "—",
-                                    "Observación": obs_edit
-                                })
-
-                        # Guardar cambios en Firestore
-                        for m in muestras:
-                            if m["nombre"] == row["muestra"]:
-                                idx_m = int(row["id"].split("__")[1])
-                                if "mascaras" in m["espectros"][idx_m]:
-                                    if j < len(m["espectros"][idx_m]["mascaras"]):
-                                        m["espectros"][idx_m]["mascaras"][j].update({
-                                            "difusividad": d,
-                                            "t2": t2,
-                                            "x_min": x0,
-                                            "x_max": x1,
-                                            "observacion": obs_edit
-                                        })
-                                guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
-
+                        filas_mascaras.append({
+                            "ID": row["id"],
+                            "Índice": j,
+                            "Muestra": row["muestra"],
+                            "Archivo": row["archivo"],
+                            "D [m2/s]": d,
+                            "T2 [s]": t2,
+                            "Xmin [ppm]": x0,
+                            "Xmax [ppm]": x1,
+                            "Área": round(area, 2),
+                            "H": round(h, 2) if not np.isnan(h) else "—",
+                            "Observación": obs_edit
+                            })
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
@@ -1005,14 +988,29 @@ with tab6:
         st.pyplot(fig)
 
         if filas_mascaras:
-            df_tabla = pd.DataFrame(filas_mascaras)      
-            st.data_editor(df_tabla, use_container_width=True, disabled=["Muestra", "Archivo", "Área", "H"])
+            df_tabla = pd.DataFrame(filas_mascaras)
+            df_edit = st.data_editor(df_tabla.drop(columns=["ID", "Índice"]), use_container_width=True, num_rows="dynamic", disabled=["Muestra", "Archivo", "Área", "H"])
+
+            for i, fila in df_edit.iterrows():
+                for m in muestras:
+                    if m["nombre"] == df_tabla.at[i, "Muestra"]:
+                        idx_m = int(df_tabla.at[i, "ID"].split("__")[1])
+                        j = df_tabla.at[i, "Índice"]
+                        if "mascaras" in m["espectros"][idx_m] and j < len(m["espectros"][idx_m]["mascaras"]):
+                            m["espectros"][idx_m]["mascaras"][j].update({
+                                "difusividad": fila["D [m2/s]"],
+                                "t2": fila["T2 [s]"],
+                                "x_min": fila["Xmin [ppm]"],
+                                "x_max": fila["Xmax [ppm]"],
+                                "observacion": fila["Observación"]
+                            })
+                        guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
             st.caption("*Asignación: 1 H = integral entre x = 4,8 y x = 5,6")
 
             # Botón de descarga de tabla de máscaras
             buffer_excel = BytesIO()
             with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                df_tabla.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
+                df_tabla.drop(columns=["ID", "Índice"]).to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
             buffer_excel.seek(0)
             st.download_button("📑 Descargar máscaras D/T2", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 

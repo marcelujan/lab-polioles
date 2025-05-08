@@ -920,7 +920,7 @@ with tab6:
         if activar_edicion_asignacion:
             st.markdown("**Asignación para cuantificación**")
             df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
-            df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True)
+            df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True, key="asignacion")
             h_config["H"] = float(df_asignacion_edit.iloc[0]["H"])
             h_config["Xmin"] = float(df_asignacion_edit.iloc[0]["X mínimo"])
             h_config["Xmax"] = float(df_asignacion_edit.iloc[0]["X máximo"])
@@ -961,12 +961,6 @@ with tab6:
                 integracion_h = np.trapz(df_h[col_y], df_h[col_x]) if not df_h.empty else np.nan
 
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)
-
-                # Actualizar rangos
-                rango_x[0] = min(rango_x[0], df[col_x].min())
-                rango_x[1] = max(rango_x[1], df[col_x].max())
-                rango_y[0] = min(rango_y[0], df[col_y].min())
-                rango_y[1] = max(rango_y[1], df[col_y].max())
 
                 if usar_mascara.get(row["id"], False):
                     nuevas_mascaras = []
@@ -1046,7 +1040,7 @@ with tab6:
             with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
                 df_editable_display.drop(columns=["ID espectro"]).to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
             buffer_excel.seek(0)
-            st.download_button("📑 Descargar máscaras D/T2", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button("📁 Descargar máscaras D/T2", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         # Botón para descargar imagen del gráfico RMN 1H
         buffer_img = BytesIO()

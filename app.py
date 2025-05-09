@@ -1,6 +1,6 @@
 # Importación de librerías necesarias para el funcionamiento de la app
 from firestore_utils import iniciar_firebase, cargar_muestras, guardar_muestra
-
+from auth_utils import registrar_usuario, iniciar_sesion
 
 import streamlit as st  # - streamlit: interfaz web
 import pandas as pd     # - pandas: manejo de datos en tablas
@@ -22,38 +22,6 @@ st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 
 # Clave API de Firebase, almacenada de forma segura en los secretos de Streamlit
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]  # clave secreta de Firebase
-
-# Función para registrar un nuevo usuario usando Firebase Authentication
-# Se envía una solicitud POST a la API REST de Firebase con correo y contraseña
-def registrar_usuario(email, password):
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
-    payload = {
-        "email": email,
-        "password": password,
-        "returnSecureToken": True
-    }
-    response = requests.post(url, json=payload)
-    if response.status_code == 200:
-        st.success("Usuario registrado correctamente. Ahora puede iniciar sesión.")
-    else:
-        st.error("No se pudo registrar. El correo puede estar en uso o la contraseña es débil.")
-
-# --- Iniciar sesión ---
-# Función para iniciar sesión con correo y contraseña utilizando la API REST de Firebase
-# Si es exitoso, devuelve el token de autenticación del usuario
-def iniciar_sesion(email, password):
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
-    payload = {
-        "email": email,
-        "password": password,
-        "returnSecureToken": True
-    }
-    response = requests.post(url, json=payload)
-    if response.status_code == 200:
-        return response.json()["idToken"]
-    else:
-        st.error("Credenciales incorrectas o cuenta no existente.")
-        return None
 
 # --- Autenticación ---
 if "token" not in st.session_state:

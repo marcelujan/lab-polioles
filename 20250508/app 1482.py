@@ -63,7 +63,6 @@ if "token" not in st.session_state:
         token = iniciar_sesion(email, password)
         if token:
             st.session_state["token"] = token
-            st.session_state["user_email"] = email
             st.success("Inicio de sesión exitoso.")     # Si es correcto, se guarda el token y se reinicia la app para mostrar las pestañas
             st.rerun()
 
@@ -228,38 +227,6 @@ with tab1:
         )
     else:
         st.info("No hay análisis cargados.")  # Mensaje si no hay datos cargados aún
-
-
-    # 🔐 Sección privada de observaciones (solo Marcelo)
-    if st.session_state.get("user_email") == "mlujan1863@gmail.com":
-
-        st.markdown("---")
-        st.subheader("🧠 Observaciones personales (solo visibles para vos)")
-
-        # Selección de muestra actual desde Firestore
-        muestras_disponibles = [doc.id for doc in db.collection("muestras").stream()]
-        muestra_actual = st.selectbox("Seleccionar muestra para observación", muestras_disponibles, key="obs_muestra_sel")
-
-        # Leer observaciones previas
-        obs_ref = db.collection("observaciones_muestras").document(muestra_actual)
-        obs_doc = obs_ref.get()
-        observaciones = obs_doc.to_dict().get("observaciones", []) if obs_doc.exists else []
-
-        if observaciones:
-            st.markdown("### Observaciones anteriores")
-            for obs in sorted(observaciones, key=lambda x: x["fecha"], reverse=True):
-                st.markdown(f"- **{obs['fecha'].strftime('%Y-%m-%d %H:%M')}** — {obs['texto']}")
-
-        # Ingresar nueva observación
-        nueva_obs = st.text_area("Agregar nueva observación", key="nueva_obs_texto")
-        if st.button("💾 Guardar observación"):
-            nueva_entrada = {
-                "texto": nueva_obs,
-                "fecha": datetime.now()
-            }
-            observaciones.append(nueva_entrada)
-            obs_ref.set({"observaciones": observaciones})
-            st.success("Observación guardada correctamente.")
 
 # --- HOJA 2 --- "Análisis de datos" ---
 with tab2:
@@ -990,42 +957,6 @@ with tab6:
         ax.set_ylabel("Señal")
         ax.legend()
         st.pyplot(fig)
-
-        # --- Tabla nueva debajo del gráfico RMN 1H ---
-        tabla_path_rmn1h = "tabla_editable_rmn1h"
-        doc_ref = db.collection("configuracion_global").document(tabla_path_rmn1h)
-
-        # Crear documento si no existe
-        if not doc_ref.get().exists:
-            doc_ref.set({"filas": []})
-
-        # Obtener el documento actualizado
-        doc_tabla = doc_ref.get()
-        columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
-        filas_rmn1h = doc_tabla.to_dict().get("filas", [])
-
-        df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
-        for col in columnas_rmn1h:
-            if col not in df_rmn1h_tabla.columns:
-                df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
-        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]  # asegurar orden
-
-        df_edit_rmn1h = st.data_editor(
-            df_rmn1h_tabla,
-            use_container_width=True,
-            hide_index=True,
-            num_rows="dynamic",
-            key="editor_tabla_rmn1h",
-            column_config={
-                "X min": st.column_config.NumberColumn(format="%.2f"),
-                "X pico": st.column_config.NumberColumn(format="%.2f"),
-                "X max": st.column_config.NumberColumn(format="%.2f")
-            }
-        )
-
-        # Guardar si hay cambios
-        if not df_edit_rmn1h.equals(df_rmn1h_tabla):
-            doc_ref.set({"filas": df_edit_rmn1h.to_dict(orient="records")})
 
         # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
         if any(usar_mascara.values()):

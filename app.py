@@ -1,6 +1,7 @@
 # Importación de librerías necesarias para el funcionamiento de la app
 from firestore_utils import iniciar_firebase, cargar_muestras, guardar_muestra
 from auth_utils import registrar_usuario, iniciar_sesion
+from ui_utils import mostrar_sector_flotante
 
 import streamlit as st  # - streamlit: interfaz web
 import pandas as pd     # - pandas: manejo de datos en tablas
@@ -87,36 +88,6 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "Sugerencias"
 ])
 
-def mostrar_sector_flotante():
-    if st.session_state.get("user_email") != "mlujan1863@gmail.com":
-        return  # Solo se muestra para vos
-
-    st.markdown("---")
-    st.markdown("🧠 **Observación rápida (sector flotante)**")
-    
-    muestra_activa = st.session_state.get("muestra_activa", None)
-
-    if muestra_activa:
-        st.info(f"Observación vinculada automáticamente a: **{muestra_activa}**")
-    else:
-        st.warning("No se detectó ninguna muestra activa. La observación no podrá guardarse.")
-
-    nueva_obs = st.text_area("Escribí tu observación", key=f"obs_flotante_{st.session_state.get('current_tab', '')}")
-    if st.button("💾 Guardar observación rápida"):
-        if not muestra_activa:
-            st.error("No se puede guardar la observación sin muestra activa.")
-        else:
-            obs_ref = db.collection("observaciones_muestras").document(muestra_activa)
-            obs_doc = obs_ref.get()
-            observaciones = obs_doc.to_dict().get("observaciones", []) if obs_doc.exists else []
-            nueva_entrada = {
-                "texto": nueva_obs,
-                "fecha": datetime.now(),
-                "origen": f"observación rápida desde {st.session_state.get('current_tab', 'desconocido')}"
-            }
-            observaciones.append(nueva_entrada)
-            obs_ref.set({"observaciones": observaciones})
-            st.success("Observación guardada correctamente.")
 
 # --- HOJA 1 --- "Laboratorio de Polioles" ---
 with tab1:

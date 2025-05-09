@@ -1,7 +1,4 @@
 # Importación de librerías necesarias para el funcionamiento de la app
-from firestore_utils import iniciar_firebase, cargar_muestras, guardar_muestra
-
-
 import streamlit as st  # - streamlit: interfaz web
 import pandas as pd     # - pandas: manejo de datos en tablas
 import json             # - json: lectura de archivos de configuración y datos
@@ -87,7 +84,13 @@ if "token" not in st.session_state:
 
 # --- Firebase ---
 if "firebase_initialized" not in st.session_state:  # Inicializa Firebase solo una vez por sesión de Streamlit
-    db = iniciar_firebase(st.secrets["firebase_key"])
+    cred_dict = json.loads(st.secrets["firebase_key"])  # 1. Se cargan las credenciales del archivo secreto de Firebase desde st.secrets
+    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")    #se corrige el formato de la clave privada reemplazando '\n' por saltos reales
+    cred = credentials.Certificate(cred_dict)   # 2. Se crea el objeto de credenciales para autenticar la conexión
+    if not firebase_admin._apps:    # 3. Se inicializa Firebase si no ha sido inicializado aún
+        firebase_admin.initialize_app(cred)
+        st.session_state.firebase_initialized = True
+db = firestore.client()     # 4. Se crea el cliente de Firestore para interactuar con la base de datos
 
 # --- Funciones comunes ---
 def cargar_muestras():      # Función para obtener todas las muestras almacenadas en la colección "muestras" de Firestore

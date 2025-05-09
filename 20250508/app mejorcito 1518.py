@@ -63,7 +63,6 @@ if "token" not in st.session_state:
         token = iniciar_sesion(email, password)
         if token:
             st.session_state["token"] = token
-            st.session_state["user_email"] = email
             st.success("Inicio de sesión exitoso.")     # Si es correcto, se guarda el token y se reinicia la app para mostrar las pestañas
             st.rerun()
 
@@ -228,38 +227,6 @@ with tab1:
         )
     else:
         st.info("No hay análisis cargados.")  # Mensaje si no hay datos cargados aún
-
-
-    # 🔐 Sección privada de observaciones (solo Marcelo)
-    if st.session_state.get("user_email") == "mlujan1863@gmail.com":
-
-        st.markdown("---")
-        st.subheader("🧠 Observaciones personales (solo visibles para vos)")
-
-        # Selección de muestra actual desde Firestore
-        muestras_disponibles = [doc.id for doc in db.collection("muestras").stream()]
-        muestra_actual = st.selectbox("Seleccionar muestra para observación", muestras_disponibles, key="obs_muestra_sel")
-
-        # Leer observaciones previas
-        obs_ref = db.collection("observaciones_muestras").document(muestra_actual)
-        obs_doc = obs_ref.get()
-        observaciones = obs_doc.to_dict().get("observaciones", []) if obs_doc.exists else []
-
-        if observaciones:
-            st.markdown("### Observaciones anteriores")
-            for obs in sorted(observaciones, key=lambda x: x["fecha"], reverse=True):
-                st.markdown(f"- **{obs['fecha'].strftime('%Y-%m-%d %H:%M')}** — {obs['texto']}")
-
-        # Ingresar nueva observación
-        nueva_obs = st.text_area("Agregar nueva observación", key="nueva_obs_texto")
-        if st.button("💾 Guardar observación"):
-            nueva_entrada = {
-                "texto": nueva_obs,
-                "fecha": datetime.now()
-            }
-            observaciones.append(nueva_entrada)
-            obs_ref.set({"observaciones": observaciones})
-            st.success("Observación guardada correctamente.")
 
 # --- HOJA 2 --- "Análisis de datos" ---
 with tab2:

@@ -234,7 +234,7 @@ with tab1:
     if st.session_state.get("user_email") == "mlujan1863@gmail.com":
 
         st.markdown("---")
-        st.subheader("🧠 Observaciones personales (solo visibles para vos)")
+        st.subheader("🧠 Sección mlujan1863@gmail.com")
 
         # Selección de muestra actual desde Firestore
         muestras_disponibles = [doc.id for doc in db.collection("muestras").stream()]

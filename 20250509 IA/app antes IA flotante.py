@@ -122,41 +122,9 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "Sugerencias"
 ])
 
-def mostrar_sector_flotante():
-    if st.session_state.get("user_email") != "mlujan1863@gmail.com":
-        return  # Solo se muestra para vos
-
-    st.markdown("---")
-    st.markdown("🧠 **Observación rápida (sector flotante)**")
-    
-    muestra_activa = st.session_state.get("muestra_activa", None)
-
-    if muestra_activa:
-        st.info(f"Observación vinculada automáticamente a: **{muestra_activa}**")
-    else:
-        st.warning("No se detectó ninguna muestra activa. La observación no podrá guardarse.")
-
-    nueva_obs = st.text_area("Escribí tu observación", key=f"obs_flotante_{st.session_state.get('current_tab', '')}")
-    if st.button("💾 Guardar observación rápida"):
-        if not muestra_activa:
-            st.error("No se puede guardar la observación sin muestra activa.")
-        else:
-            obs_ref = db.collection("observaciones_muestras").document(muestra_activa)
-            obs_doc = obs_ref.get()
-            observaciones = obs_doc.to_dict().get("observaciones", []) if obs_doc.exists else []
-            nueva_entrada = {
-                "texto": nueva_obs,
-                "fecha": datetime.now(),
-                "origen": f"observación rápida desde {st.session_state.get('current_tab', 'desconocido')}"
-            }
-            observaciones.append(nueva_entrada)
-            obs_ref.set({"observaciones": observaciones})
-            st.success("Observación guardada correctamente.")
-
 # --- HOJA 1 --- "Laboratorio de Polioles" ---
 with tab1:
     st.title("Laboratorio de Polioles")         # Título principal de la hoja
-    st.session_state["current_tab"] = "Laboratorio de Polioles"
     muestras = cargar_muestras()                # Carga todas las muestras desde Firestore
     st.subheader("Añadir muestra")              # Sección para crear o editar una muestra existente
     nombres = [m["nombre"] for m in muestras]   # Lista de nombres de muestras ya guardadas
@@ -168,7 +136,6 @@ with tab1:
     else:
         nombre_muestra = opcion  # El nombre se toma directamente del selector
         muestra_existente = next((m for m in muestras if m["nombre"] == opcion), None) # Se busca la muestra seleccionada para precargar sus datos
-    st.session_state["muestra_activa"] = nombre_muestra
 
     observacion = st.text_area("Observaciones", value=muestra_existente["observacion"] if muestra_existente else "", height=150)   # Campo para observaciones, precargado si existe
 
@@ -262,12 +229,41 @@ with tab1:
     else:
         st.info("No hay análisis cargados.")  # Mensaje si no hay datos cargados aún
 
-    mostrar_sector_flotante()
+
+    # 🔐 Sección privada de observaciones (solo Marcelo)
+    if st.session_state.get("user_email") == "mlujan1863@gmail.com":
+
+        st.markdown("---")
+        st.subheader("🧠 Sección mlujan1863@gmail.com")
+
+        # Selección de muestra actual desde Firestore
+        muestras_disponibles = [doc.id for doc in db.collection("muestras").stream()]
+        muestra_actual = st.selectbox("Seleccionar muestra para observación", muestras_disponibles, key="obs_muestra_sel")
+
+        # Leer observaciones previas
+        obs_ref = db.collection("observaciones_muestras").document(muestra_actual)
+        obs_doc = obs_ref.get()
+        observaciones = obs_doc.to_dict().get("observaciones", []) if obs_doc.exists else []
+
+        if observaciones:
+            st.markdown("### Observaciones anteriores")
+            for obs in sorted(observaciones, key=lambda x: x["fecha"], reverse=True):
+                st.markdown(f"- **{obs['fecha'].strftime('%Y-%m-%d %H:%M')}** — {obs['texto']}")
+
+        # Ingresar nueva observación
+        nueva_obs = st.text_area("Agregar nueva observación", key="nueva_obs_texto")
+        if st.button("💾 Guardar observación"):
+            nueva_entrada = {
+                "texto": nueva_obs,
+                "fecha": datetime.now()
+            }
+            observaciones.append(nueva_entrada)
+            obs_ref.set({"observaciones": observaciones})
+            st.success("Observación guardada correctamente.")
 
 # --- HOJA 2 --- "Análisis de datos" ---
 with tab2:
     st.title("Análisis de datos")  # Título principal de la hoja
-    st.session_state["current_tab"] = "Análisis de datos"
     muestras = cargar_muestras()   # Se cargan todas las muestras desde Firestore
     tabla = []
     for m in muestras:
@@ -294,14 +290,6 @@ with tab2:
                                format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
 
     df_sel = df[df["ID"].isin(seleccion)]  # Se filtran los análisis seleccionados
-
-    # Registrar muestra activa si hay una única muestra seleccionada
-    muestras_seleccionadas = df_sel["Nombre"].unique().tolist()
-    if len(muestras_seleccionadas) == 1:
-        st.session_state["muestra_activa"] = muestras_seleccionadas[0]
-    else:
-        st.session_state["muestra_activa"] = None  # Ambiguo si hay más de una
-
     df_avg = df_sel.groupby(["Nombre", "Tipo"], as_index=False)["Valor"].mean()  # Se agrupan por muestra y tipo, calculando el promedio si hay repeticiones
 
     st.subheader("Resumen de selección promediada")  # Se muestra la tabla resumen con los valores promedio
@@ -354,18 +342,15 @@ with tab2:
     else:
         st.warning("Los datos seleccionados no son compatibles para graficar.")# Mensaje de advertencia si no hay suficientes datos coincidentes
 
-    mostrar_sector_flotante()
-
 # --- HOJA 3 --- "Carga de espectros" ---
 with tab3:
     st.title("Carga de espectros")  # Título principal de la hoja
-    st.session_state["current_tab"] = "Carga de espectros"
+
     muestras = cargar_muestras()    # Se cargan todas las muestras desde Firestore
     nombres_muestras = [m["nombre"] for m in muestras]  # Lista de nombres para el selector
 
     st.subheader("Subir nuevo espectro")
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
-    st.session_state["muestra_activa"] = nombre_sel
     tipos_espectro_base = [
         "FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR",
         "RMN 1H", "RMN 13C", "RMN-LF 1H"
@@ -577,12 +562,10 @@ with tab3:
     else:
         st.info("No hay espectros cargados.")
 
-    mostrar_sector_flotante()
-
 # --- HOJA 4 --- "Análisis de espectros" ---
 with tab4:
     st.title("Análisis de espectros")  # Título principal de la hoja
-    st.session_state["current_tab"] = "Análisis de espectros"
+
     muestras = cargar_muestras()  # Cargar todas las muestras desde Firestore
     if not muestras:
         st.info("No hay muestras cargadas con espectros.")
@@ -610,18 +593,7 @@ with tab4:
     muestras_disp = df_esp["Muestra"].unique().tolist()
     tipos_disp = df_esp["Tipo"].unique().tolist()
     muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
-
-    # Registrar muestra activa si hay solo una seleccionada
-    if len(muestras_sel) == 1:
-        st.session_state["muestra_activa"] = muestras_sel[0]
-    else:
-        st.session_state["muestra_activa"] = None
     tipos_sel = st.multiselect("Tipo de espectro", tipos_disp, default=[])
-    if len(tipos_sel) == 1:
-        st.session_state["tipo_espectro_activo"] = tipos_sel[0]
-    else:
-        st.session_state["tipo_espectro_activo"] = None
-
     df_filtrado = df_esp[df_esp["Muestra"].isin(muestras_sel) & df_esp["Tipo"].isin(tipos_sel)]
 
     # Generar nombres para cada espectro disponible
@@ -804,12 +776,9 @@ with tab4:
                                file_name=os.path.basename(zip_path),
                                mime="application/zip")
 
-    mostrar_sector_flotante()
-
 # --- HOJA 5 --- "Índice OH espectroscópico"
 with tab5:
     st.title("Índice OH espectroscópico")  # Título principal de la hoja
-    st.session_state["current_tab"] = "Índice OH espectroscópico"  
     muestras = cargar_muestras()  # Cargar todas las muestras con espectros
     if not muestras:
         st.info("No hay muestras cargadas para analizar.")
@@ -922,18 +891,10 @@ with tab5:
     # Mostrar tabla final
     st.dataframe(df_final, use_container_width=True)
 
-    muestras_unicas = df_final["Muestra"].dropna().unique().tolist()
-    if len(muestras_unicas) == 1:
-        st.session_state["muestra_activa"] = muestras_unicas[0]
-    else:
-        st.session_state["muestra_activa"] = None
-
-    mostrar_sector_flotante()
-
 # --- HOJA 6 --- "Análisis RMN" ---
 with tab6:
     st.title("Análisis RMN")
-    st.session_state["current_tab"] = "Análisis RMN"
+
     muestras = cargar_muestras()
     if not muestras:
         st.info("No hay muestras cargadas.")
@@ -964,12 +925,6 @@ with tab6:
     st.subheader("Filtrar espectros")
     muestras_disp = sorted(df_rmn["muestra"].unique())
     muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
-
-    # Registrar muestra activa si hay una sola seleccionada
-    if len(muestras_sel) == 1:
-        st.session_state["muestra_activa"] = muestras_sel[0]
-    else:
-        st.session_state["muestra_activa"] = None
 
     df_filtrado = df_rmn[df_rmn["muestra"].isin(muestras_sel)]
 
@@ -1265,13 +1220,11 @@ with tab6:
                         continue
             with open(zip_path, "rb") as final_zip:
                 st.download_button("📦 Descargar imágenes RMN", data=final_zip.read(), file_name=os.path.basename(zip_path), mime="application/zip")
-
-    mostrar_sector_flotante()
-
+                
 # --- HOJA 7 --- "Consola" ---
 with tab7:
     st.title("Consola")  # Título principal de la hoja
-    st.session_state["current_tab"] = "Consola"
+
     muestras = cargar_muestras()
     if not muestras:
         st.info("No hay muestras cargadas.")
@@ -1563,12 +1516,10 @@ with tab7:
         st.session_state.pop("token", None)
         st.rerun()
 
-    mostrar_sector_flotante()
-
 # --- HOJA 8 --- "Sugerencias" ---
 with tab8:
     st.title("Sugerencias")   # Título principal de la hoja
-    st.session_state["current_tab"] = "Sugerencias"
+
     sugerencias_ref = db.collection("sugerencias")
 
     st.subheader("Dejar una sugerencia")
@@ -1597,37 +1548,3 @@ with tab8:
             sugerencias_ref.document(s["id"]).delete()
             st.success("Comentario eliminado.")
             st.rerun()
-
-
-    # 🔐 Sección privada de observaciones (solo Marcelo)
-    if st.session_state.get("user_email") == "mlujan1863@gmail.com":
-
-        st.markdown("---")
-        st.subheader("🧠 Sección mlujan1863@gmail.com")
-
-        # Selección de muestra actual desde Firestore
-        muestras_disponibles = [doc.id for doc in db.collection("muestras").stream()]
-        muestra_actual = st.selectbox("Seleccionar muestra para observación", muestras_disponibles, key="obs_muestra_sel")
-
-        # Leer observaciones previas
-        obs_ref = db.collection("observaciones_muestras").document(muestra_actual)
-        obs_doc = obs_ref.get()
-        observaciones = obs_doc.to_dict().get("observaciones", []) if obs_doc.exists else []
-
-        if observaciones:
-            st.markdown("### Observaciones anteriores")
-            for obs in sorted(observaciones, key=lambda x: x["fecha"], reverse=True):
-                st.markdown(f"- **{obs['fecha'].strftime('%Y-%m-%d %H:%M')}** — {obs['texto']}")
-
-        # Ingresar nueva observación
-        nueva_obs = st.text_area("Agregar nueva observación", key="nueva_obs_texto")
-        if st.button("💾 Guardar observación"):
-            nueva_entrada = {
-                "texto": nueva_obs,
-                "fecha": datetime.now()
-            }
-            observaciones.append(nueva_entrada)
-            obs_ref.set({"observaciones": observaciones})
-            st.success("Observación guardada correctamente.")
-
-    mostrar_sector_flotante()

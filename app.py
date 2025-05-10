@@ -58,24 +58,6 @@ if "token" not in st.session_state:
 if "firebase_initialized" not in st.session_state:  # Inicializa Firebase solo una vez por sesión de Streamlit
     db = iniciar_firebase(st.secrets["firebase_key"])
 
-# --- Funciones comunes ---
-def cargar_muestras():      # Función para obtener todas las muestras almacenadas en la colección "muestras" de Firestore
-    try:
-        docs = db.collection("muestras").stream()   # Devuelve una lista de diccionarios, cada uno con los datos de la muestra y su ID como "nombre"
-
-        return [{**doc.to_dict(), "nombre": doc.id} for doc in docs]
-    except:
-        return []       # Si hay un error (por ejemplo, si Firestore no responde), devuelve una lista vacía
-
-def guardar_muestra(nombre, observacion, analisis, espectros=None): # Función para guardar o actualizar una muestra en la base de datos
-    datos = {
-        "observacion": observacion, # - 'observacion' y 'analisis' se guardan siempre
-        "analisis": analisis        # - 'observacion' y 'analisis' se guardan siempre
-    }
-    if espectros is not None:       # - 'espectros' se incluye solo si está definido
-        datos["espectros"] = espectros
-    db.collection("muestras").document(nombre).set(datos)   # - 'nombre' se usa como ID del documento en Firestore
-
 # Definición de las hojas principales de la aplicación
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "Laboratorio de Polioles",

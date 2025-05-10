@@ -17,17 +17,19 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         st.stop()
 
     espectros_info = []
+     # Recorrer todas las muestras para identificar espectros relevantes   
     for m in muestras:
         espectros = m.get("espectros", [])
         for e in espectros:
             tipo = e.get("tipo", "")
-            if tipo not in ["FTIR-Acetato", "FTIR-Cloroformo"]:
+            if tipo not in ["FTIR-Acetato", "FTIR-Cloroformo"]:# Solo calcular índice OH para estos tipos de espectro
                 continue
 
             contenido = e.get("contenido")
             es_imagen = e.get("es_imagen", False)
             valor_y_extraido = None
 
+            # Intentar extraer el valor Y cercano a 3548 o 3611 del archivo numérico
             if contenido and not es_imagen:
                 try:
                     extension = e.get("nombre_archivo", "").split(".")[-1].lower()
@@ -58,6 +60,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 except:
                     valor_y_extraido = None
 
+            # Agregar a la tabla intermedia
             espectros_info.append({
                 "Muestra": m["nombre"],
                 "Tipo espectro": tipo,
@@ -73,11 +76,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         st.warning("No se encontraron espectros válidos para calcular Índice OH.")
         st.stop()
 
+    # Crear columna 'Señal solvente' unificando los datos manuales ingresados
     def obtener_senal_solvente(row):
         return row["Señal manual 3548"] if row["Tipo espectro"] == "FTIR-Acetato" else row["Señal manual 3611"]
 
     df_muestras["Señal solvente"] = df_muestras.apply(obtener_senal_solvente, axis=1)
 
+    # Calcular Índice OH
     def calcular_indice_oh(row):
         tipo = row["Tipo espectro"]
         peso = row["Peso muestra [g]"]
@@ -95,6 +100,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     df_muestras["Índice OH"] = df_muestras.apply(calcular_indice_oh, axis=1)
 
+    # Crear tabla
     columnas_mostrar = ["Muestra", "Tipo espectro", "Fecha espectro", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]
     df_final = df_muestras[columnas_mostrar].rename(columns={"Tipo espectro": "Tipo"})
     df_final["Peso muestra [g]"] = df_final["Peso muestra [g]"].apply(lambda x: round(x, 4) if pd.notnull(x) else x)

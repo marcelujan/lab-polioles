@@ -93,7 +93,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
 with tab1:
     st.title("Laboratorio de Polioles")         # Título principal de la hoja
     st.session_state["current_tab"] = "Laboratorio de Polioles"
-    muestras = cargar_muestras()                # Carga todas las muestras desde Firestore
+    muestras = cargar_muestras(db)                # Carga todas las muestras desde Firestore
     st.subheader("Añadir muestra")              # Sección para crear o editar una muestra existente
     nombres = [m["nombre"] for m in muestras]   # Lista de nombres de muestras ya guardadas
 
@@ -153,7 +153,7 @@ with tab1:
         st.rerun()       # Se recarga la página para ver los cambios
 
     st.subheader("Análisis cargados")
-    muestras = cargar_muestras()    # Recarga las muestras después de guardar
+    muestras = cargar_muestras(db)    # Recarga las muestras después de guardar
     tabla = []
     for m in muestras:
         for a in m["analisis"]:
@@ -198,13 +198,13 @@ with tab1:
     else:
         st.info("No hay análisis cargados.")  # Mensaje si no hay datos cargados aún
 
-    mostrar_sector_flotante()
+    mostrar_sector_flotante(db)
 
 # --- HOJA 2 --- "Análisis de datos" ---
 with tab2:
     st.title("Análisis de datos")  # Título principal de la hoja
     st.session_state["current_tab"] = "Análisis de datos"
-    muestras = cargar_muestras()   # Se cargan todas las muestras desde Firestore
+    muestras = cargar_muestras(db)   # Se cargan todas las muestras desde Firestore
     tabla = []
     for m in muestras:
         for i, a in enumerate(m.get("analisis", [])):
@@ -290,13 +290,13 @@ with tab2:
     else:
         st.warning("Los datos seleccionados no son compatibles para graficar.")# Mensaje de advertencia si no hay suficientes datos coincidentes
 
-    mostrar_sector_flotante()
+    mostrar_sector_flotante(db)
 
 # --- HOJA 3 --- "Carga de espectros" ---
 with tab3:
     st.title("Carga de espectros")  # Título principal de la hoja
     st.session_state["current_tab"] = "Carga de espectros"
-    muestras = cargar_muestras()    # Se cargan todas las muestras desde Firestore
+    muestras = cargar_muestras(db)    # Se cargan todas las muestras desde Firestore
     nombres_muestras = [m["nombre"] for m in muestras]  # Lista de nombres para el selector
 
     st.subheader("Subir nuevo espectro")
@@ -513,13 +513,13 @@ with tab3:
     else:
         st.info("No hay espectros cargados.")
 
-    mostrar_sector_flotante()
+    mostrar_sector_flotante(db)
 
 # --- HOJA 4 --- "Análisis de espectros" ---
 with tab4:
     st.title("Análisis de espectros")  # Título principal de la hoja
     st.session_state["current_tab"] = "Análisis de espectros"
-    muestras = cargar_muestras()  # Cargar todas las muestras desde Firestore
+    muestras = cargar_muestras(db)  # Cargar todas las muestras desde Firestore
     if not muestras:
         st.info("No hay muestras cargadas con espectros.")
         st.stop()
@@ -740,13 +740,13 @@ with tab4:
                                file_name=os.path.basename(zip_path),
                                mime="application/zip")
 
-    mostrar_sector_flotante()
+    mostrar_sector_flotante(db)
 
 # --- HOJA 5 --- "Índice OH espectroscópico"
 with tab5:
     st.title("Índice OH espectroscópico")  # Título principal de la hoja
     st.session_state["current_tab"] = "Índice OH espectroscópico"  
-    muestras = cargar_muestras()  # Cargar todas las muestras con espectros
+    muestras = cargar_muestras(db)  # Cargar todas las muestras con espectros
     if not muestras:
         st.info("No hay muestras cargadas para analizar.")
         st.stop()
@@ -864,13 +864,13 @@ with tab5:
     else:
         st.session_state["muestra_activa"] = None
 
-    mostrar_sector_flotante()
+    mostrar_sector_flotante(db)
 
 # --- HOJA 6 --- "Análisis RMN" ---
 with tab6:
     st.title("Análisis RMN")
     st.session_state["current_tab"] = "Análisis RMN"
-    muestras = cargar_muestras()
+    muestras = cargar_muestras(db)
     if not muestras:
         st.info("No hay muestras cargadas.")
         st.stop()
@@ -1202,13 +1202,13 @@ with tab6:
             with open(zip_path, "rb") as final_zip:
                 st.download_button("📦 Descargar imágenes RMN", data=final_zip.read(), file_name=os.path.basename(zip_path), mime="application/zip")
 
-    mostrar_sector_flotante()
+    mostrar_sector_flotante(db)
 
 # --- HOJA 7 --- "Consola" ---
 with tab7:
     st.title("Consola")  # Título principal de la hoja
     st.session_state["current_tab"] = "Consola"
-    muestras = cargar_muestras()
+    muestras = cargar_muestras(db)
     if not muestras:
         st.info("No hay muestras cargadas.")
         st.stop()
@@ -1499,7 +1499,7 @@ with tab7:
         st.session_state.pop("token", None)
         st.rerun()
 
-    mostrar_sector_flotante()
+    mostrar_sector_flotante(db)
 
 # --- HOJA 8 --- "Sugerencias" ---
 with tab8:
@@ -1566,4 +1566,4 @@ with tab8:
             obs_ref.set({"observaciones": observaciones})
             st.success("Observación guardada correctamente.")
 
-    mostrar_sector_flotante()
+    mostrar_sector_flotante(db)

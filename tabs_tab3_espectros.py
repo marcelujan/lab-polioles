@@ -1,14 +1,15 @@
+
 # tabs_tab3_espectros.py
 import streamlit as st
 import pandas as pd
-import base64
-import os
-import json
-from datetime import date, datetime
-from io import BytesIO
-from tempfile import TemporaryDirectory
 import matplotlib.pyplot as plt
-
+import numpy as np
+from io import BytesIO
+from datetime import datetime, date
+import os
+import base64
+import json
+from tempfile import TemporaryDirectory
 
 def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Carga de espectros")
@@ -19,8 +20,8 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.subheader("Subir nuevo espectro")
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
     st.session_state["muestra_activa"] = nombre_sel
-    tipos_espectro_base = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR", "RMN 1H", "RMN 13C", "RMN-LF 1H"]
 
+    tipos_espectro_base = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR", "RMN 1H", "RMN 13C", "RMN-LF 1H"]
     if "tipos_espectro" not in st.session_state:
         st.session_state.tipos_espectro = tipos_espectro_base.copy()
     tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
@@ -65,13 +66,15 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         nombre_archivo = archivo.name
         extension = os.path.splitext(nombre_archivo)[1].lower()
         es_imagen = extension in [".png", ".jpg", ".jpeg"]
-
         st.markdown("### Vista previa")
         if es_imagen:
             st.image(archivo, use_container_width=True)
         else:
             try:
-                df_esp = pd.read_excel(archivo) if extension == ".xlsx" else pd.read_csv(archivo, sep=None, engine="python")
+                if extension == ".xlsx":
+                    df_esp = pd.read_excel(archivo)
+                else:
+                    df_esp = pd.read_csv(archivo, sep=None, engine="python")
                 if df_esp.shape[1] >= 2:
                     col_x, col_y = df_esp.columns[:2]
                     min_x, max_x = float(df_esp[col_x].min()), float(df_esp[col_x].max())
@@ -87,11 +90,15 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             except Exception as e:
                 st.error(f"No se pudo leer el archivo: {e}")
 
-        extension = extension.strip(".")
+
+        # Generar nuevo nombre de archivo basado en muestra, tipo, fecha y resumen de observaciones
+        extension = os.path.splitext(archivo.name)[1].lower().strip(".")
         resumen_obs = observaciones.replace("\n", " ").strip()[:30].replace(" ", "_")
         fecha_str = fecha_espectro.strftime("%Y-%m-%d")
         nombre_sin_ext = f"{nombre_sel}_{tipo_espectro}_{fecha_str}-{resumen_obs}"
         nombre_generado = f"{nombre_sin_ext}.{extension}"
+
+        # Mostrar nombre final antes de guardar
         st.markdown(f"**🆔 Nuevo nombre asignado al archivo para su descarga:** `{nombre_generado}`")
 
     if st.button("Guardar espectro") and archivo:
@@ -115,11 +122,101 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         }
 
         espectros.append(nuevo)
+
         for m in muestras:
             if m["nombre"] == nombre_sel:
                 m["espectros"] = espectros
                 guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
                 st.success("Espectro guardado.")
                 st.rerun()
+
+    st.subheader("Espectros cargados")   # Tabla de espectros ya cargados
+    filas = []
+    filas_mascaras = []
+    for m in muestras:
+        for i, e in enumerate(m.get("espectros", [])):
+            fila = {
+                "Muestra": m["nombre"],
+                "Tipo": e.get("tipo", ""),
+                "Archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
+                "Observaciones": e.get("observaciones", ""),
+                "ID": f"{m['nombre']}__{i}"
+            }
+            if e.get("mascaras"):
+                fila["Máscaras"] = json.dumps(e["mascaras"])
+                for j, mascara in enumerate(e["mascaras"]):
+                    filas_mascaras.append({
+                        "Muestra": m["nombre"],
+                        "Archivo": e.get("nombre_archivo", ""),
+                        "Máscara N°": j+1,
+                        "D [m2/s]": mascara.get("difusividad"),
+                        "T2 [s]": mascara.get("t2"),
+                        "Xmin [ppm]": mascara.get("x_min"),
+                        "Xmax [ppm]": mascara.get("x_max")
+                    })
+            else:
+                fila["Máscaras"] = ""
+            filas.append(fila)
+
+    df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
+    df_mascaras = pd.DataFrame(filas_mascaras)
+    if not df_esp_tabla.empty:
+        st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
+        seleccion = st.selectbox(
+            "Eliminar espectro",
+            df_esp_tabla["ID"],
+            format_func=lambda i: df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]
+            )
+        if st.button("Eliminar espectro"):  # Eliminar espectros (Botón)
+            nombre, idx = seleccion.split("__")
+            for m in muestras:
+                if m["nombre"] == nombre:
+                    m["espectros"].pop(int(idx))
+                    guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
+                    st.success("Espectro eliminado.")
+                    st.rerun()
+
+        if st.button("📦 Preparar descarga"):   #Preparar descarga de espectros (Excel y ZIP)
+            with TemporaryDirectory() as tmpdir:
+                zip_path = os.path.join(tmpdir, f"espectros_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.zip")
+                excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
+
+                with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
+                    df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")
+                    if not df_mascaras.empty:
+                        df_mascaras.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
+                        
+                with zipfile.ZipFile(zip_path, "w") as zipf:
+                    zipf.write(excel_path, arcname="tabla_espectros.xlsx")
+                    for m in muestras:
+                        for e in m.get("espectros", []):
+                            contenido = e.get("contenido")
+                            if not contenido:
+                                continue
+                            carpeta = f"{m['nombre']}"
+                            nombre = e.get("nombre_archivo", "espectro")
+                            fullpath = os.path.join(tmpdir, carpeta)
+                            os.makedirs(fullpath, exist_ok=True)
+                            file_path = os.path.join(fullpath, nombre)
+                            with open(file_path, "wb") as file_out:
+                                try:
+                                    file_out.write(base64.b64decode(contenido))
+                                except Exception as error:
+                                    st.error(f"Error al decodificar archivo: {nombre} — {error}")
+                                    continue
+                            zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
+
+                with open(zip_path, "rb") as final_zip:
+                    zip_bytes = final_zip.read()
+                    st.session_state["zip_bytes"] = zip_bytes
+                    st.session_state["zip_name"] = os.path.basename(zip_path)
+
+        if "zip_bytes" in st.session_state:   # Botón de descarga del ZIP preparado
+            st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
+                               file_name=st.session_state["zip_name"],
+                               mime="application/zip")
+    else:
+        st.info("No hay espectros cargados.")
 
     mostrar_sector_flotante(db)

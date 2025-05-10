@@ -4,15 +4,13 @@ from auth_utils import registrar_usuario, iniciar_sesion
 from ui_utils import mostrar_sector_flotante
 
 from tabs_tab1_lab import render_tab1
-from tabs_tab2_analisis import render_tab2
+from tabs_tab2_datos import render_tab2
 from tabs_tab3_espectros import render_tab3
-from tabs_tab4_graficos import render_tab4
+from tabs_tab4_espectros import render_tab4
 from tabs_tab5_oh import render_tab5
 from tabs_tab6_rmn import render_tab6
 from tabs_tab7_consola import render_tab7
 from tabs_tab8_sugerencias import render_tab8
-
-import streamlit as st
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]

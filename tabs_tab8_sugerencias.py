@@ -34,6 +34,7 @@ def render_tab8(db, mostrar_sector_flotante):
             st.success("Comentario eliminado.")
             st.rerun()
 
+    # 🔐 Sección mlujan1863
     if st.session_state.get("user_email") == "mlujan1863@gmail.com":
         st.markdown("---")
         st.subheader("🧠 Sección mlujan1863@gmail.com")

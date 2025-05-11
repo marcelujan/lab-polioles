@@ -15,7 +15,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         st.info("No hay muestras cargadas.")
         st.stop()
 
-    # --- Cargar espectros válidos ---
     espectros = []
     for m in muestras:
         for e in m.get("espectros", []):
@@ -28,8 +27,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                 })
 
     df_espectros = pd.DataFrame(espectros)
-
-    # --- Selector de espectros ---
     opciones = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1)
     seleccion = st.multiselect("Seleccionar espectros para comparar", opciones, default=[])
     seleccionados = df_espectros[opciones.isin(seleccion)]
@@ -42,8 +39,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             if ext == "xlsx":
                 df = pd.read_excel(contenido)
             else:
-                sep_try = [",", ";", "\t", " "]
-                for sep in sep_try:
+                for sep in [",", ";", "\t", " "]:
                     contenido.seek(0)
                     try:
                         df = pd.read_csv(contenido, sep=sep, engine="python")
@@ -53,6 +49,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                         continue
                 else:
                     continue
+            df = df.dropna()
             col_x, col_y = df.columns[:2]
             df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
             df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
@@ -64,20 +61,20 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     if not datos_graficar:
         return
 
-    # --- Opciones de procesamiento ---
+    # Opciones
     col1, col2, col3 = st.columns(3)
     aplicar_suavizado = col1.checkbox("Aplicar suavizado (Savitzky-Golay)", value=False)
     normalizar = col2.checkbox("Normalizar intensidad", value=False)
     mostrar_picos = col3.checkbox("Mostrar picos detectados automáticamente", value=False)
 
-    altura_min = None
-    distancia_min = None
+    altura_min = 0.0
+    distancia_min = 70
     if mostrar_picos:
         col4, col5 = st.columns(2)
         altura_min = col4.number_input("Altura mínima", min_value=0.0, value=0.0, step=0.1, format="%.2f")
         distancia_min = col5.number_input("Distancia mínima entre picos", min_value=1, value=70, step=1)
 
-    # --- Rango de visualización en un solo renglón ---
+    # Rango manual editable
     all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos_graficar])
     all_y = np.concatenate([df.iloc[:, 1].values for _, _, _, df in datos_graficar])
     colx1, colx2, coly1, coly2 = st.columns(4)
@@ -86,7 +83,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     y_min = coly1.number_input("Y min", value=float(np.min(all_y)))
     y_max = coly2.number_input("Y max", value=float(np.max(all_y)))
 
-    # --- Gráfico combinado ---
+    # Gráfico
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
 
@@ -94,6 +91,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()
         if df_filtrado.empty:
             continue
+
         x = df_filtrado.iloc[:, 0].reset_index(drop=True)
         y = df_filtrado.iloc[:, 1].reset_index(drop=True)
 
@@ -114,6 +112,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             try:
                 peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
                 ax.plot(x.iloc[peaks], y.iloc[peaks], "x", label=f"{label} picos")
+                for i in peaks:
+                    ax.text(x.iloc[i], y.iloc[i], f"{x.iloc[i]:.0f} cm⁻¹\n{y.iloc[i]:.3f}",
+                            fontsize=6, ha="center", va="bottom", rotation=90)
             except:
                 continue
 
@@ -124,23 +125,25 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     ax.legend()
     st.pyplot(fig)
 
-    # --- Descargas ---
+    # Descargas
     nombre_base = f"FTIR_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
 
-    buffer_excel = BytesIO()
-    with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+    excel_buffer = BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
         resumen.to_excel(writer, index=False, sheet_name="Resumen")
         for muestra, tipo, archivo, df in datos_graficar:
             df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)]
             df_filtrado.to_excel(writer, index=False, sheet_name=f"{muestra[:15]}_{tipo[:10]}")
-    buffer_excel.seek(0)
+    excel_buffer.seek(0)
 
-    st.download_button("📥 Descargar Excel", data=buffer_excel.getvalue(),
-                       file_name=f"{nombre_base}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    st.download_button("📥 Descargar Excel", data=excel_buffer.getvalue(),
+                       file_name=f"{nombre_base}.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-    buffer_img = BytesIO()
-    fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
-    st.download_button("📷 Descargar gráfico PNG", data=buffer_img.getvalue(),
-                       file_name=f"{nombre_base}.png", mime="image/png")
+    img_buffer = BytesIO()
+    fig.savefig(img_buffer, format="png", dpi=300, bbox_inches="tight")
+    st.download_button("📷 Descargar gráfico PNG", data=img_buffer.getvalue(),
+                       file_name=f"{nombre_base}.png",
+                       mime="image/png")
 
     mostrar_sector_flotante(db)

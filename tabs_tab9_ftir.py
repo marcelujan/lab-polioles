@@ -23,7 +23,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.session_state["muestra_activa"] = muestra_sel
     muestra = next(m for m in muestras if m["nombre"] == muestra_sel)
 
-    espectros_ftir = [e for e in muestra.get("espectros", []) if "FTIR" in e.get("tipo", "") and not e.get("es_imagen", False)]
+    tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
+    espectros_ftir = [e for e in muestra.get("espectros", []) if e.get("tipo", "") in tipos_validos and not e.get("es_imagen", False)]
+
     if not espectros_ftir:
         st.warning("La muestra seleccionada no contiene espectros FTIR numéricos.")
         st.stop()

@@ -8,11 +8,11 @@ from tabs_tab1_lab import render_tab1
 from tabs_tab2_datos import render_tab2
 from tabs_tab3_espectros import render_tab3
 from tabs_tab4_espectros import render_tab4
-from tabs_tab5_ftir import render_tab5  # Análisis FTIR con índice OH y comparación
+from tabs_tab5_oh import render_tab5
 from tabs_tab6_rmn import render_tab6
 from tabs_tab7_consola import render_tab7
 from tabs_tab8_sugerencias import render_tab8
-from tabs_tab9_desarrollos import render_tab9  # Hoja en blanco para pruebas
+from tabs_tab9_ftir import render_tab9
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]
@@ -59,11 +59,11 @@ tabs = st.tabs([
     "Análisis de datos",
     "Carga de espectros",
     "Análisis de espectros",
-    "Análisis FTIR",   # <- Esta reemplaza a la anterior hoja 5
+    "Índice OH espectroscópico",
     "Análisis RMN",
     "Consola",
     "Sugerencias",
-    "Desarrollos"       # <- Nueva hoja 9
+    "Análisis FTIR"
 ])
 
 with tabs[0]:
@@ -75,7 +75,7 @@ with tabs[2]:
 with tabs[3]:
     render_tab4(db, cargar_muestras, mostrar_sector_flotante)
 with tabs[4]:
-    render_tab5(db, cargar_muestras, mostrar_sector_flotante)  # <-- Ahora hoja 5 es FTIR
+    render_tab5(db, cargar_muestras, mostrar_sector_flotante)
 with tabs[5]:
     render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
 with tabs[6]:

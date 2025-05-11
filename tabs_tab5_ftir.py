@@ -139,11 +139,25 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         return
 
     all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos])
-    col1, col2 = st.columns(2)
-    x_min = col1.number_input("X min", value=float(np.min(all_x)))
-    x_max = col2.number_input("X max", value=float(np.max(all_x)))
-    y_min = col1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
-    y_max = col2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
+    
+     # --- Rango de visualización (todo en una fila) ---
+    col_x1, col_x2, col_y1, col_y2 = st.columns(4)
+    x_min = col_x1.number_input("X min", value=float(np.min(all_x)))
+    x_max = col_x2.number_input("X max", value=float(np.max(all_x)))
+    y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
+    y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
+
+    # --- Comparación de similitud ---
+    comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
+
+    if comparar_similitud:
+        col_somb, col_cmp1, col_cmp2 = st.columns([1, 2, 2])
+        sombrear = col_somb.checkbox("Sombrear rango comparado", value=False)
+        x_comp_min = col_cmp1.number_input("X mínimo", value=x_min, step=1.0, key="comp_x_min")
+        x_comp_max = col_cmp2.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
+    else:
+        sombrear = False
+        x_comp_min, x_comp_max = None, None
 
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
@@ -196,7 +210,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         x_comp_max = st.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
     with col3:
         sombrear = st.checkbox("Sombrear rango comparado", value=False)
-    if sombrear:
+    if sombrear and x_comp_min is not None and x_comp_max is not None:
         ax.axvspan(x_comp_min, x_comp_max, color='gray', alpha=0.2, label="Rango comparado")
 
     ax.set_xlim(x_min, x_max)

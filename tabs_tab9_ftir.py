@@ -19,7 +19,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     # Selección de muestra y espectro
     nombres_muestras = [m["nombre"] for m in muestras]
-    muestra_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
+    muestra_sel = st.selectbox("Seleccionar muestra", nombres_muestras, key="selectbox_ftir_muestra")
     st.session_state["muestra_activa"] = muestra_sel
     muestra = next(m for m in muestras if m["nombre"] == muestra_sel)
 

@@ -185,13 +185,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         ax.plot(x, y, label=label)
         resumen[f"{label} (X)"] = x
         resumen[f"{label} (Y)"] = y
-
+          
         if mostrar_picos:
             try:
                 peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
                 ax.plot(x.iloc[peaks], y.iloc[peaks], "x", label=f"{label} picos")
-                for px, py in zip(x.iloc[peaks], y.iloc[peaks]):
-                    ax.annotate(f"   {px:.0f} cm⁻¹ ⇒ {py:.4f}", (px, py), textcoords="offset points", xytext=(0, 8), ha="left", fontsize=6)
+                for i in peaks:
+                    ax.text(
+                        x.iloc[i], y.iloc[i], f"   {x.iloc[i]:.0f} cm⁻¹ ⇒ {y.iloc[i]:.4f}", fontsize=6, ha="center", va="bottom", rotation=90)
             except:
                 continue
 

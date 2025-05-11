@@ -114,7 +114,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                 ax.plot(x.iloc[peaks], y.iloc[peaks], "x", label=f"{label} picos")
                 for i in peaks:
                     ax.text(
-                        x.iloc[i], y.iloc[i], f"{x.iloc[i]:.0f} cm⁻¹ ⇒ {y.iloc[i]:.4f}", fontsize=6, ha="center", va="bottom", rotation=90)
+                        x.iloc[i], y.iloc[i], f"   {x.iloc[i]:.0f} cm⁻¹ ⇒ {y.iloc[i]:.4f}", fontsize=6, ha="center", va="bottom", rotation=90)
             except:
                 continue
 

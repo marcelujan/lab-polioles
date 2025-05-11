@@ -140,6 +140,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos])
     
+     # --- Rango de visualización (todo en una fila) ---
+    col_x1, col_x2, col_y1, col_y2 = st.columns(4)
+    x_min = col_x1.number_input("X min", value=float(np.min(all_x)))
+    x_max = col_x2.number_input("X max", value=float(np.max(all_x)))
+    y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
+    y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
+
     # --- Comparación de similitud ---
     comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
 
@@ -155,12 +162,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     resumen = pd.DataFrame()
     fwhm_rows = []
 
-     # --- Rango de visualización (todo en una fila) ---
-    col_x1, col_x2, col_y1, col_y2 = st.columns(4)
-    x_min = col_x1.number_input("X min", value=float(np.min(all_x)))
-    x_max = col_x2.number_input("X max", value=float(np.max(all_x)))
-    y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
-    y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
+
 
     for muestra, tipo, archivo, df in datos:
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()

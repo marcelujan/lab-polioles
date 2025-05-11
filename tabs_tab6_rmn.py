@@ -7,6 +7,7 @@ from io import BytesIO
 from datetime import datetime
 import os
 import base64
+import zipfile
 from tempfile import TemporaryDirectory
 
 

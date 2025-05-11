@@ -140,24 +140,16 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos])
     
-     # --- Rango de visualización (todo en una fila) ---
-    col_x1, col_x2, col_y1, col_y2 = st.columns(4)
-    x_min = col_x1.number_input("X min", value=float(np.min(all_x)))
-    x_max = col_x2.number_input("X max", value=float(np.max(all_x)))
-    y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
-    y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
-
     # --- Comparación de similitud ---
     comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
 
     if comparar_similitud:
-        col_somb, col_cmp1, col_cmp2 = st.columns([1, 2, 2])
-        sombrear = col_somb.checkbox("Sombrear rango comparado", value=False)
-        x_comp_min = col_cmp1.number_input("X mínimo", value=x_min, step=1.0, key="comp_x_min")
-        x_comp_max = col_cmp2.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
+        col_sim1, col_sim2, col_sim3 = st.columns([1, 1, 1])
+        sombrear = col_sim3.checkbox("Sombrear rango comparado", value=False)
+        x_comp_min = col_sim1.number_input("X mínimo", value=x_min, step=1.0, key="comp_x_min")
+        x_comp_max = col_sim2.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
     else:
         sombrear = False
-        x_comp_min, x_comp_max = None, None
 
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
@@ -202,16 +194,12 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             except:
                 continue
 
-    # --- Sombrear el rango comparado si se activa ---
-    col1, col2, col3 = st.columns([2, 2, 1])
-    with col1:
-        x_comp_min = st.number_input("X mínimo", value=x_min, step=1.0, key="comp_x_min")
-    with col2:
-        x_comp_max = st.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
-    with col3:
-        sombrear = st.checkbox("Sombrear rango comparado", value=False)
-    if sombrear and x_comp_min is not None and x_comp_max is not None:
-        ax.axvspan(x_comp_min, x_comp_max, color='gray', alpha=0.2, label="Rango comparado")
+     # --- Rango de visualización (todo en una fila) ---
+    col_x1, col_x2, col_y1, col_y2 = st.columns(4)
+    x_min = col_x1.number_input("X min", value=float(np.min(all_x)))
+    x_max = col_x2.number_input("X max", value=float(np.max(all_x)))
+    y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
+    y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
 
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
@@ -219,6 +207,43 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     ax.set_ylabel("Absorbancia")
     ax.legend()
     st.pyplot(fig)
+
+# --- Matriz de similitud ---
+if comparar_similitud and x_comp_min is not None and x_comp_max is not None:
+    st.subheader("Matriz de similitud entre espectros")
+    vectores = {}
+    for muestra, tipo, archivo, df in datos:
+        df_filt = df[(df.iloc[:, 0] >= x_comp_min) & (df.iloc[:, 0] <= x_comp_max)].copy()
+        if df_filt.empty:
+            continue
+        x = df_filt.iloc[:, 0].reset_index(drop=True)
+        y = df_filt.iloc[:, 1].reset_index(drop=True)
+        if aplicar_suavizado and len(y) >= 5:
+            window = 7 if len(y) % 2 else 7
+            y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
+        if normalizar and np.max(np.abs(y)) != 0:
+            y = y / np.max(np.abs(y))
+        key = f"{muestra} – {tipo}"
+        vectores[key] = (x, y)
+
+    nombres = list(vectores.keys())
+    matriz = np.zeros((len(nombres), len(nombres)))
+    for i in range(len(nombres)):
+        for j in range(len(nombres)):
+            xi, yi = vectores[nombres[i]]
+            xj, yj = vectores[nombres[j]]
+            x_comun = np.linspace(max(xi.min(), xj.min()), min(xi.max(), xj.max()), 500)
+            yi_interp = np.interp(x_comun, xi, yi)
+            yj_interp = np.interp(x_comun, xj, yj)
+            if np.std(yi_interp) == 0 or np.std(yj_interp) == 0:
+                corr = 0
+            else:
+                corr = np.corrcoef(yi_interp, yj_interp)[0, 1]
+            matriz[i, j] = round(corr * 100, 1)  # porcentaje de similitud
+
+    df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
+    st.dataframe(df_similitud.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
+
 
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     nombre_base = f"FTIR_{now}"

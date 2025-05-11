@@ -1,11 +1,12 @@
+
+# tabs_tab9_ftir.py
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks, savgol_filter
 import base64
 from io import BytesIO
-from datetime import datetime
+from scipy.signal import savgol_filter, find_peaks
 
 def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.title("Análisis FTIR")
@@ -15,7 +16,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         st.info("No hay muestras cargadas.")
         st.stop()
 
-    # --- COMPARACIÓN DE ESPECTROS ---
     espectros = []
     for m in muestras:
         for e in m.get("espectros", []):
@@ -61,66 +61,69 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             df = df.dropna()
             datos_graficar.append((row["muestra"], row["tipo"], row["archivo"], df))
         except:
-            continue
+            st.warning(f"No se pudo procesar: {row['archivo']}")
 
-    if not seleccion:
+    if not datos_graficar:
+        st.warning("No se pudieron leer espectros válidos.")
         return
 
-    # --- Opciones de procesamiento ---
-    aplicar_suavizado = st.checkbox("Aplicar suavizado (Savitzky-Golay)", value=False)
-    normalizar = st.checkbox("Normalizar intensidad", value=False)
-    mostrar_picos = st.checkbox("Mostrar picos detectados automáticamente", value=False)
+    all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos_graficar])
+    x_min, x_max = float(np.min(all_x)), float(np.max(all_x))
+    x_min, x_max = st.slider("Seleccionar rango X", min_value=x_min, max_value=x_max, value=(x_min, x_max))
+
+    aplicar_suavizado = st.checkbox("Aplicar suavizado (Savitzky-Golay)", value=True)
+    aplicar_normalizacion = st.checkbox("Normalizar intensidad", value=True)
+    mostrar_picos = st.checkbox("Mostrar picos detectados automáticamente", value=True)
 
     if mostrar_picos:
         col1, col2 = st.columns(2)
         with col1:
-            altura_min = st.number_input("Altura mínima", value=0.05, step=0.01)
+            altura_min = st.number_input("Altura mínima", min_value=0.0, value=0.05, step=0.01)
         with col2:
-            distancia_min = st.number_input("Distancia mínima entre picos", value=10, step=1)
+            distancia_min = st.number_input("Distancia mínima entre picos", min_value=1, value=20, step=1)
 
-    # --- Rango de visualización manual ---
-    st.markdown("### Rango manual editable:")
-    all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos_graficar])
-    all_y = np.concatenate([df.iloc[:, 1].values for _, _, _, df in datos_graficar])
-    x_min = st.number_input("X min", value=float(np.min(all_x)))
-    x_max = st.number_input("X max", value=float(np.max(all_x)))
-    y_min = st.number_input("Y min", value=float(np.min(all_y)))
-    y_max = st.number_input("Y max", value=float(np.max(all_y)))
+    y_min, y_max = 0.0, 1.0
+    colx1, colx2, coly1, coly2 = st.columns(4)
+    with colx1: x_min = st.number_input("X min", value=float(x_min))
+    with colx2: x_max = st.number_input("X max", value=float(x_max))
+    with coly1: y_min = st.number_input("Y min", value=0.0)
+    with coly2: y_max = st.number_input("Y max", value=1.0)
 
-    # --- GRAFICAR ---
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
+
     for muestra, tipo, archivo, df in datos_graficar:
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)]
-        x = df_filtrado.iloc[:, 0].reset_index(drop=True)
-        y = df_filtrado.iloc[:, 1].reset_index(drop=True)
+        x = df_filtrado.iloc[:, 0]
+        y = df_filtrado.iloc[:, 1]
 
-        if aplicar_suavizado and len(y) >= 7:
-            y = pd.Series(savgol_filter(y, window_length=7, polyorder=2))
-        if normalizar and y.max() > 0:
-            y = y / y.max()
+        if aplicar_suavizado:
+            if len(y) >= 5:
+                y = savgol_filter(y, 5, 2)
+        if aplicar_normalizacion:
+            if np.max(y) != 0:
+                y = y / np.max(y)
 
         ax.plot(x, y, label=f"{muestra} – {tipo}")
-        resumen[f"{muestra} – {tipo} (X)"] = x
-        resumen[f"{muestra} – {tipo} (Y)"] = y
+        resumen[f"{muestra} – {tipo} (X)"] = x.reset_index(drop=True)
+        resumen[f"{muestra} – {tipo} (Y)"] = y.reset_index(drop=True)
 
         if mostrar_picos:
             try:
-                indices, _ = find_peaks(y, height=altura_min, distance=distancia_min)
-                for idx in indices:
-                    ax.plot(x[idx], y[idx], "rx")
-                    ax.text(x[idx], y[idx], f"{x[idx]:.0f}", fontsize=6, ha="center", va="bottom")
+                peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
+                for p in peaks:
+                    ax.axvline(x.iloc[p], color="gray", linestyle="--", linewidth=0.8)
+                    ax.text(x.iloc[p], y.iloc[p], f"{x.iloc[p]:.0f}", fontsize=6, rotation=90, va="bottom", ha="center")
             except:
                 continue
 
-    ax.set_xlabel("Número de onda [cm⁻¹]")
-    ax.set_ylabel("Absorbancia")
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
+    ax.set_xlabel("Número de onda [cm⁻¹]")
+    ax.set_ylabel("Absorbancia")
     ax.legend()
     st.pyplot(fig)
 
-    # --- DESCARGAS ---
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     excel_buffer = BytesIO()
     with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
@@ -129,21 +132,13 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)]
             df_filtrado.to_excel(writer, index=False, sheet_name=f"{muestra[:15]}_{tipo[:10]}")
     excel_buffer.seek(0)
-
-    st.download_button(
-        "📥 Descargar Excel",
-        data=excel_buffer.getvalue(),
-        file_name=f"FTIR_{now}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    st.download_button("📥 Descargar Excel", data=excel_buffer.getvalue(),
+                       file_name=f"FTIR_{now}.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     img_buffer = BytesIO()
     fig.savefig(img_buffer, format="png", dpi=300, bbox_inches="tight")
-    st.download_button(
-        "📷 Descargar gráfico PNG",
-        data=img_buffer.getvalue(),
-        file_name=f"FTIR_{now}.png",
-        mime="image/png"
-    )
+    st.download_button("📷 Descargar gráfico PNG", data=img_buffer.getvalue(),
+                       file_name=f"FTIR_{now}.png", mime="image/png")
 
     mostrar_sector_flotante(db)

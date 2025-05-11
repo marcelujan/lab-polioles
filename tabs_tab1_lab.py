@@ -6,7 +6,7 @@ import json
 from firestore_utils import cargar_muestras, guardar_muestra
 from ui_utils import mostrar_sector_flotante
 
-def hoja_lab_polioles(db):
+def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Laboratorio de Polioles")
     st.session_state["current_tab"] = "Laboratorio de Polioles"
     muestras = cargar_muestras(db)

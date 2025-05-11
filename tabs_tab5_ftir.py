@@ -188,6 +188,17 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             except:
                 continue
 
+    # --- Sombrear el rango comparado si se activa ---
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        x_comp_min = st.number_input("X mínimo", value=x_min, step=1.0, key="comp_x_min")
+    with col2:
+        x_comp_max = st.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
+    with col3:
+        sombrear = st.checkbox("Sombrear rango comparado", value=False)
+    if sombrear:
+        ax.axvspan(x_comp_min, x_comp_max, color='gray', alpha=0.2, label="Rango comparado")
+
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.set_xlabel("Número de onda [cm⁻¹]")

@@ -29,11 +29,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     df_espectros = pd.DataFrame(espectros)
 
-    # --- Selección ---
+    # --- Selector de espectros ---
     opciones = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1)
     seleccion = st.multiselect("Seleccionar espectros para comparar", opciones, default=[])
-
     seleccionados = df_espectros[opciones.isin(seleccion)]
+
     datos_graficar = []
     for _, row in seleccionados.iterrows():
         try:
@@ -58,8 +58,8 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
             df = df.dropna()
             datos_graficar.append((row["muestra"], row["tipo"], row["archivo"], df))
-        except Exception as err:
-            continue  # No mostrar advertencia innecesaria
+        except:
+            continue
 
     if not datos_graficar:
         return
@@ -77,7 +77,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         altura_min = col4.number_input("Altura mínima", min_value=0.0, value=0.0, step=0.1, format="%.2f")
         distancia_min = col5.number_input("Distancia mínima entre picos", min_value=1, value=70, step=1)
 
-    # --- Rango de visualización (X/Y manuales) ---
+    # --- Rango de visualización en un solo renglón ---
     all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos_graficar])
     all_y = np.concatenate([df.iloc[:, 1].values for _, _, _, df in datos_graficar])
     colx1, colx2, coly1, coly2 = st.columns(4)
@@ -86,32 +86,34 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     y_min = coly1.number_input("Y min", value=float(np.min(all_y)))
     y_max = coly2.number_input("Y max", value=float(np.max(all_y)))
 
-    # --- Gráfico ---
+    # --- Gráfico combinado ---
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
 
     for muestra, tipo, archivo, df in datos_graficar:
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()
-        x = df_filtrado.iloc[:, 0]
-        y = df_filtrado.iloc[:, 1]
+        if df_filtrado.empty:
+            continue
+        x = df_filtrado.iloc[:, 0].reset_index(drop=True)
+        y = df_filtrado.iloc[:, 1].reset_index(drop=True)
 
         if aplicar_suavizado and len(y) >= 5:
             window = 5 if len(y) < 7 else 7
             if window % 2 == 0: window += 1
-            y = savgol_filter(y, window_length=window, polyorder=2)
+            y = pd.Series(savgol_filter(y, window_length=window, polyorder=2))
 
         if normalizar:
             y = y / np.max(np.abs(y)) if np.max(np.abs(y)) != 0 else y
 
         label = f"{muestra} – {tipo}"
         ax.plot(x, y, label=label)
-        resumen[f"{label} (X)"] = x.reset_index(drop=True)
-        resumen[f"{label} (Y)"] = y.reset_index(drop=True)
+        resumen[f"{label} (X)"] = x
+        resumen[f"{label} (Y)"] = y
 
         if mostrar_picos:
             try:
                 peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
-                ax.plot(x.iloc[peaks], y[peaks], "x", label=f"{label} picos")
+                ax.plot(x.iloc[peaks], y.iloc[peaks], "x", label=f"{label} picos")
             except:
                 continue
 
@@ -123,8 +125,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.pyplot(fig)
 
     # --- Descargas ---
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    nombre_base = f"FTIR_{timestamp}"
+    nombre_base = f"FTIR_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
 
     buffer_excel = BytesIO()
     with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:

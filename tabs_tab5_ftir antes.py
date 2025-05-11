@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
 from datetime import datetime
-from scipy.signal import savgol_filter, find_peaks, peak_widths
+from scipy.signal import savgol_filter, find_peaks
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     st.title("Análisis FTIR")
@@ -45,8 +45,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                             df = None
                     if df is not None and df.shape[1] >= 2:
                         df = df.dropna()
-                        x_val = pd.to_numeric(df.iloc[:, 0], errors='coerce')
-                        y_val = pd.to_numeric(df.iloc[:, 1], errors='coerce')
+                        x_val = pd.to_numeric(df.iloc[:, 0], errors="coerce")
+                        y_val = pd.to_numeric(df.iloc[:, 1], errors="coerce")
                         df_limpio = pd.DataFrame({"X": x_val, "Y": y_val}).dropna()
                         objetivo_x = 3548 if tipo == "FTIR-Acetato" else 3611
                         idx = (df_limpio["X"] - objetivo_x).abs().idxmin()
@@ -65,20 +65,37 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             })
 
     df_oh = pd.DataFrame(espectros_info)
-    if not df_oh.empty:
-        df_oh["Señal solvente"] = df_oh.apply(lambda row: row["Señal manual 3548"] if row["Tipo"] == "FTIR-Acetato" else row["Señal manual 3611"], axis=1)
+    if df_oh.empty:
+        st.warning("No se encontraron espectros válidos.")
+    else:
+        def get_manual(row):
+            if row["Tipo"] == "FTIR-Acetato":
+                return row["Señal manual 3548"]
+            elif row["Tipo"] == "FTIR-Cloroformo":
+                return row["Señal manual 3611"]
+            return None
 
-        def calcular_indice(row):
+        def calc_oh(row):
+            tipo = row["Tipo"]
             peso = row["Peso muestra [g]"]
-            y_graf = row["Señal"]
-            y_ref = row["Señal solvente"]
-            if not all([peso, y_graf, y_ref]) or peso == 0:
+            senal = row["Señal"]
+            ref = row["Señal solvente"]
+            if tipo == "FTIR-Acetato":
+                const = 52.5253
+            elif tipo == "FTIR-Cloroformo":
+                const = 66.7324
+            else:
                 return "—"
-            k = 52.5253 if row["Tipo"] == "FTIR-Acetato" else 66.7324
-            return round(((y_graf - y_ref) * k) / peso, 2)
+            if not all([peso, senal, ref]) or peso == 0:
+                return "—"
+            return round(((senal - ref) * const) / peso, 4)
 
-        df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
-        st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
+        df_oh["Señal solvente"] = df_oh.apply(get_manual, axis=1)
+        df_oh["Índice OH"] = df_oh.apply(calc_oh, axis=1)
+        df_oh["Peso muestra [g]"] = df_oh["Peso muestra [g]"].apply(lambda x: round(x, 4) if pd.notnull(x) else x)
+        df_oh["Índice OH"] = df_oh["Índice OH"].apply(lambda x: round(x, 2) if isinstance(x, float) else x)
+        st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]],
+                     use_container_width=True)
 
     # --- Sección 2: Comparación de espectros ---
     st.subheader("Comparación de espectros FTIR")
@@ -94,6 +111,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 })
 
     df_espectros = pd.DataFrame(espectros)
+    if df_espectros.empty:
+        st.stop()
+
     opciones = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1)
     seleccion = st.multiselect("Seleccionar espectros para comparar", opciones, default=[])
     seleccionados = df_espectros[opciones.isin(seleccion)]
@@ -110,7 +130,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         altura_min = col1.number_input("Altura mínima", value=0.0, step=0.01)
         distancia_min = col2.number_input("Distancia mínima entre picos", value=70, step=1)
 
-    datos = []
+    datos_graficar = []
     for _, row in seleccionados.iterrows():
         try:
             contenido = BytesIO(base64.b64decode(row["contenido"]))
@@ -128,61 +148,51 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         continue
                 else:
                     continue
+            col_x, col_y = df.columns[:2]
+            df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+            df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
             df = df.dropna()
-            df.iloc[:, 0] = pd.to_numeric(df.iloc[:, 0], errors="coerce")
-            df.iloc[:, 1] = pd.to_numeric(df.iloc[:, 1], errors="coerce")
-            datos.append((row["muestra"], row["tipo"], row["archivo"], df))
+            datos_graficar.append((row["muestra"], row["tipo"], row["archivo"], df))
         except:
             continue
 
-    if not datos:
+    if not datos_graficar:
         return
 
-    all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos])
+    all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos_graficar])
     col1, col2 = st.columns(2)
     x_min = col1.number_input("X min", value=float(np.min(all_x)))
     x_max = col2.number_input("X max", value=float(np.max(all_x)))
-    y_min = col1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
-    y_max = col2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
+    y_min = col1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos_graficar])))
+    y_max = col2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos_graficar])))
 
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
-    fwhm_rows = []
-
-    for muestra, tipo, archivo, df in datos:
+    for muestra, tipo, archivo, df in datos_graficar:
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()
         if df_filtrado.empty:
             continue
         x = df_filtrado.iloc[:, 0].reset_index(drop=True)
         y = df_filtrado.iloc[:, 1].reset_index(drop=True)
+
         if aplicar_suavizado and len(y) >= 5:
             window = 7 if len(y) % 2 else 7
             y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
-        if normalizar and np.max(np.abs(y)) != 0:
-            y = y / np.max(np.abs(y))
+        if normalizar:
+            y = y / np.max(np.abs(y)) if np.max(np.abs(y)) != 0 else y
 
         label = f"{muestra} – {tipo}"
         ax.plot(x, y, label=label)
         resumen[f"{label} (X)"] = x
         resumen[f"{label} (Y)"] = y
-
+          
         if mostrar_picos:
             try:
-                peaks, props = find_peaks(y, height=altura_min, distance=distancia_min)
-                widths, width_heights, left_ips, right_ips = peak_widths(y, peaks, rel_height=0.5)
-                for i, peak in enumerate(peaks):
-                    ancho = (x.iloc[int(right_ips[i])] - x.iloc[int(left_ips[i])]) if right_ips[i] < len(x) and left_ips[i] >= 0 else 0
-                    etiqueta = f"{x.iloc[peak]:.0f} ({ancho:.0f}) cm⁻¹ ⇒ {y.iloc[peak]:.4f}"
-                    ax.plot(x.iloc[peak], y.iloc[peak], "x", color="black")
-                    ax.text(x.iloc[peak], y.iloc[peak], "   " + etiqueta, fontsize=6, ha="left", va="bottom", rotation=90)
-                    fwhm_rows.append({
-                        "Muestra": muestra,
-                        "Tipo": tipo,
-                        "Archivo": archivo,
-                        "X pico [cm⁻¹]": round(x.iloc[peak], 2),
-                        "Y pico": round(y.iloc[peak], 4),
-                        "Ancho FWHM [cm⁻¹]": round(ancho, 2)
-                    })
+                peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
+                ax.plot(x.iloc[peaks], y.iloc[peaks], "x", label=f"{label} picos")
+                for i in peaks:
+                    ax.text(
+                        x.iloc[i], y.iloc[i], f"   {x.iloc[i]:.0f} cm⁻¹ ⇒ {y.iloc[i]:.4f}", fontsize=6, ha="center", va="bottom", rotation=90)
             except:
                 continue
 
@@ -199,13 +209,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     buffer_excel = BytesIO()
     with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
         resumen.to_excel(writer, index=False, sheet_name="Resumen")
-        for muestra, tipo, archivo, df in datos:
+        for muestra, tipo, archivo, df in datos_graficar:
             df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)]
             df_filtrado.to_excel(writer, index=False, sheet_name=f"{muestra[:15]}_{tipo[:10]}")
-        if fwhm_rows:
-            df_fwhm = pd.DataFrame(fwhm_rows)
-            df_fwhm = df_fwhm.sort_values(by="Muestra")
-            df_fwhm.to_excel(writer, index=False, sheet_name="Picos_FWHM")
     buffer_excel.seek(0)
     st.download_button("📥 Descargar Excel", data=buffer_excel.getvalue(), file_name=f"{nombre_base}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 

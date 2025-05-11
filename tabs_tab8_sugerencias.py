@@ -3,6 +3,7 @@
 import streamlit as st
 from datetime import datetime
 import pandas as pd
+from firebase_admin import firestore
 
 def render_tab8(db, mostrar_sector_flotante):
     st.title("Sugerencias")
@@ -23,7 +24,7 @@ def render_tab8(db, mostrar_sector_flotante):
             st.warning("El comentario no puede estar vacío.")
 
     st.subheader("Comentarios recibidos")
-    docs = sugerencias_ref.order_by("fecha", direction=st.session_state.db.Query.DESCENDING).stream()
+    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
     sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
     for s in sugerencias:

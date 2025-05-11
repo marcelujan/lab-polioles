@@ -171,7 +171,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 peaks, props = find_peaks(y, height=altura_min, distance=distancia_min)
                 widths, width_heights, left_ips, right_ips = peak_widths(y, peaks, rel_height=0.5)
                 for i, peak in enumerate(peaks):
-                    ancho = abs(x.iloc[int(right_ips[i])] - x.iloc[int(left_ips[i])]) if right_ips[i] < len(x) and left_ips[i] >= 0 else 0
+                    x_fwhm_left = np.interp(left_ips[i], np.arange(len(x)), x)
+                    x_fwhm_right = np.interp(right_ips[i], np.arange(len(x)), x)
+                    ancho = abs(x_fwhm_right - x_fwhm_left)
                     etiqueta = f"{x.iloc[peak]:.0f} ({ancho:.0f}) cm⁻¹ ⇒ {y.iloc[peak]:.4f}"
                     ax.plot(x.iloc[peak], y.iloc[peak], "x", color="black")
                     ax.text(x.iloc[peak], y.iloc[peak], "   " + etiqueta, fontsize=6, ha="left", va="bottom", rotation=90)

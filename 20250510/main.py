@@ -1,4 +1,3 @@
-
 import streamlit as st
 from firestore_utils import iniciar_firebase, cargar_muestras, guardar_muestra
 from auth_utils import registrar_usuario, iniciar_sesion
@@ -12,7 +11,6 @@ from tabs_tab5_oh import render_tab5
 from tabs_tab6_rmn import render_tab6
 from tabs_tab7_consola import render_tab7
 from tabs_tab8_sugerencias import render_tab8
-from tabs_tab9_ftir import render_tab9
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]
@@ -62,8 +60,7 @@ tabs = st.tabs([
     "Índice OH espectroscópico",
     "Análisis RMN",
     "Consola",
-    "Sugerencias",
-    "Análisis FTIR"
+    "Sugerencias"
 ])
 
 with tabs[0]:
@@ -82,5 +79,3 @@ with tabs[6]:
     render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
 with tabs[7]:
     render_tab8(db, mostrar_sector_flotante)
-with tabs[8]:
-    render_tab9(db, cargar_muestras, mostrar_sector_flotante)

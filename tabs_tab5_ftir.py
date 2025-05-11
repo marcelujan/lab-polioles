@@ -155,6 +155,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     resumen = pd.DataFrame()
     fwhm_rows = []
 
+     # --- Rango de visualización (todo en una fila) ---
+    col_x1, col_x2, col_y1, col_y2 = st.columns(4)
+    x_min = col_x1.number_input("X min", value=float(np.min(all_x)))
+    x_max = col_x2.number_input("X max", value=float(np.max(all_x)))
+    y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
+    y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
+
     for muestra, tipo, archivo, df in datos:
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()
         if df_filtrado.empty:
@@ -193,13 +200,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     })
             except:
                 continue
-
-     # --- Rango de visualización (todo en una fila) ---
-    col_x1, col_x2, col_y1, col_y2 = st.columns(4)
-    x_min = col_x1.number_input("X min", value=float(np.min(all_x)))
-    x_max = col_x2.number_input("X max", value=float(np.max(all_x)))
-    y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
-    y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
 
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)

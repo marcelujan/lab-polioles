@@ -100,7 +100,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         if aplicar_suavizado and len(y) >= 5:
             window = 5 if len(y) < 7 else 7
             if window % 2 == 0: window += 1
-            y = pd.Series(savgol_filter(y, window_length=window, polyorder=2))
+            y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
 
         if normalizar:
             y = y / np.max(np.abs(y)) if np.max(np.abs(y)) != 0 else y

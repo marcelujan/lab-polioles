@@ -23,6 +23,7 @@ def render_tab8(db, mostrar_sector_flotante):
         else:
             st.warning("El comentario no puede estar vacío.")
 
+    docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
     st.subheader("Comentarios recibidos")
     docs = sugerencias_ref.order_by("fecha", direction=firestore.Query.DESCENDING).stream()
     sugerencias = [{"id": doc.id, **doc.to_dict()} for doc in docs]

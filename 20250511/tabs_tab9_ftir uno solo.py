@@ -1,8 +1,8 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import savgol_filter, find_peaks
 import base64
 from io import BytesIO
 
@@ -14,7 +14,8 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         st.info("No hay muestras cargadas.")
         st.stop()
 
-    # --- COMPARACIÓN DE ESPECTROS ---
+    # --- COMPARACIoN DE ESPECTROS ---
+    st.subheader("Comparación de espectros FTIR")
     espectros = []
     for m in muestras:
         for e in m.get("espectros", []):
@@ -43,7 +44,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             if ext == "xlsx":
                 df = pd.read_excel(contenido)
             else:
-                sep_try = [",", ";", "	", " "]
+                sep_try = [",", ";", "\t", " "]
                 for sep in sep_try:
                     contenido.seek(0)
                     try:
@@ -59,77 +60,62 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
             df = df.dropna()
             datos_graficar.append((row["muestra"], row["tipo"], row["archivo"], df))
-        except:
-            continue
+        except Exception as err:
+            st.warning(f"No se pudo procesar: {row['archivo']}")
 
     if not datos_graficar:
         st.warning("No se pudieron leer espectros válidos.")
         return
 
-    # --- Procesamiento opcional ---
-    aplicar_suavizado = st.checkbox("Aplicar suavizado (Savitzky-Golay)", value=True)
-    normalizar = st.checkbox("Normalizar intensidad", value=True)
-    mostrar_picos = st.checkbox("Mostrar picos detectados automáticamente", value=True)
+    # --- Selección de rango X ---
+    st.markdown("### Rango del eje X")
+    opcion_rango = st.radio("Seleccionar tipo de rango:", ["Fijo (1400–1800 cm⁻¹)", "Slider interactivo"], horizontal=True)
+    if opcion_rango == "Fijo (1400–1800 cm⁻¹)":
+        x_min, x_max = 1400, 1800
+    else:
+        all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos_graficar])
+        x_min, x_max = float(np.min(all_x)), float(np.max(all_x))
+        x_min, x_max = st.slider("Seleccionar rango X", min_value=x_min, max_value=x_max, value=(x_min, x_max))
 
-    # --- Rango interactivo X/Y ---
-    st.markdown("### Rango de visualización")
-    all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos_graficar])
-    all_y = np.concatenate([df.iloc[:, 1].values for _, _, _, df in datos_graficar])
-    x_min, x_max = float(np.min(all_x)), float(np.max(all_x))
-    y_min, y_max = float(np.min(all_y)), float(np.max(all_y))
-    col1, col2, col3, col4 = st.columns(4)
-    with col1: xmin = st.number_input("X min", value=x_min)
-    with col2: xmax = st.number_input("X max", value=x_max)
-    with col3: ymin = st.number_input("Y min", value=y_min)
-    with col4: ymax = st.number_input("Y max", value=y_max)
-
-    # --- Gráfico combinado ---
+    # --- GRAFICAR ---
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
     for muestra, tipo, archivo, df in datos_graficar:
-        df_filtrado = df[(df.iloc[:, 0] >= xmin) & (df.iloc[:, 0] <= xmax)].copy()
-        x = df_filtrado.iloc[:, 0].values
-        y = df_filtrado.iloc[:, 1].values
-
-        if aplicar_suavizado and len(y) >= 7:
-            y = savgol_filter(y, window_length=7, polyorder=2)
-
-        if normalizar and np.max(y) != 0:
-            y = y / np.max(y)
-
+        df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)]
+        x = df_filtrado.iloc[:, 0]
+        y = df_filtrado.iloc[:, 1]
         ax.plot(x, y, label=f"{muestra} – {tipo}")
-        resumen[f"{muestra} – {tipo} (X)"] = pd.Series(x)
-        resumen[f"{muestra} – {tipo} (Y)"] = pd.Series(y)
+        resumen[f"{muestra} – {tipo} (X)"] = x.reset_index(drop=True)
+        resumen[f"{muestra} – {tipo} (Y)"] = y.reset_index(drop=True)
 
-        if mostrar_picos:
-            try:
-                picos, _ = find_peaks(y)
-                for p in picos:
-                    if xmin <= x[p] <= xmax and ymin <= y[p] <= ymax:
-                        ax.plot(x[p], y[p], "ro", markersize=3)
-                        ax.text(x[p], y[p], f"{x[p]:.1f}", fontsize=6, ha="center", va="bottom")
-            except:
-                pass
-
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
     ax.set_xlabel("Número de onda [cm⁻¹]")
     ax.set_ylabel("Absorbancia")
     ax.legend()
     st.pyplot(fig)
 
-    # --- Descargas ---
+    # --- DESCARGAS ---
     excel_buffer = BytesIO()
     with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
         resumen.to_excel(writer, index=False, sheet_name="Resumen")
         for muestra, tipo, archivo, df in datos_graficar:
-            df_filtrado = df[(df.iloc[:, 0] >= xmin) & (df.iloc[:, 0] <= xmax)].copy()
+            df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)]
             df_filtrado.to_excel(writer, index=False, sheet_name=f"{muestra[:15]}_{tipo[:10]}")
     excel_buffer.seek(0)
-    st.download_button("📥 Descargar Excel", data=excel_buffer.getvalue(), file_name="comparacion_ftir.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    st.download_button(
+        "📥 Descargar Excel",
+        data=excel_buffer.getvalue(),
+        file_name="comparacion_ftir.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
     img_buffer = BytesIO()
     fig.savefig(img_buffer, format="png", dpi=300, bbox_inches="tight")
-    st.download_button("📷 Descargar gráfico PNG", data=img_buffer.getvalue(), file_name="comparacion_ftir.png", mime="image/png")
+    st.download_button(
+        "📷 Descargar gráfico PNG",
+        data=img_buffer.getvalue(),
+        file_name="comparacion_ftir.png",
+        mime="image/png"
+    )
 
     mostrar_sector_flotante(db)

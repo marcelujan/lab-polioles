@@ -143,6 +143,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
         filas_mascaras = []
+        mapa_mascaras = {}
         if any(usar_mascara.values()):
             st.markdown("**Asignación para cuantificación**")
             df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])

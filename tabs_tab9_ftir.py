@@ -14,7 +14,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         st.info("No hay muestras cargadas.")
         st.stop()
 
-    # --- COMPARACIÓN DE ESPECTROS ---
+    # --- COMPARACIoN DE ESPECTROS ---
     st.subheader("Comparación de espectros FTIR")
     espectros = []
     for m in muestras:

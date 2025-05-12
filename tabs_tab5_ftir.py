@@ -247,7 +247,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         else:
                             simil = (1 - abs(area_i - area_j) / max(abs(area_i), abs(area_j))) * 100
 
-                matriz[i, j] = round(simil, 1)
+                matriz[i, j] = round(simil, 2)
 
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)

@@ -134,8 +134,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     df_ref.iloc[:, 0] = pd.to_numeric(df_ref.iloc[:, 0], errors="coerce")
                     df_ref.iloc[:, 1] = pd.to_numeric(df_ref.iloc[:, 1], errors="coerce")
                     df_ref = df_ref.dropna()
+                    df_ref = df_ref.astype(float)  # <- clave para evitar dtype 'O'
                     x_ref = df_ref.iloc[:, 0].values
                     y_ref = df_ref.iloc[:, 1].values
+
             except:
                 x_ref, y_ref = None, None
         else:

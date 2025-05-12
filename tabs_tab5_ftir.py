@@ -219,59 +219,58 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         for muestra, tipo, archivo, df in datos:
             df_filt = df[(df.iloc[:, 0] >= x_comp_min) & (df.iloc[:, 0] <= x_comp_max)].copy()
             if df_filt.empty:
+                print(f"[SKIP] {muestra} – {tipo}: sin datos en rango {x_comp_min}–{x_comp_max}")
                 continue
             x = df_filt.iloc[:, 0].reset_index(drop=True)
             y = df_filt.iloc[:, 1].reset_index(drop=True)
+            print(f"\n{muestra} – {tipo} | X: {x.min():.2f}–{x.max():.2f}, Y: min={y.min():.4f}, max={y.max():.4f}, std={np.std(y):.6f}")
             if aplicar_suavizado and len(y) >= 5:
                 window = 7 if len(y) % 2 else 7
                 y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
+                print(f"    🔄 Suavizado aplicado – std nueva: {np.std(y):.6f}")
             if normalizar and np.max(np.abs(y)) != 0:
                 y = y / np.max(np.abs(y))
+                print(f"    🔄 Normalizado – nuevo max: {np.max(y):.4f}")
             key = f"{muestra} – {tipo}"
             vectores[key] = (x, y)
 
         nombres = list(vectores.keys())
         matriz = np.zeros((len(nombres), len(nombres)))
-
         for i in range(len(nombres)):
             for j in range(len(nombres)):
                 xi, yi = vectores[nombres[i]]
                 xj, yj = vectores[nombres[j]]
-
                 x_min_comun = max(xi.min(), xj.min())
                 x_max_comun = min(xi.max(), xj.max())
-
-                if x_max_comun <= x_min_comun:
-                    print(f"Sin superposición entre {nombres[i]} y {nombres[j]}")
-                    matriz[i, j] = 0
-                    continue
-
                 x_comun = np.linspace(x_min_comun, x_max_comun, 500)
                 yi_interp = np.interp(x_comun, xi, yi)
                 yj_interp = np.interp(x_comun, xj, yj)
-
-                if len(yi_interp) == 0 or len(yj_interp) == 0 or np.isnan(yi_interp).any() or np.isnan(yj_interp).any():
-                    print(f"Interpolación inválida entre {nombres[i]} y {nombres[j]}")
+                print(f"\n🔍 {nombres[i]} vs {nombres[j]}")
+                print(f"    x_comun: {x_min_comun:.2f}–{x_max_comun:.2f}, len={len(x_comun)}")
+                print(f"    std yi: {np.std(yi_interp):.6f}, std yj: {np.std(yj_interp):.6f}")
+                if len(yi_interp) == 0 or len(yj_interp) == 0:
                     corr = 0
-                elif np.std(yi_interp) == 0 or np.std(yj_interp) == 0:
-                    print(f"Varianza cero entre {nombres[i]} y {nombres[j]}")
+                    print("    ❌ Interpolación vacía")
+                elif np.isnan(yi_interp).any() or np.isnan(yj_interp).any():
                     corr = 0
+                    print("    ❌ Valores NaN encontrados")
+                elif np.std(yi_interp) < 1e-6 or np.std(yj_interp) < 1e-6:
+                    corr = 0
+                    print("    ⚠️ Desviación estándar demasiado baja")
                 else:
-                    print(f"Comparando {nombres[i]} vs {nombres[j]}")
-                    print(f"x_comun: {x_comun.shape}, yi_interp[:3]: {yi_interp[:3]}, std: {np.std(yi_interp):.4f}")
                     corr = np.corrcoef(yi_interp, yj_interp)[0, 1]
-
+                    print(f"    ✅ Correlación: {corr:.4f}")
                 matriz[i, j] = round(corr * 100, 1)
 
-            df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
-            st.dataframe(df_similitud.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
+        df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
+        st.dataframe(df_similitud.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
 
 
-            now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            nombre_base = f"FTIR_{now}"
+        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        nombre_base = f"FTIR_{now}"
 
-            buffer_excel = BytesIO()
-            with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+        buffer_excel = BytesIO()
+        with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
                 for muestra, tipo, archivo, df in datos:
                     df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)]
@@ -280,11 +279,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     df_fwhm = pd.DataFrame(fwhm_rows)
                     df_fwhm = df_fwhm.sort_values(by="Muestra")
                     df_fwhm.to_excel(writer, index=False, sheet_name="Picos_FWHM")
-            buffer_excel.seek(0)
-            st.download_button("📥 Descargar Excel", data=buffer_excel.getvalue(), file_name=f"{nombre_base}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        buffer_excel.seek(0)
+        st.download_button("📥 Descargar Excel", data=buffer_excel.getvalue(), file_name=f"{nombre_base}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-            buffer_img = BytesIO()
-            fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
-            st.download_button("📷 Descargar PNG", data=buffer_img.getvalue(), file_name=f"{nombre_base}.png", mime="image/png")
+        buffer_img = BytesIO()
+        fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
+        st.download_button("📷 Descargar PNG", data=buffer_img.getvalue(), file_name=f"{nombre_base}.png", mime="image/png")
 
-            mostrar_sector_flotante(db)
+        mostrar_sector_flotante(db)

@@ -249,16 +249,17 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
                 matriz[i, j] = round(simil, 1)
 
-        df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
-        st.dataframe(df_similitud.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
-
-#        st.code(log_text, language="text")
         ax.set_xlim(x_min, x_max)
         ax.set_ylim(y_min, y_max)
         ax.set_xlabel("Número de onda [cm⁻¹]")
         ax.set_ylabel("Absorbancia")
         ax.legend()
         st.pyplot(fig)
+        df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
+        st.dataframe(df_similitud.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
+
+#        st.code(log_text, language="text")
+
 
         now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         nombre_base = f"FTIR_{now}"

@@ -206,16 +206,21 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         # Interpolar y restar si corresponde
         if restar_espectro and x_ref is not None and y_ref is not None:
             try:
+                # Asegurar que x_ref esté ordenado
                 x_ref_ord, y_ref_ord = zip(*sorted(zip(x_ref, y_ref)))
                 x_ref_arr = np.array(x_ref_ord)
                 y_ref_arr = np.array(y_ref_ord)
-                        
-                st.write(f"Rango x_ref: {x_ref_arr.min()} – {x_ref_arr.max()}")
-                st.write(f"Rango x: {x.min()} – {x.max()}")
 
+                # Filtrar x para que esté dentro del dominio de x_ref
+                mascara_valida = (x >= x_ref_arr.min()) & (x <= x_ref_arr.max())
+                x = x[mascara_valida]
+                y = y[mascara_valida]
+
+                # Interpolar y restar
                 y_interp_ref = np.interp(x, x_ref_arr, y_ref_arr)
                 y = y - y_interp_ref
-            except:
+
+            except Exception as e:
                 st.warning(f"No se pudo restar el espectro de referencia para {row['muestra']}")
 
         # Convertir a Series para el resto del procesamiento

@@ -253,6 +253,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
         df_formateado = df_similitud.applymap(lambda v: f"{v:.2f} %")
         st.dataframe(df_formateado.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
+       
+        # Mostrar la tabla con el gradiente visual (usando los valores originales)
+        st.dataframe(
+            df_similitud.style
+                .format(lambda x: f"{x:.2f} %")
+                .background_gradient(cmap="RdYlGn")
+                .set_properties(**{"text-align": "center"}),
+            use_container_width=True
+        )
 
         ax.set_xlim(x_min, x_max)
         ax.set_ylim(y_min, y_max)
@@ -260,18 +269,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         ax.set_ylabel("Absorbancia")
         ax.legend()
 
-
     st.pyplot(fig)
     
-    # Mostrar la tabla con el gradiente visual (usando los valores originales)
-    st.dataframe(
-        df_similitud.style
-            .format(lambda x: f"{x:.2f} %")
-            .background_gradient(cmap="RdYlGn")
-            .set_properties(**{"text-align": "center"}),
-        use_container_width=True
-    )
-
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     nombre_base = f"FTIR_{now}"
 

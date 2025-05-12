@@ -202,9 +202,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         orden = np.argsort(x)
         x = x[orden]
         y = y[orden]
-        
-        st.write(f"Rango x_ref: {x_ref_arr.min()} – {x_ref_arr.max()}")
-        st.write(f"Rango x: {x.min()} – {x.max()}")
 
         # Interpolar y restar si corresponde
         if restar_espectro and x_ref is not None and y_ref is not None:
@@ -212,6 +209,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 x_ref_ord, y_ref_ord = zip(*sorted(zip(x_ref, y_ref)))
                 x_ref_arr = np.array(x_ref_ord)
                 y_ref_arr = np.array(y_ref_ord)
+                        
+                st.write(f"Rango x_ref: {x_ref_arr.min()} – {x_ref_arr.max()}")
+                st.write(f"Rango x: {x.min()} – {x.max()}")
+
                 y_interp_ref = np.interp(x, x_ref_arr, y_ref_arr)
                 y = y - y_interp_ref
             except:

@@ -3,7 +3,7 @@ from datetime import datetime
 import firebase_admin
 from firebase_admin import firestore
 
-def mostrar_sector_flotante(db):
+def mostrar_sector_flotante(db, key_suffix=""):
     """Muestra el cuadro de observación flotante solo si el usuario es Marcelo."""
     if st.session_state.get("user_email") != "mlujan1863@gmail.com":
         return  # No mostrar para otros usuarios

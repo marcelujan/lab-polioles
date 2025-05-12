@@ -135,6 +135,12 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     df_ref.columns = ["x", "y"]  # Renombra
                     df_ref = df_ref.applymap(lambda v: str(v).strip())  # Elimina espacios invisibles
                     df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
+                    # Mostrar contenido y tipos de datos para depurar
+                    st.write("Vista previa del espectro de referencia (df_ref):")
+                    st.dataframe(df_ref.head())
+
+                    st.write("Tipos de datos por columna en df_ref:")
+                    st.write(df_ref.dtypes)
                     df_ref = df_ref.dropna()
                     df_ref = df_ref[df_ref.applymap(np.isreal).all(axis=1)]
                     df_ref = df_ref.astype(float)

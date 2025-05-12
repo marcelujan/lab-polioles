@@ -131,9 +131,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     else:
                         df_ref = None
                 if df_ref is not None:
-                    df_ref.iloc[:, 0] = pd.to_numeric(df_ref.iloc[:, 0], errors="coerce")
-                    df_ref.iloc[:, 1] = pd.to_numeric(df_ref.iloc[:, 1], errors="coerce")
-                    df_ref = df_ref.dropna()
+                    df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
+                    df_ref.columns = ["x", "y"]  # Renombra
+                    df_ref = df_ref.applymap(lambda v: str(v).strip())  # Elimina espacios invisibles
+                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
+                    df_ref = df_ref.dropna().astype(float)  # Elimina filas con NaN y fuerza tipo
                     x_ref = df_ref.iloc[:, 0].values
                     y_ref = df_ref.iloc[:, 1].values
 

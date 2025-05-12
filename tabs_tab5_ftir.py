@@ -281,4 +281,5 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
         st.download_button("📷 Descargar PNG", data=buffer_img.getvalue(), file_name=f"{nombre_base}.png", mime="image/png")
 
-        mostrar_sector_flotante(db)
+        mostrar_sector_flotante(db, key_suffix="tab5")
+

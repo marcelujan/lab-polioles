@@ -251,8 +251,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 matriz[i, j] = simil
 
         df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
-        df_formateado = df_similitud.applymap(lambda v: f"{v:.2f} %")
-        st.dataframe(df_formateado.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
+     #   df_formateado = df_similitud.applymap(lambda v: f"{v:.2f} %")
+      #  st.dataframe(df_formateado.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
        
         # Mostrar la tabla con el gradiente visual (usando los valores originales)
         st.dataframe(

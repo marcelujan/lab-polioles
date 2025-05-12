@@ -249,23 +249,23 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
                 matriz[i, j] = round(simil, 1)
 
-        ax.set_xlim(x_min, x_max)
-        ax.set_ylim(y_min, y_max)
-        ax.set_xlabel("Número de onda [cm⁻¹]")
-        ax.set_ylabel("Absorbancia")
-        ax.legend()
-        st.pyplot(fig)
-        df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
-        st.dataframe(df_similitud.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlabel("Número de onda [cm⁻¹]")
+    ax.set_ylabel("Absorbancia")
+    ax.legend()
+    st.pyplot(fig)
+    df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
+    st.dataframe(df_similitud.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
 
 #        st.code(log_text, language="text")
 
 
-        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        nombre_base = f"FTIR_{now}"
+    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    nombre_base = f"FTIR_{now}"
 
-        buffer_excel = BytesIO()
-        with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+    buffer_excel = BytesIO()
+    with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
                 resumen.to_excel(writer, index=False, sheet_name="Resumen")
                 for muestra, tipo, archivo, df in datos:
                     df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)]
@@ -274,12 +274,12 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     df_fwhm = pd.DataFrame(fwhm_rows)
                     df_fwhm = df_fwhm.sort_values(by="Muestra")
                     df_fwhm.to_excel(writer, index=False, sheet_name="Picos_FWHM")
-        buffer_excel.seek(0)
-        st.download_button("📥 Descargar Excel", data=buffer_excel.getvalue(), file_name=f"{nombre_base}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    buffer_excel.seek(0)
+    st.download_button("📥 Descargar Excel", data=buffer_excel.getvalue(), file_name=f"{nombre_base}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        buffer_img = BytesIO()
-        fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
-        st.download_button("📷 Descargar PNG", data=buffer_img.getvalue(), file_name=f"{nombre_base}.png", mime="image/png")
+    buffer_img = BytesIO()
+    fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
+    st.download_button("📷 Descargar PNG", data=buffer_img.getvalue(), file_name=f"{nombre_base}.png", mime="image/png")
 
-        mostrar_sector_flotante(db, key_suffix="tab5")
+    mostrar_sector_flotante(db, key_suffix="tab5")
 

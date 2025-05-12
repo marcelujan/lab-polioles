@@ -221,7 +221,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 y = y - y_interp_ref
 
             except Exception as e:
-                st.warning(f"No se pudo restar el espectro de referencia para {row['muestra']}")
+                st.warning(f"No se pudo restar el espectro de referencia para {row['muestra']}. Error: {e}")
+
 
         # Convertir a Series para el resto del procesamiento
         x = pd.Series(x)

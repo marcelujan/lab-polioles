@@ -153,11 +153,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     df_ref = df_ref.dropna()
                     df_ref = df_ref[df_ref.applymap(np.isreal).all(axis=1)]
                     df_ref = df_ref.astype(float)
-                    
+
                     # Eliminar fila si la primera tiene valores no numéricos
                     if df_ref.iloc[0].isnull().any():
                         df_ref = df_ref.iloc[1:].reset_index(drop=True)
-
+                        
+                    # Verificación y limpieza final de filas con NaN en x_ref/y_ref
+                    df_ref = df_ref.dropna()
                     x_ref = df_ref.iloc[:, 0].values
                     y_ref = df_ref.iloc[:, 1].values
 

@@ -63,4 +63,4 @@ def render_tab8(db, mostrar_sector_flotante):
             obs_ref.set({"observaciones": observaciones})
             st.success("Observación guardada correctamente.")
 
-    mostrar_sector_flotante(db)
+    mostrar_sector_flotante(db, key_suffix="tab8")

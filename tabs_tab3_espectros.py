@@ -219,4 +219,4 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     else:
         st.info("No hay espectros cargados.")
 
-    mostrar_sector_flotante(db)
+    mostrar_sector_flotante(db, key_suffix="tab3")

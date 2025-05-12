@@ -339,4 +339,4 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             with open(zip_path, "rb") as final_zip:
                 st.download_button("📦 Descargar imágenes RMN", data=final_zip.read(), file_name=os.path.basename(zip_path), mime="application/zip")
 
-    mostrar_sector_flotante(db)
+    mostrar_sector_flotante(db, key_suffix="tab6")

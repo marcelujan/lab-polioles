@@ -13,15 +13,14 @@ def mostrar_sector_flotante(db):
 
     muestra_activa = st.session_state.get("muestra_activa", None)
     current_tab = st.session_state.get("current_tab", "desconocido")
-    unique_suffix = f"{muestra_activa}_{current_tab}_{datetime.now().strftime('%H%M%S%f')}"
 
     if muestra_activa:
         st.info(f"Observación vinculada automáticamente a: **{muestra_activa}**")
     else:
         st.warning("No se detectó ninguna muestra activa. La observación no podrá guardarse.")
 
-    text_key = f"obs_flotante_{unique_suffix}"
-    button_key = f"btn_guardar_obs_rapida_{unique_suffix}"
+    text_key = f"obs_flotante_{current_tab}"
+    button_key = f"btn_guardar_obs_rapida_{current_tab}"
 
     nueva_obs = st.text_area("Escribí tu observación", key=text_key)
     if st.button("💾 Guardar observación rápida", key=button_key):

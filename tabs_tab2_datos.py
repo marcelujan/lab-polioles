@@ -89,4 +89,4 @@ def render_tab2(db, cargar_muestras, mostrar_sector_flotante):
     else:
         st.warning("Los datos seleccionados no son compatibles para graficar.")
 
-    mostrar_sector_flotante(db)
+    mostrar_sector_flotante(db, key_suffix="tab2")

@@ -133,14 +133,23 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 if df_ref is not None:
                     df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
                     df_ref.columns = ["x", "y"]  # Renombra
-                    df_ref = df_ref.applymap(lambda v: str(v).strip())  # Elimina espacios invisibles
-                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
-                    # Mostrar contenido y tipos de datos para depurar
-                    st.write("Vista previa del espectro de referencia (df_ref):")
-                    st.dataframe(df_ref.head())
 
-                    st.write("Tipos de datos por columna en df_ref:")
+                    df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
+                    df_ref.columns = ["x", "y"]
+
+                    # Mostrar antes de limpiar
+                    st.write("Contenido original del espectro antes de limpiar:")
+                    st.dataframe(df_ref.head())
+                    st.write("Tipos originales:")
                     st.write(df_ref.dtypes)
+
+                    df_ref = df_ref.applymap(lambda v: str(v).strip())
+                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")
+                    st.write("Después de aplicar pd.to_numeric:")
+                    st.dataframe(df_ref.head())
+                    st.write("Tipos ahora:")
+                    st.write(df_ref.dtypes)
+
                     df_ref = df_ref.dropna()
                     df_ref = df_ref[df_ref.applymap(np.isreal).all(axis=1)]
                     df_ref = df_ref.astype(float)

@@ -103,6 +103,46 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     aplicar_suavizado = st.checkbox("Aplicar suavizado (Savitzky-Golay)", value=False)
     normalizar = st.checkbox("Normalizar intensidad", value=False)
+
+    # --- Checkbox y selección para restar espectro ---
+    restar_espectro = st.checkbox("Restar espectro", value=False)
+    espectro_para_restar = None
+
+    if restar_espectro:
+        espectros_referencia = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1).tolist()
+        seleccion_resta = st.selectbox("Seleccionar espectro a restar", espectros_referencia, index=0)
+        espectro_para_restar = df_espectros[df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1) == seleccion_resta]
+        if not espectro_para_restar.empty:
+            row_ref = espectro_para_restar.iloc[0]
+            try:
+                contenido_ref = BytesIO(base64.b64decode(row_ref["contenido"]))
+                ext_ref = row_ref["archivo"].split(".")[-1].lower()
+                if ext_ref == "xlsx":
+                    df_ref = pd.read_excel(contenido_ref)
+                else:
+                    for sep in [",", ";", "\t", " "]:
+                        contenido_ref.seek(0)
+                        try:
+                            df_ref = pd.read_csv(contenido_ref, sep=sep)
+                            if df_ref.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        df_ref = None
+                if df_ref is not None:
+                    df_ref.iloc[:, 0] = pd.to_numeric(df_ref.iloc[:, 0], errors="coerce")
+                    df_ref.iloc[:, 1] = pd.to_numeric(df_ref.iloc[:, 1], errors="coerce")
+                    df_ref = df_ref.dropna()
+                    x_ref = df_ref.iloc[:, 0].values
+                    y_ref = df_ref.iloc[:, 1].values
+            except:
+                x_ref, y_ref = None, None
+        else:
+            x_ref, y_ref = None, None
+    else:
+        x_ref, y_ref = None, None
+
     mostrar_picos = st.checkbox("Mostrar picos detectados automáticamente", value=False)
 
     if mostrar_picos:
@@ -158,6 +198,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             continue
         x = df_filtrado.iloc[:, 0].reset_index(drop=True)
         y = df_filtrado.iloc[:, 1].reset_index(drop=True)
+
+        if restar_espectro and x_ref is not None and y_ref is not None:
+            try:
+                y_interp_ref = np.interp(x, x_ref, y_ref)
+                y = y - y_interp_ref
+            except:
+                st.warning(f"No se pudo restar el espectro de referencia para {row['muestra']}")
+
         if aplicar_suavizado and len(y) >= 5:
             window = 7 if len(y) % 2 else 7
             y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)

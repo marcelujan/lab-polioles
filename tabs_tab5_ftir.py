@@ -135,7 +135,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     df_ref.columns = ["x", "y"]  # Renombra
                     df_ref = df_ref.applymap(lambda v: str(v).strip())  # Elimina espacios invisibles
                     df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
-                    df_ref = df_ref.dropna().astype(float)  # Elimina filas con NaN y fuerza tipo
+                    df_ref = df_ref.dropna()
+                    df_ref = df_ref[df_ref.applymap(np.isreal).all(axis=1)]
+                    df_ref = df_ref.astype(float)
                     x_ref = df_ref.iloc[:, 0].values
                     y_ref = df_ref.iloc[:, 1].values
 

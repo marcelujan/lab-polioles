@@ -128,6 +128,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         continue
                 else:
                     continue
+            # 👇 Corrección aquí: convertir antes de eliminar NaN
             df.iloc[:, 0] = pd.to_numeric(df.iloc[:, 0], errors="coerce")
             df.iloc[:, 1] = pd.to_numeric(df.iloc[:, 1], errors="coerce")
             df = df.dropna()

@@ -311,9 +311,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             use_container_width=True
         )
 
-    if restar_espectro:
-        ax.axhline(0, color="black", linestyle="--", linewidth=.6)
-
+    ax.axhline(0, color="black", linestyle="--", linewidth=.6)
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.set_xlabel("Número de onda [cm⁻¹]")

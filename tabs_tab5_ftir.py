@@ -118,7 +118,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 contenido_ref = BytesIO(base64.b64decode(row_ref["contenido"]))
                 ext_ref = row_ref["archivo"].split(".")[-1].lower()
                 if ext_ref == "xlsx":
-                    df_ref = pd.read_excel(contenido_ref)
+                    df_ref = pd.read_excel(contenido_ref, header=None)
                 else:
                     for sep in [",", ";", "\t", " "]:
                         contenido_ref.seek(0)
@@ -156,7 +156,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             contenido = BytesIO(base64.b64decode(row["contenido"]))
             ext = row["archivo"].split(".")[-1].lower()
             if ext == "xlsx":
-                df = pd.read_excel(contenido)
+                df = pd.read_excel(contenido, header=None)
             else:
                 for sep in [",", ";", "\t", " "]:
                     contenido.seek(0)
@@ -196,15 +196,28 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()
         if df_filtrado.empty:
             continue
-        x = df_filtrado.iloc[:, 0].reset_index(drop=True)
-        y = df_filtrado.iloc[:, 1].reset_index(drop=True)
+        # Ordenar espectro a graficar
+        x = df_filtrado.iloc[:, 0].values
+        y = df_filtrado.iloc[:, 1].values
+        orden = np.argsort(x)
+        x = x[orden]
+        y = y[orden]
 
+        # Interpolar y restar si corresponde
         if restar_espectro and x_ref is not None and y_ref is not None:
             try:
-                y_interp_ref = np.interp(x, x_ref, y_ref)
+                x_ref_ord, y_ref_ord = zip(*sorted(zip(x_ref, y_ref)))
+                x_ref_arr = np.array(x_ref_ord)
+                y_ref_arr = np.array(y_ref_ord)
+                y_interp_ref = np.interp(x, x_ref_arr, y_ref_arr)
                 y = y - y_interp_ref
             except:
                 st.warning(f"No se pudo restar el espectro de referencia para {row['muestra']}")
+
+        # Convertir a Series para el resto del procesamiento
+        x = pd.Series(x)
+        y = pd.Series(y)
+
 
         if aplicar_suavizado and len(y) >= 5:
             window = 7 if len(y) % 2 else 7

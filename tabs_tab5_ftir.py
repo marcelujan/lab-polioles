@@ -191,14 +191,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     })
             except:
                 continue
-
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_min, y_max)
-    ax.set_xlabel("Número de onda [cm⁻¹]")
-    ax.set_ylabel("Absorbancia")
-    ax.legend()
-    st.pyplot(fig)
-
+ 
    # --- Comparación de similitud ---
     comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
 
@@ -212,6 +205,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         
     if sombrear and x_comp_min is not None and x_comp_max is not None:
         ax.axvspan(x_comp_min, x_comp_max, color='gray', alpha=0.2, label="Rango comparado")
+
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlabel("Número de onda [cm⁻¹]")
+    ax.set_ylabel("Absorbancia")
+    ax.legend()
+    st.pyplot(fig)
 
     # --- Matriz de similitud ---
     if comparar_similitud and x_comp_min is not None and x_comp_max is not None:

@@ -249,13 +249,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
                 matriz[i, j] = round(simil, 2)
 
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_min, y_max)
-    ax.set_xlabel("Número de onda [cm⁻¹]")
-    ax.set_ylabel("Absorbancia")
-    ax.legend()
+        ax.set_xlim(x_min, x_max)
+        ax.set_ylim(y_min, y_max)
+        ax.set_xlabel("Número de onda [cm⁻¹]")
+        ax.set_ylabel("Absorbancia")
+        ax.legend()
+        df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
+
     st.pyplot(fig)
-    df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
+    
     # Mostrar la tabla con el gradiente visual (usando los valores originales)
     st.dataframe(
         df_similitud.style

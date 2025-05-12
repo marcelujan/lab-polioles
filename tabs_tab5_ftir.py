@@ -131,37 +131,21 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     else:
                         df_ref = None
                 if df_ref is not None:
-                    df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
-                    df_ref.columns = ["x", "y"]  # Renombra
-
-                    df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
+                    # Asegurar solo 2 columnas y renombrar
+                    df_ref = df_ref.iloc[:, :2]
                     df_ref.columns = ["x", "y"]
 
-                    # Mostrar antes de limpiar
-                    st.write("Contenido original del espectro antes de limpiar:")
-                    st.dataframe(df_ref.head())
-                    st.write("Tipos originales:")
-                    st.write(df_ref.dtypes)
-
+                    # Limpiar espacios, convertir a numérico y eliminar cualquier fila inválida
                     df_ref = df_ref.applymap(lambda v: str(v).strip())
                     df_ref = df_ref.apply(pd.to_numeric, errors="coerce")
-                    st.write("Después de aplicar pd.to_numeric:")
-                    st.dataframe(df_ref.head())
-                    st.write("Tipos ahora:")
-                    st.write(df_ref.dtypes)
-
-                    df_ref = df_ref.dropna()
-                    df_ref = df_ref[df_ref.applymap(np.isreal).all(axis=1)]
+                    df_ref = df_ref[df_ref.notnull().all(axis=1)].reset_index(drop=True)
                     df_ref = df_ref.astype(float)
 
-                    # Eliminar fila si la primera tiene valores no numéricos
-                    df_ref = df_ref[df_ref.notnull().all(axis=1)].reset_index(drop=True)
-
-                    # Verificación y limpieza final de filas con NaN en x_ref/y_ref
-                    df_ref = df_ref.dropna()
-                    x_ref = df_ref.iloc[:, 0].values
-                    y_ref = df_ref.iloc[:, 1].values
-
+                    # Asignar a arrays para interpolación
+                    x_ref = df_ref["x"].values
+                    y_ref = df_ref["y"].values
+                else:
+                    x_ref, y_ref = None, None
             except:
                 x_ref, y_ref = None, None
         else:

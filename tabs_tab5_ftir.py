@@ -311,12 +311,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             use_container_width=True
         )
 
-        ax.set_xlim(x_min, x_max)
-        ax.set_ylim(y_min, y_max)
-        ax.set_xlabel("Número de onda [cm⁻¹]")
-        ax.set_ylabel("Absorbancia")
-        ax.legend()
-
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlabel("Número de onda [cm⁻¹]")
+    ax.set_ylabel("Absorbancia")
+    ax.legend()
     st.pyplot(fig)
     
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

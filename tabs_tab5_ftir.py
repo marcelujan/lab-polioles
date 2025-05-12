@@ -128,9 +128,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         continue
                 else:
                     continue
-            df = df.dropna()
             df.iloc[:, 0] = pd.to_numeric(df.iloc[:, 0], errors="coerce")
             df.iloc[:, 1] = pd.to_numeric(df.iloc[:, 1], errors="coerce")
+            df = df.dropna()
             datos.append((row["muestra"], row["tipo"], row["archivo"], df))
         except:
             continue
@@ -211,7 +211,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     ax.legend()
     st.pyplot(fig)
 
-# --- Matriz de similitud ---
+    # --- Matriz de similitud ---
     if comparar_similitud and x_comp_min is not None and x_comp_max is not None:
         st.subheader("Matriz de similitud entre espectros")
         vectores = {}

@@ -203,7 +203,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         if sombrear:
             ax.axvspan(x_comp_min, x_comp_max, color='gray', alpha=0.2, label="Rango comparado")
 
-        # --- Matriz de similitud ---
+    # --- Matriz de similitud ---
+    if comparar_similitud and x_comp_min is not None and x_comp_max is not None:
         st.subheader("Matriz de similitud entre espectros")
         vectores = {}
         for muestra, tipo, archivo, df in datos:
@@ -247,14 +248,18 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         else:
                             simil = (1 - abs(area_i - area_j) / max(abs(area_i), abs(area_j))) * 100
 
-                matriz[i, j] = round(simil, 2)
+                matriz[i, j] = simil
+
+        df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
+        df_formateado = df_similitud.applymap(lambda v: f"{v:.2f} %")
+        st.dataframe(df_formateado.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
 
         ax.set_xlim(x_min, x_max)
         ax.set_ylim(y_min, y_max)
         ax.set_xlabel("Número de onda [cm⁻¹]")
         ax.set_ylabel("Absorbancia")
         ax.legend()
-        df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
+
 
     st.pyplot(fig)
     

@@ -240,10 +240,17 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 x_comun = np.linspace(max(xi.min(), xj.min()), min(xi.max(), xj.max()), 500)
                 yi_interp = np.interp(x_comun, xi, yi)
                 yj_interp = np.interp(x_comun, xj, yj)
-                if np.std(yi_interp) == 0 or np.std(yj_interp) == 0:
+                if len(yi_interp) == 0 or len(yj_interp) == 0 or np.isnan(yi_interp).any() or np.isnan(yj_interp).any():
                     corr = 0
                 else:
-                    corr = np.corrcoef(yi_interp, yj_interp)[0, 1]
+                    if np.std(yi_interp) == 0 or np.std(yj_interp) == 0:
+                        corr = 0
+                    else:
+                        print(f"Comparando {nombres[i]} vs {nombres[j]}")
+                        print(f"x_comun: {x_comun.shape}, yi_interp: {yi_interp.shape}, yj_interp: {yj_interp.shape}")
+                        print(f"yi_interp[:5]: {yi_interp[:5]}")
+                        print(f"std yi: {np.std(yi_interp)}, std yj: {np.std(yj_interp)}\n")
+                        corr = np.corrcoef(yi_interp, yj_interp)[0, 1]
                 matriz[i, j] = round(corr * 100, 1)  # porcentaje de similitud
 
         df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)

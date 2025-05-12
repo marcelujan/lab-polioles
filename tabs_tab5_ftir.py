@@ -259,7 +259,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     # Mostrar la tabla con el gradiente visual (usando los valores originales)
     st.dataframe(
         df_similitud.style
-            .format("{:.2f}")
+            .format(lambda x: f"{x:.2f} %")
             .background_gradient(cmap="RdYlGn")
             .set_properties(**{"text-align": "center"}),
         use_container_width=True

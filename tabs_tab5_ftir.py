@@ -132,31 +132,30 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         df_ref = None
                 if df_ref is not None:
                     # --- DEPURACIÓN REFORZADA ---
-                    df_ref = df_ref.iloc[:, :2]
-                    df_ref.columns = ["x", "y"]
-                    df_ref = df_ref.applymap(lambda v: str(v).strip())
-                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")
+                df_ref = df_ref.iloc[:, :2]
+                df_ref.columns = ["x", "y"]
+                df_ref = df_ref.applymap(lambda v: str(v).strip())
+                df_ref = df_ref.apply(pd.to_numeric, errors="coerce")
 
-                    # Mostrar antes de filtrar
-                    st.write("ANTES DE dropna:")
-                    st.dataframe(df_ref.head())
-                    st.write("Tipos:", df_ref.dtypes)
+                # Mostrar antes de filtrar
+                st.write("ANTES DE dropna:")
+                st.dataframe(df_ref.head())
+                st.write("Tipos:", df_ref.dtypes)
 
-                    df_ref = df_ref.dropna().reset_index(drop=True)
+                df_ref = df_ref.dropna().reset_index(drop=True)
 
-                    st.write("DESPUÉS DE dropna:")
-                    st.dataframe(df_ref.head())
-                    st.write("Tipos:", df_ref.dtypes)
+                st.write("DESPUÉS DE dropna:")
+                st.dataframe(df_ref.head())
+                st.write("Tipos:", df_ref.dtypes)
 
-                    try:
-                        df_ref["x"] = df_ref["x"].astype(float)
-                        df_ref["y"] = df_ref["y"].astype(float)
-                        x_ref = df_ref["x"].values
-                        y_ref = df_ref["y"].values
-                    except Exception as e:
-                        st.error(f"Fallo en astype(float): {e}")
-                        st.stop()
-
+                try:
+                    df_ref["x"] = df_ref["x"].astype(float)
+                    df_ref["y"] = df_ref["y"].astype(float)
+                    x_ref = df_ref["x"].values
+                    y_ref = df_ref["y"].values
+                except Exception as e:
+                    st.error(f"Fallo en astype(float): {e}")
+                    st.stop()
                 else:
                     x_ref, y_ref = None, None
             except:
@@ -196,6 +195,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             df.iloc[:, 0] = pd.to_numeric(df.iloc[:, 0], errors="coerce")
             df.iloc[:, 1] = pd.to_numeric(df.iloc[:, 1], errors="coerce")
             df = df.dropna()
+            # --- LIMPIEZA TAMBIÉN PARA MUESTRAS ---
+            df = df.iloc[:, :2]
+            df.columns = ["x", "y"]
+            df = df.applymap(lambda v: str(v).strip())
+            df = df.apply(pd.to_numeric, errors="coerce")
+            df = df.dropna().reset_index(drop=True)
+            df["x"] = df["x"].astype(float)
+            df["y"] = df["y"].astype(float)
             datos.append((row["muestra"], row["tipo"], row["archivo"], df))
         except:
             continue

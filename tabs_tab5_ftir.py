@@ -208,8 +208,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             try:
                 # Asegurar que x_ref esté ordenado
                 x_ref_ord, y_ref_ord = zip(*sorted(zip(x_ref, y_ref)))
-                x_ref_arr = np.array(x_ref_ord)
-                y_ref_arr = np.array(y_ref_ord)
+                x_ref_arr = np.array(x_ref_ord).astype(float)
+                y_ref_arr = np.array(y_ref_ord).astype(float)
+
 
                 # Filtrar x para que esté dentro del dominio de x_ref
                 mascara_valida = (x >= x_ref_arr.min()) & (x <= x_ref_arr.max())

@@ -147,17 +147,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
     y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
 
-    # --- Comparación de similitud ---
-    comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
-
-    if comparar_similitud:
-        col_sim1, col_sim2, col_sim3 = st.columns([1, 1, 1])
-        sombrear = col_sim3.checkbox("Sombrear rango comparado", value=False)
-        x_comp_min = col_sim1.number_input("X mínimo", value=x_min, step=1.0, key="comp_x_min")
-        x_comp_max = col_sim2.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
-    else:
-        sombrear = False
-
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
     fwhm_rows = []
@@ -202,6 +191,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     })
             except:
                 continue
+    if sombrear and x_comp_min is not None and x_comp_max is not None:
+        ax.axvspan(x_comp_min, x_comp_max, color='gray', alpha=0.2, label="Rango comparado")
 
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
@@ -209,6 +200,17 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     ax.set_ylabel("Absorbancia")
     ax.legend()
     st.pyplot(fig)
+
+   # --- Comparación de similitud ---
+    comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
+
+    if comparar_similitud:
+        col_sim1, col_sim2, col_sim3 = st.columns([1, 1, 1])
+        sombrear = col_sim3.checkbox("Sombrear rango comparado", value=False)
+        x_comp_min = col_sim1.number_input("X mínimo", value=x_min, step=1.0, key="comp_x_min")
+        x_comp_max = col_sim2.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
+    else:
+        sombrear = False
 
     # --- Matriz de similitud ---
     if comparar_similitud and x_comp_min is not None and x_comp_max is not None:

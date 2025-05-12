@@ -216,21 +216,23 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     if comparar_similitud and x_comp_min is not None and x_comp_max is not None:
         st.subheader("Matriz de similitud entre espectros")
         vectores = {}
+        log_text = ""
+
         for muestra, tipo, archivo, df in datos:
             df_filt = df[(df.iloc[:, 0] >= x_comp_min) & (df.iloc[:, 0] <= x_comp_max)].copy()
             if df_filt.empty:
-                print(f"[SKIP] {muestra} – {tipo}: sin datos en rango {x_comp_min}–{x_comp_max}")
+                log_text += f"[SKIP] {muestra} – {tipo}: sin datos en rango {x_comp_min}–{x_comp_max}\n"
                 continue
             x = df_filt.iloc[:, 0].reset_index(drop=True)
             y = df_filt.iloc[:, 1].reset_index(drop=True)
-            print(f"\n{muestra} – {tipo} | X: {x.min():.2f}–{x.max():.2f}, Y: min={y.min():.4f}, max={y.max():.4f}, std={np.std(y):.6f}")
+            log_text += f"\n{muestra} – {tipo} | X: {x.min():.2f}–{x.max():.2f}, Y: min={y.min():.4f}, max={y.max():.4f}, std={np.std(y):.6f}\n"
             if aplicar_suavizado and len(y) >= 5:
                 window = 7 if len(y) % 2 else 7
                 y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
-                print(f"    🔄 Suavizado aplicado – std nueva: {np.std(y):.6f}")
+                log_text += f"    🔄 Suavizado aplicado – std nueva: {np.std(y):.6f}\n"
             if normalizar and np.max(np.abs(y)) != 0:
                 y = y / np.max(np.abs(y))
-                print(f"    🔄 Normalizado – nuevo max: {np.max(y):.4f}")
+                log_text += f"    🔄 Normalizado – nuevo max: {np.max(y):.4f}\n"
             key = f"{muestra} – {tipo}"
             vectores[key] = (x, y)
 
@@ -245,25 +247,29 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 x_comun = np.linspace(x_min_comun, x_max_comun, 500)
                 yi_interp = np.interp(x_comun, xi, yi)
                 yj_interp = np.interp(x_comun, xj, yj)
-                print(f"\n🔍 {nombres[i]} vs {nombres[j]}")
-                print(f"    x_comun: {x_min_comun:.2f}–{x_max_comun:.2f}, len={len(x_comun)}")
-                print(f"    std yi: {np.std(yi_interp):.6f}, std yj: {np.std(yj_interp):.6f}")
+                log_text += f"\n🔍 {nombres[i]} vs {nombres[j]}\n"
+                log_text += f"    x_comun: {x_min_comun:.2f}–{x_max_comun:.2f}, len={len(x_comun)}\n"
+                log_text += f"    std yi: {np.std(yi_interp):.6f}, std yj: {np.std(yj_interp):.6f}\n"
+
                 if len(yi_interp) == 0 or len(yj_interp) == 0:
                     corr = 0
-                    print("    ❌ Interpolación vacía")
+                    log_text += "    ❌ Interpolación vacía\n"
                 elif np.isnan(yi_interp).any() or np.isnan(yj_interp).any():
                     corr = 0
-                    print("    ❌ Valores NaN encontrados")
+                    log_text += "    ❌ Valores NaN encontrados\n"
                 elif np.std(yi_interp) < 1e-6 or np.std(yj_interp) < 1e-6:
                     corr = 0
-                    print("    ⚠️ Desviación estándar demasiado baja")
+                    log_text += "    ⚠️ Desviación estándar demasiado baja\n"
                 else:
                     corr = np.corrcoef(yi_interp, yj_interp)[0, 1]
-                    print(f"    ✅ Correlación: {corr:.4f}")
+                    log_text += f"    ✅ Correlación: {corr:.4f}\n"
+
                 matriz[i, j] = round(corr * 100, 1)
 
         df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
         st.dataframe(df_similitud.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
+
+        st.code(log_text, language="text")
 
 
         now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

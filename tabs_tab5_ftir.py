@@ -131,17 +131,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     else:
                         df_ref = None
                 if df_ref is not None:
-                    # Asegurar solo 2 columnas y renombrar
+                    # --- LIMPIEZA DEFINITIVA ---
                     df_ref = df_ref.iloc[:, :2]
                     df_ref.columns = ["x", "y"]
-
-                    # Limpiar espacios, convertir a numérico y eliminar cualquier fila inválida
                     df_ref = df_ref.applymap(lambda v: str(v).strip())
                     df_ref = df_ref.apply(pd.to_numeric, errors="coerce")
-                    df_ref = df_ref[df_ref.notnull().all(axis=1)].reset_index(drop=True)
-                    df_ref = df_ref.astype(float)
-
-                    # Asignar a arrays para interpolación
+                    df_ref = df_ref.dropna().reset_index(drop=True)
+                    df_ref["x"] = df_ref["x"].astype(float)
+                    df_ref["y"] = df_ref["y"].astype(float)
                     x_ref = df_ref["x"].values
                     y_ref = df_ref["y"].values
                 else:
@@ -152,6 +149,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             x_ref, y_ref = None, None
     else:
         x_ref, y_ref = None, None
+
 
     mostrar_picos = st.checkbox("Mostrar picos detectados automáticamente", value=False)
 

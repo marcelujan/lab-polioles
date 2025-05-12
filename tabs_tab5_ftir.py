@@ -256,15 +256,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     ax.legend()
     st.pyplot(fig)
     df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
+    # Mostrar la tabla con el gradiente visual (usando los valores originales)
     st.dataframe(
         df_similitud.style
-            .format("{:.2f} %")
-            .background_gradient(cmap="RdYlGn"),
+            .format("{:.2f}")
+            .background_gradient(cmap="RdYlGn")
+            .set_properties(**{"text-align": "center"}),
         use_container_width=True
     )
-
-#        st.code(log_text, language="text")
-
 
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     nombre_base = f"FTIR_{now}"

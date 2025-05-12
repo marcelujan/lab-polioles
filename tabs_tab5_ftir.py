@@ -213,45 +213,56 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     ax.legend()
     st.pyplot(fig)
 
-    # --- Matriz de similitud ---
-    if comparar_similitud and x_comp_min is not None and x_comp_max is not None:
-        st.subheader("Matriz de similitud entre espectros")
-        vectores = {}
-        for muestra, tipo, archivo, df in datos:
-            df_filt = df[(df.iloc[:, 0] >= x_comp_min) & (df.iloc[:, 0] <= x_comp_max)].copy()
-            if df_filt.empty:
-                continue
-            x = df_filt.iloc[:, 0].reset_index(drop=True)
-            y = df_filt.iloc[:, 1].reset_index(drop=True)
-            if aplicar_suavizado and len(y) >= 5:
-                window = 7 if len(y) % 2 else 7
-                y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
-            if normalizar and np.max(np.abs(y)) != 0:
-                y = y / np.max(np.abs(y))
-            key = f"{muestra} – {tipo}"
-            vectores[key] = (x, y)
+# --- Matriz de similitud ---
+if comparar_similitud and x_comp_min is not None and x_comp_max is not None:
+    st.subheader("Matriz de similitud entre espectros")
+    vectores = {}
+    for muestra, tipo, archivo, df in datos:
+        df_filt = df[(df.iloc[:, 0] >= x_comp_min) & (df.iloc[:, 0] <= x_comp_max)].copy()
+        if df_filt.empty:
+            continue
+        x = df_filt.iloc[:, 0].reset_index(drop=True)
+        y = df_filt.iloc[:, 1].reset_index(drop=True)
+        if aplicar_suavizado and len(y) >= 5:
+            window = 7 if len(y) % 2 else 7
+            y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
+        if normalizar and np.max(np.abs(y)) != 0:
+            y = y / np.max(np.abs(y))
+        key = f"{muestra} – {tipo}"
+        vectores[key] = (x, y)
 
-        nombres = list(vectores.keys())
-        matriz = np.zeros((len(nombres), len(nombres)))
-        for i in range(len(nombres)):
-            for j in range(len(nombres)):
-                xi, yi = vectores[nombres[i]]
-                xj, yj = vectores[nombres[j]]
-                x_comun = np.linspace(max(xi.min(), xj.min()), min(xi.max(), xj.max()), 500)
-                yi_interp = np.interp(x_comun, xi, yi)
-                yj_interp = np.interp(x_comun, xj, yj)
-                if len(yi_interp) == 0 or len(yj_interp) == 0 or np.isnan(yi_interp).any() or np.isnan(yj_interp).any():
-                    corr = 0
-                else:
-                    if np.std(yi_interp) == 0 or np.std(yj_interp) == 0:
-                        corr = 0
-                    else:
-                        print(f"Comparando {nombres[i]} vs {nombres[j]}")
-                        print(f"x_comun: {x_comun.shape}, yi_interp: {yi_interp.shape}, yj_interp: {yj_interp.shape}")
-                        print(f"yi_interp[:5]: {yi_interp[:5]}")
-                        print(f"std yi: {np.std(yi_interp)}, std yj: {np.std(yj_interp)}\n")
-                        corr = np.corrcoef(yi_interp, yj_interp)[0, 1]
-                matriz[i, j] = round(corr * 100, 1)  # porcentaje de similitud
+    nombres = list(vectores.keys())
+    matriz = np.zeros((len(nombres), len(nombres)))
+
+    for i in range(len(nombres)):
+        for j in range(len(nombres)):
+            xi, yi = vectores[nombres[i]]
+            xj, yj = vectores[nombres[j]]
+
+            x_min_comun = max(xi.min(), xj.min())
+            x_max_comun = min(xi.max(), xj.max())
+
+            if x_max_comun <= x_min_comun:
+                print(f"Sin superposición entre {nombres[i]} y {nombres[j]}")
+                matriz[i, j] = 0
+                continue
+
+            x_comun = np.linspace(x_min_comun, x_max_comun, 500)
+            yi_interp = np.interp(x_comun, xi, yi)
+            yj_interp = np.interp(x_comun, xj, yj)
+
+            if len(yi_interp) == 0 or len(yj_interp) == 0 or np.isnan(yi_interp).any() or np.isnan(yj_interp).any():
+                print(f"Interpolación inválida entre {nombres[i]} y {nombres[j]}")
+                corr = 0
+            elif np.std(yi_interp) == 0 or np.std(yj_interp) == 0:
+                print(f"Varianza cero entre {nombres[i]} y {nombres[j]}")
+                corr = 0
+            else:
+                print(f"Comparando {nombres[i]} vs {nombres[j]}")
+                print(f"x_comun: {x_comun.shape}, yi_interp[:3]: {yi_interp[:3]}, std: {np.std(yi_interp):.4f}")
+                corr = np.corrcoef(yi_interp, yj_interp)[0, 1]
+
+            matriz[i, j] = round(corr * 100, 1)
 
         df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
         st.dataframe(df_similitud.style.background_gradient(cmap="RdYlGn"), use_container_width=True)

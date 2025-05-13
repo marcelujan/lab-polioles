@@ -88,10 +88,11 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             for m in muestras:
                 if m["nombre"] == elegido["Nombre"]:
                     m["analisis"] = [a for a in m["analisis"] if not (
-                        a["tipo"] == elegido["Tipo"] and
-                        str(a["fecha"]) == elegido["Fecha"] and
-                        a["valor"] == elegido["Valor"] and
-                        a["observaciones"] == elegido["Observaciones"])]
+                        a.get("tipo", "") == elegido["Tipo"] and
+                        str(a.get("fecha", "")) == str(elegido["Fecha"]) and
+                        a.get("valor", "") == elegido["Valor"] and
+                        a.get("observaciones", "") == elegido["Observaciones"]
+                        )]
                     guardar_muestra(db, m["nombre"], m["observacion"], m["analisis"], m.get("espectros", []))
                     st.success("Análisis eliminado.")
                     st.rerun()

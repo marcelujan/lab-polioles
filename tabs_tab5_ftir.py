@@ -83,7 +83,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     # --- Calculadora manual de Índice OH (solo una tabla funcional) ---
 
     # Precarga fija con etiquetas descriptivas
-    datos_oh = pd.DataFrame([
+    #datos_oh = pd.DataFrame([
         {
             "Tipo": "FTIR-Acetato [3548 cm⁻¹]",
             "Señal": 0.0000,

@@ -106,27 +106,19 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         confirmacion = st.checkbox(f"Confirmar eliminación de '{muestra_a_borrar}'", key="confirmar_borrado_muestra")
         if confirmacion:
             eliminar_muestra(db, muestra_a_borrar)
-            ref = db.collection("muestras").document(muestra_a_borrar)
-            if ref.get().exists:
-                st.error("❌ La muestra no fue eliminada.")
-            else:
-                st.success(f"Muestra '{muestra_a_borrar}' eliminada correctamente.")
-                st.rerun()
+            st.success(f"✅ Muestra '{muestra_a_borrar}' eliminada (o se solicitó eliminarla).")
+            st.rerun()
         else:
             st.warning("Debes marcar la casilla de confirmación para eliminar la muestra.")
 
-
-
-        st.subheader("Exportar")
-        buffer = BytesIO()
-        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-            df_vista.to_excel(writer, index=False, sheet_name="Muestras")
-        st.download_button("Descargar Excel",
-            data=buffer.getvalue(),
-            file_name=f"lab-polioles_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    else:
-        st.info("No hay análisis cargados.")
+    st.subheader("Exportar")
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+        df_vista.to_excel(writer, index=False, sheet_name="Muestras")
+    st.download_button("Descargar Excel",
+        data=buffer.getvalue(),
+        file_name=f"lab-polioles_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
     mostrar_sector_flotante(db, key_suffix="tab1")

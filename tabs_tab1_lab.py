@@ -5,6 +5,7 @@ from io import BytesIO
 import json
 from firestore_utils import cargar_muestras, guardar_muestra
 from ui_utils import mostrar_sector_flotante
+from firestore_utils import eliminar_muestra  # asegurate de tener esta línea al inicio
 
 def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Laboratorio de Polioles")
@@ -76,6 +77,19 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 "Fecha": a.get("fecha", ""),
                 "Observaciones": a.get("observaciones", "")
             })
+
+    st.subheader("Eliminar muestra completa")
+    nombres_muestras = sorted(set(m["nombre"] for m in muestras))
+    muestra_a_borrar = st.selectbox("Seleccionar muestra a eliminar", nombres_muestras)
+
+    if st.button("Eliminar muestra completa"):
+        confirmacion = st.checkbox(f"Confirmar eliminación de '{muestra_a_borrar}'", key="confirmar_borrado_muestra")
+        if confirmacion:
+            eliminar_muestra(db, muestra_a_borrar)
+            st.success(f"Muestra '{muestra_a_borrar}' eliminada correctamente.")
+            st.rerun()
+        else:
+            st.warning("Debes marcar la casilla de confirmación para eliminar la muestra.")
 
     df_vista = pd.DataFrame(tabla)
     if not df_vista.empty:

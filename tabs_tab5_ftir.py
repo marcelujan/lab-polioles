@@ -86,7 +86,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         {"Tipo": "FTIR-Cloroformo [3611 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000}
     ])
 
-    col1, col2 = st.columns([4, 1])  # proporción ajustada
+    col1, col2 = st.columns([4, 1])
 
     with col1:
         edited_input = st.data_editor(
@@ -94,6 +94,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             column_order=["Tipo", "Señal", "Señal solvente", "Peso muestra [g]"],
             column_config={"Tipo": st.column_config.TextColumn(disabled=True)},
             use_container_width=True,
+            hide_index=True,  # 👈 Oculta la columna 0/1
             key="editor_oh_calculadora",
             num_rows="fixed"
         )
@@ -115,8 +116,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         resultados.append({"Índice OH": indice})
 
     with col2:
-        st.markdown(" ")  # espacio vertical invisible para alinear
-        st.dataframe(pd.DataFrame(resultados), use_container_width=True)
+        st.markdown(" ")  # Espacio para alinear verticalmente
+        st.dataframe(pd.DataFrame(resultados), use_container_width=True, hide_index=True)  # 👈 Oculta índice
 
 
     # --- Sección 2: Comparación de espectros ---

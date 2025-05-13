@@ -84,19 +84,24 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.subheader("Eliminar análisis")
         seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index,
             format_func=lambda i: f"{df_vista.at[i, 'Nombre']} – {df_vista.at[i, 'Tipo']} – {df_vista.at[i, 'Fecha']}– {df_vista.at[i, 'Observaciones']}")
+        confirmacion_analisis = st.checkbox("Confirmar eliminación del análisis seleccionado", key="confirmar_borrado_analisis")
         if st.button("Eliminar análisis"):
-            elegido = df_vista.iloc[seleccion]
-            for m in muestras:
-                if m["nombre"] == elegido["Nombre"]:
-                    m["analisis"] = [a for a in m.get("analisis", []) if not (
-                        str(a.get("tipo", "")) == str(elegido["Tipo"]) and
-                        str(a.get("fecha", "")) == str(elegido["Fecha"]) and
-                        str(a.get("valor", "")) == str(elegido["Valor"]) and
-                        str(a.get("observaciones", "")) == str(elegido["Observaciones"])
-                    )]
-                    guardar_muestra(db, m["nombre"], m.get("observacion", ""), m["analisis"], m.get("espectros", []))
-                    st.success("Análisis eliminado.")
-                    st.rerun()
+            if confirmacion_analisis:
+                elegido = df_vista.iloc[seleccion]
+                for m in muestras:
+                    if m["nombre"] == elegido["Nombre"]:
+                        m["analisis"] = [a for a in m.get("analisis", []) if not (
+                            str(a.get("tipo", "")) == str(elegido["Tipo"]) and
+                            str(a.get("fecha", "")) == str(elegido["Fecha"]) and
+                            str(a.get("valor", "")) == str(elegido["Valor"]) and
+                            str(a.get("observaciones", "")) == str(elegido["Observaciones"])
+                        )]
+                        guardar_muestra(db, m["nombre"], m.get("observacion", ""), m["analisis"], m.get("espectros", []))
+                        st.success("Análisis eliminado.")
+                        st.rerun()
+            else:
+                st.warning("Debes marcar la casilla de confirmación para eliminar el análisis.")
+
 
     # Eliminar muestra completa
     st.subheader("Eliminar muestra")

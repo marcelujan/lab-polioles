@@ -31,8 +31,18 @@ def guardar_muestra(db, nombre, observacion, analisis, espectros=None):
     db.collection("muestras").document(nombre).set(datos)
 
 # Eliminar muestra
-def eliminar_muestra(db, nombre):
+#def eliminar_muestra(db, nombre):
     try:
         db.collection("muestras").document(nombre).delete()
     except Exception as e:
         print(f"Error al eliminar muestra '{nombre}': {e}")
+def eliminar_muestra(db, nombre):
+    try:
+        ref = db.collection("muestras").document(nombre)
+        if ref.get().exists:
+            ref.delete()
+            print(f"Muestra '{nombre}' eliminada correctamente.")
+        else:
+            print(f"⚠ La muestra '{nombre}' no existe en Firestore.")
+    except Exception as e:
+        print(f"❌ Error al eliminar muestra '{nombre}': {e}")

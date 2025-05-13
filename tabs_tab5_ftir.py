@@ -99,6 +99,18 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         }
     ])
 
+    # Editor de tabla manual
+    edited_oh = st.data_editor(
+        datos_oh,
+        use_container_width=True,
+        column_config={
+            "Tipo": st.column_config.TextColumn("Tipo", disabled=True),
+            "Índice OH": st.column_config.TextColumn(disabled=True),
+        },
+        key="calculadora_oh",
+        num_rows="fixed"
+    )
+
     # Recalcular índice para cada fila editada
     for i, row in edited_oh.iterrows():
         try:
@@ -121,6 +133,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     # Mostrar la tabla final ya corregida
     st.dataframe(edited_oh, use_container_width=True)
+
 
 
     # --- Sección 2: Comparación de espectros ---

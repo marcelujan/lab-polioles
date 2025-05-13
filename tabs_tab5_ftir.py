@@ -172,10 +172,21 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 else:
                     continue
             # 👇 Corrección aquí: convertir antes de eliminar NaN
-            df.iloc[:, 0] = pd.to_numeric(df.iloc[:, 0], errors="coerce")
-            df.iloc[:, 1] = pd.to_numeric(df.iloc[:, 1], errors="coerce")
-            df = df.dropna()
+            df = df.iloc[:, :2]  # Asegura solo 2 columnas
+            df.columns = ["x", "y"]  # Renombra para evitar error de clave
+            df = df.applymap(lambda v: str(v).strip())  # Limpia espacios
+            df = df.apply(pd.to_numeric, errors="coerce")  # Convierte a numérico
+            df = df.dropna().reset_index(drop=True)  # Quita NaNs
+
+            try:
+                df["x"] = df["x"].astype(float)
+                df["y"] = df["y"].astype(float)
+            except Exception as e:
+                st.error(f"❌ Error al convertir muestra {row['muestra']} – {row['archivo']}: {e}")
+                st.stop()
+
             datos.append((row["muestra"], row["tipo"], row["archivo"], df))
+
         except:
             continue
 

@@ -266,6 +266,17 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     resumen = pd.DataFrame()
     fwhm_rows = []
 
+    # Crear casillas horizontales por muestra para mostrar/ocultar etiquetas de picos
+    mostrar_etiquetas = {}
+    if mostrar_picos:
+        st.markdown("### Mostrar etiquetas de picos por espectro:")
+        claves = [f"{m} – {t} – {a}" for m, t, a, _ in datos]
+        columnas = st.columns(len(claves))
+        for i, clave in enumerate(claves):
+            with columnas[i]:
+                mostrar_etiquetas[clave] = st.checkbox("", value=True, key=f"etiqueta_{clave}")
+                st.caption(clave.split(" – ")[0])  # Mostrar solo el nombre de la muestra como ayuda
+
     for muestra, tipo, archivo, df in datos:
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()
         if df_filtrado.empty:
@@ -325,6 +336,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             try:
                 peaks, props = find_peaks(y, height=altura_min, distance=distancia_min)
                 widths, width_heights, left_ips, right_ips = peak_widths(y, peaks, rel_height=0.5)
+                clave = f"{muestra} – {tipo} – {archivo}"
+                if not mostrar_etiquetas.get(clave, True):
+                    continue
                 for i, peak in enumerate(peaks):
                     x_fwhm_left = np.interp(left_ips[i], np.arange(len(x)), x)
                     x_fwhm_right = np.interp(right_ips[i], np.arange(len(x)), x)

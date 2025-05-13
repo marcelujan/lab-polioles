@@ -8,7 +8,7 @@ from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
-    st.title("Análisis FTIR")
+#    st.title("Análisis FTIR")
     st.session_state["current_tab"] = "Análisis FTIR"
     muestras = cargar_muestras(db)
     if not muestras:
@@ -80,6 +80,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
+
+
     # --- Seccion 1.5 - Calculadora manual de Índice OH  ---
     datos_oh = pd.DataFrame([
         {"Tipo": "FTIR-Acetato [3548 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
@@ -89,6 +91,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     col1, col2 = st.columns([4, 1])
 
     with col1:
+    #    st.markdown(" ")
         edited_input = st.data_editor(
             datos_oh,
             column_order=["Tipo", "Señal", "Señal solvente", "Peso muestra [g]"],
@@ -116,8 +119,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         resultados.append({"Índice OH": indice})
 
     with col2:
-        st.markdown(" ")  # Espacio para alinear verticalmente
+    #    st.markdown(" ")  # Espacio para alinear verticalmente
         st.dataframe(pd.DataFrame(resultados), use_container_width=True, hide_index=True)  # 👈 Oculta índice
+
 
 
     # --- Sección 2: Comparación de espectros ---

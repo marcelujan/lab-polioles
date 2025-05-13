@@ -82,7 +82,7 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if not df_vista.empty:
         st.dataframe(df_vista, use_container_width=True)
         st.subheader("Eliminar análisis")
-        seleccion = st.selectbox("Seleccionar análisis a eliminar", df_vista.index,
+        seleccion = st.selectbox(df_vista.index,
             format_func=lambda i: f"{df_vista.at[i, 'Nombre']} – {df_vista.at[i, 'Tipo']} – {df_vista.at[i, 'Fecha']}– {df_vista.at[i, 'Observaciones']}")
         if st.button("Eliminar análisis"):
             elegido = df_vista.iloc[seleccion]
@@ -98,11 +98,11 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     st.success("Análisis eliminado.")
                     st.rerun()
 
-    st.subheader("Eliminar muestra completa")
+    st.subheader("Eliminar muestra")
     nombres_muestras = sorted(set(m["nombre"] for m in muestras))
-    muestra_a_borrar = st.selectbox("Seleccionar muestra a eliminar", nombres_muestras)
+    muestra_a_borrar = st.selectbox(nombres_muestras)
 
-    if st.button("Eliminar muestra completa"):
+    if st.button("Eliminar muestra"):
         confirmacion = st.checkbox(f"Confirmar eliminación de '{muestra_a_borrar}'", key="confirmar_borrado_muestra")
         if confirmacion:
             eliminar_muestra(db, muestra_a_borrar)

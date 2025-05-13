@@ -32,10 +32,10 @@ def guardar_muestra(db, nombre, observacion, analisis, espectros=None):
 
 # Eliminar muestra
 #def eliminar_muestra(db, nombre):
-    try:
-        db.collection("muestras").document(nombre).delete()
-    except Exception as e:
-        print(f"Error al eliminar muestra '{nombre}': {e}")
+#    try:
+ #       db.collection("muestras").document(nombre).delete()
+  #  except Exception as e:
+   #     print(f"Error al eliminar muestra '{nombre}': {e}")
 def eliminar_muestra(db, nombre):
     try:
         ref = db.collection("muestras").document(nombre)

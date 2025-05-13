@@ -131,40 +131,28 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     else:
                         df_ref = None
                 if df_ref is not None:
-                    # --- DEPURACIÓN REFORZADA ---
-                    df_ref = df_ref.iloc[:, :2]
-                    df_ref.columns = ["x", "y"]
-                    df_ref = df_ref.applymap(lambda v: str(v).strip())
-                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")
-
-                    # Mostrar antes de filtrar
-                    st.write("ANTES DE dropna:")
+                    df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
+                    df_ref.columns = ["x", "y"]  # Renombra
+                    df_ref = df_ref.applymap(lambda v: str(v).strip())  # Elimina espacios invisibles
+                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
+                    # Mostrar contenido y tipos de datos para depurar
+                    st.write("Vista previa del espectro de referencia (df_ref):")
                     st.dataframe(df_ref.head())
-                    st.write("Tipos:", df_ref.dtypes)
 
-                    df_ref = df_ref.dropna().reset_index(drop=True)
+                    st.write("Tipos de datos por columna en df_ref:")
+                    st.write(df_ref.dtypes)
+                    df_ref = df_ref.dropna()
+                    df_ref = df_ref[df_ref.applymap(np.isreal).all(axis=1)]
+                    df_ref = df_ref.astype(float)
+                    x_ref = df_ref.iloc[:, 0].values
+                    y_ref = df_ref.iloc[:, 1].values
 
-                    st.write("DESPUÉS DE dropna:")
-                    st.dataframe(df_ref.head())
-                    st.write("Tipos:", df_ref.dtypes)
-
-                    try:
-                        df_ref["x"] = df_ref["x"].astype(float)
-                        df_ref["y"] = df_ref["y"].astype(float)
-                        x_ref = df_ref["x"].values
-                        y_ref = df_ref["y"].values
-                    except Exception as e:
-                        st.error(f"Fallo en astype(float): {e}")
-                        st.stop()
-                else:
-                    x_ref, y_ref = None, None
             except:
                 x_ref, y_ref = None, None
         else:
             x_ref, y_ref = None, None
     else:
         x_ref, y_ref = None, None
-
 
     mostrar_picos = st.checkbox("Mostrar picos detectados automáticamente", value=False)
 
@@ -195,15 +183,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             df.iloc[:, 0] = pd.to_numeric(df.iloc[:, 0], errors="coerce")
             df.iloc[:, 1] = pd.to_numeric(df.iloc[:, 1], errors="coerce")
             df = df.dropna()
-            # --- LIMPIEZA TAMBIÉN PARA MUESTRAS ---
-            df = df.iloc[:, :2]
-            df.columns = ["x", "y"]
-            df = df.applymap(lambda v: str(v).strip())
-            df = df.apply(pd.to_numeric, errors="coerce")
-            df = df.dropna().reset_index(drop=True)
-            df["x"] = df["x"].astype(float)
-            df["y"] = df["y"].astype(float)
-            datos.append((row["muestra"], row["tipo"], row["archivo"], df))
+            try:
+        df["x"] = df["x"].astype(float)
+        df["y"] = df["y"].astype(float)
+    except Exception as e:
+        st.error(f"❌ Error al convertir muestra {row['muestra']} – {row['archivo']}: {e}")
+        st.stop()
+    datos.append((row["muestra"], row["tipo"], row["archivo"], df))
         except:
             continue
 
@@ -237,25 +223,23 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         # Interpolar y restar si corresponde
         if restar_espectro and x_ref is not None and y_ref is not None:
             try:
-                # Validación de longitud
-                if len(x_ref) == 0 or len(y_ref) == 0:
-                    st.error("❌ El espectro de referencia está vacío.")
-                    st.stop()
-
+                # Asegurar que x_ref esté ordenado
                 x_ref_ord, y_ref_ord = zip(*sorted(zip(x_ref, y_ref)))
-                x_ref_arr = np.array(x_ref_ord, dtype=float)
-                y_ref_arr = np.array(y_ref_ord, dtype=float)
+                x_ref_arr = np.array(x_ref_ord).astype(float)
+                y_ref_arr = np.array(y_ref_ord).astype(float)
+
 
                 # Filtrar x para que esté dentro del dominio de x_ref
                 mascara_valida = (x >= x_ref_arr.min()) & (x <= x_ref_arr.max())
                 x = x[mascara_valida]
                 y = y[mascara_valida]
 
+                # Interpolar y restar
                 y_interp_ref = np.interp(x, x_ref_arr, y_ref_arr)
                 y = y - y_interp_ref
+
             except Exception as e:
-                st.error(f"❌ Fallo durante la resta: {e}")
-                st.stop()
+                st.warning(f"No se pudo restar el espectro de referencia para {row['muestra']}. Error: {e}")
 
 
         # Convertir a Series para el resto del procesamiento

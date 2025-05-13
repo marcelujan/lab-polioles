@@ -80,23 +80,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
-    # --- Calculadora manual de Índice OH ---
-    st.subheader("Calculadora manual de Índice OH")
-
-    tipo_manual = st.selectbox("Tipo de espectro", ["FTIR-Acetato", "FTIR-Cloroformo"])
-    st.caption("📌 Recuerda: FTIR-Acetato → señal en 3548 cm⁻¹ | FTIR-Cloroformo → señal en 3611 cm⁻¹")
-
-    señal_manual = st.number_input("Señal medida en FTIR", value=0.0, step=0.01)
-    señal_solvente_manual = st.number_input("Señal del solvente", value=0.0, step=0.01)
-    peso_manual = st.number_input("Peso de la muestra [g]", value=0.0, step=0.01)
-
-    if peso_manual > 0:
-        k_manual = 52.5253 if tipo_manual == "FTIR-Acetato" else 66.7324
-        indice_oh_manual = round(((señal_manual - señal_solvente_manual) * k_manual) / peso_manual, 2)
-        st.success(f"Índice OH calculado: {indice_oh_manual}")
-    else:
-        st.info("Ingrese un peso mayor a 0 para calcular el Índice OH.")
-
     # --- Sección 2: Comparación de espectros ---
     st.subheader("Comparación de espectros FTIR")
     espectros = []

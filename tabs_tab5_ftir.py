@@ -299,6 +299,16 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             except:
                 continue
  
+ 
+    ax.axhline(0, color="black", linestyle="--", linewidth=.6)
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlabel("Número de onda [cm⁻¹]")
+    ax.set_ylabel("Absorbancia")
+    ax.legend()
+    st.pyplot(fig)
+    
+    
         # --- Comparación de similitud ---
     comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
     if comparar_similitud:
@@ -370,14 +380,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             use_container_width=True
         )
 
-    ax.axhline(0, color="black", linestyle="--", linewidth=.6)
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_min, y_max)
-    ax.set_xlabel("Número de onda [cm⁻¹]")
-    ax.set_ylabel("Absorbancia")
-    ax.legend()
-    st.pyplot(fig)
-    
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     nombre_base = f"FTIR_{now}"
 

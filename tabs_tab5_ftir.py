@@ -81,6 +81,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
     # --- Calculadora manual de Índice OH (solo una tabla funcional) ---
+
     # Precarga fija con etiquetas descriptivas
     datos_oh = pd.DataFrame([
         {
@@ -133,7 +134,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     # Mostrar la tabla final ya corregida
     st.dataframe(edited_oh, use_container_width=True)
-
 
 
     # --- Sección 2: Comparación de espectros ---

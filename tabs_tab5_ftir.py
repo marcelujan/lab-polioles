@@ -81,51 +81,56 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
     # --- Calculadora manual de Índice OH (solo una tabla funcional) ---
-
-    # Precarga fija (no se muestra directamente)
+    # Precarga fija (datos base)
     datos_oh = pd.DataFrame([
         {
             "Tipo": "FTIR-Acetato [3548 cm⁻¹]",
             "Señal": 0.0000,
             "Señal solvente": 0.0000,
             "Peso muestra [g]": 0.0000,
-            "Índice OH": "—"
         },
         {
             "Tipo": "FTIR-Cloroformo [3611 cm⁻¹]",
             "Señal": 0.0000,
             "Señal solvente": 0.0000,
             "Peso muestra [g]": 0.0000,
-            "Índice OH": "—"
         }
     ])
 
-    # Mostrar una única tabla editable
-    edited_oh = st.data_editor(
+    # Editor sin la columna de resultados
+    edited_input = st.data_editor(
         datos_oh,
         use_container_width=True,
         column_config={
             "Tipo": st.column_config.TextColumn("Tipo", disabled=True),
-            "Índice OH": st.column_config.TextColumn(disabled=True),
         },
-        key="calculadora_oh",
+        key="calculadora_oh_editor",
         num_rows="fixed"
     )
 
-    # Calcular índice OH dentro del DataEditor (pero no volver a mostrar otra tabla)
-    for i, row in edited_oh.iterrows():
+    # Cálculo separado, mostramos resultados aparte
+    resultado_oh = edited_input.copy()
+    resultado_oh["Índice OH"] = "—"
+
+    for i, row in edited_input.iterrows():
         try:
             y = float(row["Señal"])
             y_ref = float(row["Señal solvente"])
             peso = float(row["Peso muestra [g]"])
             if peso > 0:
-                k = 52.5253 if "Acetato" in row["Tipo"] else 66.7324
+                if "Acetato" in row["Tipo"]:
+                    k = 52.5253
+                elif "Cloroformo" in row["Tipo"]:
+                    k = 66.7324
+                else:
+                    k = 0
                 indice = round(((y - y_ref) * k) / peso, 2)
-                edited_oh.at[i, "Índice OH"] = indice
-            else:
-                edited_oh.at[i, "Índice OH"] = "—"
+                resultado_oh.at[i, "Índice OH"] = indice
         except:
-            edited_oh.at[i, "Índice OH"] = "—"
+            resultado_oh.at[i, "Índice OH"] = "—"
+
+    # Mostrar resultado calculado con columna bloqueada
+    st.dataframe(resultado_oh, use_container_width=True)
 
 
     # --- Sección 2: Comparación de espectros ---

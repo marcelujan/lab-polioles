@@ -110,6 +110,13 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.rerun()
         else:
             st.warning("Debes marcar la casilla de confirmación para eliminar la muestra.")
+        ref = db.collection("muestras").document(muestra_a_borrar)
+        if ref.get().exists:
+            st.error("❌ La muestra no fue eliminada.")
+        else:
+            st.success("✅ Muestra eliminada correctamente.")
+            st.rerun()
+
 
         st.subheader("Exportar")
         buffer = BytesIO()

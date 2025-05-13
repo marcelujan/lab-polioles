@@ -80,28 +80,60 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
-    # --- Calculadora tipo tabla editable ---
+    # --- Calculadora fija de Índice OH ---
     st.subheader("Calculadora manual de Índice OH")
-    st.caption("📌 FTIR-Acetato → señal en **3548 cm⁻¹** | FTIR-Cloroformo → señal en **3611 cm⁻¹**")
 
-    df_manual = pd.DataFrame([{
-        "Tipo": "FTIR-Acetato",
-        "Señal": 0.0,
-        "Señal solvente": 0.0,
-        "Peso muestra [g]": 0.0,
-        "Índice OH": "—"
-    }])
+    # Precarga fija con etiquetas descriptivas
+    datos_oh = pd.DataFrame([
+        {
+            "Tipo": "FTIR-Acetato [3548 cm⁻¹]",
+            "Señal": 0.0000,
+            "Señal solvente": 0.0000,
+            "Peso muestra [g]": 0.0000,
+            "Índice OH": "—"
+        },
+        {
+            "Tipo": "FTIR-Cloroformo [3611 cm⁻¹]",
+            "Señal": 0.0000,
+            "Señal solvente": 0.0000,
+            "Peso muestra [g]": 0.0000,
+            "Índice OH": "—"
+        }
+    ])
 
-    edited = st.data_editor(
-        df_manual,
-        num_rows="dynamic",
+    edited_oh = st.data_editor(
+        datos_oh,
         use_container_width=True,
         column_config={
-            "Tipo": st.column_config.SelectboxColumn("Tipo", options=["FTIR-Acetato", "FTIR-Cloroformo"]),
-            "Índice OH": st.column_config.TextColumn(disabled=True)
+            "Tipo": st.column_config.TextColumn("Tipo", disabled=True),
+            "Índice OH": st.column_config.TextColumn(disabled=True),
         },
-        key="oh_manual"
+        key="calculadora_oh",
+        num_rows="fixed"
     )
+
+    # Calcular índice en tiempo real para ambas filas
+    for i, row in edited_oh.iterrows():
+        try:
+            y = float(row["Señal"])
+            y_ref = float(row["Señal solvente"])
+            peso = float(row["Peso muestra [g]"])
+            if peso > 0:
+                if "Acetato" in row["Tipo"]:
+                    k = 52.5253
+                elif "Cloroformo" in row["Tipo"]:
+                    k = 66.7324
+                else:
+                    k = 0
+                indice = round(((y - y_ref) * k) / peso, 2)
+                edited_oh.at[i, "Índice OH"] = indice
+            else:
+                edited_oh.at[i, "Índice OH"] = "—"
+        except:
+            edited_oh.at[i, "Índice OH"] = "—"
+
+    st.dataframe(edited_oh, use_container_width=True)
+
 
     # Recalcular índice para cada fila editada
     for i, row in edited.iterrows():

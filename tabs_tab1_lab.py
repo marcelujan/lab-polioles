@@ -98,19 +98,31 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     st.success("Análisis eliminado.")
                     st.rerun()
 
+    # Eliminar muestra completa
     st.subheader("Eliminar muestra")
     nombres_muestras = sorted(set(m["nombre"] for m in muestras))
-    muestra_a_borrar = st.selectbox("Seleccionar muestra a eliminar",nombres_muestras)
+    muestra_a_borrar = st.selectbox("Seleccionar muestra a eliminar", nombres_muestras)
+
+    confirmacion = st.checkbox(f"Confirmar eliminación de '{muestra_a_borrar}'", key="confirmar_borrado_muestra")
 
     if st.button("Eliminar muestra"):
-        confirmacion = st.checkbox(f"Confirmar eliminación de '{muestra_a_borrar}'", key="confirmar_borrado_muestra")
         if confirmacion:
-            eliminar_muestra(db, muestra_a_borrar)
-            st.success(f"✅ Muestra '{muestra_a_borrar}' eliminada (o se solicitó eliminarla).")
+            st.info(f"Intentando eliminar documento: {muestra_a_borrar}")
+            try:
+                ref = db.collection("muestras").document(muestra_a_borrar)
+                if ref.get().exists:
+                    st.warning("Documento encontrado. Procediendo a eliminar...")
+                    ref.delete()
+                    st.success(f"✅ Documento '{muestra_a_borrar}' eliminado.")
+                else:
+                    st.info("⚠ El documento ya no existe.")
+            except Exception as e:
+                st.error(f"❌ Error al intentar eliminar la muestra: {e}")
             st.rerun()
         else:
             st.warning("Debes marcar la casilla de confirmación para eliminar la muestra.")
 
+    # Descargar excel
     st.subheader("Exportar")
     buffer = BytesIO()
     with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:

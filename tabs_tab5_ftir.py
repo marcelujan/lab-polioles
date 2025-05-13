@@ -180,9 +180,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 else:
                     continue
             # 👇 Corrección aquí: convertir antes de eliminar NaN
-            df.iloc[:, 0] = pd.to_numeric(df.iloc[:, 0], errors="coerce")
-            df.iloc[:, 1] = pd.to_numeric(df.iloc[:, 1], errors="coerce")
-            df = df.dropna()
+            df = df.iloc[:, :2]
+            df.columns = ["x", "y"]
+            df = df.applymap(lambda v: str(v).strip())
+            df = df.apply(pd.to_numeric, errors="coerce")
+            df = df.dropna().reset_index(drop=True)
             try:
                 df["x"] = df["x"].astype(float)
                 df["y"] = df["y"].astype(float)

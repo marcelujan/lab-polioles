@@ -126,7 +126,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         for m in muestras:
             if m["nombre"] == nombre_sel:
                 m["espectros"] = espectros
-                guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
+                guardar_muestra(db, m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
                 st.success("Espectro guardado.")
                 st.rerun()
 
@@ -173,7 +173,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             for m in muestras:
                 if m["nombre"] == nombre:
                     m["espectros"].pop(int(idx))
-                    guardar_muestra(m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
+                    guardar_muestra(db, m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
                     st.success("Espectro eliminado.")
                     st.rerun()
 

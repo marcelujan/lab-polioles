@@ -82,8 +82,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     # --- Calculadora manual de Índice OH (solo una tabla funcional) ---
 
-    # Precarga fija con etiquetas descriptivas
-    #datos_oh = pd.DataFrame([
+    # Precarga fija (no se muestra directamente)
+    datos_oh = pd.DataFrame([
         {
             "Tipo": "FTIR-Acetato [3548 cm⁻¹]",
             "Señal": 0.0000,
@@ -100,7 +100,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         }
     ])
 
-    # Editor de tabla manual
+    # Mostrar una única tabla editable
     edited_oh = st.data_editor(
         datos_oh,
         use_container_width=True,
@@ -112,28 +112,20 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         num_rows="fixed"
     )
 
-    # Recalcular índice para cada fila editada
+    # Calcular índice OH dentro del DataEditor (pero no volver a mostrar otra tabla)
     for i, row in edited_oh.iterrows():
         try:
             y = float(row["Señal"])
             y_ref = float(row["Señal solvente"])
             peso = float(row["Peso muestra [g]"])
             if peso > 0:
-                if "Acetato" in row["Tipo"]:
-                    k = 52.5253
-                elif "Cloroformo" in row["Tipo"]:
-                    k = 66.7324
-                else:
-                    k = 0
+                k = 52.5253 if "Acetato" in row["Tipo"] else 66.7324
                 indice = round(((y - y_ref) * k) / peso, 2)
                 edited_oh.at[i, "Índice OH"] = indice
             else:
                 edited_oh.at[i, "Índice OH"] = "—"
         except:
             edited_oh.at[i, "Índice OH"] = "—"
-
-    # Mostrar la tabla final ya corregida
-    st.dataframe(edited_oh, use_container_width=True)
 
 
     # --- Sección 2: Comparación de espectros ---

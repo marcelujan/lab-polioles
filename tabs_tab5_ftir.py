@@ -80,30 +80,46 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
-
-      # --- Calculadora compacta en formato tipo tabla ---
+    # --- Calculadora tipo tabla editable ---
     st.subheader("Calculadora manual de Índice OH")
+    st.caption("📌 FTIR-Acetato → señal en **3548 cm⁻¹** | FTIR-Cloroformo → señal en **3611 cm⁻¹**")
 
-    st.caption("📌 FTIR-Acetato → señal en 3548 cm⁻¹ | FTIR-Cloroformo → señal en 3611 cm⁻¹")
+    df_manual = pd.DataFrame([{
+        "Tipo": "FTIR-Acetato",
+        "Señal": 0.0,
+        "Señal solvente": 0.0,
+        "Peso muestra [g]": 0.0,
+        "Índice OH": "—"
+    }])
 
-    col1, col2, col3, col4, col5 = st.columns([1.5, 1, 1, 1, 1.2])
-    with col1:
-        tipo_calc = st.selectbox("Tipo", ["FTIR-Acetato", "FTIR-Cloroformo"], key="tipo_calc")
-    with col2:
-        señal_calc = st.number_input("Señal", value=0.0, step=0.01, key="senal_calc")
-    with col3:
-        señal_solvente_calc = st.number_input("Solvente", value=0.0, step=0.01, key="solvente_calc")
-    with col4:
-        peso_calc = st.number_input("Peso [g]", value=0.0, step=0.01, key="peso_calc")
+    edited = st.data_editor(
+        df_manual,
+        num_rows="dynamic",
+        use_container_width=True,
+        column_config={
+            "Tipo": st.column_config.SelectboxColumn("Tipo", options=["FTIR-Acetato", "FTIR-Cloroformo"]),
+            "Índice OH": st.column_config.TextColumn(disabled=True)
+        },
+        key="oh_manual"
+    )
 
-    with col5:
-        if peso_calc > 0:
-            k = 52.5253 if tipo_calc == "FTIR-Acetato" else 66.7324
-            indice = round(((señal_calc - señal_solvente_calc) * k) / peso_calc, 2)
-            st.markdown(f"**Índice OH:** {indice}")
-        else:
-            st.markdown("—")
+    # Recalcular índice para cada fila editada
+    for i, row in edited.iterrows():
+        try:
+            tipo = row["Tipo"]
+            y = float(row["Señal"])
+            y_ref = float(row["Señal solvente"])
+            peso = float(row["Peso muestra [g]"])
+            if peso > 0:
+                k = 52.5253 if tipo == "FTIR-Acetato" else 66.7324
+                indice = round(((y - y_ref) * k) / peso, 2)
+                edited.at[i, "Índice OH"] = indice
+            else:
+                edited.at[i, "Índice OH"] = "—"
+        except:
+            edited.at[i, "Índice OH"] = "—"
 
+    st.dataframe(edited, use_container_width=True)
 
     # --- Sección 2: Comparación de espectros ---
     st.subheader("Comparación de espectros FTIR")

@@ -80,26 +80,25 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
-    # --- Calculadora manual de Índice OH  ---
+    # --- Seccion 1.5 - Calculadora manual de Índice OH  ---
     datos_oh = pd.DataFrame([
         {"Tipo": "FTIR-Acetato [3548 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
         {"Tipo": "FTIR-Cloroformo [3611 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000}
     ])
 
-    col1, col2 = st.columns([3, 1.2])  # Ajuste de proporciones para que entren bien
+    col1, col2 = st.columns([4, 1])  # proporción ajustada
 
-    # Editor a la izquierda
     with col1:
         edited_input = st.data_editor(
             datos_oh,
             column_order=["Tipo", "Señal", "Señal solvente", "Peso muestra [g]"],
             column_config={"Tipo": st.column_config.TextColumn(disabled=True)},
             use_container_width=True,
-            key="editor_oh_inline",
+            key="editor_oh_calculadora",
             num_rows="fixed"
         )
 
-    # Cálculo separado a la derecha
+    # Cálculo del Índice OH
     resultados = []
     for i, row in edited_input.iterrows():
         try:
@@ -115,9 +114,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             indice = "—"
         resultados.append({"Índice OH": indice})
 
-    # Mostrar resultados alineados a la derecha
     with col2:
-        st.markdown("#### ")
+        st.markdown(" ")  # espacio vertical invisible para alinear
         st.dataframe(pd.DataFrame(resultados), use_container_width=True)
 
 

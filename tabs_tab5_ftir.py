@@ -80,9 +80,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
-    # --- Calculadora fija de Índice OH ---
-    st.subheader("Calculadora manual de Índice OH")
-
+    # --- Calculadora manual de Índice OH (solo una tabla funcional) ---
     # Precarga fija con etiquetas descriptivas
     datos_oh = pd.DataFrame([
         {
@@ -101,7 +99,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         }
     ])
 
-    # Mostrar editor para ingreso manual
+    # Editor de tabla manual
     edited_oh = st.data_editor(
         datos_oh,
         use_container_width=True,
@@ -133,7 +131,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         except:
             edited_oh.at[i, "Índice OH"] = "—"
 
-    # Mostrar tabla final ya calculada
+    # Mostrar la tabla final ya corregida
     st.dataframe(edited_oh, use_container_width=True)
 
 

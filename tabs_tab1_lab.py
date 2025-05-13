@@ -65,7 +65,7 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.success("Análisis guardado.")
         st.rerun()
 
-    st.subheader("Análisis cargados")
+
     muestras = cargar_muestras(db)
     tabla = []
     for m in muestras:
@@ -82,7 +82,7 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if not df_vista.empty:
         st.dataframe(df_vista, use_container_width=True)
         st.subheader("Eliminar análisis")
-        seleccion = st.selectbox(df_vista.index,
+        seleccion = st.selectbox("", df_vista.index,
             format_func=lambda i: f"{df_vista.at[i, 'Nombre']} – {df_vista.at[i, 'Tipo']} – {df_vista.at[i, 'Fecha']}– {df_vista.at[i, 'Observaciones']}")
         if st.button("Eliminar análisis"):
             elegido = df_vista.iloc[seleccion]
@@ -106,16 +106,15 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         confirmacion = st.checkbox(f"Confirmar eliminación de '{muestra_a_borrar}'", key="confirmar_borrado_muestra")
         if confirmacion:
             eliminar_muestra(db, muestra_a_borrar)
-            st.success(f"Muestra '{muestra_a_borrar}' eliminada correctamente.")
-            st.rerun()
+            ref = db.collection("muestras").document(muestra_a_borrar)
+            if ref.get().exists:
+                st.error("❌ La muestra no fue eliminada.")
+            else:
+                st.success(f"Muestra '{muestra_a_borrar}' eliminada correctamente.")
+                st.rerun()
         else:
             st.warning("Debes marcar la casilla de confirmación para eliminar la muestra.")
-        ref = db.collection("muestras").document(muestra_a_borrar)
-        if ref.get().exists:
-            st.error("❌ La muestra no fue eliminada.")
-        else:
-            st.success("✅ Muestra eliminada correctamente.")
-            st.rerun()
+
 
 
         st.subheader("Exportar")

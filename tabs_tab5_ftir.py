@@ -218,6 +218,18 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
     y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
 
+    # Guardar configuración de comparación de similitud
+    comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
+    x_comp_min, x_comp_max, sombrear, modo_similitud = None, None, False, None
+
+    if comparar_similitud:
+        col_sim1, col_sim2, col_sim3, col_sim4 = st.columns([1.2, 1.2, 1.2, 2.4])
+        x_comp_min = col_sim1.number_input("X mínimo", value=x_min, step=1.0, key="comp_x_min")
+        x_comp_max = col_sim2.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
+        sombrear = col_sim3.checkbox("Sombrear", value=False)
+        modo_similitud = col_sim4.selectbox("Modo de comparación", ["Correlación Pearson", "Comparación de integrales"], label_visibility="collapsed")
+
+
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
     fwhm_rows = []
@@ -299,7 +311,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             except:
                 continue
  
- 
+    # Aplicar sombreado en el gráfico si está activado
+    if sombrear and x_comp_min is not None and x_comp_max is not None:
+        ax.axvspan(x_comp_min, x_comp_max, color='gray', alpha=0.2, label="Rango comparado")
+
     ax.axhline(0, color="black", linestyle="--", linewidth=.6)
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
@@ -308,7 +323,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     ax.legend()
     st.pyplot(fig)
     
-    
+
         # --- Comparación de similitud ---
     comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
     if comparar_similitud:

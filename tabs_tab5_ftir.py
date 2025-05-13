@@ -133,8 +133,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 if df_ref is not None:
                     df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
                     df_ref.columns = ["x", "y"]  # Renombra
-                    df_ref = df_ref.astype(str)                      df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
-                    df_ref = df_ref.dropna().astype(float)                      x_ref = df_ref.iloc[:, 0].values
+                    df_ref = df_ref.astype(str)
+                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
+                    df_ref = df_ref.dropna().astype(float)
+                    x_ref = df_ref.iloc[:, 0].values
                     y_ref = df_ref.iloc[:, 1].values
 
             except:
@@ -169,8 +171,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         continue
                 else:
                     continue
-                        df = df.iloc[:, :2]  # Asegura solo 2 columnas
-            df.columns = ["x", "y"]              df = df.astype(str)  # Limpia espacios
+            df = df.iloc[:, :2]  # Asegura solo 2 columnas
+            df.columns = ["x", "y"]
+            df = df.astype(str)  # Limpia espacios
             df = df.apply(pd.to_numeric, errors="coerce")  # Convierte a numérico
             df = df.dropna().reset_index(drop=True)  
             try:

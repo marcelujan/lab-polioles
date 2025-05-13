@@ -100,7 +100,7 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     st.subheader("Eliminar muestra")
     nombres_muestras = sorted(set(m["nombre"] for m in muestras))
-    muestra_a_borrar = st.selectbox(nombres_muestras)
+    muestra_a_borrar = st.selectbox("",nombres_muestras)
 
     if st.button("Eliminar muestra"):
         confirmacion = st.checkbox(f"Confirmar eliminación de '{muestra_a_borrar}'", key="confirmar_borrado_muestra")

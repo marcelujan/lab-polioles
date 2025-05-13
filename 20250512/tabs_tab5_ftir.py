@@ -104,21 +104,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     aplicar_suavizado = st.checkbox("Aplicar suavizado (Savitzky-Golay)", value=False)
     normalizar = st.checkbox("Normalizar intensidad", value=False)
 
-    # --- Ajuste manual de eje Y ---
-    ajustar_y = st.checkbox("Ajuste manual de eje y", value=False)
-    ajustes_y = {}
-
-    if ajustar_y:
-        st.markdown("#### Ajustes verticales por espectro")
-        for _, row in seleccionados.iterrows():
-            clave = f"{row['muestra']} – {row['tipo']} – {row['archivo']}"
-            ajustes_y[clave] = st.number_input(f"Ajuste Y para {clave}", value=0.0, step=0.1)
-    else:
-        for _, row in seleccionados.iterrows():
-            clave = f"{row['muestra']} – {row['tipo']} – {row['archivo']}"
-            ajustes_y[clave] = 0.0
-
-
     # --- Checkbox y selección para restar espectro ---
     restar_espectro = st.checkbox("Restar espectro", value=False)
     espectro_para_restar = None
@@ -229,11 +214,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         orden = np.argsort(x)
         x = x[orden]
         y = y[orden]
-
-        # Aplicar ajuste de eje Y personalizado
-        clave = f"{muestra} – {tipo} – {archivo}"
-        ajuste_y = ajustes_y.get(clave, 0.0)
-        y = y + ajuste_y
 
         # Interpolar y restar si corresponde
         if restar_espectro and x_ref is not None and y_ref is not None:

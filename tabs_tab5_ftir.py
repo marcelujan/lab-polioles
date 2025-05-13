@@ -122,14 +122,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     # --- Checkbox y selección para restar espectro ---
     restar_espectro = st.checkbox("Restar espectro", value=False)
     ajuste_y_ref = 0.0
-    if restar_espectro:
-        ajuste_y_ref = st.number_input("Ajuste Y para espectro de referencia", value=0.0, step=0.1)
     espectro_para_restar = None
-
 
     if restar_espectro:
         espectros_referencia = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1).tolist()
         seleccion_resta = st.selectbox("Seleccionar espectro a restar", espectros_referencia, index=0)
+        ajuste_y_ref = st.number_input("Ajuste Y para espectro de referencia", value=0.0, step=0.1)
+
         espectro_para_restar = df_espectros[df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1) == seleccion_resta]
         if not espectro_para_restar.empty:
             row_ref = espectro_para_restar.iloc[0]
@@ -151,19 +150,19 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         df_ref = None
                 if df_ref is not None:
                     df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
-                    df_ref.columns = ["x", "y"]  # Renombra
+                    df_ref.columns = ["x", "y"]
                     df_ref = df_ref.astype(str)
-                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
+                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")
                     df_ref = df_ref.dropna().astype(float)
                     x_ref = df_ref.iloc[:, 0].values
-                    y_ref = df_ref.iloc[:, 1].values
-
+                    y_ref = df_ref.iloc[:, 1].values + ajuste_y_ref  # Aplica el ajuste de Y
             except:
                 x_ref, y_ref = None, None
         else:
             x_ref, y_ref = None, None
     else:
         x_ref, y_ref = None, None
+
 
     mostrar_picos = st.checkbox("Mostrar picos detectados automáticamente", value=False)
 

@@ -120,12 +120,12 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
 
     # --- Checkbox y selección para restar espectro ---
-
+    restar_espectro = st.checkbox("Restar espectro", value=False)
     ajuste_y_ref = 0.0
     if restar_espectro:
         ajuste_y_ref = st.number_input("Ajuste Y para espectro de referencia", value=0.0, step=0.1)
     espectro_para_restar = None
-    restar_espectro = st.checkbox("Restar espectro", value=False)
+
 
     if restar_espectro:
         espectros_referencia = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1).tolist()

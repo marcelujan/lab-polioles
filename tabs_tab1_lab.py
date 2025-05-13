@@ -68,14 +68,15 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     muestras = cargar_muestras(db)
     tabla = []
     for m in muestras:
-        for a in m["analisis"]:
+        for a in m.get("analisis", []):
             tabla.append({
-                "Nombre": m["nombre"],
-                "Tipo": a["tipo"],
-                "Valor": a["valor"],
-                "Fecha": a["fecha"],
-                "Observaciones": a["observaciones"]
+                "Nombre": m.get("nombre", ""),
+                "Tipo": a.get("tipo", ""),
+                "Valor": a.get("valor", ""),
+                "Fecha": a.get("fecha", ""),
+                "Observaciones": a.get("observaciones", "")
             })
+
     df_vista = pd.DataFrame(tabla)
     if not df_vista.empty:
         st.dataframe(df_vista, use_container_width=True)

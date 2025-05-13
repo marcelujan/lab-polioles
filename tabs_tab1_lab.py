@@ -87,13 +87,13 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             elegido = df_vista.iloc[seleccion]
             for m in muestras:
                 if m["nombre"] == elegido["Nombre"]:
-                    m["analisis"] = [a for a in m["analisis"] if not (
+                    m["analisis"] = [a for a in m.get("analisis", []) if not (
                         a.get("tipo", "") == elegido["Tipo"] and
                         str(a.get("fecha", "")) == str(elegido["Fecha"]) and
                         a.get("valor", "") == elegido["Valor"] and
                         a.get("observaciones", "") == elegido["Observaciones"]
-                        )]
-                    guardar_muestra(db, m["nombre"], m["observacion"], m["analisis"], m.get("espectros", []))
+                    )]
+                    guardar_muestra(db, m["nombre"], m.get("observacion", ""), m["analisis"], m.get("espectros", []))
                     st.success("Análisis eliminado.")
                     st.rerun()
 

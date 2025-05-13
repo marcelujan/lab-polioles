@@ -55,6 +55,7 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 })
         nuevos_validos = [a for a in nuevos if a["tipo"] != "" and a["valor"] != 0]
         guardar_muestra(
+            db,
             nombre_muestra,
             observacion,
             previos + nuevos_validos,
@@ -90,7 +91,7 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         str(a["fecha"]) == elegido["Fecha"] and
                         a["valor"] == elegido["Valor"] and
                         a["observaciones"] == elegido["Observaciones"])]
-                    guardar_muestra(m["nombre"], m["observacion"], m["analisis"], m.get("espectros", []))
+                    guardar_muestra(db, m["nombre"], m["observacion"], m["analisis"], m.get("espectros", []))
                     st.success("Análisis eliminado.")
                     st.rerun()
 

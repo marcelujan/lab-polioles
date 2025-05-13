@@ -104,31 +104,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     aplicar_suavizado = st.checkbox("Aplicar suavizado (Savitzky-Golay)", value=False)
     normalizar = st.checkbox("Normalizar intensidad", value=False)
 
-    # --- Ajuste manual de eje Y ---
-    ajustar_y = st.checkbox("Ajuste manual de eje y", value=False)
-    ajustes_y = {}
-
-    if ajustar_y:
- #       st.markdown("#### Ajustes verticales por espectro")
-        for _, row in seleccionados.iterrows():
-            clave = f"{row['muestra']} – {row['tipo']} – {row['archivo']}"
-            ajustes_y[clave] = st.number_input(f"Ajuste Y para {clave}", value=0.0, step=0.1)
-    else:
-        for _, row in seleccionados.iterrows():
-            clave = f"{row['muestra']} – {row['tipo']} – {row['archivo']}"
-            ajustes_y[clave] = 0.0
-
-
     # --- Checkbox y selección para restar espectro ---
     restar_espectro = st.checkbox("Restar espectro", value=False)
-    ajuste_y_ref = 0.0
     espectro_para_restar = None
 
     if restar_espectro:
         espectros_referencia = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1).tolist()
         seleccion_resta = st.selectbox("Seleccionar espectro a restar", espectros_referencia, index=0)
-        ajuste_y_ref = st.number_input("Ajuste Y para espectro de referencia", value=0.0, step=0.1)
-
         espectro_para_restar = df_espectros[df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1) == seleccion_resta]
         if not espectro_para_restar.empty:
             row_ref = espectro_para_restar.iloc[0]
@@ -150,19 +132,19 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         df_ref = None
                 if df_ref is not None:
                     df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
-                    df_ref.columns = ["x", "y"]
+                    df_ref.columns = ["x", "y"]  # Renombra
                     df_ref = df_ref.astype(str)
-                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")
+                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
                     df_ref = df_ref.dropna().astype(float)
                     x_ref = df_ref.iloc[:, 0].values
-                    y_ref = df_ref.iloc[:, 1].values + ajuste_y_ref  # Aplica el ajuste de Y
+                    y_ref = df_ref.iloc[:, 1].values
+
             except:
                 x_ref, y_ref = None, None
         else:
             x_ref, y_ref = None, None
     else:
         x_ref, y_ref = None, None
-
 
     mostrar_picos = st.checkbox("Mostrar picos detectados automáticamente", value=False)
 
@@ -218,18 +200,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
     y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
 
-    # Guardar configuración de comparación de similitud
-    comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
-    x_comp_min, x_comp_max, sombrear, modo_similitud = None, None, False, None
-
-    if comparar_similitud:
-        col_sim1, col_sim2, col_sim3, col_sim4 = st.columns([1.2, 1.2, 1.2, 2.4])
-        x_comp_min = col_sim1.number_input("X mínimo", value=x_min, step=1.0, key="comp_x_min")
-        x_comp_max = col_sim2.number_input("X máximo", value=x_max, step=1.0, key="comp_x_max")
-        sombrear = col_sim3.checkbox("Sombrear", value=False)
-        modo_similitud = col_sim4.selectbox("Modo de comparación", ["Correlación Pearson", "Comparación de integrales"], label_visibility="collapsed")
-
-
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()
     fwhm_rows = []
@@ -245,18 +215,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         x = x[orden]
         y = y[orden]
 
-        # Aplicar ajuste de eje Y personalizado
-        clave = f"{muestra} – {tipo} – {archivo}"
-        ajuste_y = ajustes_y.get(clave, 0.0)
-        y = y + ajuste_y
-
         # Interpolar y restar si corresponde
         if restar_espectro and x_ref is not None and y_ref is not None:
             try:
                 # Asegurar que x_ref esté ordenado
                 x_ref_ord, y_ref_ord = zip(*sorted(zip(x_ref, y_ref)))
                 x_ref_arr = np.array(x_ref_ord).astype(float)
-                y_ref_arr = np.array(y_ref_ord).astype(float) + ajuste_y_ref
+                y_ref_arr = np.array(y_ref_ord).astype(float)
+
 
                 # Filtrar x para que esté dentro del dominio de x_ref
                 mascara_valida = (x >= x_ref_arr.min()) & (x <= x_ref_arr.max())
@@ -311,19 +277,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             except:
                 continue
  
-    # Aplicar sombreado en el gráfico si está activado
-    if sombrear and x_comp_min is not None and x_comp_max is not None:
-        ax.axvspan(x_comp_min, x_comp_max, color='gray', alpha=0.2, label="Rango comparado")
-
-    ax.axhline(0, color="black", linestyle="--", linewidth=.6)
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_min, y_max)
-    ax.set_xlabel("Número de onda [cm⁻¹]")
-    ax.set_ylabel("Absorbancia")
-    ax.legend()
-    st.pyplot(fig)
-    
-
         # --- Comparación de similitud ---
     comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
     if comparar_similitud:
@@ -395,6 +348,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             use_container_width=True
         )
 
+    ax.axhline(0, color="black", linestyle="--", linewidth=.6)
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlabel("Número de onda [cm⁻¹]")
+    ax.set_ylabel("Absorbancia")
+    ax.legend()
+    st.pyplot(fig)
+    
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     nombre_base = f"FTIR_{now}"
 

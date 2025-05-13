@@ -274,7 +274,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         columnas = st.columns(len(claves))
         for i, clave in enumerate(claves):
             with columnas[i]:
-                mostrar_etiquetas[clave] = st.checkbox(clave, value=True, key=f"etiqueta_{clave}"[0])  # Mostrar solo el nombre de la muestra                
+                mostrar_etiquetas[clave] = st.checkbox("", value=True, key=f"etiqueta_{clave}"[0])
                 st.caption(clave.split(" – ")[0])  # Mostrar solo el nombre de la muestra como ayuda
 
     for muestra, tipo, archivo, df in datos:

@@ -331,6 +331,20 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 continue
             x = df_filt.iloc[:, 0].reset_index(drop=True)
             y = df_filt.iloc[:, 1].reset_index(drop=True)
+
+            # 👇 APLICAR AJUSTE MANUAL DE Y
+            clave = f"{muestra} – {tipo} – {archivo}"
+            ajuste_y = ajustes_y.get(clave, 0.0)
+            y = y + ajuste_y
+
+            if aplicar_suavizado and len(y) >= 5:
+                window = 7 if len(y) % 2 else 7
+                y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
+            if normalizar and np.max(np.abs(y)) != 0:
+                y = y / np.max(np.abs(y))
+
+            vectores[f"{muestra} – {tipo}"] = (x, y)
+
             if aplicar_suavizado and len(y) >= 5:
                 window = 7 if len(y) % 2 else 7
                 y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)

@@ -184,12 +184,12 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             df.iloc[:, 1] = pd.to_numeric(df.iloc[:, 1], errors="coerce")
             df = df.dropna()
             try:
-        df["x"] = df["x"].astype(float)
-        df["y"] = df["y"].astype(float)
-    except Exception as e:
-        st.error(f"❌ Error al convertir muestra {row['muestra']} – {row['archivo']}: {e}")
-        st.stop()
-    datos.append((row["muestra"], row["tipo"], row["archivo"], df))
+                df["x"] = df["x"].astype(float)
+                df["y"] = df["y"].astype(float)
+            except Exception as e:
+                st.error(f"❌ Error al convertir muestra {row['muestra']} – {row['archivo']}: {e}")
+                st.stop()
+                datos.append((row["muestra"], row["tipo"], row["archivo"], df))
         except:
             continue
 

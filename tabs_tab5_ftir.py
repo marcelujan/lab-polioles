@@ -275,7 +275,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         for i, (clave, nombre_corto) in enumerate(claves):
             with columnas[i]:
                 mostrar_etiquetas[clave] = st.checkbox(nombre_corto, value=True, key=f"etiqueta_{clave}")
-                st.caption(clave.split(" – ")[0])  # Mostrar solo el nombre de la muestra como ayuda
 
     for muestra, tipo, archivo, df in datos:
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()

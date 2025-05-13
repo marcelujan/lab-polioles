@@ -269,7 +269,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     # Crear casillas horizontales por muestra para mostrar/ocultar etiquetas de picos
     mostrar_etiquetas = {}
     if mostrar_picos:
-        st.markdown("### Mostrar etiquetas de picos por espectro:")
+#        st.markdown("### Mostrar etiquetas de picos por espectro:")
         claves = [f"{m} – {t} – {a}" for m, t, a, _ in datos]
         columnas = st.columns(len(claves))
         for i, clave in enumerate(claves):

@@ -80,6 +80,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
+
     # --- Calculadora fija de Índice OH ---
     st.subheader("Calculadora manual de Índice OH")
 
@@ -136,7 +137,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
 
     # Recalcular índice para cada fila editada
-    for i, row in edited.iterrows():
+    for i, row in edited_oh.iterrows():
         try:
             tipo = row["Tipo"]
             y = float(row["Señal"])
@@ -145,13 +146,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             if peso > 0:
                 k = 52.5253 if tipo == "FTIR-Acetato" else 66.7324
                 indice = round(((y - y_ref) * k) / peso, 2)
-                edited.at[i, "Índice OH"] = indice
+                edited_oh.at[i, "Índice OH"] = indice
             else:
-                edited.at[i, "Índice OH"] = "—"
+                edited_oh.at[i, "Índice OH"] = "—"
         except:
-            edited.at[i, "Índice OH"] = "—"
+            edited_oh.at[i, "Índice OH"] = "—"
 
-    st.dataframe(edited, use_container_width=True)
+    st.dataframe(edited_oh, use_container_width=True)
+
+
 
     # --- Sección 2: Comparación de espectros ---
     st.subheader("Comparación de espectros FTIR")

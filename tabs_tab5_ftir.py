@@ -133,9 +133,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 if df_ref is not None:
                     df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
                     df_ref.columns = ["x", "y"]  # Renombra
-                    df_ref = df_ref.astype(str)
+                    df_ref = df_ref.astype(str)  # Elimina espacios invisibles
                     df_ref = df_ref.apply(pd.to_numeric, errors="coerce")  # Convierte todo a float
-                    df_ref = df_ref.dropna().astype(float)
+                    df_ref = df_ref.dropna().astype(float)  # Elimina filas con NaN y fuerza tipo
                     x_ref = df_ref.iloc[:, 0].values
                     y_ref = df_ref.iloc[:, 1].values
 
@@ -171,11 +171,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         continue
                 else:
                     continue
+            # 👇 Corrección aquí: convertir antes de eliminar NaN
             df = df.iloc[:, :2]  # Asegura solo 2 columnas
-            df.columns = ["x", "y"]
-            df = df.astype(str)  # Limpia espacios
+            df.columns = ["x", "y"]  # Renombra para evitar error de clave
+            df = df.applymap(lambda v: str(v).strip())  # Limpia espacios
             df = df.apply(pd.to_numeric, errors="coerce")  # Convierte a numérico
-            df = df.dropna().reset_index(drop=True)  
+            df = df.dropna().reset_index(drop=True)  # Quita NaNs
+
             try:
                 df["x"] = df["x"].astype(float)
                 df["y"] = df["y"].astype(float)
@@ -337,7 +339,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 matriz[i, j] = simil
 
         df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
-
+     #   df_formateado = df_similitud.applymap(lambda v: f"{v:.2f} %")
+      #  st.dataframe(df_formateado.style.background_gradient(cmap="RdYlGn"), use_container_width=True)
        
         # Mostrar la tabla con el gradiente visual (usando los valores originales)
         st.dataframe(

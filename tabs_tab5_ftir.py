@@ -121,6 +121,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     # --- Checkbox y selección para restar espectro ---
     restar_espectro = st.checkbox("Restar espectro", value=False)
+    ajuste_y_ref = 0.0
+    if restar_espectro:
+        ajuste_y_ref = st.number_input("Ajuste Y para espectro de referencia", value=0.0, step=0.1)
     espectro_para_restar = None
 
     if restar_espectro:
@@ -241,8 +244,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 # Asegurar que x_ref esté ordenado
                 x_ref_ord, y_ref_ord = zip(*sorted(zip(x_ref, y_ref)))
                 x_ref_arr = np.array(x_ref_ord).astype(float)
-                y_ref_arr = np.array(y_ref_ord).astype(float)
-
+                y_ref_arr = np.array(y_ref_ord).astype(float) + ajuste_y_ref
 
                 # Filtrar x para que esté dentro del dominio de x_ref
                 mascara_valida = (x >= x_ref_arr.min()) & (x <= x_ref_arr.max())

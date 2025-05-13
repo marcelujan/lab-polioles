@@ -80,22 +80,30 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
-    # --- Calculadora manual de Índice OH ---
+
+      # --- Calculadora compacta en formato tipo tabla ---
     st.subheader("Calculadora manual de Índice OH")
 
-    tipo_manual = st.selectbox("Tipo de espectro", ["FTIR-Acetato", "FTIR-Cloroformo"])
-    st.caption("📌 Recuerda: FTIR-Acetato → señal en 3548 cm⁻¹ | FTIR-Cloroformo → señal en 3611 cm⁻¹")
+    st.caption("📌 FTIR-Acetato → señal en 3548 cm⁻¹ | FTIR-Cloroformo → señal en 3611 cm⁻¹")
 
-    señal_manual = st.number_input("Señal medida en FTIR", value=0.0, step=0.01)
-    señal_solvente_manual = st.number_input("Señal del solvente", value=0.0, step=0.01)
-    peso_manual = st.number_input("Peso de la muestra [g]", value=0.0, step=0.01)
+    col1, col2, col3, col4, col5 = st.columns([1.5, 1, 1, 1, 1.2])
+    with col1:
+        tipo_calc = st.selectbox("Tipo", ["FTIR-Acetato", "FTIR-Cloroformo"], key="tipo_calc")
+    with col2:
+        señal_calc = st.number_input("Señal", value=0.0, step=0.01, key="senal_calc")
+    with col3:
+        señal_solvente_calc = st.number_input("Solvente", value=0.0, step=0.01, key="solvente_calc")
+    with col4:
+        peso_calc = st.number_input("Peso [g]", value=0.0, step=0.01, key="peso_calc")
 
-    if peso_manual > 0:
-        k_manual = 52.5253 if tipo_manual == "FTIR-Acetato" else 66.7324
-        indice_oh_manual = round(((señal_manual - señal_solvente_manual) * k_manual) / peso_manual, 2)
-        st.success(f"Índice OH calculado: {indice_oh_manual}")
-    else:
-        st.info("Ingrese un peso mayor a 0 para calcular el Índice OH.")
+    with col5:
+        if peso_calc > 0:
+            k = 52.5253 if tipo_calc == "FTIR-Acetato" else 66.7324
+            indice = round(((señal_calc - señal_solvente_calc) * k) / peso_calc, 2)
+            st.markdown(f"**Índice OH:** {indice}")
+        else:
+            st.markdown("—")
+
 
     # --- Sección 2: Comparación de espectros ---
     st.subheader("Comparación de espectros FTIR")

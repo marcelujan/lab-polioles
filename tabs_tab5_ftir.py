@@ -81,56 +81,48 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
     # --- Calculadora manual de Índice OH (solo una tabla funcional) ---
-    # Precarga fija (datos base)
+    # --- Calculadora OH compacta, una fila con 2 tablas ---
+
+    # Datos base
     datos_oh = pd.DataFrame([
-        {
-            "Tipo": "FTIR-Acetato [3548 cm⁻¹]",
-            "Señal": 0.0000,
-            "Señal solvente": 0.0000,
-            "Peso muestra [g]": 0.0000,
-        },
-        {
-            "Tipo": "FTIR-Cloroformo [3611 cm⁻¹]",
-            "Señal": 0.0000,
-            "Señal solvente": 0.0000,
-            "Peso muestra [g]": 0.0000,
-        }
+        {"Tipo": "FTIR-Acetato [3548 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
+        {"Tipo": "FTIR-Cloroformo [3611 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000}
     ])
 
-    # Editor sin la columna de resultados
-    edited_input = st.data_editor(
-        datos_oh,
-        use_container_width=True,
-        column_config={
-            "Tipo": st.column_config.TextColumn("Tipo", disabled=True),
-        },
-        key="calculadora_oh_editor",
-        num_rows="fixed"
-    )
+    col1, col2 = st.columns([3, 1.2])  # Ajuste de proporciones para que entren bien
 
-    # Cálculo separado, mostramos resultados aparte
-    resultado_oh = edited_input.copy()
-    resultado_oh["Índice OH"] = "—"
+    # Editor a la izquierda
+    with col1:
+        st.markdown("#### Calculadora manual de Índice OH")
+        edited_input = st.data_editor(
+            datos_oh,
+            column_order=["Tipo", "Señal", "Señal solvente", "Peso muestra [g]"],
+            column_config={"Tipo": st.column_config.TextColumn(disabled=True)},
+            use_container_width=True,
+            key="editor_oh_inline",
+            num_rows="fixed"
+        )
 
+    # Cálculo separado a la derecha
+    resultados = []
     for i, row in edited_input.iterrows():
         try:
             y = float(row["Señal"])
             y_ref = float(row["Señal solvente"])
             peso = float(row["Peso muestra [g]"])
             if peso > 0:
-                if "Acetato" in row["Tipo"]:
-                    k = 52.5253
-                elif "Cloroformo" in row["Tipo"]:
-                    k = 66.7324
-                else:
-                    k = 0
+                k = 52.5253 if "Acetato" in row["Tipo"] else 66.7324
                 indice = round(((y - y_ref) * k) / peso, 2)
-                resultado_oh.at[i, "Índice OH"] = indice
+            else:
+                indice = "—"
         except:
-            resultado_oh.at[i, "Índice OH"] = "—"
+            indice = "—"
+        resultados.append({"Índice OH": indice})
 
-    # Mostrar resultado calculado con columna bloqueada
-    st.dataframe(resultado_oh, use_container_width=True)
+    # Mostrar resultados alineados a la derecha
+    with col2:
+        st.markdown("#### ")
+        st.dataframe(pd.DataFrame(resultados), use_container_width=True)
 
 
     # --- Sección 2: Comparación de espectros ---

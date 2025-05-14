@@ -73,12 +73,16 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             y_graf = row["Señal"]
             y_ref = row["Señal solvente"]
             if not all([peso, y_graf, y_ref]) or peso == 0:
-                return np.nan
+                return np.nan  # ← REEMPLAZA "—" POR np.nan
             k = 52.5253 if row["Tipo"] == "FTIR-Acetato" else 66.7324
             return round(((y_graf - y_ref) * k) / peso, 2)
 
         df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
-        st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
+        df_oh["Índice OH"] = pd.to_numeric(df_oh["Índice OH"], errors="coerce")  # ← GARANTIZA FORMATO
+        st.dataframe(
+            df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]],
+            use_container_width=True
+        )
 
     # --- Seccion 1.5 - Calculadora manual de Índice OH  ---
     datos_oh = pd.DataFrame([

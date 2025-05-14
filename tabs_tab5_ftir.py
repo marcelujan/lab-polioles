@@ -73,7 +73,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             y_graf = row["Señal"]
             y_ref = row["Señal solvente"]
             if not all([peso, y_graf, y_ref]) or peso == 0:
-                return "—"
+                return np.nan
             k = 52.5253 if row["Tipo"] == "FTIR-Acetato" else 66.7324
             return round(((y_graf - y_ref) * k) / peso, 2)
 

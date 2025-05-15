@@ -118,44 +118,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
-        ax.set_xlabel("[ppm]")
-        ax.set_ylabel("Señal")
-        ax.legend()
-        st.pyplot(fig)
-
-        # --- Tabla nueva debajo del gráfico RMN 1H ---
-        tabla_path_rmn1h = "tabla_editable_rmn1h"
-        doc_ref = db.collection("configuracion_global").document(tabla_path_rmn1h)
-
-        # Crear documento si no existe
-        if not doc_ref.get().exists:
-            doc_ref.set({"filas": []})
-
-        # Obtener el documento actualizado
-        doc_tabla = doc_ref.get()
-        columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
-        filas_rmn1h = doc_tabla.to_dict().get("filas", [])
-
-        df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
-        for col in columnas_rmn1h:
-            if col not in df_rmn1h_tabla.columns:
-                df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
-        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]  # asegurar orden
-
-        df_edit_rmn1h = st.data_editor(
-            df_rmn1h_tabla,
-            use_container_width=True,
-            hide_index=True,
-            num_rows="dynamic",
-            key="editor_tabla_rmn1h",
-            column_config={
-                "X min": st.column_config.NumberColumn(format="%.2f"),
-                "X pico": st.column_config.NumberColumn(format="%.2f"),
-                "X max": st.column_config.NumberColumn(format="%.2f")})
-
-        # Guardar si hay cambios
-        if not df_edit_rmn1h.equals(df_rmn1h_tabla):
-            doc_ref.set({"filas": df_edit_rmn1h.to_dict(orient="records")})
 
         # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
         filas_mascaras = []
@@ -262,6 +224,46 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             guardar_muestra(db, m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
 
             st.caption(f"*Asignación: {int(h_config['H'])} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
+
+
+        ax.set_xlabel("[ppm]")
+        ax.set_ylabel("Señal")
+        ax.legend()
+        st.pyplot(fig)
+
+        # --- Tabla nueva debajo del gráfico RMN 1H ---
+        tabla_path_rmn1h = "tabla_editable_rmn1h"
+        doc_ref = db.collection("configuracion_global").document(tabla_path_rmn1h)
+
+        # Crear documento si no existe
+        if not doc_ref.get().exists:
+            doc_ref.set({"filas": []})
+
+        # Obtener el documento actualizado
+        doc_tabla = doc_ref.get()
+        columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
+        filas_rmn1h = doc_tabla.to_dict().get("filas", [])
+
+        df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
+        for col in columnas_rmn1h:
+            if col not in df_rmn1h_tabla.columns:
+                df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
+        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]  # asegurar orden
+
+        df_edit_rmn1h = st.data_editor(
+            df_rmn1h_tabla,
+            use_container_width=True,
+            hide_index=True,
+            num_rows="dynamic",
+            key="editor_tabla_rmn1h",
+            column_config={
+                "X min": st.column_config.NumberColumn(format="%.2f"),
+                "X pico": st.column_config.NumberColumn(format="%.2f"),
+                "X max": st.column_config.NumberColumn(format="%.2f")})
+
+        # Guardar si hay cambios
+        if not df_edit_rmn1h.equals(df_rmn1h_tabla):
+            doc_ref.set({"filas": df_edit_rmn1h.to_dict(orient="records")})
 
             # Botón de descarga de tabla de máscaras
             buffer_excel = BytesIO()

@@ -10,6 +10,7 @@ import os
 import base64
 import json
 from tempfile import TemporaryDirectory
+from google.cloud import firestore
 
 
 @st.cache_data(ttl=60)

@@ -69,7 +69,7 @@ tabs = st.tabs([
 with tabs[0]:
     render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
 with tabs[1]:
-    render_tab2(db, cargar_muestras, mostrar_sector_flotante)
+    render_tab2(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
 with tabs[2]:
     render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
 with tabs[3]:

@@ -141,7 +141,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     filas_mascaras = []
     for m in muestras:
         espectros = obtener_espectros_para_muestra(db, m["nombre"])
-    for i, e in enumerate(espectros):
+        for i, e in enumerate(espectros):
             fila = {
                 "Muestra": m["nombre"],
                 "Tipo": e.get("tipo", ""),

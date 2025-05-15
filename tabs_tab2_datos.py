@@ -1,92 +1,101 @@
-# tabs_tab2_datos.py
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime
 from io import BytesIO
 
-def render_tab2(db, cargar_muestras, mostrar_sector_flotante):
+def render_tab2(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Análisis de datos")
     st.session_state["current_tab"] = "Análisis de datos"
 
     muestras = cargar_muestras(db)
-    tabla = []
-    for m in muestras:
-        for i, a in enumerate(m.get("analisis", [])):
-            tabla.append({
-                "Fecha": a.get("fecha", ""),
-                "ID": f"{m['nombre']}__{i}",
-                "Nombre": m["nombre"],
-                "Tipo": a.get("tipo", ""),
-                "Valor": a.get("valor", ""),
-                "Observaciones": a.get("observaciones", "")
-            })
-
-    df = pd.DataFrame(tabla)
-    if df.empty:
-        st.info("No hay análisis cargados.")
+    if not muestras:
+        st.info("No hay muestras cargadas.")
         st.stop()
 
-    st.subheader("Tabla completa de análisis")
-    st.dataframe(df.drop(columns=["ID"]), use_container_width=True)
+    # Consolidar todos los análisis
+    filas = []
+    for m in muestras:
+        for a in m.get("analisis", []):
+            fila = a.copy()
+            fila["Muestra"] = m["nombre"]
+            filas.append(fila)
 
-    st.subheader("Seleccionar análisis")
-    seleccion = st.multiselect("Seleccione uno o más análisis para graficar", df["ID"].tolist(),
-                               format_func=lambda i: f"{df[df['ID'] == i]['Nombre'].values[0]} - {df[df['ID'] == i]['Tipo'].values[0]} - {df[df['ID'] == i]['Fecha'].values[0]}")
+    df = pd.DataFrame(filas)
+    if df.empty:
+        st.warning("No hay análisis físico-químicos cargados.")
+        st.stop()
 
+    df = df[["Muestra", "Tipo", "Valor", "Fecha", "Observacion"]]
+
+    st.subheader("Todos los análisis")
+    st.dataframe(df, use_container_width=True)
+
+    # Selección de análisis a usar
+    df["ID"] = df["Muestra"] + " | " + df["Tipo"] + " | " + df["Fecha"]
+    seleccion = st.multiselect("Seleccionar análisis a considerar", df["ID"].tolist(), default=df["ID"].tolist())
     df_sel = df[df["ID"].isin(seleccion)]
 
-    muestras_seleccionadas = df_sel["Nombre"].unique().tolist()
-    st.session_state["muestra_activa"] = muestras_seleccionadas[0] if len(muestras_seleccionadas) == 1 else None
+    # Promedio por muestra y tipo
+    df_avg = df_sel.groupby(["Muestra", "Tipo"])["Valor"].mean().reset_index()
 
-    df_avg = df_sel.groupby(["Nombre", "Tipo"], as_index=False)["Valor"].mean()
-
-    st.subheader("Resumen de selección promediada")
+    st.subheader("Valores promediados")
     st.dataframe(df_avg, use_container_width=True)
 
+    # Gráfico XY
     st.subheader("Gráfico XY")
-    tipos_disponibles = sorted(df_avg["Tipo"].unique())
-    colx, coly = st.columns(2)
-    with colx:
-        tipo_x = st.selectbox("Selección de eje X", tipos_disponibles)
-    with coly:
-        tipo_y = st.selectbox("Selección de eje Y", tipos_disponibles)
+    tipos = df_avg["Tipo"].unique().tolist()
+    col1, col2 = st.columns(2)
+    x_sel = col1.selectbox("Selección de eje X", tipos, key="eje_x")
+    y_sel = col2.selectbox("Selección de eje Y", tipos, key="eje_y")
 
-    muestras_x = df_avg[df_avg["Tipo"] == tipo_x][["Nombre", "Valor"]].set_index("Nombre")
-    muestras_y = df_avg[df_avg["Tipo"] == tipo_y][["Nombre", "Valor"]].set_index("Nombre")
-    comunes = muestras_x.index.intersection(muestras_y.index)
+    df_x = df_avg[df_avg["Tipo"] == x_sel][["Muestra", "Valor"]].rename(columns={"Valor": "X"})
+    df_y = df_avg[df_avg["Tipo"] == y_sel][["Muestra", "Valor"]].rename(columns={"Valor": "Y"})
+    df_merge = pd.merge(df_x, df_y, on="Muestra")
 
-    usar_manual_x = st.checkbox("Asignar valores X manualmente")
-    if usar_manual_x:
-        valores_x_manual = []
-        nombres = []
-        st.markdown("**Asignar valores X manualmente por muestra:**")
-        for nombre in comunes:
-            val = st.number_input(f"{nombre}", step=0.1, key=f"manual_x_{nombre}")
-            valores_x_manual.append(val)
-            nombres.append(nombre)
-        x = valores_x_manual
-    else:
-        x = muestras_x.loc[comunes, "Valor"].tolist()
-        nombres = comunes.tolist()
+    if st.checkbox("Ingresar manualmente valores de X", key="manual_x"):
+        for i, row in df_merge.iterrows():
+            df_merge.at[i, "X"] = st.number_input(f"{row['Muestra']} – {x_sel}", value=float(row["X"]), key=f"manual_x_{i}")
 
-    y = muestras_y.loc[comunes, "Valor"].tolist()
+    fig, ax = plt.subplots()
+    for _, row in df_merge.iterrows():
+        ax.scatter(row["X"], row["Y"], label=row["Muestra"])
+        ax.annotate(row["Muestra"], (row["X"], row["Y"]), textcoords="offset points", xytext=(5, 5))
+    ax.set_xlabel(x_sel)
+    ax.set_ylabel(y_sel)
+    st.pyplot(fig)
 
-    if x and y and len(x) == len(y):
-        fig, ax = plt.subplots()
-        ax.scatter(x, y)
-        for i, txt in enumerate(nombres):
-            ax.annotate(txt, (x[i], y[i]))
-        ax.set_xlabel(tipo_x)
-        ax.set_ylabel(tipo_y)
-        st.pyplot(fig)
+    # 📊 GRÁFICO DE BARRAS por tipo de análisis (SECCIÓN AGREGADA)
+    st.subheader("Gráfico de barras por tipo de análisis")
+    tipos_analisis = df_avg["Tipo"].unique().tolist()
+    if tipos_analisis:
+        tipo_barras = st.selectbox("Tipo de análisis para gráfico de barras", tipos_analisis, key="barras_tipo")
+        df_barras = df_avg[df_avg["Tipo"] == tipo_barras]
+        if not df_barras.empty:
+            fig_barras, ax_barras = plt.subplots()
+            ax_barras.bar(df_barras["Muestra"], df_barras["Valor"])
+            ax_barras.set_ylabel(tipo_barras)
+            ax_barras.set_xlabel("Muestra")
+            ax_barras.set_title(f"{tipo_barras} por muestra")
+            st.pyplot(fig_barras)
 
-        buf_img = BytesIO()
-        fig.savefig(buf_img, format="png")
-        st.download_button("\U0001F4F7 Descargar gráfico", buf_img.getvalue(),
-                           file_name=f"grafico_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
-                           mime="image/png")
-    else:
-        st.warning("Los datos seleccionados no son compatibles para graficar.")
+            # 📥 DESCARGA del gráfico de barras como PNG
+            buffer_png = BytesIO()
+            fig_barras.savefig(buffer_png, format="png", dpi=300, bbox_inches="tight")
+            st.download_button(
+                label="📷 Descargar gráfico de barras",
+                data=buffer_png.getvalue(),
+                file_name=f"grafico_barras_{tipo_barras}.png",
+                mime="image/png"
+            )
+
+    # Descargar imagen del gráfico XY
+    buffer = BytesIO()
+    fig.savefig(buffer, format="png", dpi=300, bbox_inches="tight")
+    st.download_button(
+        label="📷 Descargar gráfico XY",
+        data=buffer.getvalue(),
+        file_name=f"grafico_{x_sel}_vs_{y_sel}.png",
+        mime="image/png"
+    )
 
     mostrar_sector_flotante(db, key_suffix="tab2")

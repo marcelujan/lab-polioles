@@ -7,11 +7,16 @@ from io import BytesIO
 from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
 
+
 @st.cache_data(ttl=60)
+def obtener_ids_espectros(nombre):
+    return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
+
 def obtener_espectros_para_muestra(db, nombre):
+    ids = obtener_ids_espectros(nombre)
     ref = db.collection("muestras").document(nombre).collection("espectros")
-    docs = ref.stream()
-    return [doc.to_dict() for doc in docs]
+    return [ref.document(doc_id).get().to_dict() for doc_id in ids]
+
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 #    st.title("Análisis FTIR")

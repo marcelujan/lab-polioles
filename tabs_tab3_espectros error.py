@@ -174,9 +174,8 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             nombre, idx = seleccion.split("__")
             for m in muestras:
                 if m["nombre"] == nombre:
-                    espectros = obtener_espectros_para_muestra(db, nombre)
-                    espectro_id = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())[int(idx)].id
-                    db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).delete()
+                    m["espectros"].pop(int(idx))
+                    guardar_muestra(db, m["nombre"], m.get("observacion", ""), m.get("analisis", []), m.get("espectros", []))
                     st.success("Espectro eliminado.")
                     st.rerun()
 
@@ -193,7 +192,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 with zipfile.ZipFile(zip_path, "w") as zipf:
                     zipf.write(excel_path, arcname="tabla_espectros.xlsx")
                     for m in muestras:
-                        for e in obtener_espectros_para_muestra(db, m["nombre"]):
+                        for e in m.get("espectros", []):
                             contenido = e.get("contenido")
                             if not contenido:
                                 continue

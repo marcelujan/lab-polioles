@@ -11,6 +11,12 @@ import zipfile
 from tempfile import TemporaryDirectory
 
 
+
+def obtener_espectros_para_muestra(db, nombre):
+    ref = db.collection("muestras").document(nombre).collection("espectros")
+    docs = ref.stream()
+    return [doc.to_dict() for doc in docs]
+
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Análisis RMN")
     st.session_state["current_tab"] = "Análisis RMN"
@@ -22,7 +28,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # --- Filtrar muestras y espectros ---
     espectros_rmn = []
     for m in muestras:
-        for i, e in enumerate(m.get("espectros", [])):
+    espectros = obtener_espectros_para_muestra(db, m["nombre"])
+    for i, e in enumerate(espectros):
             tipo = e.get("tipo", "").upper()
             if "RMN" in tipo:
                 espectros_rmn.append({

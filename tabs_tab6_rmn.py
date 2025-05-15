@@ -229,6 +229,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         ax.set_xlabel("[ppm]")
         ax.set_ylabel("Señal")
         ax.legend()
+        
         st.pyplot(fig)
 
         # --- Tabla nueva debajo del gráfico RMN 1H ---

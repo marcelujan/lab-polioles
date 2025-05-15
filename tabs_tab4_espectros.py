@@ -38,15 +38,6 @@ def render_tab4(db, cargar_muestras, mostrar_sector_flotante):
                 "Es imagen": e.get("es_imagen", False)
             })
 
-            espectros_info.append({
-                "Muestra": m["nombre"],
-                "Tipo": e.get("tipo", ""),
-                "Nombre archivo": e.get("nombre_archivo", ""),
-                "Fecha": e.get("fecha", ""),
-                "Observaciones": e.get("observaciones", ""),
-                "Contenido": e.get("contenido"),
-                "Es imagen": e.get("es_imagen", False)
-            })
     df_esp = pd.DataFrame(espectros_info)
     if df_esp.empty:
         st.warning("No hay espectros cargados.")

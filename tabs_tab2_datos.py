@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from io import BytesIO
 
-def render_tab2(db, cargar_muestras, mostrar_sector_flotante):
+def render_tab2(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Análisis de datos")
     st.session_state["current_tab"] = "Análisis de datos"
 

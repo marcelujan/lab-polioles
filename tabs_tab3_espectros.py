@@ -10,6 +10,7 @@ import os
 import base64
 import json
 from tempfile import TemporaryDirectory
+import zipfile
 
 
 def obtener_ids_espectros(nombre):

@@ -118,7 +118,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             except:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
-
+       
+        ax.set_xlabel("[ppm]")
+        ax.set_ylabel("Señal")
+        ax.legend()
+        
         # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
         filas_mascaras = []
         mapa_mascaras = {}
@@ -223,13 +227,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             espectros[idx]["mascaras"] = mapa_mascaras.get(id_esp, [])
                             guardar_muestra(db, m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
 
+
+
             st.caption(f"*Asignación: {int(h_config['H'])} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
 
 
-        ax.set_xlabel("[ppm]")
-        ax.set_ylabel("Señal")
-        ax.legend()
-        
+
         st.pyplot(fig)
 
         # --- Tabla nueva debajo del gráfico RMN 1H ---

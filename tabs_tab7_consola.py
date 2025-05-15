@@ -326,13 +326,10 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     print(f"❌ Error al migrar espectro {i+1} de '{nombre_muestra}': {e}")
                     total_errores += 1
 
-        # Eliminar el campo solo si al menos un espectro fue migrado
-        if total_migrados > 0:
-            db.collection("muestras").document(nombre_muestra).update({"espectros": DELETE_FIELD})
-            print(f"✅ Migrados {len(espectros)} espectros de '{nombre_muestra}'")
-
-    print(f"\n🎯 Total espectros migrados: {total_migrados}")
-    print(f"⚠️ Total errores: {total_errores}")
+            # Eliminar el campo solo si al menos un espectro fue migrado
+            if total_migrados > 0:
+                db.collection("muestras").document(nombre_muestra).update({"espectros": DELETE_FIELD})
+                print(f"✅ Migrados {len(espectros)} espectros de '{nombre_muestra}'")
 
     if st.button("🔁 Ejecutar migración de espectros"):
         migrar_espectros_a_subcolecciones(db)

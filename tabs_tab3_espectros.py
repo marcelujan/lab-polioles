@@ -222,8 +222,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     else:
         st.info("No hay espectros cargados.")
 
-    import streamlit as st
-    from google.cloud import firestore
+
 
     def detectar_muestras_con_espectros_embebidos(db):
         st.subheader("🔍 Muestras con espectros embebidos (no migrados)")

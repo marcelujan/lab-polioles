@@ -85,15 +85,15 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         fig, ax = plt.subplots()
 
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
-                if not usar_mascara.get(row['id'], False):
-                    continue
+            if not usar_mascara.get(row['id'], False):
+                continue
             color = colores[idx % len(colores)]
             usar_mascara[row["id"]] = st.checkbox(f"{row['muestra']} – {row['archivo']}", value=False, key=f"chk_mask_{row['id']}_{idx}")
 
         # Gráfico primero
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
-                if not usar_mascara.get(row['id'], False):
-                    continue
+            if not usar_mascara.get(row['id'], False):
+                continue
             color = colores[idx % len(colores)]
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))

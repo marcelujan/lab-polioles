@@ -8,7 +8,10 @@ import zipfile
 from datetime import datetime
 from tempfile import TemporaryDirectory
 
+
+
 def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
+    st.write("🟢 Hoja Consola cargada correctamente.")
     st.title("Consola")
     st.session_state["current_tab"] = "Consola"
     muestras = cargar_muestras(db)
@@ -329,32 +332,12 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             # Eliminar el campo solo si al menos un espectro fue migrado
             if total_migrados > 0:
                 db.collection("muestras").document(nombre_muestra).update({"espectros": DELETE_FIELD})
-                print(f"✅ Migrados {len(espectros)} espectros de '{nombre_muestra}'")
+                st.info(f"✅ Migrados {len(espectros)} espectros de '{nombre_muestra}'")
+
 
     if st.button("🔁 Ejecutar migración de espectros"):
         migrar_espectros_a_subcolecciones(db)
         st.success("Migración completada. Verificá en Firebase Console.")
 
-    import streamlit as st
-    from google.cloud import firestore
-
-    def detectar_muestras_con_espectros_embebidos(db):
-        st.subheader("🔍 Muestras con espectros embebidos (no migrados)")
-        muestras = db.collection("muestras").stream()
-        no_migradas = []
-
-        for doc in muestras:
-            data = doc.to_dict()
-            if "espectros" in data and isinstance(data["espectros"], list) and len(data["espectros"]) > 0:
-                no_migradas.append({"Nombre de muestra": doc.id, "Cantidad espectros": len(data["espectros"])})
-
-        if no_migradas:
-            st.warning("⚠️ Aún hay muestras con espectros no migrados:")
-            st.dataframe(no_migradas, use_container_width=True)
-        else:
-            st.success("✅ Todas las muestras ya han sido migradas.")
-
-    # Ejecutar detección
-    detectar_muestras_con_espectros_embebidos(db)
 
     mostrar_sector_flotante(db, key_suffix="tab7")

@@ -28,7 +28,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # --- Filtrar muestras y espectros ---
     espectros_rmn = []
     for m in muestras:
-    espectros = obtener_espectros_para_muestra(db, m["nombre"])
+        espectros = obtener_espectros_para_muestra(db, m["nombre"])
     for i, e in enumerate(espectros):
             tipo = e.get("tipo", "").upper()
             if "RMN" in tipo:

@@ -11,6 +11,11 @@ import base64
 import json
 from tempfile import TemporaryDirectory
 
+def guardar_espectro_individual(db, nombre_muestra, espectro_dict):
+    ref = db.collection("muestras").document(nombre_muestra).collection("espectros")
+    nuevo_id = ref.document()
+    nuevo_id.set(espectro_dict)
+
 def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Carga de espectros")
     st.session_state["current_tab"] = "Carga de espectros"

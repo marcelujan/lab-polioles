@@ -98,7 +98,7 @@ def render_tab2(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         fig_barras, ax_barras = plt.subplots()
         ax_barras.bar(df_barras["Nombre"], df_barras["Valor"])
         ax_barras.set_ylabel(tipo_barras)
-        ax_barras.set_xlabel("Muestra")
+        ax_barras.set_xlabel("")
         ax_barras.set_title(f"{tipo_barras} por muestra")
         st.pyplot(fig_barras)
 

@@ -226,4 +226,27 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     else:
         st.info("No hay espectros cargados.")
 
+    import streamlit as st
+    from google.cloud import firestore
+
+    def detectar_muestras_con_espectros_embebidos(db):
+        st.subheader("🔍 Muestras con espectros embebidos (no migrados)")
+        muestras = db.collection("muestras").stream()
+        no_migradas = []
+
+        for doc in muestras:
+            data = doc.to_dict()
+            if "espectros" in data and isinstance(data["espectros"], list) and len(data["espectros"]) > 0:
+                no_migradas.append({"Nombre de muestra": doc.id, "Cantidad espectros": len(data["espectros"])})
+
+        if no_migradas:
+            st.warning("⚠️ Aún hay muestras con espectros no migrados:")
+            st.dataframe(no_migradas, use_container_width=True)
+        else:
+            st.success("✅ Todas las muestras ya han sido migradas.")
+
+    # Ejecutar detección
+    detectar_muestras_con_espectros_embebidos(db)
+
+
     mostrar_sector_flotante(db, key_suffix="tab3")

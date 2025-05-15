@@ -177,15 +177,21 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             df_esp_tabla["ID"],
             format_func=lambda i: df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]
             )
-        if st.button("Eliminar espectro"):  # Eliminar espectros (Botón)
-            nombre, idx = seleccion.split("__")
-            for m in muestras:
-                if m["nombre"] == nombre:
-                    espectros = obtener_espectros_para_muestra(db, nombre)
-                    espectro_id = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())[int(idx)].id
-                    db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).delete()
-                    st.success("Espectro eliminado.")
-                    st.rerun()
+        st.markdown("### ⚠️ Eliminación de espectro")
+        confirmar = st.checkbox(f"Confirmar eliminación del espectro: {df_esp_tabla[df_esp_tabla['ID'] == seleccion]['Archivo'].values[0]}", key="chk_eliminar_esp")
+        if st.button("Eliminar espectro"):
+            if confirmar:
+                nombre, idx = seleccion.split("__")
+                for m in muestras:
+                    if m["nombre"] == nombre:
+                        espectros = obtener_espectros_para_muestra(db, nombre)
+                        espectro_id = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())[int(idx)].id
+                        db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).delete()
+                        st.success("Espectro eliminado.")
+                        st.rerun()
+            else:
+                st.warning("Debes confirmar la eliminación marcando la casilla.")
+
 
         if st.button("📦 Preparar descarga"):   #Preparar descarga de espectros (Excel y ZIP)
             with TemporaryDirectory() as tmpdir:

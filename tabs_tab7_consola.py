@@ -11,7 +11,6 @@ from tempfile import TemporaryDirectory
 
 
 def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
-    st.write("🟢 Hoja Consola cargada correctamente.")
     st.title("Consola")
     st.session_state["current_tab"] = "Consola"
     muestras = cargar_muestras(db)
@@ -303,41 +302,5 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if st.button("Cerrar sesión"):
         st.session_state.pop("token", None)
         st.rerun()
-
-    from google.cloud.firestore_v1 import DELETE_FIELD
-
-    def migrar_espectros_a_subcolecciones(db):
-        muestras = db.collection("muestras").stream()
-        total_migrados = 0
-        total_errores = 0
-
-        for doc in muestras:
-            data = doc.to_dict()
-            espectros = data.get("espectros", [])
-            if not espectros:
-                continue
-
-            nombre_muestra = doc.id
-            subcol = db.collection("muestras").document(nombre_muestra).collection("espectros")
-
-            for i, espectro in enumerate(espectros):
-                try:
-                    espectro_id = f"esp_{i+1:03d}"
-                    subcol.document(espectro_id).set(espectro)
-                    total_migrados += 1
-                except Exception as e:
-                    print(f"❌ Error al migrar espectro {i+1} de '{nombre_muestra}': {e}")
-                    total_errores += 1
-
-            # Eliminar el campo solo si al menos un espectro fue migrado
-            if total_migrados > 0:
-                db.collection("muestras").document(nombre_muestra).update({"espectros": DELETE_FIELD})
-                st.info(f"✅ Migrados {len(espectros)} espectros de '{nombre_muestra}'")
-
-
-    if st.button("🔁 Ejecutar migración de espectros"):
-        migrar_espectros_a_subcolecciones(db)
-        st.success("Migración completada. Verificá en Firebase Console.")
-
 
     mostrar_sector_flotante(db, key_suffix="tab7")

@@ -86,7 +86,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
             color = colores[idx % len(colores)]
-            usar_mascara[row["id"]] = st.checkbox(f"{row['muestra']} – {row['archivo']}", value=False, key=f"chk_mask_{row['id']}_{idx}")
+            usar_mascara[row["id"]] = st.checkbox(f"{row['muestra']} – {row['archivo']}", value=False, key=f"chk_mask_{row['id']}")
 
         # Gráfico primero
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):

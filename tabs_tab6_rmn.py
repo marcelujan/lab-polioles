@@ -46,6 +46,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     df_rmn = pd.DataFrame(espectros_rmn)
 
     st.subheader("Filtrar espectros")
+    if df_rmn.empty or "muestra" not in df_rmn.columns:
+        st.warning("No hay espectros RMN disponibles.")
+        st.stop()
     muestras_disp = sorted(df_rmn["muestra"].unique())
     muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
     st.session_state["muestra_activa"] = muestras_sel[0] if len(muestras_sel) == 1 else None

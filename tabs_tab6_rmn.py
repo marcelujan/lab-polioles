@@ -73,7 +73,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     df_sel = df_filtrado[df_filtrado["id"].isin(seleccionados)]
 
-  # --- Zona RMN 1H ---
+    # --- Zona RMN 1H ---
     st.subheader("🔬 RMN 1H")
     df_rmn1H = df_sel[(df_sel["tipo"] == "RMN 1H") & (~df_sel["es_imagen"])].copy()
     if df_rmn1H.empty:
@@ -84,18 +84,16 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
 
+        # Mostrar checkbox para cada espectro
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
-            color = colores[idx % len(colores)]
             usar_mascara[row["id"]] = st.checkbox(
                 f"{row['muestra']} – {row['archivo']}",
                 value=False,
                 key=f"chk_mask_{row['id']}_{idx}"
             )
 
-        # Gráfico primero
+        # Graficar todos los espectros seleccionados
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
-            if not usar_mascara.get(row['id'], False):
-                continue
             color = colores[idx % len(colores)]
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))
@@ -121,7 +119,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 df = df.dropna()
 
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)
-            except:
+
+            except Exception as e:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
 

@@ -177,7 +177,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             df_esp_tabla["ID"],
             format_func=lambda i: df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]
             )
-        st.markdown("### ⚠️ Eliminación de espectro")
+        st.markdown("")
         confirmar = st.checkbox(f"Confirmar eliminación del espectro: {df_esp_tabla[df_esp_tabla['ID'] == seleccion]['Archivo'].values[0]}", key="chk_eliminar_esp")
         if st.button("Eliminar espectro"):
             if confirmar:

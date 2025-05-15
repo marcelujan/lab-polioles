@@ -93,10 +93,13 @@ def render_tab2(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.subheader("Gráfico de barras por tipo de análisis")
     tipos_disponibles_barras = sorted(df_avg["Tipo"].unique())
     tipo_barras = st.selectbox("Seleccionar tipo de análisis para barras", tipos_disponibles_barras, key="tipo_barras")
-    df_barras = df_avg[df_avg["Tipo"] == tipo_barras]
-    if not df_barras.empty:
+    # Calcular promedio y desviación estándar por muestra para el tipo seleccionado
+    df_stats = df_sel[df_sel["Tipo"] == tipo_barras].groupby("Nombre")["Valor"].agg(["mean", "std"]).reset_index()
+    df_stats.rename(columns={"mean": "Valor", "std": "Error"}, inplace=True)
+
+    if not df_stats.empty:
         fig_barras, ax_barras = plt.subplots()
-        ax_barras.bar(df_barras["Nombre"], df_barras["Valor"])
+        ax_barras.bar(df_stats["Nombre"], df_stats["Valor"], yerr=df_stats["Error"], capsize=5)
         ax_barras.set_ylabel(tipo_barras)
         ax_barras.set_xlabel("")
         ax_barras.set_title(f"{tipo_barras} por muestra")

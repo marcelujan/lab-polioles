@@ -10,6 +10,13 @@ from tempfile import TemporaryDirectory
 
 
 
+
+@st.cache_data(ttl=60)
+def obtener_espectros_para_muestra(db, nombre):
+    ref = db.collection("muestras").document(nombre).collection("espectros")
+    docs = ref.stream()
+    return [doc.to_dict() for doc in docs]
+
 def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Consola")
     st.session_state["current_tab"] = "Consola"
@@ -116,10 +123,10 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
             # Generar Excel de análisis
             df_analisis = pd.DataFrame(m.get("analisis", []))
-            df_espectros = pd.DataFrame(m.get("espectros", []))
+            df_espectros = pd.DataFrame(obtener_espectros_para_muestra(db, m["nombre"]))
 
             filas_mascaras = []
-            for e in m.get("espectros", []):
+            for e in obtener_espectros_para_muestra(db, m["nombre"]):
                 if e.get("mascaras"):
                     for j, mascara in enumerate(e["mascaras"]):
                         filas_mascaras.append({
@@ -143,7 +150,7 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             # Generar ZIP de espectros
             buffer_zip = BytesIO()
             with zipfile.ZipFile(buffer_zip, "w") as zipf:
-                for e in m.get("espectros", []):
+                for e in obtener_espectros_para_muestra(db, m["nombre"]):
                     nombre_archivo = e.get("nombre_archivo", "espectro")
                     contenido = e.get("contenido")
                     if not contenido:
@@ -157,7 +164,7 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
             # Botones de descarga
             c2.download_button(f"📥 {len(df_analisis)}", data=buffer_excel.getvalue(), file_name=f"analisis_{nombre}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key=f"excel1_{i}")
-            c3.download_button(f"📦 {len(m.get('espectros', []))}", data=buffer_zip.getvalue(), file_name=f"espectros_{nombre}.zip", mime="application/zip", use_container_width=True, key=f"zip1_{i}")
+            c3.download_button(f"📦 {len(obtener_espectros_para_muestra(db, m['nombre']))}", data=buffer_zip.getvalue(), file_name=f"espectros_{nombre}.zip", mime="application/zip", use_container_width=True, key=f"zip1_{i}")
 
     # Tabla 2: Descargas por análisis
     with col2:
@@ -208,7 +215,7 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.subheader("🟣 Descargas por espectros")
         conteo_espectros = {}
         for m in muestras:
-            for e in m.get("espectros", []):
+            for e in obtener_espectros_para_muestra(db, m["nombre"]):
                 tipo = e.get("tipo", "")
                 if tipo:
                     conteo_espectros[tipo] = conteo_espectros.get(tipo, 0) + 1
@@ -225,7 +232,7 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             buffer_zip = BytesIO()
             with zipfile.ZipFile(buffer_zip, "w") as zipf:
                 for m in muestras:
-                    for e in m.get("espectros", []):
+                    for e in obtener_espectros_para_muestra(db, m["nombre"]):
                         if e.get("tipo") == tipo:
                             nombre_archivo = e.get("nombre_archivo", "espectro")
                             contenido = e.get("contenido")
@@ -268,7 +275,7 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             # Guardar espectros
             carpeta_espectros = os.path.join(carpeta, "espectros")
             os.makedirs(carpeta_espectros, exist_ok=True)
-            for e in m.get("espectros", []):
+            for e in obtener_espectros_para_muestra(db, m["nombre"]):
                 nombre_archivo = e.get("nombre_archivo", "espectro")
                 contenido = e.get("contenido")
                 if not contenido:

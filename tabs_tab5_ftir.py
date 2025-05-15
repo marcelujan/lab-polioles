@@ -7,6 +7,12 @@ from io import BytesIO
 from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
 
+
+def obtener_espectros_para_muestra(db, nombre):
+    ref = db.collection("muestras").document(nombre).collection("espectros")
+    docs = ref.stream()
+    return [doc.to_dict() for doc in docs]
+
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 #    st.title("Análisis FTIR")
     st.session_state["current_tab"] = "Análisis FTIR"
@@ -19,7 +25,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     st.subheader("Índice OH espectroscópico")
     espectros_info = []
     for m in muestras:
-        for e in m.get("espectros", []):
+        for e in obtener_espectros_para_muestra(db, m["nombre"]):
             tipo = e.get("tipo", "")
             if tipo not in ["FTIR-Acetato", "FTIR-Cloroformo"]:
                 continue
@@ -134,7 +140,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     st.subheader("Comparación de espectros FTIR")
     espectros = []
     for m in muestras:
-        for e in m.get("espectros", []):
+        for e in obtener_espectros_para_muestra(db, m["nombre"]):
             if e.get("tipo", "").startswith("FTIR") and not e.get("es_imagen", False):
                 espectros.append({
                     "muestra": m["nombre"],

@@ -7,7 +7,7 @@ from io import BytesIO
 from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
 
-
+@st.cache_data(ttl=60)
 def obtener_espectros_para_muestra(db, nombre):
     ref = db.collection("muestras").document(nombre).collection("espectros")
     docs = ref.stream()

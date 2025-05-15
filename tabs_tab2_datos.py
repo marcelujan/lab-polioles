@@ -89,4 +89,23 @@ def render_tab2(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     else:
         st.warning("Los datos seleccionados no son compatibles para graficar.")
 
+
+    st.subheader("Gráfico de barras por tipo de análisis")
+    tipos_disponibles_barras = sorted(df_avg["Tipo"].unique())
+    tipo_barras = st.selectbox("Seleccionar tipo de análisis para barras", tipos_disponibles_barras, key="tipo_barras")
+    df_barras = df_avg[df_avg["Tipo"] == tipo_barras]
+    if not df_barras.empty:
+        fig_barras, ax_barras = plt.subplots()
+        ax_barras.bar(df_barras["Nombre"], df_barras["Valor"])
+        ax_barras.set_ylabel(tipo_barras)
+        ax_barras.set_xlabel("Muestra")
+        ax_barras.set_title(f"{tipo_barras} por muestra")
+        st.pyplot(fig_barras)
+
+        buf_barras = BytesIO()
+        fig_barras.savefig(buf_barras, format="png")
+        st.download_button("📷 Descargar gráfico de barras", buf_barras.getvalue(),
+                           file_name=f"grafico_barras_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
+                           mime="image/png")
+
     mostrar_sector_flotante(db, key_suffix="tab2")

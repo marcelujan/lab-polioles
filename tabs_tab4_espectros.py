@@ -9,17 +9,35 @@ import os
 import zipfile
 from tempfile import TemporaryDirectory
 
+
+def obtener_espectros_para_muestra(db, nombre):
+    ref = db.collection("muestras").document(nombre).collection("espectros")
+    docs = ref.stream()
+    return [doc.to_dict() for doc in docs]
+
 def render_tab4(db, cargar_muestras, mostrar_sector_flotante):
     st.title("Análisis de espectros")
     st.session_state["current_tab"] = "Análisis de espectros"
+    
     muestras = cargar_muestras(db)
     if not muestras:
-        st.info("No hay muestras cargadas con espectros.")
+        st.info("No hay muestras cargadas.")
         st.stop()
 
     espectros_info = []
     for m in muestras:
-        for e in m.get("espectros", []):
+        espectros = obtener_espectros_para_muestra(db, m["nombre"])
+        for e in espectros:
+            espectros_info.append({
+                "Muestra": m["nombre"],
+                "Tipo": e.get("tipo", ""),
+                "Nombre archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
+                "Observaciones": e.get("observaciones", ""),
+                "Contenido": e.get("contenido"),
+                "Es imagen": e.get("es_imagen", False)
+            })
+
             espectros_info.append({
                 "Muestra": m["nombre"],
                 "Tipo": e.get("tipo", ""),

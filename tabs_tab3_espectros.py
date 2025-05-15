@@ -108,8 +108,6 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.markdown(f"**🆔 Nuevo nombre asignado al archivo para su descarga:** `{nombre_generado}`")
 
     if st.button("Guardar espectro") and archivo:
-        espectros = next((m for m in muestras if m["nombre"] == nombre_sel), {}).get("espectros", [])
-
         observaciones_totales = f"Archivo original: {archivo.name}"
         if observaciones:
             observaciones_totales += f" — {observaciones}"
@@ -127,14 +125,11 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             "mascaras": mascaras_rmn1h if tipo_espectro == "RMN 1H" else []
         }
 
-        espectros.append(nuevo)
+        ref = db.collection("muestras").document(nombre_sel).collection("espectros")
+        ref.document().set(nuevo)
+        st.success("Espectro guardado.")
+        st.rerun()
 
-        for m in muestras:
-            if m["nombre"] == nombre_sel:
-                m["espectros"] = espectros
-                guardar_muestra(db, m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
-                st.success("Espectro guardado.")
-                st.rerun()
 
     st.subheader("Espectros cargados")   # Tabla de espectros ya cargados
     filas = []

@@ -11,10 +11,11 @@ import base64
 import json
 from tempfile import TemporaryDirectory
 
-def guardar_espectro_individual(db, nombre_muestra, espectro_dict):
-    ref = db.collection("muestras").document(nombre_muestra).collection("espectros")
-    nuevo_id = ref.document()
-    nuevo_id.set(espectro_dict)
+
+def obtener_espectros_para_muestra(db, nombre):
+    ref = db.collection("muestras").document(nombre).collection("espectros")
+    docs = ref.stream()
+    return [doc.to_dict() for doc in docs]
 
 def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Carga de espectros")
@@ -139,7 +140,8 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     filas = []
     filas_mascaras = []
     for m in muestras:
-        for i, e in enumerate(m.get("espectros", [])):
+    espectros = obtener_espectros_para_muestra(db, m["nombre"])
+    for i, e in enumerate(espectros):
             fila = {
                 "Muestra": m["nombre"],
                 "Tipo": e.get("tipo", ""),

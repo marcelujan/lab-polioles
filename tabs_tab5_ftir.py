@@ -579,8 +579,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             except Exception as e:
                 if "Optimal parameters not found" in str(e):
                     st.warning(f"""
-⚠️ No se pudo ajustar **{clave}** porque el optimizador no encontró parámetros adecuados.  
-👉 Sugerencia: probá ajustar el rango X o el número de gaussianas.
+⚠️ No se pudo ajustar **{clave}** porque el optimizador no encontró parámetros adecuados. 👉 Sugerencia: probá ajustar el rango X o el número de gaussianas.
 """)
                 else:
                     st.warning(f"❌ Error al ajustar {clave}: {e}")

@@ -471,7 +471,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         )
 
    # --- Deconvolución espectral con selección horizontal y preprocesamiento coherente ---
-    st.subheader("🔍 Deconvolución FTIR")
+    st.subheader("")
     if st.checkbox("Activar deconvolución", key="activar_deconv") and datos:
         col1, col2, col3, col4 = st.columns(4)
         checkboxes = {}
@@ -512,9 +512,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 if normalizar and np.max(np.abs(df["y"])) != 0:
                     df["y"] = df["y"] / np.max(np.abs(df["y"]))
 
-                # Actualizar límites de Y según datos preprocesados
-                y_min_proc = df["y"].min()
-                y_max_proc = df["y"].max()
+                # Calcular límites Y luego de todo el preprocesamiento
+                y_vals_plot = df["y"].values
+                y_min_proc = np.min(y_vals_plot)
+                y_max_proc = np.max(y_vals_plot)
 
                 def multi_gaussian(x, *params):
                     y = np.zeros_like(x)

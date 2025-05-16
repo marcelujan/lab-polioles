@@ -101,8 +101,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     datos_oh = pd.DataFrame([
         {"Tipo": "FTIR-Acetato [3548 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
         {"Tipo": "FTIR-Cloroformo A [3611 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
-        {"Tipo": "FTIR-Cloroformo B [3611 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
-        {"Tipo": "FTIR-Cloroformo C [3611 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
         {"Tipo": "FTIR-Cloroformo D [3611 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
         {"Tipo": "FTIR-Cloroformo E [3611 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000}
     ])
@@ -515,7 +513,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 n_gauss = st.slider("Cantidad de gaussianas", 1, 6, 2)
                 p0 = []
                 for i in range(n_gauss):
-                    p0 += [df_fit["y"].max()/n_gauss, df_fit["x"].min() + i * (df_fit["x"].ptp() / n_gauss), 10]
+                    p0 += [df_fit["y"].max()/n_gauss, df_fit["x"].min() + i * (np.ptp(df_fit["x"].values) / n_gauss), 10]
 
                 try:
                     popt, _ = curve_fit(multi_gaussian, df_fit["x"], df_fit["y"], p0=p0)

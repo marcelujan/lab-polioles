@@ -469,27 +469,36 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         )
 
 
-    # --- Deconvolución espectral con selección horizontal y rango compartido ---
+    # --- Deconvolución espectral (estilo minimalista, sin inputs adicionales) ---
     st.subheader("🔍 Deconvolución FTIR")
-    if st.checkbox("Activar deconvolución", key="activar_deconv") and datos:
+    if st.checkbox("Activar deconvolución", key="activar_deconv") and not df_espectros.empty:
+        opciones = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1).tolist()
+        espectro_sel = st.selectbox("Seleccionar espectro", opciones)
+        fila = df_espectros.iloc[opciones.index(espectro_sel)]
 
-        col1, col2, col3, col4 = st.columns(4)
-        checkboxes = {}
-        for i, (muestra, tipo, archivo, df) in enumerate(datos):
-            clave = f"{muestra} – {tipo} – {archivo}"
-            with [col1, col2, col3, col4][i % 4]:
-                checkboxes[clave] = st.checkbox(clave, value=False, key=f"deconv_{clave}")
+        try:
+            contenido = BytesIO(base64.b64decode(fila["contenido"]))
+            ext = fila["archivo"].split(".")[-1].lower()
+            if ext == "xlsx":
+                df = pd.read_excel(contenido)
+            else:
+                for sep in [",", ";", "\t", " "]:
+                    contenido.seek(0)
+                    try:
+                        df = pd.read_csv(contenido, sep=sep)
+                        if df.shape[1] >= 2:
+                            break
+                    except:
+                        continue
+                else:
+                    df = None
 
-        for (muestra, tipo, archivo, df) in datos:
-            clave = f"{muestra} – {tipo} – {archivo}"
-            if not checkboxes.get(clave):
-                continue
-
-            try:
+            if df is not None:
                 df = df.iloc[:, :2]
                 df.columns = ["x", "y"]
                 df = df.apply(pd.to_numeric, errors="coerce").dropna()
 
+                # Usar rango global ya definido por el usuario si existe
                 x_min = st.session_state.get("x_min", float(df["x"].min()))
                 x_max = st.session_state.get("x_max", float(df["x"].max()))
                 df_fit = df[(df["x"] >= x_min) & (df["x"] <= x_max)].sort_values(by="x")
@@ -501,58 +510,58 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         y += amp * np.exp(-(x - cen)**2 / (2 * wid**2))
                     return y
 
-                n_gauss = st.slider(f"Nº de gaussianas para {clave}", 1, 6, 2, key=f"gauss_{clave}")
+                n_gauss = st.slider("Cantidad de gaussianas", 1, 6, 2)
                 p0 = []
                 for i in range(n_gauss):
-                    p0 += [df_fit["y"].max()/n_gauss,
-                        df_fit["x"].min() + i * (np.ptp(df_fit["x"].values) / n_gauss),
-                        10]
+                    p0 += [df_fit["y"].max()/n_gauss, df_fit["x"].min() + i * (np.ptp(df_fit["x"].values) / n_gauss), 10]
 
-                popt, _ = curve_fit(multi_gaussian, df_fit["x"], df_fit["y"], p0=p0)
-                y_fit = multi_gaussian(df_fit["x"], *popt)
+                try:
+                    popt, _ = curve_fit(multi_gaussian, df_fit["x"], df_fit["y"], p0=p0)
+                    y_fit = multi_gaussian(df_fit["x"], *popt)
 
-                fig, ax = plt.subplots()
-                ax.plot(df_fit["x"], df_fit["y"], label="Original")
-                ax.plot(df_fit["x"], y_fit, "--", label="Ajuste")
+                    fig, ax = plt.subplots()
+                    ax.plot(df_fit["x"], df_fit["y"], label="Original")
+                    ax.plot(df_fit["x"], y_fit, "--", label="Ajuste")
 
-                resultados = []
-                for i in range(n_gauss):
-                    amp, cen, wid = popt[3*i:3*i+3]
-                    gauss = amp * np.exp(-(df_fit["x"] - cen)**2 / (2 * wid**2))
-                    area = amp * wid * np.sqrt(2*np.pi)
-                    ax.plot(df_fit["x"], gauss, ":", label=f"Pico {i+1}")
-                    resultados.append({
-                        "Pico": i+1,
-                        "Centro (cm⁻¹)": round(cen, 2),
-                        "Amplitud": round(amp, 2),
-                        "Anchura σ": round(wid, 2),
-                        "Área": round(area, 2)
-                    })
+                    resultados = []
+                    for i in range(n_gauss):
+                        amp, cen, wid = popt[3*i:3*i+3]
+                        gauss = amp * np.exp(-(df_fit["x"] - cen)**2 / (2 * wid**2))
+                        area = amp * wid * np.sqrt(2*np.pi)
+                        ax.plot(df_fit["x"], gauss, ":", label=f"Pico {i+1}")
+                        resultados.append({
+                            "Pico": i+1,
+                            "Centro (cm⁻¹)": round(cen, 2),
+                            "Amplitud": round(amp, 2),
+                            "Anchura σ": round(wid, 2),
+                            "Área": round(area, 2)
+                        })
 
-                ax.legend()
-                st.pyplot(fig)
+                    ax.legend()
+                    st.pyplot(fig)
 
-                rmse = np.sqrt(np.mean((df_fit["y"] - y_fit) ** 2))
-                ss_res = np.sum((df_fit["y"] - y_fit) ** 2)
-                ss_tot = np.sum((df_fit["y"] - np.mean(df_fit["y"])) ** 2)
-                r2 = 1 - (ss_res / ss_tot)
-                st.markdown(f"""**{clave}**  
-    **RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}""")
+                    rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
+                    ss_res = np.sum((y_true - y_pred) ** 2)
+                    ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+                    r2 = 1 - (ss_res / ss_tot)
+                    st.markdown(f"**RMSE:** {rmse:.4f} &nbsp;&nbsp; **R²:** {r2:.4f}")
 
-                df_result = pd.DataFrame(resultados)
-                st.dataframe(df_result, use_container_width=True)
+                    df_result = pd.DataFrame(resultados)
+                    st.dataframe(df_result, use_container_width=True)
 
-                buf_excel = BytesIO()
-                with pd.ExcelWriter(buf_excel, engine="xlsxwriter") as writer:
-                    df_result.to_excel(writer, index=False, sheet_name="Deconvolucion")
-                buf_excel.seek(0)
-                st.download_button("📥 Descargar parámetros", data=buf_excel.getvalue(),
-                                file_name=f"deconv_{muestra}.xlsx",
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                key=f"dl_{clave}")
+                    buf_excel = BytesIO()
+                    with pd.ExcelWriter(buf_excel, engine="xlsxwriter") as writer:
+                        df_result.to_excel(writer, index=False, sheet_name="Deconvolucion")
+                    buf_excel.seek(0)
+                    st.download_button("📥 Descargar parámetros", data=buf_excel.getvalue(),
+                                       file_name="deconvolucion_resultados.xlsx",
+                                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-            except Exception as e:
-                st.warning(f"❌ No se pudo ajustar {clave}: {e}")
+                except:
+                    st.warning("No se pudo ajustar el modelo. Ajustá el número de picos.")
+        except Exception as e:
+            st.error(f"Error al procesar espectro: {e}")
+
 
 
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

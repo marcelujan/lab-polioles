@@ -472,7 +472,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
 
     # --- Deconvolución espectral con selección horizontal y rango compartido ---
-    st.subheader("🔍 Deconvolución FTIR")
+    st.subheader("")
     if st.checkbox("Activar deconvolución", key="activar_deconv") and datos:
 
         col1, col2, col3, col4 = st.columns(4)

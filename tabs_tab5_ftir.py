@@ -7,7 +7,7 @@ from io import BytesIO
 from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
 from scipy.optimize import curve_fit
-from sklearn.metrics import mean_squared_error, r2_score
+
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
@@ -542,8 +542,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     ax.legend()
                     st.pyplot(fig)
 
-                    rmse = mean_squared_error(df_fit["y"], y_fit, squared=False)
-                    r2 = r2_score(df_fit["y"], y_fit)
+                    rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
+                    ss_res = np.sum((y_true - y_pred) ** 2)
+                    ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+                    r2 = 1 - (ss_res / ss_tot)
                     st.markdown(f"**RMSE:** {rmse:.4f} &nbsp;&nbsp; **R²:** {r2:.4f}")
 
                     df_result = pd.DataFrame(resultados)

@@ -503,7 +503,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         y += amp * np.exp(-(x - cen)**2 / (2 * wid**2))
                     return y
 
-                n_gauss = st.slider(f"Nº de gaussianas para {clave}", 1, 6, 2, key=f"gauss_{clave}")
+                n_gauss = st.slider(f"Nº de gaussianas para {clave}", 1, 10, 3, key=f"gauss_{clave}")
                 p0 = []
                 for i in range(n_gauss):
                     p0 += [df_fit["y"].max()/n_gauss,

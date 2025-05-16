@@ -278,6 +278,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     x_max = col_x2.number_input("X max", value=float(np.max(all_x)))
     y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
     y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
+    st.session_state["x_min"] = x_min
+    st.session_state["x_max"] = x_max
 
     fig, ax = plt.subplots()
     resumen = pd.DataFrame()

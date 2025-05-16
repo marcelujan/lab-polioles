@@ -470,7 +470,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             use_container_width=True
         )
 
-    # --- Deconvolución espectral con selección horizontal y preprocesamiento coherente ---
+    # --- Deconvolución espectral con preprocesamiento coherente y eje Y correcto ---
     st.subheader("🔍 Deconvolución FTIR")
     if st.checkbox("Activar deconvolución", key="activar_deconv") and datos:
         col1, col2, col3, col4 = st.columns(4)
@@ -532,16 +532,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 y_fit = multi_gaussian(df["x"], *popt)
 
                 fig, ax = plt.subplots()
-                ax.plot(df["x"], df["y"], label="Original", color="black")
+                ax.plot(df["x"], df["y"], label="Original", color="black", linewidth=1.2)
                 ax.plot(df["x"], y_fit, "--", label="Ajuste", color="orange")
 
                 resultados = []
-                colores = plt.cm.get_cmap("tab10")
                 for i in range(n_gauss):
                     amp, cen, wid = popt[3*i:3*i+3]
                     gauss = amp * np.exp(-(df["x"] - cen)**2 / (2 * wid**2))
                     area = amp * wid * np.sqrt(2*np.pi)
-                    ax.plot(df["x"], gauss, ":", label=f"Pico {i+1}", color=colores(i))
+                    ax.plot(df["x"], gauss, ":", label=f"Pico {i+1}")
                     resultados.append({
                         "Pico": i+1,
                         "Centro (cm⁻¹)": round(cen, 2),
@@ -551,7 +550,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     })
 
                 ax.set_xlim(x_min, x_max)
-                ax.set_ylim(y_min, y_max)
+                ax.set_ylim(auto=True)  # Se puede probar quitar línea o reemplazar con rango dinámico si valores ≈ 0
                 ax.set_xlabel("Número de onda [cm⁻¹]")
                 ax.set_ylabel("Absorbancia")
                 ax.legend()
@@ -562,7 +561,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 ss_tot = np.sum((df["y"] - np.mean(df["y"])) ** 2)
                 r2 = 1 - (ss_res / ss_tot)
                 st.markdown(f"""**{clave}**  
-**RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}""")
+    **RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}""")
 
                 df_result = pd.DataFrame(resultados)
                 st.dataframe(df_result, use_container_width=True)
@@ -579,10 +578,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             except Exception as e:
                 if "Optimal parameters not found" in str(e):
                     st.warning(f"""
-⚠️ No se pudo ajustar **{clave}** porque el optimizador no encontró parámetros adecuados. 👉 Sugerencia: probá ajustar el rango X o el número de gaussianas.
-""")
+    ⚠️ No se pudo ajustar **{clave}** porque el optimizador no encontró parámetros adecuados.  
+    👉 Probá ajustar el número de gaussianas o cambiar el rango de X.
+    """)
                 else:
-                    st.warning(f"❌ Error al ajustar {clave}: {e}")
+                    st.warning(f"❌ Error inesperado en {clave}: {e}")
 
 
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

@@ -474,7 +474,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     # --- Deconvolución espectral con selección horizontal y rango compartido ---
     st.subheader("")
     if st.checkbox("Activar deconvolución", key="activar_deconv") and datos:
-
         col1, col2, col3, col4 = st.columns(4)
         checkboxes = {}
         for i, (muestra, tipo, archivo, df) in enumerate(datos):
@@ -491,10 +490,33 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 df = df.iloc[:, :2]
                 df.columns = ["x", "y"]
                 df = df.apply(pd.to_numeric, errors="coerce").dropna()
+                df = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
 
-                x_min = st.session_state.get("x_min", float(df["x"].min()))
-                x_max = st.session_state.get("x_max", float(df["x"].max()))
-                df_fit = df[(df["x"] >= x_min) & (df["x"] <= x_max)].sort_values(by="x")
+                if df.empty:
+                    continue
+
+                # Aplicar ajuste Y
+                ajuste_y = ajustes_y.get(clave, 0.0)
+                df["y"] = df["y"] + ajuste_y
+
+                # Resta espectro
+                if restar_espectro and x_ref is not None and y_ref is not None:
+                    x_ref_arr = np.array(x_ref)
+                    y_ref_arr = np.array(y_ref)
+                    mask = (df["x"] >= x_ref_arr.min()) & (df["x"] <= x_ref_arr.max())
+                    df = df[mask]
+                    y_interp_ref = np.interp(df["x"], x_ref_arr, y_ref_arr)
+                    df["y"] = df["y"] - y_interp_ref
+
+                # Suavizado
+                if aplicar_suavizado and len(df["y"]) >= 5:
+                    df["y"] = savgol_filter(df["y"], window_length=7 if len(df["y"]) % 2 else 7, polyorder=2)
+
+                # Normalización
+                if normalizar and np.max(np.abs(df["y"])) != 0:
+                    df["y"] = df["y"] / np.max(np.abs(df["y"]))
+
+                df = df.sort_values(by="x")
 
                 def multi_gaussian(x, *params):
                     y = np.zeros_like(x)
@@ -506,23 +528,25 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 n_gauss = st.slider(f"Nº de gaussianas para {clave}", 1, 10, 3, key=f"gauss_{clave}")
                 p0 = []
                 for i in range(n_gauss):
-                    p0 += [df_fit["y"].max()/n_gauss,
-                        df_fit["x"].min() + i * (np.ptp(df_fit["x"].values) / n_gauss),
-                        10]
+                    p0 += [
+                        df["y"].max() / n_gauss,
+                        df["x"].min() + i * (np.ptp(df["x"].values) / n_gauss),
+                        10
+                    ]
 
-                popt, _ = curve_fit(multi_gaussian, df_fit["x"], df_fit["y"], p0=p0, maxfev=10000)
-                y_fit = multi_gaussian(df_fit["x"], *popt)
+                popt, _ = curve_fit(multi_gaussian, df["x"], df["y"], p0=p0, maxfev=10000)
+                y_fit = multi_gaussian(df["x"], *popt)
 
                 fig, ax = plt.subplots()
-                ax.plot(df_fit["x"], df_fit["y"], label="Original")
-                ax.plot(df_fit["x"], y_fit, "--", label="Ajuste")
+                ax.plot(df["x"], df["y"], label="Original")
+                ax.plot(df["x"], y_fit, "--", label="Ajuste")
 
                 resultados = []
                 for i in range(n_gauss):
                     amp, cen, wid = popt[3*i:3*i+3]
-                    gauss = amp * np.exp(-(df_fit["x"] - cen)**2 / (2 * wid**2))
+                    gauss = amp * np.exp(-(df["x"] - cen)**2 / (2 * wid**2))
                     area = amp * wid * np.sqrt(2*np.pi)
-                    ax.plot(df_fit["x"], gauss, ":", label=f"Pico {i+1}")
+                    ax.plot(df["x"], gauss, ":", label=f"Pico {i+1}")
                     resultados.append({
                         "Pico": i+1,
                         "Centro (cm⁻¹)": round(cen, 2),
@@ -531,12 +555,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         "Área": round(area, 2)
                     })
 
+                ax.set_xlim(x_min, x_max)
+                ax.set_ylim(y_min, y_max)
                 ax.legend()
                 st.pyplot(fig)
 
-                rmse = np.sqrt(np.mean((df_fit["y"] - y_fit) ** 2))
-                ss_res = np.sum((df_fit["y"] - y_fit) ** 2)
-                ss_tot = np.sum((df_fit["y"] - np.mean(df_fit["y"])) ** 2)
+                rmse = np.sqrt(np.mean((df["y"] - y_fit) ** 2))
+                ss_res = np.sum((df["y"] - y_fit) ** 2)
+                ss_tot = np.sum((df["y"] - np.mean(df["y"])) ** 2)
                 r2 = 1 - (ss_res / ss_tot)
                 st.markdown(f"""**{clave}**  
     **RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}""")

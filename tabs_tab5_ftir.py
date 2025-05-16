@@ -270,9 +270,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             continue
 
     if not datos:
+        st.warning("No se pudo cargar ningún espectro válido.")
         return
+    else:
+        all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos])
 
-    all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos])
     
      # --- Rango de visualización (todo en una fila) ---
     col_x1, col_x2, col_y1, col_y2 = st.columns(4)

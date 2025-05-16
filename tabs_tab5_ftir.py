@@ -510,7 +510,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         df_fit["x"].min() + i * (np.ptp(df_fit["x"].values) / n_gauss),
                         10]
 
-                popt, _ = curve_fit(multi_gaussian, df_fit["x"], df_fit["y"], p0=p0, maxfev=5000)
+                popt, _ = curve_fit(multi_gaussian, df_fit["x"], df_fit["y"], p0=p0, maxfev=10000)
                 y_fit = multi_gaussian(df_fit["x"], *popt)
 
                 fig, ax = plt.subplots()

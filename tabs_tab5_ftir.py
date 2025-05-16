@@ -581,8 +581,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                                 key=f"dl_{clave}")
 
             except Exception as e:
-                st.warning(f"❌ No se pudo ajustar {clave}: {e}")
-
+                import re
+                if "Optimal parameters not found" in str(e):
+                    st.warning(f"""
+                    ⚠️ No se pudo ajustar **{clave}** porque el algoritmo de ajuste no logró encontrar un buen resultado con las condiciones actuales.  
+                    👉 Probá cambiar el número de gaussianas y ajustar el rango de visualización.
+                    """)
+                else:
+                    st.warning(f"❌ Ocurrió un error al ajustar {clave}: {e}")
 
 
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

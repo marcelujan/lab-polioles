@@ -7,7 +7,6 @@ from io import BytesIO
 from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
 from scipy.optimize import curve_fit
-from sklearn.metrics import mean_squared_error, r2_score
 from google.cloud import firestore
 
 
@@ -625,7 +624,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         try:
             import numpy as np
             from scipy.optimize import curve_fit
-            from sklearn.metrics import mean_squared_error, r2_score
 
             contenido = BytesIO(base64.b64decode(fila["contenido"]))
             ext = fila["archivo"].split(".")[-1].lower()
@@ -690,8 +688,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     ax.legend()
                     st.pyplot(fig)
 
-                    rmse = mean_squared_error(df_fit["y"], y_fit, squared=False)
-                    r2 = r2_score(df_fit["y"], y_fit)
+                    # Cálculo manual de métricas
+                    y_true = df_fit["y"].values
+                    y_pred = y_fit
+                    rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
+                    ss_res = np.sum((y_true - y_pred) ** 2)
+                    ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+                    r2 = 1 - (ss_res / ss_tot)
                     st.markdown(f"**RMSE:** {rmse:.4f} &nbsp;&nbsp; **R²:** {r2:.4f}")
 
                     df_result = pd.DataFrame(resultados)

@@ -471,9 +471,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         )
 
 
-    # --- Deconvolución espectral con selección horizontal y rango compartido ---
-    st.subheader("")
+    # --- Deconvolución espectral con selección horizontal y preprocesamiento coherente ---
+    st.subheader("🔍 Deconvolución FTIR")
     if st.checkbox("Activar deconvolución", key="activar_deconv") and datos:
+
         col1, col2, col3, col4 = st.columns(4)
         checkboxes = {}
         for i, (muestra, tipo, archivo, df) in enumerate(datos):
@@ -490,33 +491,31 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 df = df.iloc[:, :2]
                 df.columns = ["x", "y"]
                 df = df.apply(pd.to_numeric, errors="coerce").dropna()
-                df = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
 
-                if df.empty:
-                    continue
+                df_fit = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy().sort_values(by="x")
 
-                # Aplicar ajuste Y
+                # Ajuste manual de Y
                 ajuste_y = ajustes_y.get(clave, 0.0)
-                df["y"] = df["y"] + ajuste_y
+                df_fit["y"] = df_fit["y"] + ajuste_y
 
-                # Resta espectro
+                # Resta de espectro si está activada
                 if restar_espectro and x_ref is not None and y_ref is not None:
-                    x_ref_arr = np.array(x_ref)
-                    y_ref_arr = np.array(y_ref)
-                    mask = (df["x"] >= x_ref_arr.min()) & (df["x"] <= x_ref_arr.max())
-                    df = df[mask]
-                    y_interp_ref = np.interp(df["x"], x_ref_arr, y_ref_arr)
-                    df["y"] = df["y"] - y_interp_ref
+                    x_vals = df_fit["x"].values
+                    y_vals = df_fit["y"].values
+                    mascara_valida = (x_vals >= x_ref.min()) & (x_vals <= x_ref.max())
+                    x_vals = x_vals[mascara_valida]
+                    y_vals = y_vals[mascara_valida]
+                    y_interp_ref = np.interp(x_vals, x_ref, y_ref)
+                    y_vals = y_vals - y_interp_ref
+                    df_fit = pd.DataFrame({"x": x_vals, "y": y_vals})
 
                 # Suavizado
-                if aplicar_suavizado and len(df["y"]) >= 5:
-                    df["y"] = savgol_filter(df["y"], window_length=7 if len(df["y"]) % 2 else 7, polyorder=2)
+                if aplicar_suavizado and len(df_fit["y"]) >= 5:
+                    df_fit["y"] = savgol_filter(df_fit["y"], window_length=7, polyorder=2)
 
                 # Normalización
-                if normalizar and np.max(np.abs(df["y"])) != 0:
-                    df["y"] = df["y"] / np.max(np.abs(df["y"]))
-
-                df = df.sort_values(by="x")
+                if normalizar and np.max(np.abs(df_fit["y"])) != 0:
+                    df_fit["y"] = df_fit["y"] / np.max(np.abs(df_fit["y"]))
 
                 def multi_gaussian(x, *params):
                     y = np.zeros_like(x)
@@ -529,24 +528,24 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 p0 = []
                 for i in range(n_gauss):
                     p0 += [
-                        df["y"].max() / n_gauss,
-                        df["x"].min() + i * (np.ptp(df["x"].values) / n_gauss),
+                        df_fit["y"].max()/n_gauss,
+                        df_fit["x"].min() + i * (np.ptp(df_fit["x"].values) / n_gauss),
                         10
                     ]
 
-                popt, _ = curve_fit(multi_gaussian, df["x"], df["y"], p0=p0, maxfev=10000)
-                y_fit = multi_gaussian(df["x"], *popt)
+                popt, _ = curve_fit(multi_gaussian, df_fit["x"], df_fit["y"], p0=p0, maxfev=10000)
+                y_fit = multi_gaussian(df_fit["x"], *popt)
 
                 fig, ax = plt.subplots()
-                ax.plot(df["x"], df["y"], label="Original")
-                ax.plot(df["x"], y_fit, "--", label="Ajuste")
+                ax.plot(df_fit["x"], df_fit["y"], label="Original")
+                ax.plot(df_fit["x"], y_fit, "--", label="Ajuste")
 
                 resultados = []
                 for i in range(n_gauss):
                     amp, cen, wid = popt[3*i:3*i+3]
-                    gauss = amp * np.exp(-(df["x"] - cen)**2 / (2 * wid**2))
+                    gauss = amp * np.exp(-(df_fit["x"] - cen)**2 / (2 * wid**2))
                     area = amp * wid * np.sqrt(2*np.pi)
-                    ax.plot(df["x"], gauss, ":", label=f"Pico {i+1}")
+                    ax.plot(df_fit["x"], gauss, ":", label=f"Pico {i+1}")
                     resultados.append({
                         "Pico": i+1,
                         "Centro (cm⁻¹)": round(cen, 2),
@@ -557,12 +556,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
                 ax.set_xlim(x_min, x_max)
                 ax.set_ylim(y_min, y_max)
+                ax.set_xlabel("Número de onda [cm⁻¹]")
+                ax.set_ylabel("Absorbancia")
                 ax.legend()
                 st.pyplot(fig)
 
-                rmse = np.sqrt(np.mean((df["y"] - y_fit) ** 2))
-                ss_res = np.sum((df["y"] - y_fit) ** 2)
-                ss_tot = np.sum((df["y"] - np.mean(df["y"])) ** 2)
+                rmse = np.sqrt(np.mean((df_fit["y"] - y_fit) ** 2))
+                ss_res = np.sum((df_fit["y"] - y_fit) ** 2)
+                ss_tot = np.sum((df_fit["y"] - np.mean(df_fit["y"])) ** 2)
                 r2 = 1 - (ss_res / ss_tot)
                 st.markdown(f"""**{clave}**  
     **RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}""")
@@ -581,6 +582,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
             except Exception as e:
                 st.warning(f"❌ No se pudo ajustar {clave}: {e}")
+
 
 
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

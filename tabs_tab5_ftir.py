@@ -470,7 +470,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             use_container_width=True
         )
 
-    # --- Deconvolución espectral con preprocesamiento coherente y eje Y correcto ---
+   # --- Deconvolución espectral con selección horizontal y preprocesamiento coherente ---
     st.subheader("🔍 Deconvolución FTIR")
     if st.checkbox("Activar deconvolución", key="activar_deconv") and datos:
         col1, col2, col3, col4 = st.columns(4)
@@ -512,6 +512,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 if normalizar and np.max(np.abs(df["y"])) != 0:
                     df["y"] = df["y"] / np.max(np.abs(df["y"]))
 
+                # Actualizar límites de Y según datos preprocesados
+                y_min_proc = df["y"].min()
+                y_max_proc = df["y"].max()
+
                 def multi_gaussian(x, *params):
                     y = np.zeros_like(x)
                     for i in range(0, len(params), 3):
@@ -532,15 +536,16 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 y_fit = multi_gaussian(df["x"], *popt)
 
                 fig, ax = plt.subplots()
-                ax.plot(df["x"], df["y"], label="Original", color="black", linewidth=1.2)
+                ax.plot(df["x"], df["y"], label="Original", color="black")
                 ax.plot(df["x"], y_fit, "--", label="Ajuste", color="orange")
 
                 resultados = []
+                colores = plt.cm.get_cmap("tab10")
                 for i in range(n_gauss):
                     amp, cen, wid = popt[3*i:3*i+3]
                     gauss = amp * np.exp(-(df["x"] - cen)**2 / (2 * wid**2))
                     area = amp * wid * np.sqrt(2*np.pi)
-                    ax.plot(df["x"], gauss, ":", label=f"Pico {i+1}")
+                    ax.plot(df["x"], gauss, ":", label=f"Pico {i+1}", color=colores(i))
                     resultados.append({
                         "Pico": i+1,
                         "Centro (cm⁻¹)": round(cen, 2),
@@ -550,7 +555,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     })
 
                 ax.set_xlim(x_min, x_max)
-                ax.set_ylim(auto=True)  # Se puede probar quitar línea o reemplazar con rango dinámico si valores ≈ 0
+                ax.set_ylim(y_min_proc, y_max_proc)
                 ax.set_xlabel("Número de onda [cm⁻¹]")
                 ax.set_ylabel("Absorbancia")
                 ax.legend()
@@ -579,10 +584,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 if "Optimal parameters not found" in str(e):
                     st.warning(f"""
     ⚠️ No se pudo ajustar **{clave}** porque el optimizador no encontró parámetros adecuados.  
-    👉 Probá ajustar el número de gaussianas o cambiar el rango de X.
+    👉 Sugerencia: probá ajustar el rango X o el número de gaussianas.
     """)
                 else:
-                    st.warning(f"❌ Error inesperado en {clave}: {e}")
+                    st.warning(f"❌ Error al ajustar {clave}: {e}")
 
 
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

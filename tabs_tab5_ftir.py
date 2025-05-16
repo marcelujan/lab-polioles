@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
@@ -81,6 +80,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Señal solvente"] = df_oh.apply(lambda row: row["Señal manual 3548"] if row["Tipo"] == "FTIR-Acetato" else row["Señal manual 3611"], axis=1)
 
         def calcular_indice(row):
+            import numpy as np
             peso = row["Peso muestra [g]"]
             y_graf = row["Señal"]
             y_ref = row["Señal solvente"]

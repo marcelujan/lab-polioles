@@ -6,7 +6,8 @@ import base64
 from io import BytesIO
 from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
-
+from scipy.optimize import curve_fit
+from sklearn.metrics import mean_squared_error, r2_score
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
@@ -478,10 +479,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         fila = df_espectros.iloc[opciones.index(espectro_sel)]
 
         try:
-            import numpy as np
-            from scipy.optimize import curve_fit
-            from sklearn.metrics import mean_squared_error, r2_score
-
             contenido = BytesIO(base64.b64decode(fila["contenido"]))
             ext = fila["archivo"].split(".")[-1].lower()
             if ext == "xlsx":

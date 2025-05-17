@@ -474,83 +474,62 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             use_container_width=True
         )
 
-   # --- Deconvolución espectral con selección horizontal y preprocesamiento coherente ---
-    st.subheader("")
-    if st.checkbox("Activar deconvolución", key="activar_deconv") and datos:
+    # --- Deconvolución espectral con selección horizontal y preprocesamiento coherente ---
+    st.subheader("🔍 Deconvolución FTIR")
+    if st.checkbox("Activar deconvolución", key="activar_deconv") and preprocesados:
         col1, col2, col3, col4 = st.columns(4)
         checkboxes = {}
-        for i, (muestra, tipo, archivo, df) in enumerate(datos):
-            clave = f"{muestra} – {tipo} – {archivo}"
+        claves_disponibles = list(preprocesados.keys())
+
+        for i, clave in enumerate(claves_disponibles):
             with [col1, col2, col3, col4][i % 4]:
                 checkboxes[clave] = st.checkbox(clave, value=False, key=f"deconv_{clave}")
 
-        for (muestra, tipo, archivo, df) in datos:
-            clave = f"{muestra} – {tipo} – {archivo}"
+        for clave in claves_disponibles:
             if not checkboxes.get(clave):
                 continue
 
             try:
-                df = df.iloc[:, :2]
-                df.columns = ["x", "y"]
-                df = df.apply(pd.to_numeric, errors="coerce").dropna()
-                df = df[(df["x"] >= x_min) & (df["x"] <= x_max)].sort_values(by="x")
+                df = preprocesados.get(clave)
+                if df is None or df.empty:
+                    continue
 
-                # Ajuste manual Y
-                ajuste_y = ajustes_y.get(clave, 0.0)
-                df["y"] = df["y"] + ajuste_y
+                # --- Preparar datos ---
+                x = df["x"].values
+                y = df["y"].values
 
-                # Resta si aplica
-                if restar_espectro and x_ref is not None and y_ref is not None:
-                    x_vals = df["x"].values
-                    y_vals = df["y"].values
-                    mascara_valida = (x_vals >= x_ref.min()) & (x_vals <= x_ref.max())
-                    x_vals = x_vals[mascara_valida]
-                    y_vals = y_vals[mascara_valida]
-                    y_interp_ref = np.interp(x_vals, x_ref, y_ref)
-                    y_vals = y_vals - y_interp_ref
-                    df = pd.DataFrame({"x": x_vals, "y": y_vals})
-
-                # Suavizado y normalización
-                if aplicar_suavizado and len(df["y"]) >= 5:
-                    df["y"] = savgol_filter(df["y"], window_length=7, polyorder=2)
-                if normalizar and np.max(np.abs(df["y"])) != 0:
-                    df["y"] = df["y"] / np.max(np.abs(df["y"]))
-
-                # Calcular límites Y luego de todo el preprocesamiento
-                y_vals_plot = df["y"].values
-                y_min_proc = np.min(y_vals_plot)
-                y_max_proc = np.max(y_vals_plot)
-
+                # Ajuste con múltiples gaussianas
                 def multi_gaussian(x, *params):
-                    y = np.zeros_like(x)
+                    y_fit = np.zeros_like(x)
                     for i in range(0, len(params), 3):
                         amp, cen, wid = params[i:i+3]
-                        y += amp * np.exp(-(x - cen)**2 / (2 * wid**2))
-                    return y
+                        y_fit += amp * np.exp(-(x - cen)**2 / (2 * wid**2))
+                    return y_fit
 
                 n_gauss = st.slider(f"Nº de gaussianas para {clave}", 1, 10, 3, key=f"gauss_{clave}")
                 p0 = []
                 for i in range(n_gauss):
                     p0 += [
-                        df["y"].max() / n_gauss,
-                        df["x"].min() + i * (np.ptp(df["x"].values) / n_gauss),
+                        y.max() / n_gauss,
+                        x.min() + i * (np.ptp(x) / n_gauss),
                         10
                     ]
 
-                popt, _ = curve_fit(multi_gaussian, df["x"], df["y"], p0=p0, maxfev=10000)
-                y_fit = multi_gaussian(df["x"], *popt)
+                popt, _ = curve_fit(multi_gaussian, x, y, p0=p0, maxfev=10000)
+                y_fit = multi_gaussian(x, *popt)
 
+                # --- Graficar resultados ---
                 fig, ax = plt.subplots()
-                ax.plot(df["x"], df["y"], label="Original", color="black")
-                ax.plot(df["x"], y_fit, "--", label="Ajuste", color="orange")
+                ax.plot(x, y, label="Original", color="black")
+                ax.plot(x, y_fit, "--", label="Ajuste", color="orange")
 
                 resultados = []
                 colores = plt.cm.get_cmap("tab10")
                 for i in range(n_gauss):
                     amp, cen, wid = popt[3*i:3*i+3]
-                    gauss = amp * np.exp(-(df["x"] - cen)**2 / (2 * wid**2))
+                    gauss = amp * np.exp(-(x - cen)**2 / (2 * wid**2))
                     area = amp * wid * np.sqrt(2*np.pi)
-                    ax.plot(df["x"], gauss, ":", label=f"Pico {i+1}", color=colores(i))
+                    ax.plot(x, gauss, ":", label=f"Pico {i+1}", color=colores(i))
                     resultados.append({
                         "Pico": i+1,
                         "Centro (cm⁻¹)": round(cen, 2),
@@ -560,15 +539,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     })
 
                 ax.set_xlim(x_min, x_max)
-                ax.set_ylim(y_min_proc, y_max_proc)
+                ax.set_ylim(y_min, y_max)  # Usa el rango del gráfico principal
                 ax.set_xlabel("Número de onda [cm⁻¹]")
                 ax.set_ylabel("Absorbancia")
                 ax.legend()
                 st.pyplot(fig)
 
-                rmse = np.sqrt(np.mean((df["y"] - y_fit) ** 2))
-                ss_res = np.sum((df["y"] - y_fit) ** 2)
-                ss_tot = np.sum((df["y"] - np.mean(df["y"])) ** 2)
+                rmse = np.sqrt(np.mean((y - y_fit) ** 2))
+                ss_res = np.sum((y - y_fit) ** 2)
+                ss_tot = np.sum((y - np.mean(y)) ** 2)
                 r2 = 1 - (ss_res / ss_tot)
                 st.markdown(f"""**{clave}**  
     **RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}""")
@@ -581,7 +560,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     df_result.to_excel(writer, index=False, sheet_name="Deconvolucion")
                 buf_excel.seek(0)
                 st.download_button("📥 Descargar parámetros", data=buf_excel.getvalue(),
-                                file_name=f"deconv_{muestra}.xlsx",
+                                file_name=f"deconv_{clave.replace(' – ', '_')}.xlsx",
                                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                 key=f"dl_{clave}")
 
@@ -593,6 +572,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     """)
                 else:
                     st.warning(f"❌ Error al ajustar {clave}: {e}")
+
 
 
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

@@ -295,6 +295,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             with columnas[i]:
                 mostrar_etiquetas[clave] = st.checkbox(nombre_corto, value=True, key=f"etiqueta_{clave}")
 
+    preprocesados = {}
+
     for muestra, tipo, archivo, df in datos:
         df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()
         if df_filtrado.empty:
@@ -342,6 +344,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
         if normalizar and np.max(np.abs(y)) != 0:
             y = y / np.max(np.abs(y))
+
+        preprocesados[clave] = pd.DataFrame({"x": x, "y": y})
 
         label = f"{muestra} – {tipo}"
         ax.plot(x, y, label=label)

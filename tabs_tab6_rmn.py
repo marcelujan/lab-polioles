@@ -264,7 +264,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-        # --- Tabla integral editable con persistencia robusta ---
+            # --- Tabla integral editable con persistencia robusta ---
         st.markdown("### 🧮 Edición manual de señales")
         activar_edicion = st.checkbox("Edición de señales", value=False)
 
@@ -282,18 +282,17 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 filas_iniciales = [{"Muestra": m, "Grupo funcional": ""} for m in muestras_sel]
                 doc_ref.set({"filas": filas_iniciales})
 
-            # Obtener los datos actuales para edición
+            # Obtener y preparar datos actuales
             filas_actuales = doc_ref.get().to_dict().get("filas", [])
             df_integral = pd.DataFrame(filas_actuales)
 
-            # Asegurar estructura
             for col in columnas_integral:
                 if col not in df_integral.columns:
                     df_integral[col] = "" if col == "Observaciones" else None
             df_integral["Observaciones"] = df_integral["Observaciones"].astype(str)
             df_integral = df_integral[columnas_integral]
 
-            # Mostrar editor
+            # Editor visual
             df_integral_edit = st.data_editor(
                 df_integral,
                 column_config={
@@ -318,14 +317,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 key="tabla_integral_edicion"
             )
 
-            # Guardar lo que editó el usuario (sin calcular aún)
+            # Guardar edición sin cálculos aún
             doc_ref.set({"filas": df_integral_edit.to_dict(orient="records")})
 
-            # --- RECÁLCULO sincronizado ---
+            # RECALCULAR desde Firebase
             filas_actualizadas = doc_ref.get().to_dict().get("filas", [])
             df_final = pd.DataFrame(filas_actualizadas)
 
-            # Asegurar columnas y tipos
             for col in columnas_integral:
                 if col not in df_final.columns:
                     df_final[col] = "" if col == "Observaciones" else None
@@ -335,12 +333,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             for i, row in df_final.iterrows():
                 try:
                     nombre_muestra = row.get("Muestra", None)
-                    x_min = row.get("X min", None)
-                    x_max = row.get("X max", None)
-
-                    if not nombre_muestra or pd.isna(x_min) or pd.isna(x_max):
-                        continue
-
+                    x_min = float(row.get("X min", None))
+                    x_max = float(row.get("X max", None))
                     espectros_muestra = df_rmn1H[df_rmn1H["muestra"] == nombre_muestra]
                     if espectros_muestra.empty:
                         continue
@@ -357,11 +351,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     if extension == ".xlsx":
                         df_espectro = pd.read_excel(contenido)
                     else:
-                        sep_try = [",", ";", "\t", " "]
-                        for sep in sep_try:
+                        for sep in [",", ";", "\t", " "]:
                             contenido.seek(0)
                             try:
-                                df_espectro = pd.read_csv(contenido, sep=sep, engine="python")
+                                df_espectro = pd.read_csv(contenido, sep=sep)
                                 if df_espectro.shape[1] >= 2:
                                     break
                             except:
@@ -374,23 +367,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
                     df_espectro = df_espectro.dropna()
 
-                    # Calcular Área
+                    # Calcular Área principal
                     df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
                     area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else np.nan
                     df_final.at[i, "Área"] = round(area, 2) if not np.isnan(area) else None
 
-                    st.write(f"Fila {i}")
-                    st.write(f"Muestra: {row.get('Muestra')}")
-                    st.write(f"Archivo: {row.get('Archivo')}")
-                    st.write(f"Xas min: {row.get('Xas min')} (tipo {type(row.get('Xas min'))})")
-                    st.write(f"Xas max: {row.get('Xas max')} (tipo {type(row.get('Xas max'))})")
-                    st.write(f"Has: {row.get('Has')} (tipo {type(row.get('Has'))})")
-                    st.write(f"Área entre Xas min y Xas max: {area_as}")
-                    st.write(f"Área entre X min y X max: {area}")
-                    st.write(f"H calculado: {(area * has) / area_as if area_as != 0 else '∞'}")
-
-
-                    # Calcular H
+                    # Calcular H si hay valores
                     try:
                         has = float(row.get("Has", None))
                         xas_min = float(row.get("Xas min", None))
@@ -400,42 +382,25 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                     df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
                     area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else np.nan
-                    #st.write(f"Área entre {xas_min} y {xas_max} (area_as): {area_as}")
-                    #st.line_chart(df_sub_as.set_index(col_x)[col_y])
-
-
-                    # Mostrar espectro completo con áreas sombreadas
-                    try:
-                        fig, ax = plt.subplots(figsize=(8, 3))
-
-                        ax.plot(df_espectro[col_x], df_espectro[col_y], label="Espectro completo", color="gray")
-
-                        # Sombra para X min - X max (área de interés)
-                        ax.axvspan(min(x_min, x_max), max(x_min, x_max), color='blue', alpha=0.2, label="Área (X min – X max)")
-
-                        # Sombra para Xas min - Xas max (asignación H)
-                        ax.axvspan(min(xas_min, xas_max), max(xas_min, xas_max), color='orange', alpha=0.3, label="Área asignada (Xas min – Xas max)")
-
-                        ax.set_xlabel("ppm")
-                        ax.set_ylabel("Intensidad")
-                        ax.set_title(f"{nombre_muestra} — {archivo}")
-                        ax.legend()
-                        ax.invert_xaxis()  # Espectros RMN suelen tener ppm de mayor a menor
-
-                        st.pyplot(fig)
-                    except Exception as e:
-                        st.error(f"⚠️ No se pudo graficar el espectro: {e}")
-
 
                     if not np.isnan(area_as) and area_as != 0:
                         h_calc = (area * has) / area_as
                         df_final.at[i, "H"] = round(h_calc, 2)
 
-                except:
+                    # Opcional: trazado visual de zonas
+                    # fig, ax = plt.subplots(figsize=(8, 3))
+                    # ax.plot(df_espectro[col_x], df_espectro[col_y], color="gray")
+                    # ax.axvspan(min(x_min, x_max), max(x_min, x_max), color='blue', alpha=0.2)
+                    # ax.axvspan(min(xas_min, xas_max), max(xas_min, xas_max), color='orange', alpha=0.3)
+                    # ax.invert_xaxis(); st.pyplot(fig)
+
+                except Exception as e:
+                    st.warning(f"⚠️ Error en fila {i}: {e}")
                     continue
 
-            # Guardar con valores actualizados
+            # Guardar cálculo final actualizado
             doc_ref.set({"filas": df_final.to_dict(orient="records")})
+
 
 
 

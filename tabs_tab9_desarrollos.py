@@ -155,6 +155,58 @@ def render_tab6(db, cargar_muestras, mostrar_sector_flotante):
 
     mostrar_linea_base = st.checkbox("Mostrar línea base (y = 0)", value=True)
 
+   # --- Tabla editable de señales ---
+    st.subheader("📝 Tabla editable de señales detectadas")
+    columnas_tabla = [
+        "Muestra", "Tipo", "δ pico", "X min", "X max", "Área", "D", "T2",
+        "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"
+    ]
+
+    if "tabla_rmn1h" not in st.session_state:
+        tabla = []
+        for _, row in df_sel.iterrows():
+            df = row["df"].sort_values(by="x")
+            x = df["x"].values
+            y = df["y"].values
+            if x[0] < x[-1]:
+                x = x[::-1]
+                y = y[::-1]
+            peaks, _ = find_peaks(y, height=np.mean(y) + np.std(y))
+            for i, p in enumerate(peaks):
+                if i == 0 or i == len(peaks) - 1:
+                    continue
+                delta = x[p]
+                x_min = round(x[max(0, p - 20)], 2)
+                x_max = round(x[min(len(x)-1, p + 20)], 2)
+                mask = (x >= x_min) & (x <= x_max)
+                area = trapz(y[mask], x[mask])
+                tabla.append({
+                    "Muestra": row["muestra"],
+                    "Tipo": row["tipo"],
+                    "δ pico": round(delta, 2),
+                    "X min": x_min,
+                    "X max": x_max,
+                    "Área": round(area, 2),
+                    "D": "",
+                    "T2": "",
+                    "Xas min": x_min,
+                    "Xas max": x_max,
+                    "Has": 1,
+                    "H": 1,
+                    "Observaciones": "",
+                    "Archivo": row["archivo"]
+                })
+        st.session_state["tabla_rmn1h"] = pd.DataFrame(tabla)
+
+    st.data_editor(
+        st.session_state["tabla_rmn1h"],
+        column_order=columnas_tabla,
+        use_container_width=True,
+        hide_index=True,
+        num_rows="dynamic",
+        key="editor_rmn1h"
+    )
+
     # --- Visualización con anotaciones enriquecidas ---
     st.subheader("Visualización de espectros con anotaciones")
     fig, ax = plt.subplots()

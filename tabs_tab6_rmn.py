@@ -299,15 +299,29 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 key="tabla_integral_edicion"
             )
 
-            # --- Cálculo automático de Área entre X min y X max ---
+            # --- Autocompletar Archivo y calcular Área ---
             for i, row in df_integral_edit.iterrows():
                 try:
-                    nombre_muestra = row["Muestra"]
-                    archivo = row["Archivo"]
-                    x_min = float(row["X min"])
-                    x_max = float(row["X max"])
+                    nombre_muestra = row.get("Muestra", None)
+                    x_min = row.get("X min", None)
+                    x_max = row.get("X max", None)
 
-                    espectro_row = df_rmn1H[(df_rmn1H["muestra"] == nombre_muestra) & (df_rmn1H["archivo"] == archivo)].iloc[0]
+                    if not nombre_muestra or pd.isna(x_min) or pd.isna(x_max):
+                        continue
+
+                    # Buscar espectros asociados a la muestra seleccionada
+                    espectros_muestra = df_rmn1H[df_rmn1H["muestra"] == nombre_muestra]
+
+                    if espectros_muestra.empty:
+                        continue
+
+                    # Si no hay archivo definido, usar el primero disponible
+                    archivo = row.get("Archivo", "")
+                    if not archivo or archivo not in list(espectros_muestra["archivo"]):
+                        archivo = espectros_muestra.iloc[0]["archivo"]
+                        df_integral_edit.at[i, "Archivo"] = archivo
+
+                    espectro_row = espectros_muestra[espectros_muestra["archivo"] == archivo].iloc[0]
                     contenido = BytesIO(base64.b64decode(espectro_row["contenido"]))
                     extension = os.path.splitext(archivo)[1].lower()
 
@@ -324,7 +338,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             except:
                                 continue
                         else:
-                            continue  # No se pudo leer el archivo
+                            continue
 
                     col_x, col_y = df_espectro.columns[:2]
                     df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
@@ -337,7 +351,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_integral_edit.at[i, "Área"] = round(area, 2)
 
                 except Exception as e:
-                    continue  # Si hay error, dejar la celda como está
+                    continue  # evitar errores por filas incompletas o espectros malformados
+
 
 
         # --- Tabla nueva debajo del gráfico RMN 1H ---

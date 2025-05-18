@@ -9,7 +9,7 @@ import os
 import base64
 import zipfile
 from tempfile import TemporaryDirectory
-
+import matplotlib.pyplot as plt #solo para pruebas
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
@@ -402,7 +402,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else np.nan
                     #st.write(f"Área entre {xas_min} y {xas_max} (area_as): {area_as}")
                     #st.line_chart(df_sub_as.set_index(col_x)[col_y])
-                    import matplotlib.pyplot as plt
+
 
                     # Mostrar espectro completo con áreas sombreadas
                     try:

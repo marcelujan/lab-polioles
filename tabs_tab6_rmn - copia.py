@@ -264,10 +264,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-
-
-
-            # --- Formulario de edición y botón limpio ---
+        # --- Tabla integral editable con botón de recálculo ---
+        #st.markdown("### 🧮 Edición manual de señales")
         activar_edicion = st.checkbox("Edición de señales", value=False)
 
         if activar_edicion:
@@ -294,35 +292,39 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             df_integral["Observaciones"] = df_integral["Observaciones"].astype(str)
             df_integral = df_integral[columnas_integral]
 
-            with st.form("form_edicion_integral"):
-                df_integral_edit = st.data_editor(
-                    df_integral,
-                    column_config={
-                        "Muestra": st.column_config.SelectboxColumn(options=muestras_sel, required=True),
-                        "Grupo funcional": st.column_config.SelectboxColumn(options=grupos_funcionales),
-                        "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                        "X min": st.column_config.NumberColumn(format="%.2f"),
-                        "X max": st.column_config.NumberColumn(format="%.2f"),
-                        "Área": st.column_config.NumberColumn(format="%.2f", label="🔴 Área"),
-                        "D": st.column_config.NumberColumn(format="%.2e"),
-                        "T2": st.column_config.NumberColumn(format="%.3f"),
-                        "Xas min": st.column_config.NumberColumn(format="%.2f"),
-                        "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                        "Has": st.column_config.NumberColumn(format="%.2f"),
-                        "H": st.column_config.NumberColumn(format="%.2f", label="🔴 H"),
-                        "Observaciones": st.column_config.TextColumn(),
-                        "Archivo": st.column_config.TextColumn(),
-                    },
-                    hide_index=True,
-                    use_container_width=True,
-                    num_rows="dynamic",
-                    key="tabla_integral_edicion"
-                )
+            # Mostrar editor
+            #st.markdown('<span style="color:red"><b>🔁 Recalcular afecta columnas: Área y H</b></span>', unsafe_allow_html=True)
 
-                recalcular = st.form_submit_button("🔁 Recalcular área y H", type="primary")
+            df_integral_edit = st.data_editor(
+                df_integral,
+                column_config={
+                    "Muestra": st.column_config.SelectboxColumn(options=muestras_sel, required=True),
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=grupos_funcionales),
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                    "Área": st.column_config.NumberColumn(format="%.2f", label="🔴 Área"),
+                    "D": st.column_config.NumberColumn(format="%.2e"),
+                    "T2": st.column_config.NumberColumn(format="%.3f"),
+                    "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                    "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                    "Has": st.column_config.NumberColumn(format="%.2f"),
+                    "H": st.column_config.NumberColumn(format="%.2f", label="🔴 H"),
+                    "Observaciones": st.column_config.TextColumn(),
+                    "Archivo": st.column_config.TextColumn(),
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key="tabla_integral_edicion"
+            )
 
-            if recalcular:
+            # Botón de recálculo
+            if st.button("🔁 Recalcular área y H", type="primary"):
+                # Guardar primero
                 doc_ref.set({"filas": df_integral_edit.to_dict(orient="records")})
+
+                # Releer desde Firebase para asegurar sincronización
                 filas_actualizadas = doc_ref.get().to_dict().get("filas", [])
                 df_final = pd.DataFrame(filas_actualizadas)
 
@@ -370,10 +372,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         df_espectro = df_espectro.dropna()
                         df_espectro = df_espectro.sort_values(by=col_x)
 
+                        # Calcular Área principal
                         df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
                         area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else np.nan
                         df_final.at[i, "Área"] = round(area, 2) if not np.isnan(area) else None
 
+                        # Calcular H
                         try:
                             has = float(row.get("Has", None))
                             xas_min = float(row.get("Xas min", None))
@@ -384,8 +388,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
                         area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else np.nan
 
-                        if not np.isnan(area) and not np.isnan(area_as) and area_as != 0:
-                            h_calc = (area * has) / area_as
+                        if not np.isnan(area_as) and area_as != 0:
+                            if not np.isnan(area) and not np.isnan(area_as) and area_as != 0:
+                                h_calc = (area * has) / area_as
+                                df_final.at[i, "H"] = round(h_calc, 2)
+
                             df_final.at[i, "H"] = round(h_calc, 2)
 
                     except Exception as e:
@@ -393,6 +400,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         continue
 
                 doc_ref.set({"filas": df_final.to_dict(orient="records")})
+                st.success("Cálculos actualizados correctamente.")
                 st.rerun()
 
 

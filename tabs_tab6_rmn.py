@@ -272,7 +272,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         if activar_edicion:
             columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                                "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"]
+                     "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
+
 
             grupos_funcionales = [
                 "Glicerol medio", "Glicerol extremos", "OH", "C=C",
@@ -308,6 +309,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         "T2": st.column_config.NumberColumn(format="%.3f"),
                         "Xas min": st.column_config.NumberColumn(format="%.2f"),
                         "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                        "Área as": st.column_config.NumberColumn(format="%.2f"),
                         "Has": st.column_config.NumberColumn(format="%.2f"),
                         "H": st.column_config.NumberColumn(format="%.2f", label="🔴 H"),
                         "Observaciones": st.column_config.TextColumn(),
@@ -383,6 +385,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                         df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
                         area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else np.nan
+                        df_final.at[i, "Área as"] = round(area_as, 2) if not np.isnan(area_as) else None
 
                         if not np.isnan(area) and not np.isnan(area_as) and area_as != 0:
                             h_calc = (area * has) / area_as

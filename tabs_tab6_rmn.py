@@ -396,20 +396,22 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         continue
 
                 doc_ref.set({"filas": df_final.to_dict(orient="records")})
+      
+                # Exportar a Excel
+                excel_buffer = io.BytesIO()
+                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                    df_final.to_excel(writer, index=False, sheet_name="Integrales_RMN")
+                    writer.save()
+
+                st.download_button(
+                    label="📥 Descargar integrales en Excel",
+                    data=excel_buffer.getvalue(),
+                    file_name="integrales_rmn1h.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
                 st.rerun()
 
-        # Exportar a Excel
-        excel_buffer = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-            df_final.to_excel(writer, index=False, sheet_name="Integrales_RMN")
-            writer.save()
 
-        st.download_button(
-            label="📥 Descargar integrales en Excel",
-            data=excel_buffer.getvalue(),
-            file_name="integrales_rmn1h.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
 
 
 

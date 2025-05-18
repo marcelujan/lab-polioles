@@ -267,13 +267,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-            # --- Formulario de edición y botón limpio ---
+        # --- Formulario de edición y botón limpio ---
         activar_edicion = st.checkbox("Edición de señales", value=False)
 
         if activar_edicion:
             columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                     "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
-
+                                "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
 
             grupos_funcionales = [
                 "Glicerol medio", "Glicerol extremos", "OH", "C=C",
@@ -304,14 +303,14 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         "δ pico": st.column_config.NumberColumn(format="%.2f"),
                         "X min": st.column_config.NumberColumn(format="%.2f"),
                         "X max": st.column_config.NumberColumn(format="%.2f"),
-                        "Área": st.column_config.NumberColumn(format="%.2f", label="🔴 Área"),
+                        "Área": st.column_config.NumberColumn(format="%.2f", label="🔴 Área", disabled=True),
                         "D": st.column_config.NumberColumn(format="%.2e"),
                         "T2": st.column_config.NumberColumn(format="%.3f"),
                         "Xas min": st.column_config.NumberColumn(format="%.2f"),
                         "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                        "Área as": st.column_config.NumberColumn(format="%.2f"),
+                        "Área as": st.column_config.NumberColumn(format="%.2f", disabled=True),
                         "Has": st.column_config.NumberColumn(format="%.2f"),
-                        "H": st.column_config.NumberColumn(format="%.2f", label="🔴 H"),
+                        "H": st.column_config.NumberColumn(format="%.2f", label="🔴 H", disabled=True),
                         "Observaciones": st.column_config.TextColumn(),
                         "Archivo": st.column_config.TextColumn(),
                     },
@@ -397,6 +396,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                 doc_ref.set({"filas": df_final.to_dict(orient="records")})
                 st.rerun()
+
 
 
 

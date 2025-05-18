@@ -268,7 +268,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if activar_edicion:
             columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                                 "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"]
-            
+
             grupos_funcionales = [
                 "Glicerol medio", "Glicerol extremos", "OH", "C=C",
                 "Epóxido", "Éter", "Ester", "Ácido carboxílico", "Formiato"
@@ -281,9 +281,16 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             else:
                 filas_iniciales = doc_ref.get().to_dict().get("filas", [])
 
-            df_integral = pd.DataFrame(filas_iniciales, columns=columnas_integral)
-            df_integral["Observaciones"] = df_integral["Observaciones"].astype(str)
+            df_integral = pd.DataFrame(filas_iniciales)
 
+            # Asegurar columnas y tipos
+            for col in columnas_integral:
+                if col not in df_integral.columns:
+                    df_integral[col] = "" if col == "Observaciones" else None
+            df_integral["Observaciones"] = df_integral["Observaciones"].astype(str)
+            df_integral = df_integral[columnas_integral]
+
+            # Mostrar editor
             df_integral_edit = st.data_editor(
                 df_integral,
                 column_config={

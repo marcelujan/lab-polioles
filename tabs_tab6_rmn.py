@@ -389,7 +389,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else np.nan
 
                         if not np.isnan(area_as) and area_as != 0:
-                            h_calc = (area * has) / area_as
+                            if not np.isnan(area) and not np.isnan(area_as) and area_as != 0:
+                                h_calc = (area * has) / area_as
+                                df_final.at[i, "H"] = round(h_calc, 2)
+
                             df_final.at[i, "H"] = round(h_calc, 2)
 
                     except Exception as e:

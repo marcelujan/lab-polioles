@@ -261,43 +261,43 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.subheader("🧾 Tabla de máscaras aplicadas")
             st.dataframe(df_editable, use_container_width=True)
 
-    # --- Tabla integral editable con selección restringida ---
-    st.markdown("### 🧮 Edición manual de señales")
-    activar_edicion = st.checkbox("Edición de señales", value=False)
+        # --- Tabla integral editable con selección restringida ---
+        st.markdown("### 🧮 Edición manual de señales")
+        activar_edicion = st.checkbox("Edición de señales", value=False)
 
-    if activar_edicion:
-        columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                            "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"]
+        if activar_edicion:
+            columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
+                                "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"]
 
-        grupos_funcionales = [
-            "Glicerol medio", "Glicerol extremos", "OH", "C=C",
-            "Epóxido", "Éter", "Ester", "Ácido carboxílico", "Formiato"
-        ]
+            grupos_funcionales = [
+                "Glicerol medio", "Glicerol extremos", "OH", "C=C",
+                "Epóxido", "Éter", "Ester", "Ácido carboxílico", "Formiato"
+            ]
 
-        filas_iniciales = [{"Muestra": muestra, "Grupo funcional": ""} for muestra in muestras_sel] if muestras_sel else [{}]
-        df_integral = pd.DataFrame(filas_iniciales, columns=columnas_integral)
+            filas_iniciales = [{"Muestra": muestra, "Grupo funcional": ""} for muestra in muestras_sel] if muestras_sel else [{}]
+            df_integral = pd.DataFrame(filas_iniciales, columns=columnas_integral)
 
-        df_integral_edit = st.data_editor(
-            df_integral,
-            column_config={
-                "Muestra": st.column_config.SelectboxColumn(options=muestras_sel, required=True),
-                "Grupo funcional": st.column_config.SelectboxColumn(options=grupos_funcionales),
-                "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                "X min": st.column_config.NumberColumn(format="%.2f"),
-                "X max": st.column_config.NumberColumn(format="%.2f"),
-                "Área": st.column_config.NumberColumn(format="%.2f"),
-                "D": st.column_config.NumberColumn(format="%.2e"),
-                "T2": st.column_config.NumberColumn(format="%.3f"),
-                "Xas min": st.column_config.NumberColumn(format="%.2f"),
-                "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                "Has": st.column_config.NumberColumn(format="%.2f"),
-                "H": st.column_config.NumberColumn(format="%.2f"),
-            },
-            hide_index=True,
-            use_container_width=True,
-            num_rows="dynamic",
-            key="tabla_integral_edicion"
-        )
+            df_integral_edit = st.data_editor(
+                df_integral,
+                column_config={
+                    "Muestra": st.column_config.SelectboxColumn(options=muestras_sel, required=True),
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=grupos_funcionales),
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                    "Área": st.column_config.NumberColumn(format="%.2f"),
+                    "D": st.column_config.NumberColumn(format="%.2e"),
+                    "T2": st.column_config.NumberColumn(format="%.3f"),
+                    "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                    "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                    "Has": st.column_config.NumberColumn(format="%.2f"),
+                    "H": st.column_config.NumberColumn(format="%.2f"),
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key="tabla_integral_edicion"
+            )
 
 
         # --- Tabla nueva debajo del gráfico RMN 1H ---

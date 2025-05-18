@@ -400,6 +400,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                     df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
                     area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else np.nan
+                    st.write(f"Área entre {xas_min} y {xas_max} (area_as): {area_as}")
+                    st.line_chart(df_sub_as.set_index(col_x)[col_y])
 
                     if not np.isnan(area_as) and area_as != 0:
                         h_calc = (area * has) / area_as

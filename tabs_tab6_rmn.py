@@ -399,22 +399,22 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 st.rerun()
 
 
-    # ---- Mostrar botón de descarga siempre con últimos datos guardados ----
-    doc_ref = db.collection("tablas_integrales").document("rmn1h")
-    filas_guardadas = doc_ref.get().to_dict().get("filas", [])
-    df_export = pd.DataFrame(filas_guardadas)
-    if not df_export.empty:
-        excel_buffer = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-            df_export.to_excel(writer, index=False, sheet_name="Integrales_RMN")
-            writer.save()
+        # ---- Mostrar botón de descarga siempre con últimos datos guardados ----
+        doc_ref = db.collection("tablas_integrales").document("rmn1h")
+        filas_guardadas = doc_ref.get().to_dict().get("filas", [])
+        df_export = pd.DataFrame(filas_guardadas)
+        if not df_export.empty:
+            excel_buffer = io.BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                df_export.to_excel(writer, index=False, sheet_name="Integrales_RMN")
+                writer.save()
 
-        st.download_button(
-            label="📥 Descargar integrales en Excel",
-            data=excel_buffer.getvalue(),
-            file_name="integrales_rmn1h.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+            st.download_button(
+                label="📥 Descargar integrales en Excel",
+                data=excel_buffer.getvalue(),
+                file_name="integrales_rmn1h.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
 
 

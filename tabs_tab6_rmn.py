@@ -251,6 +251,102 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
             st.caption(f"*Asignación: {int(h_config['H'])} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
        
+
+
+
+
+
+        # --- Tabla D/T2 cuantificable editable ---
+        if "D/T2" in st.session_state.get("mascaras_activas", []):
+            st.markdown("### 🧬 Asignación cuantificable por D/T2")
+            doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
+            if not doc_dt2.get().exists:
+                # Cargar desde los datos de espectros con máscara D/T2
+                filas_dt2 = []
+                for _, row in df_sel.iterrows():
+                    for mascara in row.get("mascaras", []):
+                        if mascara.get("nombre") == "D/T2":
+                            filas_dt2.append({
+                                "Muestra": row["muestra"],
+                                "Archivo": row["archivo"],
+                                "X min": mascara.get("x_min"),
+                                "X max": mascara.get("x_max"),
+                                "D": mascara.get("D"),
+                                "T2": mascara.get("T2"),
+                                "Grupo funcional": "",
+                                "δ pico": None,
+                                "Área": None,
+                                "Área as": None,
+                                "Has": None,
+                                "H": None,
+                                "Xas min": None,
+                                "Xas max": None,
+                                "Observaciones": ""
+                            })
+                doc_dt2.set({"filas": filas_dt2})
+
+            filas_dt2_actual = doc_dt2.get().to_dict().get("filas", [])
+            df_dt2 = pd.DataFrame(filas_dt2_actual)
+
+            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
+                            "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
+
+            for col in columnas_dt2:
+                if col not in df_dt2.columns:
+                    df_dt2[col] = "" if col == "Observaciones" else None
+            df_dt2 = df_dt2[columnas_dt2]
+
+            df_dt2_edit = st.data_editor(
+                df_dt2,
+                column_config={
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                    "Área": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "D": st.column_config.NumberColumn(format="%.2e"),
+                    "T2": st.column_config.NumberColumn(format="%.3f"),
+                    "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                    "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                    "Área as": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "Has": st.column_config.NumberColumn(format="%.2f"),
+                    "H": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "Observaciones": st.column_config.TextColumn(),
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key="tabla_dt2_cuantificable"
+            )
+
+            # Guardar cambios a Firebase si hay ediciones en campos clave
+            doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
+
+            doc_ref.set({"filas": df_final.to_dict(orient="records")})
+            st.rerun()
+
+        # ---- Mostrar botón de descarga siempre con últimos datos guardados ----
+        doc_ref = db.collection("tablas_integrales").document("rmn1h")
+        filas_guardadas = doc_ref.get().to_dict().get("filas", [])
+        df_export = pd.DataFrame(filas_guardadas)
+        if not df_export.empty:
+            excel_buffer = io.BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                df_export.to_excel(writer, index=False, sheet_name="Integrales_RMN")
+                writer.save()
+
+            st.download_button(
+                label="📥 Descargar integrales en Excel",
+                data=excel_buffer.getvalue(),
+                file_name="RMN1H_Mascaras.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+
+
+
+
+
         ax.set_xlabel("[ppm]")
         ax.set_ylabel("Señal")
         ax.legend()

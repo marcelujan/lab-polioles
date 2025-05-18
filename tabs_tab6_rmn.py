@@ -261,7 +261,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.subheader("🧾 Tabla de máscaras aplicadas")
             st.dataframe(df_editable, use_container_width=True, hide_index=True)
 
-        # --- Tabla integral editable con persistencia ---
+
+
+
+        # --- Tabla integral editable con persistencia robusta ---
         st.markdown("### 🧮 Edición manual de señales")
         activar_edicion = st.checkbox("Edición de señales", value=False)
 
@@ -278,12 +281,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             if not doc_ref.get().exists:
                 filas_iniciales = [{"Muestra": m, "Grupo funcional": ""} for m in muestras_sel]
                 doc_ref.set({"filas": filas_iniciales})
-            else:
-                filas_iniciales = doc_ref.get().to_dict().get("filas", [])
 
-            df_integral = pd.DataFrame(filas_iniciales)
+            # Obtener los datos actuales para edición
+            filas_actuales = doc_ref.get().to_dict().get("filas", [])
+            df_integral = pd.DataFrame(filas_actuales)
 
-            # Asegurar columnas y tipos
+            # Asegurar estructura
             for col in columnas_integral:
                 if col not in df_integral.columns:
                     df_integral[col] = "" if col == "Observaciones" else None
@@ -315,9 +318,21 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 key="tabla_integral_edicion"
             )
 
-            # 🔁 Recalcular 'Área' y 'H' después de edición
-            df_updated = df_integral_edit.copy()
-            for i, row in df_updated.iterrows():
+            # Guardar lo que editó el usuario (sin calcular aún)
+            doc_ref.set({"filas": df_integral_edit.to_dict(orient="records")})
+
+            # --- RECÁLCULO sincronizado ---
+            filas_actualizadas = doc_ref.get().to_dict().get("filas", [])
+            df_final = pd.DataFrame(filas_actualizadas)
+
+            # Asegurar columnas y tipos
+            for col in columnas_integral:
+                if col not in df_final.columns:
+                    df_final[col] = "" if col == "Observaciones" else None
+            df_final["Observaciones"] = df_final["Observaciones"].astype(str)
+            df_final = df_final[columnas_integral]
+
+            for i, row in df_final.iterrows():
                 try:
                     nombre_muestra = row.get("Muestra", None)
                     x_min = row.get("X min", None)
@@ -333,7 +348,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     archivo = row.get("Archivo", "")
                     if not archivo or archivo not in list(espectros_muestra["archivo"]):
                         archivo = espectros_muestra.iloc[0]["archivo"]
-                        df_updated.at[i, "Archivo"] = archivo
+                        df_final.at[i, "Archivo"] = archivo
 
                     espectro_row = espectros_muestra[espectros_muestra["archivo"] == archivo].iloc[0]
                     contenido = BytesIO(base64.b64decode(espectro_row["contenido"]))
@@ -359,10 +374,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
                     df_espectro = df_espectro.dropna()
 
-                    # Calcular área principal
+                    # Calcular Área
                     df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
                     area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else np.nan
-                    df_updated.at[i, "Área"] = round(area, 2) if not np.isnan(area) else None
+                    df_final.at[i, "Área"] = round(area, 2) if not np.isnan(area) else None
 
                     # Calcular H
                     xas_min = row.get("Xas min", None)
@@ -375,13 +390,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                         if not np.isnan(area_as) and area_as != 0:
                             h_calc = (area * has) / area_as
-                            df_updated.at[i, "H"] = round(h_calc, 2)
-
-                except Exception:
+                            df_final.at[i, "H"] = round(h_calc, 2)
+                except:
                     continue
 
-            # Guardar versión final en Firebase
-            doc_ref.set({"filas": df_updated.to_dict(orient="records")})
+            # Guardar con valores actualizados
+            doc_ref.set({"filas": df_final.to_dict(orient="records")})
+
 
 
 

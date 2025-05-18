@@ -26,7 +26,7 @@ def obtener_espectros_para_muestra(db, nombre):
         st.session_state[clave] = [doc.to_dict() for doc in docs]
     return st.session_state[clave]
 
-def render_tab6(db, cargar_muestras, mostrar_sector_flotante):
+def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.session_state["current_tab"] = "Análisis RMN 1H"
     muestras = cargar_muestras(db)
     if not muestras:
@@ -699,4 +699,4 @@ def render_tab6(db, cargar_muestras, mostrar_sector_flotante):
             with open(zip_path, "rb") as final_zip:
                 st.download_button("📦 Descargar imágenes RMN", data=final_zip.read(), file_name=os.path.basename(zip_path), mime="application/zip")
 
-    mostrar_sector_flotante(db, key_suffix="tab6")
+    mostrar_sector_flotante(db, key_suffix="tab9")

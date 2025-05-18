@@ -265,7 +265,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         # --- Tabla integral editable con botón de recálculo ---
-        st.markdown("### 🧮 Edición manual de señales")
+        #st.markdown("### 🧮 Edición manual de señales")
         activar_edicion = st.checkbox("Edición de señales", value=False)
 
         if activar_edicion:
@@ -293,7 +293,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             df_integral = df_integral[columnas_integral]
 
             # Mostrar editor
-            st.markdown('<span style="color:red"><b>🔁 Recalcular afecta columnas: Área y H</b></span>', unsafe_allow_html=True)
+            #st.markdown('<span style="color:red"><b>🔁 Recalcular afecta columnas: Área y H</b></span>', unsafe_allow_html=True)
 
             df_integral_edit = st.data_editor(
                 df_integral,

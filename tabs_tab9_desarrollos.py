@@ -117,7 +117,8 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                         df = pd.read_csv(binario, sep=sep, header=None)
                         if df.shape[1] >= 2:
                             break
-                    except: continue
+                    except: 
+                        continue
                 else:
                     df = None
             if df is not None and df.shape[1] >= 2:
@@ -154,6 +155,53 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     df_sel = df_filtrado[df_filtrado["id"].isin(seleccionados)]
 
     mostrar_linea_base = st.checkbox("Mostrar línea base (y = 0)", value=True)
+
+    # --- Generación de tabla editable con anotaciones ---
+    columnas_tabla = [
+        "Muestra", "Tipo", "δ pico", "X min", "X max", "Área", "D", "T2",
+        "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"
+    ]
+
+    if "tabla_rmn1h" not in st.session_state:
+        filas = []
+        for _, row in df_sel.iterrows():
+            df = row["df"].sort_values(by="x")
+            x = df["x"].values
+            y = df["y"].values
+            if x[0] < x[-1]:
+                x = x[::-1]
+                y = y[::-1]
+            peaks, _ = find_peaks(y, height=np.mean(y) + np.std(y))
+            for p in peaks:
+                if p <= 0 or p >= len(x)-1:
+                    continue
+                delta = x[p]
+                left = max(0, p - 20)
+                right = min(len(x) - 1, p + 20)
+                area = trapz(y[left:right], x[left:right])
+                filas.append({
+                    "Muestra": row["muestra"],
+                    "Tipo": row["tipo"],
+                    "δ pico": round(delta, 2),
+                    "X min": round(x[left], 2),
+                    "X max": round(x[right], 2),
+                    "Área": round(area, 2),
+                    "D": "", "T2": "",
+                    "Xas min": round(x[left], 2),
+                    "Xas max": round(x[right], 2),
+                    "Has": 1, "H": 1,
+                    "Observaciones": "",
+                    "Archivo": row["archivo"]
+                })
+        st.session_state.tabla_rmn1h = pd.DataFrame(filas)
+
+    st.subheader("📝 Edición manual de señales")
+    st.data_editor(
+        st.session_state.tabla_rmn1h,
+        use_container_width=True,
+        hide_index=True,
+        key="editor_tabla_rmn1h"
+    )
 
    # --- Tabla editable de señales ---
     st.subheader("📝 Tabla editable de señales detectadas")

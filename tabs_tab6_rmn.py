@@ -398,9 +398,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 st.rerun()
 
         # Exportar a Excel
-        import io
-        import pandas as pd
-
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
             df_final.to_excel(writer, index=False, sheet_name="Integrales_RMN")

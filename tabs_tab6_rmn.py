@@ -388,11 +388,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         df_final.at[i, "H"] = round(h_calc, 2)
 
                     # Opcional: trazado visual de zonas
-                    # fig, ax = plt.subplots(figsize=(8, 3))
-                    # ax.plot(df_espectro[col_x], df_espectro[col_y], color="gray")
-                    # ax.axvspan(min(x_min, x_max), max(x_min, x_max), color='blue', alpha=0.2)
-                    # ax.axvspan(min(xas_min, xas_max), max(xas_min, xas_max), color='orange', alpha=0.3)
-                    # ax.invert_xaxis(); st.pyplot(fig)
+                    fig, ax = plt.subplots(figsize=(8, 3))
+                    ax.plot(df_espectro[col_x], df_espectro[col_y], color="gray")
+                    ax.axvspan(min(x_min, x_max), max(x_min, x_max), color='blue', alpha=0.2)
+                    ax.axvspan(min(xas_min, xas_max), max(xas_min, xas_max), color='orange', alpha=0.3)
+                    ax.invert_xaxis(); st.pyplot(fig)
 
                 except Exception as e:
                     st.warning(f"⚠️ Error en fila {i}: {e}")

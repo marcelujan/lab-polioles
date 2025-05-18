@@ -261,20 +261,26 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.subheader("🧾 Tabla de máscaras aplicadas")
             st.dataframe(df_editable, use_container_width=True)
 
-        # --- Tabla integral editable con selección restringida ---
+        # --- Tabla integral editable con persistencia ---
         st.markdown("### 🧮 Edición manual de señales")
         activar_edicion = st.checkbox("Edición de señales", value=False)
 
         if activar_edicion:
             columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                                 "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"]
-
+            
             grupos_funcionales = [
                 "Glicerol medio", "Glicerol extremos", "OH", "C=C",
                 "Epóxido", "Éter", "Ester", "Ácido carboxílico", "Formiato"
             ]
 
-            filas_iniciales = [{"Muestra": muestra, "Grupo funcional": ""} for muestra in muestras_sel] if muestras_sel else [{}]
+            doc_ref = db.collection("tablas_integrales").document("rmn1h")
+            if not doc_ref.get().exists:
+                filas_iniciales = [{"Muestra": m, "Grupo funcional": ""} for m in muestras_sel]
+                doc_ref.set({"filas": filas_iniciales})
+            else:
+                filas_iniciales = doc_ref.get().to_dict().get("filas", [])
+
             df_integral = pd.DataFrame(filas_iniciales, columns=columnas_integral)
 
             df_integral_edit = st.data_editor(
@@ -299,23 +305,19 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 key="tabla_integral_edicion"
             )
 
-            # --- Autocompletar Archivo y calcular Área ---
+            # Autocompletar 'Archivo' y calcular 'Área'
             for i, row in df_integral_edit.iterrows():
                 try:
                     nombre_muestra = row.get("Muestra", None)
                     x_min = row.get("X min", None)
                     x_max = row.get("X max", None)
-
                     if not nombre_muestra or pd.isna(x_min) or pd.isna(x_max):
                         continue
 
-                    # Buscar espectros asociados a la muestra seleccionada
                     espectros_muestra = df_rmn1H[df_rmn1H["muestra"] == nombre_muestra]
-
                     if espectros_muestra.empty:
                         continue
 
-                    # Si no hay archivo definido, usar el primero disponible
                     archivo = row.get("Archivo", "")
                     if not archivo or archivo not in list(espectros_muestra["archivo"]):
                         archivo = espectros_muestra.iloc[0]["archivo"]
@@ -351,7 +353,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_integral_edit.at[i, "Área"] = round(area, 2)
 
                 except Exception as e:
-                    continue  # evitar errores por filas incompletas o espectros malformados
+                    continue  # Ignorar errores para filas incompletas
+
+            # Guardar versión final en Firebase
+            doc_ref.set({"filas": df_integral_edit.to_dict(orient="records")})
+            st.dataframe(df_integral_edit, use_container_width=True)
 
 
 

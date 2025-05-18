@@ -282,6 +282,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 filas_iniciales = doc_ref.get().to_dict().get("filas", [])
 
             df_integral = pd.DataFrame(filas_iniciales, columns=columnas_integral)
+            df_integral["Observaciones"] = df_integral["Observaciones"].astype(str)
 
             df_integral_edit = st.data_editor(
                 df_integral,

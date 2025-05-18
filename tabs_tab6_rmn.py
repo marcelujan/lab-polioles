@@ -398,7 +398,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                 doc_ref.set({"filas": df_final.to_dict(orient="records")})
                 st.success("Cálculos actualizados correctamente.")
-                st.experimental_rerun()
+                st.rerun()
 
 
 

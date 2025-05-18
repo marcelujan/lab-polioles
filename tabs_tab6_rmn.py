@@ -266,8 +266,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     activar_edicion = st.checkbox("Edición de señales", value=False)
 
     if activar_edicion:
-        columnas_integral = ["Muestra", "Tipo", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"]
-        df_integral = pd.DataFrame(columns=columnas_integral)
+        columnas_integral = ["Muestra", "Tipo", "δ pico", "X min", "X max", "Área", "D", "T2",
+                            "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"]
+
+        # Inicializar tabla con las muestras seleccionadas
+        filas_iniciales = [{"Muestra": muestra} for muestra in muestras_sel] if muestras_sel else [{}]
+        df_integral = pd.DataFrame(filas_iniciales, columns=columnas_integral)
 
         df_integral_edit = st.data_editor(
             df_integral,
@@ -288,6 +292,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             num_rows="dynamic",
             key="tabla_integral_edicion"
         )
+
 
         # --- Tabla nueva debajo del gráfico RMN 1H ---
         tabla_path_rmn1h = "tabla_editable_rmn1h"

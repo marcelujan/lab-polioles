@@ -259,7 +259,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if filas_mascaras:
             df_editable = pd.DataFrame(filas_mascaras)
             st.subheader("🧾 Tabla de máscaras aplicadas")
-            st.dataframe(df_editable, use_container_width=True)
+            st.dataframe(df_editable, use_container_width=True, hide_index=True)
 
         # --- Tabla integral editable con persistencia ---
         st.markdown("### 🧮 Edición manual de señales")
@@ -357,7 +357,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
             # Guardar versión final en Firebase
             doc_ref.set({"filas": df_integral_edit.to_dict(orient="records")})
-            st.dataframe(df_integral_edit, use_container_width=True)
+    #para eliminar        st.dataframe(df_integral_edit, use_container_width=True)
 
 
 

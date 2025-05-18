@@ -397,6 +397,22 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 doc_ref.set({"filas": df_final.to_dict(orient="records")})
                 st.rerun()
 
+        # Exportar a Excel
+        import io
+        import pandas as pd
+
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            df_final.to_excel(writer, index=False, sheet_name="Integrales_RMN")
+            writer.save()
+
+        st.download_button(
+            label="📥 Descargar integrales en Excel",
+            data=excel_buffer.getvalue(),
+            file_name="integrales_rmn1h.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
 
 
 

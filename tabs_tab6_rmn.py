@@ -366,6 +366,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
                     df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
                     df_espectro = df_espectro.dropna()
+                    df_espectro = df_espectro.sort_values(by=col_x)
 
                     # Calcular Área principal
                     df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]

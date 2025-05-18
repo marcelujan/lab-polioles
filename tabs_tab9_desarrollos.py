@@ -8,7 +8,7 @@ import base64
 from io import BytesIO
 from datetime import datetime
 from scipy.signal import find_peaks
-from scipy.integrate import trapz
+from numpy import trapezoid as trapz
 
 import os
 import zipfile

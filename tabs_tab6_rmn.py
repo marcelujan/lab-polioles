@@ -308,12 +308,14 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 key="tabla_integral_edicion"
             )
 
-            # Autocompletar 'Archivo' y calcular 'Área'
-            for i, row in df_integral_edit.iterrows():
+            # 🔁 Recalcular 'Área' y 'H' después de edición
+            df_updated = df_integral_edit.copy()
+            for i, row in df_updated.iterrows():
                 try:
                     nombre_muestra = row.get("Muestra", None)
                     x_min = row.get("X min", None)
                     x_max = row.get("X max", None)
+
                     if not nombre_muestra or pd.isna(x_min) or pd.isna(x_max):
                         continue
 
@@ -324,7 +326,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     archivo = row.get("Archivo", "")
                     if not archivo or archivo not in list(espectros_muestra["archivo"]):
                         archivo = espectros_muestra.iloc[0]["archivo"]
-                        df_integral_edit.at[i, "Archivo"] = archivo
+                        df_updated.at[i, "Archivo"] = archivo
 
                     espectro_row = espectros_muestra[espectros_muestra["archivo"] == archivo].iloc[0]
                     contenido = BytesIO(base64.b64decode(espectro_row["contenido"]))
@@ -350,16 +352,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
                     df_espectro = df_espectro.dropna()
 
+                    # Calcular área principal
                     df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
                     area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else np.nan
+                    df_updated.at[i, "Área"] = round(area, 2) if not np.isnan(area) else None
 
-                    df_integral_edit.at[i, "Área"] = round(area, 2)
-
-                except Exception as e:
-                    continue  # Ignorar errores para filas incompletas
-
-                # Calcular H si hay datos suficientes
-                try:
+                    # Calcular H
                     xas_min = row.get("Xas min", None)
                     xas_max = row.get("Xas max", None)
                     has = row.get("Has", None)
@@ -370,14 +368,16 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                         if not np.isnan(area_as) and area_as != 0:
                             h_calc = (area * has) / area_as
-                            df_integral_edit.at[i, "H"] = round(h_calc, 2)
-                except:
-                    pass
+                            df_updated.at[i, "H"] = round(h_calc, 2)
 
+                except Exception:
+                    continue
 
             # Guardar versión final en Firebase
-            doc_ref.set({"filas": df_integral_edit.to_dict(orient="records")})
-    #para eliminar        st.dataframe(df_integral_edit, use_container_width=True)
+            doc_ref.set({"filas": df_updated.to_dict(orient="records")})
+
+
+
 
 
 

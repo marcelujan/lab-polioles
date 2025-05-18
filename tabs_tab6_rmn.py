@@ -299,6 +299,46 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 key="tabla_integral_edicion"
             )
 
+            # --- Cálculo automático de Área entre X min y X max ---
+            for i, row in df_integral_edit.iterrows():
+                try:
+                    nombre_muestra = row["Muestra"]
+                    archivo = row["Archivo"]
+                    x_min = float(row["X min"])
+                    x_max = float(row["X max"])
+
+                    espectro_row = df_rmn1H[(df_rmn1H["muestra"] == nombre_muestra) & (df_rmn1H["archivo"] == archivo)].iloc[0]
+                    contenido = BytesIO(base64.b64decode(espectro_row["contenido"]))
+                    extension = os.path.splitext(archivo)[1].lower()
+
+                    if extension == ".xlsx":
+                        df_espectro = pd.read_excel(contenido)
+                    else:
+                        sep_try = [",", ";", "\t", " "]
+                        for sep in sep_try:
+                            contenido.seek(0)
+                            try:
+                                df_espectro = pd.read_csv(contenido, sep=sep, engine="python")
+                                if df_espectro.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            continue  # No se pudo leer el archivo
+
+                    col_x, col_y = df_espectro.columns[:2]
+                    df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
+                    df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
+                    df_espectro = df_espectro.dropna()
+
+                    df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
+                    area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else np.nan
+
+                    df_integral_edit.at[i, "Área"] = round(area, 2)
+
+                except Exception as e:
+                    continue  # Si hay error, dejar la celda como está
+
 
         # --- Tabla nueva debajo del gráfico RMN 1H ---
         tabla_path_rmn1h = "tabla_editable_rmn1h"

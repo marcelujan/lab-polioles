@@ -379,6 +379,17 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else np.nan
                     df_final.at[i, "Área"] = round(area, 2) if not np.isnan(area) else None
 
+                    st.write(f"Fila {i}")
+                    st.write(f"Muestra: {row.get('Muestra')}")
+                    st.write(f"Archivo: {row.get('Archivo')}")
+                    st.write(f"Xas min: {row.get('Xas min')} (tipo {type(row.get('Xas min'))})")
+                    st.write(f"Xas max: {row.get('Xas max')} (tipo {type(row.get('Xas max'))})")
+                    st.write(f"Has: {row.get('Has')} (tipo {type(row.get('Has'))})")
+                    st.write(f"Área entre Xas min y Xas max: {area_as}")
+                    st.write(f"Área entre X min y X max: {area}")
+                    st.write(f"H calculado: {(area * has) / area_as if area_as != 0 else '∞'}")
+
+
                     # Calcular H
                     try:
                         has = float(row.get("Has", None))

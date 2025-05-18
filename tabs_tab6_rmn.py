@@ -261,6 +261,33 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.subheader("🧾 Tabla de máscaras aplicadas")
             st.dataframe(df_editable, use_container_width=True)
 
+    # --- Tabla integral editable con checkbox ---
+    st.markdown("### 🧮 Edición manual de señales")
+    activar_edicion = st.checkbox("Edición de señales", value=False)
+
+    if activar_edicion:
+        columnas_integral = ["Muestra", "Tipo", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Has", "H", "Observaciones", "Archivo"]
+        df_integral = pd.DataFrame(columns=columnas_integral)
+
+        df_integral_edit = st.data_editor(
+            df_integral,
+            column_config={
+                "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                "X min": st.column_config.NumberColumn(format="%.2f"),
+                "X max": st.column_config.NumberColumn(format="%.2f"),
+                "Área": st.column_config.NumberColumn(format="%.2f"),
+                "D": st.column_config.NumberColumn(format="%.2e"),
+                "T2": st.column_config.NumberColumn(format="%.3f"),
+                "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                "Has": st.column_config.NumberColumn(format="%.2f"),
+                "H": st.column_config.NumberColumn(format="%.2f"),
+            },
+            hide_index=True,
+            use_container_width=True,
+            num_rows="dynamic",
+            key="tabla_integral_edicion"
+        )
 
         # --- Tabla nueva debajo del gráfico RMN 1H ---
         tabla_path_rmn1h = "tabla_editable_rmn1h"

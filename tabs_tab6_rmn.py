@@ -380,17 +380,20 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_final.at[i, "Área"] = round(area, 2) if not np.isnan(area) else None
 
                     # Calcular H
-                    xas_min = row.get("Xas min", None)
-                    xas_max = row.get("Xas max", None)
-                    has = row.get("Has", None)
+                    try:
+                        has = float(row.get("Has", None))
+                        xas_min = float(row.get("Xas min", None))
+                        xas_max = float(row.get("Xas max", None))
+                    except (TypeError, ValueError):
+                        continue
 
-                    if not pd.isna(xas_min) and not pd.isna(xas_max) and not pd.isna(has):
-                        df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
-                        area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else np.nan
+                    df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
+                    area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else np.nan
 
-                        if not np.isnan(area_as) and area_as != 0:
-                            h_calc = (area * has) / area_as
-                            df_final.at[i, "H"] = round(h_calc, 2)
+                    if not np.isnan(area_as) and area_as != 0:
+                        h_calc = (area * has) / area_as
+                        df_final.at[i, "H"] = round(h_calc, 2)
+
                 except:
                     continue
 

@@ -299,6 +299,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     "Has": st.column_config.NumberColumn(format="%.2f"),
                     "H": st.column_config.NumberColumn(format="%.2f"),
                     "Observaciones": st.column_config.TextColumn(),
+                    "Archivo": st.column_config.TextColumn(),
                 },
                 hide_index=True,
                 use_container_width=True,

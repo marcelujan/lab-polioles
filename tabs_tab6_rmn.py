@@ -77,17 +77,17 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     "id": f"{m['nombre']}__{i}"
                 })
 
-    df_rmn = pd.DataFrame(espectros_rmn)
+    df_rmn1H = pd.DataFrame(espectros_rmn)
 
     st.subheader("Filtrar espectros")
-    if df_rmn.empty or "muestra" not in df_rmn.columns:
+    if df_rmn1H.empty or "muestra" not in df_rmn1H.columns:
         st.warning("No hay espectros RMN disponibles.")
         st.stop()
-    muestras_disp = sorted(df_rmn["muestra"].unique())
+    muestras_disp = sorted(df_rmn1H["muestra"].unique())
     muestras_sel = st.multiselect("Muestras", muestras_disp, default=[])
     st.session_state["muestra_activa"] = muestras_sel[0] if len(muestras_sel) == 1 else None
 
-    df_filtrado = df_rmn[df_rmn["muestra"].isin(muestras_sel)]
+    df_filtrado = df_rmn1H[df_rmn1H["muestra"].isin(muestras_sel)]
 
     espectros_info = [
         {"id": row["id"], "nombre": f"{row['muestra']} – {row['archivo']}"}

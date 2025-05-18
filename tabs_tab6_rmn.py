@@ -22,6 +22,35 @@ def obtener_espectros_para_muestra(db, nombre):
         st.session_state[clave] = [doc.to_dict() for doc in docs]
     return st.session_state[clave]
 
+def graficar_mascaras(df, col_x, col_y, lista_mascaras, ax, color):
+    """Grafica máscaras sobre un espectro y devuelve las máscaras válidas y advertencias."""
+    filas = []
+    advertencias = []
+    for mascara in lista_mascaras:
+        x0 = mascara.get("x_min")
+        x1 = mascara.get("x_max")
+        d = mascara.get("difusividad")
+        t2 = mascara.get("t2")
+        obs = mascara.get("observacion", "")
+
+        sub_df = df[(df[col_x] >= min(x0, x1)) & (df[col_x] <= max(x0, x1))]
+        if sub_df.empty:
+            advertencias.append(f"⚠️ Sin datos en rango {x0}–{x1} ppm")
+            continue
+
+        area = np.trapz(sub_df[col_y], sub_df[col_x])
+        ax.axvspan(x0, x1, color=color, alpha=0.3)
+
+        if d and t2:
+            ax.text((x0+x1)/2, max(df[col_y])*0.9,
+                    f"D={d:.1e}     T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
+
+        filas.append({
+            "x_min": x0, "x_max": x1, "D": d, "T2": t2, "Área": area, "Obs": obs
+        })
+
+    return filas, advertencias
+
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Análisis RMN")
     st.session_state["current_tab"] = "Análisis RMN"
@@ -163,47 +192,36 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
                     df = df.dropna()
 
-                    # Calcular área de asignación H
+                    # Calcular área de referencia H
                     df_h = df[(df[col_x] >= h_config["Xmin"]) & (df[col_x] <= h_config["Xmax"])]
                     integracion_h = np.trapz(df_h[col_y], df_h[col_x]) if not df_h.empty else np.nan
-                    nuevas_mascaras = []
-                    for j, mascara in enumerate(row.get("mascaras", [])):
-                        x0 = mascara.get("x_min")
-                        x1 = mascara.get("x_max")
-                        d = mascara.get("difusividad")
-                        t2 = mascara.get("t2")
-                        obs = mascara.get("observacion", "")
 
-                        sub_df = df[(df[col_x] >= min(x0, x1)) & (df[col_x] <= max(x0, x1))]
-                        area = np.trapz(sub_df[col_y], sub_df[col_x]) if not sub_df.empty else 0
-                        h = (area * h_config["H"]) / integracion_h if integracion_h else np.nan
+                    # Aplicar máscaras y graficar
+                    filas, advertencias = graficar_mascaras(df, col_x, col_y, row.get("mascaras", []), ax, color)
 
-                        ax.axvspan(x0, x1, color=color, alpha=0.3)
-                        if d and t2:
-                            ax.text((x0+x1)/2, max(df[col_y])*0.9,
-                                    f"D={d:.1e}     T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
-                        nuevas_mascaras.append({
-                            "difusividad": d,
-                            "t2": t2,
-                            "x_min": x0,
-                            "x_max": x1,
-                            "observacion": obs
-                        })
+                    for f in filas:
+                        h = (f["Área"] * h_config["H"]) / integracion_h if integracion_h else np.nan
                         filas_mascaras.append({
                             "ID espectro": row["id"],
                             "Muestra": row["muestra"],
                             "Archivo": row["archivo"],
-                            "D [m2/s]": d,
-                            "T2 [s]": t2,
-                            "Xmin [ppm]": round(x0, 2),
-                            "Xmax [ppm]": round(x1, 2),
-                            "Área": round(area, 2),
+                            "D [m2/s]": f["D"],
+                            "T2 [s]": f["T2"],
+                            "Xmin [ppm]": round(f["x_min"], 2),
+                            "Xmax [ppm]": round(f["x_max"], 2),
+                            "Área": round(f["Área"], 2),
                             "H": round(h, 2) if not np.isnan(h) else "—",
-                            "Observación": obs
+                            "Observación": f["Obs"]
                         })
-                    mapa_mascaras[row["id"]] = nuevas_mascaras
-                except:
-                    continue
+
+                    for advertencia in advertencias:
+                        st.warning(f"{row['muestra']} – {row['archivo']}: {advertencia}")
+
+                    mapa_mascaras[row["id"]] = row.get("mascaras", [])
+
+                except Exception as e:
+                    st.warning(f"No se pudo procesar espectro: {row['archivo']}")
+
 
             df_editable = pd.DataFrame(filas_mascaras)
             df_editable_display = st.data_editor(

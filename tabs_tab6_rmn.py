@@ -353,21 +353,21 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             doc_ref.set({"filas": df_final.to_dict(orient="records")})
 
 
-        # ---- Mostrar botón de descarga siempre con últimos datos guardados ----
-        doc_ref = db.collection("tablas_integrales").document("rmn1h")
-        filas_guardadas = doc_ref.get().to_dict().get("filas", [])
-        df_export = pd.DataFrame(filas_guardadas)
-        if not df_export.empty:
-            excel_buffer = io.BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                df_export.to_excel(writer, index=False, sheet_name="Integrales_RMN")
+            # ---- Mostrar botón de descarga siempre con últimos datos guardados ----
+            doc_ref = db.collection("tablas_integrales").document("rmn1h")
+            filas_guardadas = doc_ref.get().to_dict().get("filas", [])
+            df_export = pd.DataFrame(filas_guardadas)
+            if not df_export.empty:
+                excel_buffer = io.BytesIO()
+                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                    df_export.to_excel(writer, index=False, sheet_name="Integrales_RMN")
 
-            st.download_button(
-                label="📥 Descargar integrales en Excel",
-                data=excel_buffer.getvalue(),
-                file_name="RMN1H_Mascaras.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+                st.download_button(
+                    label="📥 Descargar integrales en Excel",
+                    data=excel_buffer.getvalue(),
+                    file_name="RMN1H_Mascaras.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
 
 
@@ -437,7 +437,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         # --- Formulario de edición y botón limpio ---
-        activar_edicion = st.checkbox("Edición de señales", value=False)
+        activar_edicion = st.checkbox("Cálculos de señales", value=False)
 
         if activar_edicion:
             columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",

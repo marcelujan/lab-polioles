@@ -257,7 +257,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         # --- Tabla D/T2 cuantificable editable ---
-        if "D/T2" in st.session_state.get("mascaras_activas", []):
+        if any(usar_mascara.values()):
             st.markdown("### 🧬 Asignación cuantificable por D/T2")
             doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
             if not doc_dt2.get().exists:
@@ -437,7 +437,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         # --- Formulario de edición y botón limpio ---
-        activar_edicion = st.checkbox("Cálculos de señales", value=False)
+        activar_edicion = st.checkbox("Cálculo de señales", value=False)
 
         if activar_edicion:
             columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",

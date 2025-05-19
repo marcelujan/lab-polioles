@@ -394,10 +394,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
         st.download_button("📷 Descargar gráfico RMN 1H", data=buffer_img.getvalue(), file_name="grafico_rmn1h.png", mime="image/png")            
 
-   #     if filas_mascaras:
-    #        df_editable = pd.DataFrame(filas_mascaras)
-     #       st.subheader("🧾 Tabla de máscaras aplicadas")
-      #      st.dataframe(df_editable, use_container_width=True, hide_index=True)
+
+
 
 
 

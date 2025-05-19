@@ -485,7 +485,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_integral,
                     column_config={
                         "Muestra": st.column_config.SelectboxColumn(options=muestras_sel, required=True),
-                        "Grupo funcional": st.column_config.SelectboxColumn(options=grupos_funcionales),
+                        "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
                         "δ pico": st.column_config.NumberColumn(format="%.2f"),
                         "X min": st.column_config.NumberColumn(format="%.2f"),
                         "X max": st.column_config.NumberColumn(format="%.2f"),

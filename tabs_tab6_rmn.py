@@ -118,7 +118,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         activar_mascara = st.checkbox("Máscara D/T2", value=False)
         usar_mascara = {}
         if activar_mascara:
-            st.markdown("<div style='margin-left: 1rem;'>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-left: 2rem; padding-bottom: 0.5rem;'>", unsafe_allow_html=True)
             col_checkboxes = st.columns(len(df_rmn1H))
             for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
                 with col_checkboxes[idx]:

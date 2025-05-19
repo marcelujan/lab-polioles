@@ -352,16 +352,21 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
             doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
 
-            # Sincronizar campos en tabla principal
-            if "df_final" in locals():
+            # --- Sincronización con tabla principal (por Muestra + Archivo + Grupo funcional) ---
+            if 'df_final' in locals():
                 for i, fila in df_dt2_edit.iterrows():
+                    clave_dt2 = f"{fila.get('Muestra')}|{fila.get('Archivo')}|{fila.get('Grupo funcional')}"
                     for j, base_row in df_final.iterrows():
-                        if (base_row.get("Muestra") == fila.get("Muestra") and
-                            base_row.get("Archivo") == fila.get("Archivo")):
+                        clave_final = f"{base_row.get('Muestra')}|{base_row.get('Archivo')}|{base_row.get('Grupo funcional')}"
+                        if clave_dt2 == clave_final:
                             df_final.at[j, "Grupo funcional"] = fila.get("Grupo funcional")
                             df_final.at[j, "Observaciones"] = fila.get("Observaciones")
+
                 doc_ref = db.collection("tablas_integrales").document("rmn1h")
                 doc_ref.set({"filas": df_final.to_dict(orient="records")})
+
+
+
 
 
 

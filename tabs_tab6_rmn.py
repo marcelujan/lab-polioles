@@ -133,18 +133,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
 
-        # Mostrar checkbox para cada espectro
-        col_checkboxes = st.columns(len(df_rmn1H)) if activar_mascara else []
-        for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
-            if activar_mascara:
-                with col_checkboxes[idx]:
-                    usar_mascara[row["id"]] = st.checkbox(
-                        f"{row['muestra']}",
-                        value=False,
-                        key=f"chk_mask_{row['id']}_{idx}"
-                    )
-            else:
-                usar_mascara[row["id"]] = False
 
         # Graficar todos los espectros seleccionados
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):

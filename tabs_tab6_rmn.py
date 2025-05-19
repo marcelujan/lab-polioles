@@ -122,8 +122,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         with col_calc:
             activar_calculos = st.checkbox("Cálculos D/T2", value=False)
         usar_mascara = {}
-     #   colores = plt.cm.tab10.colors
-    #    fig, ax = plt.subplots()
+        colores = plt.cm.tab10.colors
+        fig, ax = plt.subplots()
 
         # Mostrar checkbox para cada espectro
         col_checkboxes = st.columns(len(df_rmn1H)) if activar_mascara else []

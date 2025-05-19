@@ -161,10 +161,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # --- Tabla D/T2 cuantificable editable ---
         if any(usar_mascara.values()):
-            st.markdown("### 🧬 Asignación cuantificable por D/T2")
-
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", 
-                            "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
+                            "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
 
             doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
             doc_data = doc_dt2.get().to_dict() or {}
@@ -184,14 +182,14 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         "δ pico": st.column_config.NumberColumn(format="%.2f"),
                         "X min": st.column_config.NumberColumn(format="%.2f"),
                         "X max": st.column_config.NumberColumn(format="%.2f"),
-                        "Área": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                        "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
                         "D": st.column_config.NumberColumn(format="%.2e"),
                         "T2": st.column_config.NumberColumn(format="%.3f"),
                         "Xas min": st.column_config.NumberColumn(format="%.2f"),
                         "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                        "Área as": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                        "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
                         "Has": st.column_config.NumberColumn(format="%.2f"),
-                        "H": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                        "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
                         "Observaciones": st.column_config.TextColumn(),
                     },
                     hide_index=True,
@@ -200,7 +198,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     key="tabla_dt2_cuantificable"
                 )
 
-                recalcular = st.form_submit_button("🔁 Recalcular área y H")
+                recalcular = st.form_submit_button("🔴Recalcular Área, Área as y H", type="primary")
 
             if recalcular:
                 for i, row in df_dt2_edit.iterrows():

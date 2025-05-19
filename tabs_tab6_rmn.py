@@ -263,7 +263,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         # --- Tabla D/T2 cuantificable editable ---
-         # --- Tabla D/T2 cuantificable editable con botón de recálculo --- 
         if any(usar_mascara.values()):
             st.markdown("### 🧬 Asignación cuantificable por D/T2")
 
@@ -313,9 +312,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         archivo = row.get("Archivo")
                         x_min = float(row.get("X min"))
                         x_max = float(row.get("X max"))
-                        xas_min = float(row.get("Xas min", None))
-                        xas_max = float(row.get("Xas max", None))
-                        has = float(row.get("Has", None))
+                        try:
+                            xas_min = float(row.get("Xas min")) if row.get("Xas min") not in [None, ""] else None
+                            xas_max = float(row.get("Xas max")) if row.get("Xas max") not in [None, ""] else None
+                            has = float(row.get("Has")) if row.get("Has") not in [None, ""] else None
+                        except ValueError:
+                            xas_min = xas_max = has = None
 
                         espectros_muestra = df_rmn1H[df_rmn1H["muestra"] == nombre_muestra]
                         if espectros_muestra.empty:
@@ -348,17 +350,20 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
                         df_espectro = df_espectro.dropna().sort_values(by=col_x)
 
+                        # Cálculo área total
                         df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
                         area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else None
                         df_dt2_edit.at[i, "Área"] = round(area, 2) if area is not None else None
 
-                        df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
-                        area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else None
-                        df_dt2_edit.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
+                        # Cálculo área as y H
+                        if xas_min is not None and xas_max is not None:
+                            df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
+                            area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else None
+                            df_dt2_edit.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
 
-                        if area and area_as and area_as != 0 and has:
-                            h_calc = (area * has) / area_as
-                            df_dt2_edit.at[i, "H"] = round(h_calc, 2)
+                            if area_as and has and area_as != 0 and area:
+                                h_calc = (area * has) / area_as
+                                df_dt2_edit.at[i, "H"] = round(h_calc, 2)
 
                     except Exception as e:
                         st.warning(f"⚠️ Error en fila {i}: {e}")

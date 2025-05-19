@@ -198,7 +198,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     key="tabla_dt2_cuantificable"
                 )
 
-                recalcular = st.form_submit_button("🔴Recalcular Área, Área as y H")
+                recalcular = st.form_submit_button("🔴Recalcular 'Área', 'Área as' y 'H'")
 
             if recalcular:
                 for i, row in df_dt2_edit.iterrows():
@@ -381,7 +381,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     key="tabla_integral_edicion"
                 )
 
-                recalcular = st.form_submit_button("🔴Recalcular Área, Área as y H")
+                recalcular = st.form_submit_button("🔴Recalcular 'Área', 'Área as' y 'H'")
 
             if recalcular:
                 doc_ref.set({"filas": df_integral_edit.to_dict(orient="records")})

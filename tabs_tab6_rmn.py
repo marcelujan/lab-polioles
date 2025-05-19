@@ -176,7 +176,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if activar_calculos:
             if any(usar_mascara.values()):
                 mascaras = row.get("mascaras", [])
-                graficar_mascaras(df, col_x, col_y, mascaras, ax, color)
                 columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", 
                                 "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
 

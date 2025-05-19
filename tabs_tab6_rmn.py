@@ -116,6 +116,18 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
         activar_mascara = st.checkbox("Máscara D/T2", value=False)
+        if activar_mascara:
+            st.markdown("<div style='margin-left: 1rem;'>", unsafe_allow_html=True)
+            col_checkboxes = st.columns(len(df_rmn1H))
+            for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
+                with col_checkboxes[idx]:
+                    usar_mascara[row["id"]] = st.checkbox(
+                        f"{row['muestra']}",
+                        value=False,
+                        key=f"chk_mask_{row['id']}_{idx}"
+                    )
+            st.markdown("</div>", unsafe_allow_html=True)
+        
         activar_calculos = st.checkbox("Cálculos D/T2", value=False)
         usar_mascara = {}
         colores = plt.cm.tab10.colors

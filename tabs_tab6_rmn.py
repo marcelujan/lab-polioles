@@ -268,28 +268,30 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             doc_dt2_snapshot = doc_dt2.get()
             filas_dt2_actual = []
 
-            if not doc_dt2_snapshot.exists:
-                # Crear nuevo documento desde máscaras seleccionadas
-                for _, row in df_sel.iterrows():
-                    for mascara in row.get("mascaras", []):
-                        if mascara.get("nombre") == "D/T2":
-                            filas_dt2_actual.append({
-                                "Muestra": row["muestra"],
-                                "Archivo": row["archivo"],
-                                "X min": mascara.get("x_min"),
-                                "X max": mascara.get("x_max"),
-                                "D": mascara.get("D"),
-                                "T2": mascara.get("T2"),
-                                "Grupo funcional": "",
-                                "δ pico": None,
-                                "Área": None,
-                                "Área as": None,
-                                "Has": None,
-                                "H": None,
-                                "Xas min": None,
-                                "Xas max": None,
-                                "Observaciones": ""
-                            })
+            # Recolectar espectros activos y sus máscaras D/T2
+            for _, row in df_sel.iterrows():
+                if not usar_mascara.get(row["id"], False):
+                    continue  # solo espectros seleccionados con checkbox
+
+                for mascara in row.get("mascaras", []):
+                    if mascara.get("nombre") == "D/T2":
+                        filas_dt2_actual.append({
+                            "Muestra": row["muestra"],
+                            "Archivo": row["archivo"],
+                            "X min": mascara.get("x_min"),
+                            "X max": mascara.get("x_max"),
+                            "D": mascara.get("D"),
+                            "T2": mascara.get("T2"),
+                            "Grupo funcional": "",
+                            "δ pico": None,
+                            "Área": None,
+                            "Área as": None,
+                            "Has": None,
+                            "H": None,
+                            "Xas min": None,
+                            "Xas max": None,
+                            "Observaciones": ""
+                        })
                 doc_dt2.set({"filas": filas_dt2_actual})
             else:
                 doc_dt2_data = doc_dt2_snapshot.to_dict() or {}

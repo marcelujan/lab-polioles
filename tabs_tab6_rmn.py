@@ -338,7 +338,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         if activar_edicion:
             columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                                "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
+                                "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
 
             doc_ref = db.collection("tablas_integrales").document("rmn1h")
             if not doc_ref.get().exists:

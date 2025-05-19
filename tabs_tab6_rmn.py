@@ -377,71 +377,71 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                 doc_ref = db.collection("tablas_integrales").document("rmn1h")
                 doc_ref.set({"filas": df_final.to_dict(orient="records")})
-                
-        # --- Botón para recalcular área, área as y H en la tabla D/T2 ---
-        with st.form("form_recalculo_dt2"):
-            recalcular_dt2 = st.form_submit_button("🔁 Recalcular área y H", type="primary")
 
-        if recalcular_dt2:
-            for i, row in df_dt2_edit.iterrows():
-                try:
-                    nombre_muestra = row.get("Muestra")
-                    archivo = row.get("Archivo")
-                    x_min = float(row.get("X min"))
-                    x_max = float(row.get("X max"))
-                    xas_min = float(row.get("Xas min", None))
-                    xas_max = float(row.get("Xas max", None))
-                    has = float(row.get("Has", None))
+            # --- Botón para recalcular área, área as y H en la tabla D/T2 ---
+            with st.form("form_recalculo_dt2"):
+                recalcular_dt2 = st.form_submit_button("🔁 Recalcular área y H", type="primary")
 
-                    espectros_muestra = df_rmn1H[df_rmn1H["muestra"] == nombre_muestra]
-                    if espectros_muestra.empty:
-                        continue
+            if recalcular_dt2:
+                for i, row in df_dt2_edit.iterrows():
+                    try:
+                        nombre_muestra = row.get("Muestra")
+                        archivo = row.get("Archivo")
+                        x_min = float(row.get("X min"))
+                        x_max = float(row.get("X max"))
+                        xas_min = float(row.get("Xas min", None))
+                        xas_max = float(row.get("Xas max", None))
+                        has = float(row.get("Has", None))
 
-                    if not archivo or archivo not in list(espectros_muestra["archivo"]):
-                        archivo = espectros_muestra.iloc[0]["archivo"]
-
-                    espectro_row = espectros_muestra[espectros_muestra["archivo"] == archivo].iloc[0]
-                    contenido = BytesIO(base64.b64decode(espectro_row["contenido"]))
-                    extension = os.path.splitext(archivo)[1].lower()
-
-                    if extension == ".xlsx":
-                        df_espectro = pd.read_excel(contenido)
-                    else:
-                        for sep in [",", ";", "\t", " "]:
-                            contenido.seek(0)
-                            try:
-                                df_espectro = pd.read_csv(contenido, sep=sep)
-                                if df_espectro.shape[1] >= 2:
-                                    break
-                            except:
-                                continue
-                        else:
+                        espectros_muestra = df_rmn1H[df_rmn1H["muestra"] == nombre_muestra]
+                        if espectros_muestra.empty:
                             continue
 
-                    col_x, col_y = df_espectro.columns[:2]
-                    df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
-                    df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
-                    df_espectro = df_espectro.dropna().sort_values(by=col_x)
+                        if not archivo or archivo not in list(espectros_muestra["archivo"]):
+                            archivo = espectros_muestra.iloc[0]["archivo"]
 
-                    df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
-                    area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else None
-                    df_dt2_edit.at[i, "Área"] = round(area, 2) if area is not None else None
+                        espectro_row = espectros_muestra[espectros_muestra["archivo"] == archivo].iloc[0]
+                        contenido = BytesIO(base64.b64decode(espectro_row["contenido"]))
+                        extension = os.path.splitext(archivo)[1].lower()
 
-                    df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
-                    area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else None
-                    df_dt2_edit.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
+                        if extension == ".xlsx":
+                            df_espectro = pd.read_excel(contenido)
+                        else:
+                            for sep in [",", ";", "\t", " "]:
+                                contenido.seek(0)
+                                try:
+                                    df_espectro = pd.read_csv(contenido, sep=sep)
+                                    if df_espectro.shape[1] >= 2:
+                                        break
+                                except:
+                                    continue
+                            else:
+                                continue
 
-                    if area and area_as and area_as != 0 and has:
-                        h_calc = (area * has) / area_as
-                        df_dt2_edit.at[i, "H"] = round(h_calc, 2)
+                        col_x, col_y = df_espectro.columns[:2]
+                        df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
+                        df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
+                        df_espectro = df_espectro.dropna().sort_values(by=col_x)
 
-                except Exception as e:
-                    st.warning(f"⚠️ Error en fila {i}: {e}")
+                        df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
+                        area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else None
+                        df_dt2_edit.at[i, "Área"] = round(area, 2) if area is not None else None
 
-            # Guardar ediciones recalculadas en Firebase
-            doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
-            st.success("✅ Área, Área as y H actualizadas correctamente")
-            st.rerun()
+                        df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
+                        area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else None
+                        df_dt2_edit.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
+
+                        if area and area_as and area_as != 0 and has:
+                            h_calc = (area * has) / area_as
+                            df_dt2_edit.at[i, "H"] = round(h_calc, 2)
+
+                    except Exception as e:
+                        st.warning(f"⚠️ Error en fila {i}: {e}")
+
+                # Guardar ediciones recalculadas en Firebase
+                doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
+                st.success("✅ Área, Área as y H actualizadas correctamente")
+                st.rerun()
 
 
 

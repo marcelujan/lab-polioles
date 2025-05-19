@@ -265,13 +265,15 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if any(usar_mascara.values()):
             st.markdown("### 🧬 Asignación cuantificable por D/T2")
             doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
-            if not doc_dt2.get().exists:
-                # Cargar desde los datos de espectros con máscara D/T2
-                filas_dt2 = []
+            doc_dt2_snapshot = doc_dt2.get()
+            filas_dt2_actual = []
+
+            if not doc_dt2_snapshot.exists:
+                # Crear nuevo documento desde máscaras seleccionadas
                 for _, row in df_sel.iterrows():
                     for mascara in row.get("mascaras", []):
                         if mascara.get("nombre") == "D/T2":
-                            filas_dt2.append({
+                            filas_dt2_actual.append({
                                 "Muestra": row["muestra"],
                                 "Archivo": row["archivo"],
                                 "X min": mascara.get("x_min"),
@@ -288,18 +290,17 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                                 "Xas max": None,
                                 "Observaciones": ""
                             })
-                doc_dt2.set({"filas": filas_dt2})
-                doc_dt2_snapshot = doc_dt2.get()
+                doc_dt2.set({"filas": filas_dt2_actual})
+            else:
                 doc_dt2_data = doc_dt2_snapshot.to_dict() or {}
                 filas_dt2_actual = doc_dt2_data.get("filas", [])
 
-                # Forzar regeneración si el documento existe pero está vacío
-                if doc_dt2_snapshot.exists and not filas_dt2_actual:
-                    filas_dt2 = []
+                # Regenerar si estaba vacío
+                if not filas_dt2_actual:
                     for _, row in df_sel.iterrows():
                         for mascara in row.get("mascaras", []):
                             if mascara.get("nombre") == "D/T2":
-                                filas_dt2.append({
+                                filas_dt2_actual.append({
                                     "Muestra": row["muestra"],
                                     "Archivo": row["archivo"],
                                     "X min": mascara.get("x_min"),
@@ -316,8 +317,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                                     "Xas max": None,
                                     "Observaciones": ""
                                 })
-                    doc_dt2.set({"filas": filas_dt2})
-                    filas_dt2_actual = filas_dt2  # actualizar para siguiente paso
+                    doc_dt2.set({"filas": filas_dt2_actual})
 
             df_dt2 = pd.DataFrame(filas_dt2_actual)
 
@@ -353,9 +353,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 key="tabla_dt2_cuantificable"
             )
 
-            # Guardar cambios a Firebase si hay ediciones en campos clave
+            # Guardar ediciones
             doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
-            doc_ref.set({"filas": df_final.to_dict(orient="records")})
+
 
 
             # ---- Mostrar botón de descarga siempre con últimos datos guardados ----

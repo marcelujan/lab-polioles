@@ -287,6 +287,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             doc_dt2_snapshot = doc_dt2.get()
             doc_dt2_data = doc_dt2_snapshot.to_dict() or {}
             filas_dt2_actual = doc_dt2_data.get("filas", [])
+            st.info(f"📄 Filas D/T2 obtenidas: {len(filas_dt2_actual)}")
+            st.dataframe(filas_dt2_actual)
 
             # Forzar regeneración si el documento existe pero no contiene filas
             if doc_dt2.get().exists() and not filas_dt2_actual:
@@ -314,6 +316,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 doc_dt2.set({"filas": filas_dt2})
                 filas_dt2_actual = filas_dt2
                 df_dt2 = pd.DataFrame(filas_dt2_actual)
+                st.write("🧪 df_dt2 preview:")
+                st.dataframe(df_dt2)
 
             #    filas_dt2_actual = doc_dt2.get().to_dict().get("filas", [])
             #    st.info(f"📋 Filas actuales en D/T2: {len(filas_dt2_actual)}")
@@ -329,6 +333,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_dt2[col] = "" if col == "Observaciones" else None
             df_dt2 = df_dt2[columnas_dt2]
 
+            st.warning("⚠️ Renderizando editor dt2")
             df_dt2_edit = st.data_editor(
                 df_dt2,
                 column_config={

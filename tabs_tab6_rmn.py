@@ -388,7 +388,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         ax.legend()
         
         st.pyplot(fig)
-        
+
         # Botón para descargar imagen del gráfico RMN 1H
         buffer_img = BytesIO()
         fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
@@ -553,7 +553,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 )
 
 
-s
 
 
 

@@ -58,6 +58,7 @@ def graficar_mascaras(df, col_x, col_y, lista_mascaras, ax, color):
     return filas, advertencias
 
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
+    global GRUPOS_FUNCIONALES
     st.title("Análisis RMN")
     st.session_state["current_tab"] = "Análisis RMN"
     muestras = cargar_muestras(db)

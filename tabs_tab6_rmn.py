@@ -174,45 +174,45 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Cálculos D/T2 sólo si el checkbox está activado
         if activar_calculos:
-            if any(usar_mascara.values()):
-                columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", 
-                                "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", 
+                            "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
 
-                doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
-                doc_data = doc_dt2.get().to_dict() or {}
-                filas_guardadas = doc_data.get("filas", [])
-                df_dt2 = pd.DataFrame(filas_guardadas)
+            doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
+            doc_data = doc_dt2.get().to_dict() or {}
+            filas_guardadas = doc_data.get("filas", [])
+            df_dt2 = pd.DataFrame(filas_guardadas)
 
-                for col in columnas_dt2:
-                    if col not in df_dt2.columns:
-                        df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
-                df_dt2 = df_dt2[columnas_dt2]
+            for col in columnas_dt2:
+                if col not in df_dt2.columns:
+                    df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
+            df_dt2 = df_dt2[columnas_dt2]
 
-                with st.form("form_edicion_dt2"):
-                    df_dt2_edit = st.data_editor(
-                        df_dt2,
-                        column_config={
-                            "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                            "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                            "X min": st.column_config.NumberColumn(format="%.2f"),
-                            "X max": st.column_config.NumberColumn(format="%.2f"),
-                            "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
-                            "D": st.column_config.NumberColumn(format="%.2e"),
-                            "T2": st.column_config.NumberColumn(format="%.3f"),
-                            "Xas min": st.column_config.NumberColumn(format="%.2f"),
-                            "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                            "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                            "Has": st.column_config.NumberColumn(format="%.2f"),
-                            "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
-                            "Observaciones": st.column_config.TextColumn(),
-                        },
-                        hide_index=True,
-                        use_container_width=True,
-                        num_rows="dynamic",
-                        key="tabla_dt2_cuantificable"
-                    )
+            with st.form("form_edicion_dt2"):
+                df_dt2_edit = st.data_editor(
+                    df_dt2,
+                    column_config={
+                        "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                        "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                        "X min": st.column_config.NumberColumn(format="%.2f"),
+                        "X max": st.column_config.NumberColumn(format="%.2f"),
+                        "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
+                        "D": st.column_config.NumberColumn(format="%.2e"),
+                        "T2": st.column_config.NumberColumn(format="%.3f"),
+                        "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                        "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                        "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
+                        "Has": st.column_config.NumberColumn(format="%.2f"),
+                        "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
+                        "Observaciones": st.column_config.TextColumn(),
+                    },
+                    hide_index=True,
+                    use_container_width=True,
+                    num_rows="dynamic",
+                    key="tabla_dt2_cuantificable"
+                )
 
-                    recalcular = st.form_submit_button("🔴Recalcular 'Área', 'Área as' y 'H'")
+                recalcular = st.form_submit_button("🔴Recalcular 'Área', 'Área as' y 'H'")
+
 
                 if recalcular:
                     for i, row in df_dt2_edit.iterrows():

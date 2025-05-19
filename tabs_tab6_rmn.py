@@ -262,54 +262,66 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-        # --- Tabla D/T2 cuantificable editable --- 
+        # --- Tabla D/T2 cuantificable editable ---
         if any(usar_mascara.values()):
             st.markdown("### 🧬 Asignación cuantificable por D/T2")
+            filas_cuantificables = []
 
-            doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
-            doc_dt2_snapshot = doc_dt2.get()
-
-            filas_dt2_actual = []
-
-            for _, row in df_sel.iterrows():
+            for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
                 if not usar_mascara.get(row["id"], False):
                     continue
-                for mascara in row.get("mascaras", []):
-                    if mascara.get("nombre") == "D/T2":
-                        filas_dt2_actual.append({
+
+                try:
+                    contenido = BytesIO(base64.b64decode(row["contenido"]))
+                    extension = os.path.splitext(row["archivo"])[1].lower()
+                    if extension == ".xlsx":
+                        df = pd.read_excel(contenido)
+                    else:
+                        for sep in [",", ";", "\t", " "]:
+                            contenido.seek(0)
+                            try:
+                                df = pd.read_csv(contenido, sep=sep, engine="python")
+                                if df.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            raise ValueError("No se pudo leer el archivo.")
+
+                    col_x, col_y = df.columns[:2]
+                    df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                    df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                    df = df.dropna()
+
+                    filas, _ = graficar_mascaras(df, col_x, col_y, row.get("mascaras", []), ax, colores[idx % len(colores)])
+
+                    for f in filas:
+                        filas_cuantificables.append({
                             "Muestra": row["muestra"],
-                            "Archivo": row["archivo"],
-                            "X min": mascara.get("x_min"),
-                            "X max": mascara.get("x_max"),
-                            "D": mascara.get("D") or mascara.get("difusividad"),
-                            "T2": mascara.get("T2") or mascara.get("t2"),
                             "Grupo funcional": "",
                             "δ pico": None,
-                            "Área": None,
+                            "X min": f["x_min"],
+                            "X max": f["x_max"],
+                            "Área": round(f["Área"], 2),
+                            "D": f["D"],
+                            "T2": f["T2"],
+                            "Xas min": None,
+                            "Xas max": None,
                             "Área as": None,
                             "Has": None,
                             "H": None,
-                            "Xas min": None,
-                            "Xas max": None,
-                            "Observaciones": ""
+                            "Observaciones": "",
+                            "Archivo": row["archivo"]
                         })
 
-            # Intentar sincronizar campos si ya había datos
-            if doc_dt2_snapshot.exists:
-                datos_guardados = doc_dt2_snapshot.to_dict().get("filas", [])
-                for fila in filas_dt2_actual:
-                    for f_prev in datos_guardados:
-                        if fila["Muestra"] == f_prev.get("Muestra") and fila["Archivo"] == f_prev.get("Archivo"):
-                            fila["Grupo funcional"] = f_prev.get("Grupo funcional", "")
-                            fila["Observaciones"] = f_prev.get("Observaciones", "")
+                except Exception as e:
+                    st.warning(f"No se pudo calcular cuantificación para: {row['archivo']}")
 
-            # Guardar en Firebase y mostrar editor
-            doc_dt2.set({"filas": filas_dt2_actual})
-            df_dt2 = pd.DataFrame(filas_dt2_actual)
+            doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
+            doc_dt2.set({"filas": filas_cuantificables})
 
-            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                            "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
-
+            df_dt2 = pd.DataFrame(filas_cuantificables)
+            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
             for col in columnas_dt2:
                 if col not in df_dt2.columns:
                     df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
@@ -338,9 +350,18 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 key="tabla_dt2_cuantificable"
             )
 
-            # Sincronizar campos en Firebase
             doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
 
+            # Sincronizar campos en tabla principal
+            if "df_final" in locals():
+                for i, fila in df_dt2_edit.iterrows():
+                    for j, base_row in df_final.iterrows():
+                        if (base_row.get("Muestra") == fila.get("Muestra") and
+                            base_row.get("Archivo") == fila.get("Archivo")):
+                            df_final.at[j, "Grupo funcional"] = fila.get("Grupo funcional")
+                            df_final.at[j, "Observaciones"] = fila.get("Observaciones")
+                doc_ref = db.collection("tablas_integrales").document("rmn1h")
+                doc_ref.set({"filas": df_final.to_dict(orient="records")})
 
 
 

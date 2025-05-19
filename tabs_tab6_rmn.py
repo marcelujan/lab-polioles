@@ -284,41 +284,42 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                                 "Observaciones": ""
                             })
                 doc_dt2.set({"filas": filas_dt2})
-            doc_dt2_data = doc_dt2.get().to_dict()
-        filas_dt2_actual = doc_dt2_data.get("filas", [])
+            doc_dt2_snapshot = doc_dt2.get()
+            doc_dt2_data = doc_dt2_snapshot.to_dict() or {}
+            filas_dt2_actual = doc_dt2_data.get("filas", [])
 
-        # Forzar regeneración si el documento existe pero no contiene filas
-        if doc_dt2.get().exists() and not filas_dt2_actual:
-            filas_dt2 = []
-            for _, row in df_sel.iterrows():
-                for mascara in row.get("mascaras", []):
-                    if mascara.get("nombre") == "D/T2":
-                        filas_dt2.append({
-                            "Muestra": row["muestra"],
-                            "Archivo": row["archivo"],
-                            "X min": mascara.get("x_min"),
-                            "X max": mascara.get("x_max"),
-                            "D": mascara.get("D"),
-                            "T2": mascara.get("T2"),
-                            "Grupo funcional": "",
-                            "δ pico": None,
-                            "Área": None,
-                            "Área as": None,
-                            "Has": None,
-                            "H": None,
-                            "Xas min": None,
-                            "Xas max": None,
-                            "Observaciones": ""
-                        })
-            doc_dt2.set({"filas": filas_dt2})
-            filas_dt2_actual = filas_dt2
-            df_dt2 = pd.DataFrame(filas_dt2_actual)
+            # Forzar regeneración si el documento existe pero no contiene filas
+            if doc_dt2.get().exists() and not filas_dt2_actual:
+                filas_dt2 = []
+                for _, row in df_sel.iterrows():
+                    for mascara in row.get("mascaras", []):
+                        if mascara.get("nombre") == "D/T2":
+                            filas_dt2.append({
+                                "Muestra": row["muestra"],
+                                "Archivo": row["archivo"],
+                                "X min": mascara.get("x_min"),
+                                "X max": mascara.get("x_max"),
+                                "D": mascara.get("D"),
+                                "T2": mascara.get("T2"),
+                                "Grupo funcional": "",
+                                "δ pico": None,
+                                "Área": None,
+                                "Área as": None,
+                                "Has": None,
+                                "H": None,
+                                "Xas min": None,
+                                "Xas max": None,
+                                "Observaciones": ""
+                            })
+                doc_dt2.set({"filas": filas_dt2})
+                filas_dt2_actual = filas_dt2
+                df_dt2 = pd.DataFrame(filas_dt2_actual)
 
-        #    filas_dt2_actual = doc_dt2.get().to_dict().get("filas", [])
-        #    st.info(f"📋 Filas actuales en D/T2: {len(filas_dt2_actual)}")
-            df_dt2 = pd.DataFrame(filas_dt2_actual)
-        #    st.write("📊 Filas cargadas para tabla D/T2:", len(df_dt2))
-        #    st.dataframe(df_dt2)
+            #    filas_dt2_actual = doc_dt2.get().to_dict().get("filas", [])
+            #    st.info(f"📋 Filas actuales en D/T2: {len(filas_dt2_actual)}")
+                df_dt2 = pd.DataFrame(filas_dt2_actual)
+            #    st.write("📊 Filas cargadas para tabla D/T2:", len(df_dt2))
+            #    st.dataframe(df_dt2)
 
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                             "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]

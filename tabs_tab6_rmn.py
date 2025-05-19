@@ -262,81 +262,84 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-
-        # --- Tabla D/T2 cuantificable editable ---
+        # --- Tabla D/T2 cuantificable editable --- 
         if any(usar_mascara.values()):
             st.markdown("### 🧬 Asignación cuantificable por D/T2")
+
+            doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
+            doc_dt2_snapshot = doc_dt2.get()
+
+            filas_dt2_actual = []
+
+            for _, row in df_sel.iterrows():
+                if not usar_mascara.get(row["id"], False):
+                    continue
+                for mascara in row.get("mascaras", []):
+                    if mascara.get("nombre") == "D/T2":
+                        filas_dt2_actual.append({
+                            "Muestra": row["muestra"],
+                            "Archivo": row["archivo"],
+                            "X min": mascara.get("x_min"),
+                            "X max": mascara.get("x_max"),
+                            "D": mascara.get("D") or mascara.get("difusividad"),
+                            "T2": mascara.get("T2") or mascara.get("t2"),
+                            "Grupo funcional": "",
+                            "δ pico": None,
+                            "Área": None,
+                            "Área as": None,
+                            "Has": None,
+                            "H": None,
+                            "Xas min": None,
+                            "Xas max": None,
+                            "Observaciones": ""
+                        })
+
+            # Intentar sincronizar campos si ya había datos
+            if doc_dt2_snapshot.exists:
+                datos_guardados = doc_dt2_snapshot.to_dict().get("filas", [])
+                for fila in filas_dt2_actual:
+                    for f_prev in datos_guardados:
+                        if fila["Muestra"] == f_prev.get("Muestra") and fila["Archivo"] == f_prev.get("Archivo"):
+                            fila["Grupo funcional"] = f_prev.get("Grupo funcional", "")
+                            fila["Observaciones"] = f_prev.get("Observaciones", "")
+
+            # Guardar en Firebase y mostrar editor
+            doc_dt2.set({"filas": filas_dt2_actual})
+            df_dt2 = pd.DataFrame(filas_dt2_actual)
+
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                             "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
 
-            doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
-            if not doc_dt2.get().exists:
-                filas_iniciales = []
-                doc_dt2.set({"filas": filas_iniciales})
-
-            filas_actuales_dt2 = doc_dt2.get().to_dict().get("filas", [])
-            df_dt2 = pd.DataFrame(filas_actuales_dt2)
-
             for col in columnas_dt2:
                 if col not in df_dt2.columns:
-                    df_dt2[col] = "" if col in ["Observaciones", "Archivo"] else None
+                    df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
             df_dt2 = df_dt2[columnas_dt2]
 
             df_dt2_edit = st.data_editor(
-            df_dt2,
-            column_config={
-                "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                "X min": st.column_config.NumberColumn(format="%.2f"),
-                "X max": st.column_config.NumberColumn(format="%.2f"),
-                "Área": st.column_config.NumberColumn(format="%.2f", disabled=True),
-                "D": st.column_config.NumberColumn(format="%.2e"),
-                "T2": st.column_config.NumberColumn(format="%.3f"),
-                "Xas min": st.column_config.NumberColumn(format="%.2f"),
-                "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                "Área as": st.column_config.NumberColumn(format="%.2f", disabled=True),
-                "Has": st.column_config.NumberColumn(format="%.2f"),
-                "H": st.column_config.NumberColumn(format="%.2f", disabled=True),
-                "Observaciones": st.column_config.TextColumn(),
-            },
-            hide_index=True,
-            use_container_width=True,
-            num_rows="dynamic",
-            key="tabla_dt2_cuantificable"
-        )
+                df_dt2,
+                column_config={
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                    "Área": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "D": st.column_config.NumberColumn(format="%.2e"),
+                    "T2": st.column_config.NumberColumn(format="%.3f"),
+                    "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                    "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                    "Área as": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "Has": st.column_config.NumberColumn(format="%.2f"),
+                    "H": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "Observaciones": st.column_config.TextColumn(),
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key="tabla_dt2_cuantificable"
+            )
 
-            # Guardar cambios a Firebase si hay ediciones en campos clave
+            # Sincronizar campos en Firebase
             doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
-
-        # También actualizar 'Observaciones', 'Grupo funcional' y 'Archivo' en la tabla principal si coinciden muestra+archivo
-        if 'df_final' in locals():
-                for i, fila in df_dt2_edit.iterrows():
-                    muestra = fila.get("Muestra")
-                    archivo = fila.get("Archivo")
-                    for j, base_row in df_final.iterrows():
-                        if base_row.get("Muestra") == muestra and base_row.get("Archivo") == archivo:
-                            df_final.at[j, "Observaciones"] = fila.get("Observaciones")
-                            df_final.at[j, "Grupo funcional"] = fila.get("Grupo funcional")
-                            df_final.at[j, "Archivo"] = archivo
-                doc_ref.set({"filas": df_final.to_dict(orient="records")})
-
-        # ---- Mostrar botón de descarga siempre con últimos datos guardados ----
-        doc_ref = db.collection("tablas_integrales").document("rmn1h")
-        filas_guardadas = doc_ref.get().to_dict().get("filas", [])
-        df_export = pd.DataFrame(filas_guardadas)
-        if not df_export.empty:
-                excel_buffer = io.BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                    df_export.to_excel(writer, index=False, sheet_name="Integrales_RMN")
-
-                st.download_button(
-                    label="📥 Descargar integrales en Excel",
-                    data=excel_buffer.getvalue(),
-                    file_name="RMN1H_Mascaras.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-
 
 
 

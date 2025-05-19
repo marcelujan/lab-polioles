@@ -287,6 +287,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 doc_dt2.set({"filas": filas_dt2})
 
             filas_dt2_actual = doc_dt2.get().to_dict().get("filas", [])
+            st.info(f"📋 Filas actuales en D/T2: {len(filas_dt2_actual)}")
             df_dt2 = pd.DataFrame(filas_dt2_actual)
             st.write("📊 Filas cargadas para tabla D/T2:", len(df_dt2))
             st.dataframe(df_dt2)

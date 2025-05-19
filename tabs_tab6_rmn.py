@@ -175,7 +175,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         # Cálculos D/T2 sólo si el checkbox está activado
         if activar_calculos:
             if any(usar_mascara.values()):
-                mascaras = row.get("mascaras", [])
                 columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", 
                                 "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
 

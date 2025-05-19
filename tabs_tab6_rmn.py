@@ -296,14 +296,15 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     filas, _ = graficar_mascaras(df, col_x, col_y, row.get("mascaras", []), ax, colores[idx % len(colores)])
 
                     for f in filas:
+                        df_sub = df[(df[col_x] >= min(f["x_min"], f["x_max"])) & (df[col_x] <= max(f["x_min"], f["x_max"]))]
+                        area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else None
                         filas_cuantificables.append({
                             "Muestra": row["muestra"],
                             "Grupo funcional": "",
                             "δ pico": None,
                             "X min": f["x_min"],
                             "X max": f["x_max"],
-                            "Área": round(f["Área"], 2),
-                            "D": f["D"],
+                            "Área": round(area, 2) if area is not None else None,
                             "T2": f["T2"],
                             "Xas min": None,
                             "Xas max": None,

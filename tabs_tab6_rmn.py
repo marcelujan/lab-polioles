@@ -389,10 +389,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         
         st.pyplot(fig)
 
-        if filas_mascaras:
-            df_editable = pd.DataFrame(filas_mascaras)
-            st.subheader("🧾 Tabla de máscaras aplicadas")
-            st.dataframe(df_editable, use_container_width=True, hide_index=True)
+   #     if filas_mascaras:
+    #        df_editable = pd.DataFrame(filas_mascaras)
+     #       st.subheader("🧾 Tabla de máscaras aplicadas")
+      #      st.dataframe(df_editable, use_container_width=True, hide_index=True)
 
 
 
@@ -531,21 +531,21 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 st.rerun()
 
 
-        # ---- Mostrar botón de descarga siempre con últimos datos guardados ----
-        doc_ref = db.collection("tablas_integrales").document("rmn1h")
-        filas_guardadas = doc_ref.get().to_dict().get("filas", [])
-        df_export = pd.DataFrame(filas_guardadas)
-        if not df_export.empty:
-            excel_buffer = io.BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                df_export.to_excel(writer, index=False, sheet_name="Integrales_RMN")
+            # ---- Mostrar botón de descarga siempre con últimos datos guardados ----
+            doc_ref = db.collection("tablas_integrales").document("rmn1h")
+            filas_guardadas = doc_ref.get().to_dict().get("filas", [])
+            df_export = pd.DataFrame(filas_guardadas)
+            if not df_export.empty:
+                excel_buffer = io.BytesIO()
+                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                    df_export.to_excel(writer, index=False, sheet_name="Integrales_RMN")
 
-            st.download_button(
-                label="📥 Descargar Tabla Excel",
-                data=excel_buffer.getvalue(),
-                file_name="Tabla_RMN1H_YYYY-MM-DD_HH-MM-SS.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+                st.download_button(
+                    label="📥 Descargar Tabla Excel",
+                    data=excel_buffer.getvalue(),
+                    file_name="Tabla_RMN1H_YYYY-MM-DD_HH-MM-SS.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
 
 

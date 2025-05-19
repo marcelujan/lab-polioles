@@ -295,6 +295,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                                 "Observaciones": ""
                             })
                 doc_dt2.set({"filas": filas_dt2_actual})
+                doc_dt2_snapshot = doc_dt2.get()  # 🔁 recargar
+                doc_dt2_data = doc_dt2_snapshot.to_dict() or {}
+                filas_dt2_actual = doc_dt2_data.get("filas", [])
 
             else:
                 doc_dt2_data = doc_dt2_snapshot.to_dict() or {}

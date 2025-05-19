@@ -319,7 +319,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     doc_dt2.set({"filas": filas_dt2})
                     filas_dt2_actual = filas_dt2  # actualizar para siguiente paso
 
-                df_dt2 = pd.DataFrame(filas_dt2_actual)
+            df_dt2 = pd.DataFrame(filas_dt2_actual)
 
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                             "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]

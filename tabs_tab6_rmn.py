@@ -388,6 +388,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         ax.legend()
         
         st.pyplot(fig)
+        
+        # Botón para descargar imagen del gráfico RMN 1H
+        buffer_img = BytesIO()
+        fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
+        st.download_button("📷 Descargar gráfico RMN 1H", data=buffer_img.getvalue(), file_name="grafico_rmn1h.png", mime="image/png")            
 
    #     if filas_mascaras:
     #        df_editable = pd.DataFrame(filas_mascaras)
@@ -548,7 +553,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 )
 
 
-
+s
 
 
 
@@ -595,10 +600,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             buffer_excel.seek(0)
             st.download_button("📁 Descargar máscaras D/T2", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # Botón para descargar imagen del gráfico RMN 1H
-        buffer_img = BytesIO()
-        fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
-        st.download_button("📷 Descargar gráfico RMN 1H", data=buffer_img.getvalue(), file_name="grafico_rmn1h.png", mime="image/png")            
 
 
     # --- Zona RMN 13C ---

@@ -255,6 +255,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
+        st.success("🟢 Bloque D/T2 cuantificable ejecutado")
 
         # --- Tabla D/T2 cuantificable editable ---
         if "D/T2" in st.session_state.get("mascaras_activas", []):
@@ -321,9 +322,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
             # Guardar cambios a Firebase si hay ediciones en campos clave
             doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
-
             doc_ref.set({"filas": df_final.to_dict(orient="records")})
-            st.rerun()
+
 
         # ---- Mostrar botón de descarga siempre con últimos datos guardados ----
         doc_ref = db.collection("tablas_integrales").document("rmn1h")

@@ -296,8 +296,18 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     filas, _ = graficar_mascaras(df, col_x, col_y, row.get("mascaras", []), ax, colores[idx % len(colores)])
 
                     for f in filas:
+                        # Calcular Área entre X min y X max
                         df_sub = df[(df[col_x] >= min(f["x_min"], f["x_max"])) & (df[col_x] <= max(f["x_min"], f["x_max"]))]
                         area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else None
+
+                        # Preparar Área as (solo si xas_min y xas_max existen)
+                        xas_min = f.get("xas_min")
+                        xas_max = f.get("xas_max")
+                        area_as = None
+                        if xas_min is not None and xas_max is not None:
+                            df_sub_as = df[(df[col_x] >= min(xas_min, xas_max)) & (df[col_x] <= max(xas_min, xas_max))]
+                            area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else None
+
                         filas_cuantificables.append({
                             "Muestra": row["muestra"],
                             "Grupo funcional": "",
@@ -315,6 +325,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             "Observaciones": "",
                             "Archivo": row["archivo"]
                         })
+
 
                 except Exception as e:
                     st.warning(f"No se pudo calcular cuantificación para: {row['archivo']}")

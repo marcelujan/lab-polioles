@@ -378,8 +378,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 doc_ref = db.collection("tablas_integrales").document("rmn1h")
                 doc_ref.set({"filas": df_final.to_dict(orient="records")})
 
-            # --- Botón para recalcular área, área as y H en la tabla D/T2 ---
+            # --- Mostrar botón dentro de la interfaz activa ---
             with st.form("form_recalculo_dt2"):
+                st.caption("Hacé clic para recalcular Área, Área as y H en base a los rangos definidos.")
                 recalcular_dt2 = st.form_submit_button("🔁 Recalcular área y H", type="primary")
 
             if recalcular_dt2:

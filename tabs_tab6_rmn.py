@@ -333,7 +333,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             excel_buffer = io.BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 df_export.to_excel(writer, index=False, sheet_name="Integrales_RMN")
-                writer.save()
 
             st.download_button(
                 label="📥 Descargar integrales en Excel",

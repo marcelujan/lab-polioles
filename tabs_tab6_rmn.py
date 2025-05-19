@@ -288,6 +288,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
             filas_dt2_actual = doc_dt2.get().to_dict().get("filas", [])
             df_dt2 = pd.DataFrame(filas_dt2_actual)
+            st.write("📊 Filas cargadas para tabla D/T2:", len(df_dt2))
+            st.dataframe(df_dt2)
 
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                             "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]

@@ -115,12 +115,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
-        st.markdown("**Controles D/T2:**")
-        col_mask, col_calc = st.columns(2)
-        with col_mask:
-            activar_mascara = st.checkbox("Máscara D/T2", value=False)
-        with col_calc:
-            activar_calculos = st.checkbox("Cálculos D/T2", value=False)
+        activar_mascara = st.checkbox("Máscara D/T2", value=False)
+        activar_calculos = st.checkbox("Cálculos D/T2", value=False)
         usar_mascara = {}
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()

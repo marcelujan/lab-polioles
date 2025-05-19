@@ -12,6 +12,11 @@ import zipfile
 from tempfile import TemporaryDirectory
 import matplotlib.pyplot as plt #solo para pruebas
 
+GRUPOS_FUNCIONALES = [
+    "Glicerol medio", "Glicerol extremos", "OH", "C=C",
+    "Epóxido", "Éter", "Ester", "Ácido carboxílico", "Formiato"
+]
+
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
 
@@ -442,11 +447,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if activar_edicion:
             columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                                 "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
-
-            grupos_funcionales = [
-                "Glicerol medio", "Glicerol extremos", "OH", "C=C",
-                "Epóxido", "Éter", "Ester", "Ácido carboxílico", "Formiato"
-            ]
 
             doc_ref = db.collection("tablas_integrales").document("rmn1h")
             if not doc_ref.get().exists:

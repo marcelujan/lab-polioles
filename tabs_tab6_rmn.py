@@ -159,7 +159,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             except Exception as e:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
-
         # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
         filas_mascaras = []
         mapa_mascaras = {}
@@ -262,8 +261,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-        # Guardar cambios a Firebase si hay ediciones en campos clave
-        doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
+
 
         # --- Tabla D/T2 cuantificable editable ---
         if any(usar_mascara.values()):
@@ -306,6 +304,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             num_rows="dynamic",
             key="tabla_dt2_cuantificable"
         )
+
+            # Guardar cambios a Firebase si hay ediciones en campos clave
+            doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
+
         # También actualizar 'Observaciones', 'Grupo funcional' y 'Archivo' en la tabla principal si coinciden muestra+archivo
         if 'df_final' in locals():
                 for i, fila in df_dt2_edit.iterrows():

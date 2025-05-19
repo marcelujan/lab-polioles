@@ -261,45 +261,48 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-        # --- Tabla D/T2 cuantificable editable ---
+        # --- Tabla D/T2 cuantificable editable --- 
         if any(usar_mascara.values()):
             st.markdown("### 🧬 Asignación cuantificable por D/T2")
             doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
             doc_dt2_snapshot = doc_dt2.get()
+
             filas_dt2_actual = []
 
-            # Recolectar espectros activos y sus máscaras D/T2
-            for _, row in df_sel.iterrows():
-                if not usar_mascara.get(row["id"], False):
-                    continue  # solo espectros seleccionados con checkbox
-
-                for mascara in row.get("mascaras", []):
-                    if mascara.get("nombre") == "D/T2":
-                        filas_dt2_actual.append({
-                            "Muestra": row["muestra"],
-                            "Archivo": row["archivo"],
-                            "X min": mascara.get("x_min"),
-                            "X max": mascara.get("x_max"),
-                            "D": mascara.get("D"),
-                            "T2": mascara.get("T2"),
-                            "Grupo funcional": "",
-                            "δ pico": None,
-                            "Área": None,
-                            "Área as": None,
-                            "Has": None,
-                            "H": None,
-                            "Xas min": None,
-                            "Xas max": None,
-                            "Observaciones": ""
-                        })
+            if not doc_dt2_snapshot.exists:
+                # Cargar desde los espectros seleccionados y guardar en Firebase
+                for _, row in df_sel.iterrows():
+                    if not usar_mascara.get(row["id"], False):
+                        continue
+                    for mascara in row.get("mascaras", []):
+                        if mascara.get("nombre") == "D/T2":
+                            filas_dt2_actual.append({
+                                "Muestra": row["muestra"],
+                                "Archivo": row["archivo"],
+                                "X min": mascara.get("x_min"),
+                                "X max": mascara.get("x_max"),
+                                "D": mascara.get("D"),
+                                "T2": mascara.get("T2"),
+                                "Grupo funcional": "",
+                                "δ pico": None,
+                                "Área": None,
+                                "Área as": None,
+                                "Has": None,
+                                "H": None,
+                                "Xas min": None,
+                                "Xas max": None,
+                                "Observaciones": ""
+                            })
                 doc_dt2.set({"filas": filas_dt2_actual})
+
             else:
                 doc_dt2_data = doc_dt2_snapshot.to_dict() or {}
                 filas_dt2_actual = doc_dt2_data.get("filas", [])
 
-                # Regenerar si estaba vacío
                 if not filas_dt2_actual:
                     for _, row in df_sel.iterrows():
+                        if not usar_mascara.get(row["id"], False):
+                            continue
                         for mascara in row.get("mascaras", []):
                             if mascara.get("nombre") == "D/T2":
                                 filas_dt2_actual.append({
@@ -357,6 +360,18 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
             # Guardar ediciones
             doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
+
+            # También actualizar 'Observaciones', 'Grupo funcional' y 'Archivo' en la tabla principal si coinciden muestra+archivo
+            if 'df_final' in locals():
+                for i, fila in df_dt2_edit.iterrows():
+                    muestra = fila.get("Muestra")
+                    archivo = fila.get("Archivo")
+                    for j, base_row in df_final.iterrows():
+                        if base_row.get("Muestra") == muestra and base_row.get("Archivo") == archivo:
+                            df_final.at[j, "Observaciones"] = fila.get("Observaciones")
+                            df_final.at[j, "Grupo funcional"] = fila.get("Grupo funcional")
+                            df_final.at[j, "Archivo"] = archivo
+                doc_ref.set({"filas": df_final.to_dict(orient="records")})
 
 
 

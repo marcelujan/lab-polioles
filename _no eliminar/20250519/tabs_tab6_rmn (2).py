@@ -115,24 +115,18 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if df_rmn1H.empty:
         st.info("No hay espectros RMN 1H numéricos seleccionados.")
     else:
-        activar_mascara = st.checkbox("Máscara D/T2", value=False)
+        st.markdown("**Máscara D/T2:**")
         usar_mascara = {}
-        if activar_mascara:
-            st.markdown("<div style='margin-left: 2rem; padding-bottom: 0.5rem;'>", unsafe_allow_html=True)
-            col_checkboxes = st.columns(len(df_rmn1H))
-            for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
-                with col_checkboxes[idx]:
-                    usar_mascara[row["id"]] = st.checkbox(
-                        f"{row['muestra']}",
-                        value=False,
-                        key=f"chk_mask_{row['id']}_{idx}"
-                    )
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-        activar_calculos = st.checkbox("Cálculos D/T2", value=False)
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
 
+        # Mostrar checkbox para cada espectro
+        for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
+            usar_mascara[row["id"]] = st.checkbox(
+                f"{row['muestra']} – {row['archivo']}",
+                value=False,
+                key=f"chk_mask_{row['id']}_{idx}"
+            )
 
         # Graficar todos los espectros seleccionados
         for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
@@ -161,122 +155,295 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 df = df.dropna()
 
                 ax.plot(df[col_x], df[col_y], label=f"{row['muestra']}", color=color)
-                if usar_mascara.get(row["id"], False):
-                    mascaras = row.get("mascaras", [])
-                    graficar_mascaras(df, col_x, col_y, mascaras, ax, color)
+
             except Exception as e:
                 st.warning(f"No se pudo graficar espectro: {row['archivo']}")
 
+        # Solo si hay máscaras activadas se muestra la sección de asignación y se calculan áreas
+        filas_mascaras = []
+        mapa_mascaras = {}
+        if any(usar_mascara.values()):
+            st.markdown("**Asignación para cuantificación**")
+            df_asignacion = pd.DataFrame([{"H": 1.0, "X mínimo": 4.8, "X máximo": 5.6}])
+            df_asignacion_edit = st.data_editor(df_asignacion, hide_index=True, num_rows="fixed", use_container_width=True, key="asignacion")
+            h_config = {
+                "H": float(df_asignacion_edit.iloc[0]["H"]),
+                "Xmin": float(df_asignacion_edit.iloc[0]["X mínimo"]),
+                "Xmax": float(df_asignacion_edit.iloc[0]["X máximo"])}
 
-        # Cálculos D/T2 sólo si el checkbox está activado
-        if activar_calculos:
-            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", 
-                            "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+            for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
+                if not usar_mascara.get(row['id'], False):
+                    continue
+                color = colores[idx % len(colores)]
+                try:
+                    contenido = BytesIO(base64.b64decode(row["contenido"]))
+                    extension = os.path.splitext(row["archivo"])[1].lower()
+                    if extension == ".xlsx":
+                        df = pd.read_excel(contenido)
+                    else:
+                        sep_try = [",", ";", "\t", " "]
+                        for sep in sep_try:
+                            contenido.seek(0)
+                            try:
+                                df = pd.read_csv(contenido, sep=sep, engine="python")
+                                if df.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            raise ValueError("No se pudo leer el archivo.")
+
+                    col_x, col_y = df.columns[:2]
+                    df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                    df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                    df = df.dropna()
+
+                    # Calcular área de referencia H
+                    df_h = df[(df[col_x] >= h_config["Xmin"]) & (df[col_x] <= h_config["Xmax"])]
+                    integracion_h = np.trapz(df_h[col_y], df_h[col_x]) if not df_h.empty else np.nan
+
+                    # Aplicar máscaras y graficar
+                    filas, advertencias = graficar_mascaras(df, col_x, col_y, row.get("mascaras", []), ax, color)
+
+                    for f in filas:
+                        h = (f["Área"] * h_config["H"]) / integracion_h if integracion_h else np.nan
+                        filas_mascaras.append({
+                            "ID espectro": row["id"],
+                            "Muestra": row["muestra"],
+                            "Archivo": row["archivo"],
+                            "D [m2/s]": f["D"],
+                            "T2 [s]": f["T2"],
+                            "Xmin [ppm]": round(f["x_min"], 2),
+                            "Xmax [ppm]": round(f["x_max"], 2),
+                            "Área": round(f["Área"], 2),
+                            "H": round(h, 2) if not np.isnan(h) else "—",
+                            "Observación": f["Obs"]
+                        })
+
+                    for advertencia in advertencias:
+                        st.warning(f"{row['muestra']} – {row['archivo']}: {advertencia}")
+
+                    mapa_mascaras[row["id"]] = row.get("mascaras", [])
+
+                except Exception as e:
+                    st.warning(f"No se pudo procesar espectro: {row['archivo']}")
+
+
+            df_editable = pd.DataFrame(filas_mascaras)
+            df_editable_display = st.data_editor(
+                df_editable,
+                column_config={"D [m2/s]": st.column_config.NumberColumn(format="%.2e"),
+                               "Xmin [ppm]": st.column_config.NumberColumn(format="%.2f"),
+                               "Xmax [ppm]": st.column_config.NumberColumn(format="%.2f"),
+                               "Área": st.column_config.NumberColumn(format="%.2f"),
+                               "H": st.column_config.NumberColumn(format="%.2f"),
+                               "T2 [s]": st.column_config.NumberColumn(format="%.3f")},
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key="editor_mascaras"
+            )
+
+            for i, row in df_editable_display.iterrows():
+                id_esp = row["ID espectro"]
+                idx = int(id_esp.split("__")[1])
+                for m in muestras:
+                    if m["nombre"] == id_esp.split("__")[0]:
+                        espectros = m.get("espectros", [])
+                        if idx < len(espectros):
+                            espectros[idx]["mascaras"] = mapa_mascaras.get(id_esp, [])
+                            guardar_muestra(db, m["nombre"], m.get("observacion", ""), m.get("analisis", []), espectros)
+
+            st.caption(f"*Asignación: {int(h_config['H'])} H = integral entre x = {h_config['Xmin']} y x = {h_config['Xmax']}")
+       
+
+
+
+
+
+
+        # --- Tabla D/T2 cuantificable editable ---
+        if any(usar_mascara.values()):
+            st.markdown("### 🧬 Asignación cuantificable por D/T2")
+            filas_cuantificables = []
+
+            for idx, (_, row) in enumerate(df_rmn1H.iterrows()):
+                if not usar_mascara.get(row["id"], False):
+                    continue
+
+                try:
+                    contenido = BytesIO(base64.b64decode(row["contenido"]))
+                    extension = os.path.splitext(row["archivo"])[1].lower()
+                    if extension == ".xlsx":
+                        df = pd.read_excel(contenido)
+                    else:
+                        for sep in [",", ";", "\t", " "]:
+                            contenido.seek(0)
+                            try:
+                                df = pd.read_csv(contenido, sep=sep, engine="python")
+                                if df.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            raise ValueError("No se pudo leer el archivo.")
+
+                    col_x, col_y = df.columns[:2]
+                    df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                    df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                    df = df.dropna()
+
+                    filas, _ = graficar_mascaras(df, col_x, col_y, row.get("mascaras", []), ax, colores[idx % len(colores)])
+
+                    for f in filas:
+                        # Calcular Área entre X min y X max
+                        df_sub = df[(df[col_x] >= min(f["x_min"], f["x_max"])) & (df[col_x] <= max(f["x_min"], f["x_max"]))]
+                        area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else None
+
+                        # Preparar Área as (solo si xas_min y xas_max existen)
+                        xas_min = f.get("xas_min")
+                        xas_max = f.get("xas_max")
+                        area_as = None
+                        if xas_min is not None and xas_max is not None:
+                            df_sub_as = df[(df[col_x] >= min(xas_min, xas_max)) & (df[col_x] <= max(xas_min, xas_max))]
+                            area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else None
+
+                        filas_cuantificables.append({
+                            "Muestra": row["muestra"],
+                            "Grupo funcional": "",
+                            "δ pico": None,
+                            "X min": f["x_min"],
+                            "X max": f["x_max"],
+                            "Área": round(area, 2) if area is not None else None,
+                            "D": f["D"],
+                            "T2": f["T2"],
+                            "Xas min": xas_min,
+                            "Xas max": xas_max,
+                            "Área as": round(area_as, 2) if area_as is not None else None,
+                            "Has": None,
+                            "H": None,
+                            "Observaciones": "",
+                            "Archivo": row["archivo"]
+                        })
+
+
+                except Exception as e:
+                    st.warning(f"No se pudo calcular cuantificación para: {row['archivo']}")
 
             doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
-            doc_data = doc_dt2.get().to_dict() or {}
-            filas_guardadas = doc_data.get("filas", [])
-            df_dt2 = pd.DataFrame(filas_guardadas)
+            doc_dt2.set({"filas": filas_cuantificables})
 
+            df_dt2 = pd.DataFrame(filas_cuantificables)
+            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
             for col in columnas_dt2:
                 if col not in df_dt2.columns:
                     df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
             df_dt2 = df_dt2[columnas_dt2]
 
-            with st.form("form_edicion_dt2"):
-                df_dt2_edit = st.data_editor(
-                    df_dt2,
-                    column_config={
-                        "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                        "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                        "X min": st.column_config.NumberColumn(format="%.2f"),
-                        "X max": st.column_config.NumberColumn(format="%.2f"),
-                        "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
-                        "D": st.column_config.NumberColumn(format="%.2e"),
-                        "T2": st.column_config.NumberColumn(format="%.3f"),
-                        "Xas min": st.column_config.NumberColumn(format="%.2f"),
-                        "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                        "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                        "Has": st.column_config.NumberColumn(format="%.2f"),
-                        "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
-                        "Observaciones": st.column_config.TextColumn(),
-                    },
-                    hide_index=True,
-                    use_container_width=True,
-                    num_rows="dynamic",
-                    key="tabla_dt2_cuantificable"
-                )
+            df_dt2_edit = st.data_editor(
+                df_dt2,
+                column_config={
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                    "Área": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "D": st.column_config.NumberColumn(format="%.2e"),
+                    "T2": st.column_config.NumberColumn(format="%.3f"),
+                    "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                    "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                    "Área as": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "Has": st.column_config.NumberColumn(format="%.2f"),
+                    "H": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "Observaciones": st.column_config.TextColumn(),
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key="tabla_dt2_cuantificable"
+            )
 
-                recalcular = st.form_submit_button("🔴Recalcular 'Área', 'Área as' y 'H'")
+            doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
 
+            # --- Sincronización con tabla principal (por Muestra + Archivo + Grupo funcional) ---
+            if 'df_final' in locals():
+                for i, fila in df_dt2_edit.iterrows():
+                    clave_dt2 = f"{fila.get('Muestra')}|{fila.get('Archivo')}|{fila.get('Grupo funcional')}"
+                    for j, base_row in df_final.iterrows():
+                        clave_final = f"{base_row.get('Muestra')}|{base_row.get('Archivo')}|{base_row.get('Grupo funcional')}"
+                        if clave_dt2 == clave_final:
+                            df_final.at[j, "Grupo funcional"] = fila.get("Grupo funcional")
+                            df_final.at[j, "Observaciones"] = fila.get("Observaciones")
 
-                if recalcular:
-                    for i, row in df_dt2_edit.iterrows():
-                        try:
-                            nombre_muestra = row.get("Muestra")
-                            archivo = row.get("Archivo")
-                            x_min = float(row.get("X min"))
-                            x_max = float(row.get("X max"))
-                            try:
-                                xas_min = float(row.get("Xas min")) if row.get("Xas min") not in [None, ""] else None
-                                xas_max = float(row.get("Xas max")) if row.get("Xas max") not in [None, ""] else None
-                                has = float(row.get("Has")) if row.get("Has") not in [None, ""] else None
-                            except ValueError:
-                                xas_min = xas_max = has = None
+                doc_ref = db.collection("tablas_integrales").document("rmn1h")
+                doc_ref.set({"filas": df_final.to_dict(orient="records")})
 
-                            espectros_muestra = df_rmn1H[df_rmn1H["muestra"] == nombre_muestra]
-                            if espectros_muestra.empty:
-                                continue
+            # --- Mostrar botón dentro de la interfaz activa ---
+            with st.form("form_recalculo_dt2"):
+                st.caption("Hacé clic para recalcular Área, Área as y H en base a los rangos definidos.")
+                recalcular_dt2 = st.form_submit_button("🔁 Recalcular área y H", type="primary")
 
-                            if not archivo or archivo not in list(espectros_muestra["archivo"]):
-                                archivo = espectros_muestra.iloc[0]["archivo"]
-                                df_dt2_edit.at[i, "Archivo"] = archivo
+            if recalcular_dt2:
+                for i, row in df_dt2_edit.iterrows():
+                    try:
+                        nombre_muestra = row.get("Muestra")
+                        archivo = row.get("Archivo")
+                        x_min = float(row.get("X min"))
+                        x_max = float(row.get("X max"))
+                        xas_min = float(row.get("Xas min", None))
+                        xas_max = float(row.get("Xas max", None))
+                        has = float(row.get("Has", None))
 
-                            espectro_row = espectros_muestra[espectros_muestra["archivo"] == archivo].iloc[0]
-                            contenido = BytesIO(base64.b64decode(espectro_row["contenido"]))
-                            extension = os.path.splitext(archivo)[1].lower()
-
-                            if extension == ".xlsx":
-                                df_espectro = pd.read_excel(contenido)
-                            else:
-                                for sep in [",", ";", "\t", " "]:
-                                    contenido.seek(0)
-                                    try:
-                                        df_espectro = pd.read_csv(contenido, sep=sep)
-                                        if df_espectro.shape[1] >= 2:
-                                            break
-                                    except:
-                                        continue
-                                else:
-                                    continue
-
-                            col_x, col_y = df_espectro.columns[:2]
-                            df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
-                            df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
-                            df_espectro = df_espectro.dropna().sort_values(by=col_x)
-
-                            # Cálculo área total
-                            df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
-                            area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else None
-                            df_dt2_edit.at[i, "Área"] = round(area, 2) if area is not None else None
-
-                            # Cálculo área as y H
-                            if xas_min is not None and xas_max is not None:
-                                df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
-                                area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else None
-                                df_dt2_edit.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
-
-                                if area_as and has and area_as != 0 and area:
-                                    h_calc = (area * has) / area_as
-                                    df_dt2_edit.at[i, "H"] = round(h_calc, 2)
-
-                        except Exception as e:
-                            st.warning(f"⚠️ Error en fila {i}: {e}")
+                        espectros_muestra = df_rmn1H[df_rmn1H["muestra"] == nombre_muestra]
+                        if espectros_muestra.empty:
                             continue
 
-                    doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
-                    st.success("✅ Área, Área as y H recalculadas correctamente")
-                    st.rerun()
+                        if not archivo or archivo not in list(espectros_muestra["archivo"]):
+                            archivo = espectros_muestra.iloc[0]["archivo"]
+
+                        espectro_row = espectros_muestra[espectros_muestra["archivo"] == archivo].iloc[0]
+                        contenido = BytesIO(base64.b64decode(espectro_row["contenido"]))
+                        extension = os.path.splitext(archivo)[1].lower()
+
+                        if extension == ".xlsx":
+                            df_espectro = pd.read_excel(contenido)
+                        else:
+                            for sep in [",", ";", "\t", " "]:
+                                contenido.seek(0)
+                                try:
+                                    df_espectro = pd.read_csv(contenido, sep=sep)
+                                    if df_espectro.shape[1] >= 2:
+                                        break
+                                except:
+                                    continue
+                            else:
+                                continue
+
+                        col_x, col_y = df_espectro.columns[:2]
+                        df_espectro[col_x] = pd.to_numeric(df_espectro[col_x], errors="coerce")
+                        df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
+                        df_espectro = df_espectro.dropna().sort_values(by=col_x)
+
+                        df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
+                        area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else None
+                        df_dt2_edit.at[i, "Área"] = round(area, 2) if area is not None else None
+
+                        df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
+                        area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else None
+                        df_dt2_edit.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
+
+                        if area and area_as and area_as != 0 and has:
+                            h_calc = (area * has) / area_as
+                            df_dt2_edit.at[i, "H"] = round(h_calc, 2)
+
+                    except Exception as e:
+                        st.warning(f"⚠️ Error en fila {i}: {e}")
+
+                # Guardar ediciones recalculadas en Firebase
+                doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
+                st.success("✅ Área, Área as y H actualizadas correctamente")
+                st.rerun()
+
 
 
 
@@ -334,7 +501,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             # Botón de descarga de tabla de máscaras
             buffer_excel = BytesIO()
             with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                df_edit_rmn1h.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
+                df_editable_display.drop(columns=["ID espectro"]).to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
             buffer_excel.seek(0)
             st.download_button("📁 Descargar máscaras D/T2", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -348,7 +515,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         if activar_edicion:
             columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                                "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+                                "Xas min", "Xas max", "Área as", "Has", "H", "Observaciones", "Archivo"]
 
             doc_ref = db.collection("tablas_integrales").document("rmn1h")
             if not doc_ref.get().exists:
@@ -374,14 +541,14 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         "δ pico": st.column_config.NumberColumn(format="%.2f"),
                         "X min": st.column_config.NumberColumn(format="%.2f"),
                         "X max": st.column_config.NumberColumn(format="%.2f"),
-                        "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
+                        "Área": st.column_config.NumberColumn(format="%.2f", label="🔴 Área", disabled=True),
                         "D": st.column_config.NumberColumn(format="%.2e"),
                         "T2": st.column_config.NumberColumn(format="%.3f"),
                         "Xas min": st.column_config.NumberColumn(format="%.2f"),
                         "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                        "Área as": st.column_config.NumberColumn(format="%.2f", disabled=True),
                         "Has": st.column_config.NumberColumn(format="%.2f"),
-                        "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                        "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
+                        "H": st.column_config.NumberColumn(format="%.2f", label="🔴 H", disabled=True),
                         "Observaciones": st.column_config.TextColumn(),
                         "Archivo": st.column_config.TextColumn(),
                     },
@@ -391,7 +558,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     key="tabla_integral_edicion"
                 )
 
-                recalcular = st.form_submit_button("🔴Recalcular 'Área', 'Área as' y 'H'")
+                recalcular = st.form_submit_button("🔁 Recalcular área y H", type="primary")
 
             if recalcular:
                 doc_ref.set({"filas": df_integral_edit.to_dict(orient="records")})

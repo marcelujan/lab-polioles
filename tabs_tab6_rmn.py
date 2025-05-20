@@ -361,16 +361,16 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     delta = float(row["δ pico"])
                     etiqueta = str(row.get("Grupo funcional", "")).strip()
                     if etiqueta and not np.isnan(delta):
-                        ax.axvline(x=delta, color="black", linestyle="dashed", linewidth=1)
+                        ax.vlines(x=delta, ymin=0, ymax=50, color="black", linestyle="dashed", linewidth=1)
                         ax.text(
-                            delta + 0.03,                     # un poco a la derecha de la línea
-                            ax.get_ylim()[1] * 0.95,          # parte superior
+                            delta,
+                            52,
+                            ax.get_ylim()[1] * 0.95, 
                             etiqueta,
-                            rotation=90,                       # vertical
-                            va="top", ha="left",
-                            fontsize=4, color="black"
+                            rotation=90,  
+                            va="bottom", ha="center",
+                            fontsize=7, color="black"
                         )
-
                 except:
                     continue
 

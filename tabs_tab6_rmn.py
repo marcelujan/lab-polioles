@@ -332,40 +332,27 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         ax.legend()
         
-        # --- Trazar líneas verticales y etiquetas 'Grupo funcional' para cada δ pico ---
-        if 'df_edit_rmn1h' in locals() and not df_edit_rmn1h.empty:
-            trazar_deltas = st.checkbox("Señales δ pico", value=False)
+        # --- Trazar líneas verticales y etiquetas si el checkbox está activado ---
+        # Esta variable solo existe más abajo, así que inicializamos en False
+        trazar_deltas = st.session_state.get("mostrar_deltas", False)
 
-            if trazar_deltas:
-                for _, row in df_edit_rmn1h.iterrows():
-                    try:
-                        delta = float(row["δ pico"])
-                        etiqueta = str(row.get("Grupo funcional", "")).strip()
-                        if etiqueta and not np.isnan(delta):
-                            ax.axvline(x=delta, color="gray", linestyle="dashed", linewidth=1)
-                            ax.text(
-                                delta,                          # posición x
-                                ax.get_ylim()[1]*0.95,          # posición y (superior)
-                                etiqueta,                       # texto
-                                rotation=90,
-                                va="top", ha="center",
-                                fontsize=7, color="gray"
-                            )
-                    except:
-                        continue
-        else:
-            trazar_deltas = False
-
-        st.pyplot(fig)
-
-        # Botón para descargar imagen del gráfico RMN 1H
-        buffer_img = BytesIO()
-        fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
-        st.download_button("📷 Descargar gráfico RMN 1H", data=buffer_img.getvalue(), file_name="grafico_rmn1h.png", mime="image/png")            
-
-
-
-
+        if trazar_deltas and not df_edit_rmn1h.empty:
+            for _, row in df_edit_rmn1h.iterrows():
+                try:
+                    delta = float(row["δ pico"])
+                    etiqueta = str(row.get("Grupo funcional", "")).strip()
+                    if etiqueta and not np.isnan(delta):
+                        ax.axvline(x=delta, color="gray", linestyle="dashed", linewidth=1)
+                        ax.text(
+                            delta,
+                            ax.get_ylim()[1]*0.95,
+                            etiqueta,
+                            rotation=90,
+                            va="top", ha="center",
+                            fontsize=7, color="gray"
+                        )
+                except:
+                    continue
 
 
         # --- Tabla bibliografía debajo del gráfico RMN 1H ---
@@ -387,6 +374,19 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
         df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
 
+        df_edit_rmn1h = df_rmn1h_tabla.copy()
+
+
+
+        st.pyplot(fig)
+
+        # Botón para descargar imagen del gráfico RMN 1H
+        buffer_img = BytesIO()
+        fig.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
+        st.download_button("📷 Descargar gráfico RMN 1H", data=buffer_img.getvalue(), file_name="grafico_rmn1h.png", mime="image/png")            
+       
+
+        # --- Mostrar tabla editable ---
         df_edit_rmn1h = st.data_editor(
             df_rmn1h_tabla,
             use_container_width=True,
@@ -399,6 +399,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 "X max": st.column_config.NumberColumn(format="%.2f")
             }
         )
+
 
         # --- BOTONES en la misma fila ---
         col1, col2 = st.columns([1, 1])
@@ -421,10 +422,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
+        # --- Checkbox para activar las líneas δ pico ---
+        st.session_state["mostrar_deltas"] = st.checkbox("Señales δ pico", value=st.session_state.get("mostrar_deltas", False))
+
 
 
         # --- Trazar líneas verticales para 'δ pico' si se activa ---
-        trazar_deltas = st.checkbox("Señales δ pico", value=False)
+       # trazar_deltas = st.checkbox("Señales δ pico", value=False)
 
 
 

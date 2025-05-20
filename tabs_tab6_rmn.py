@@ -381,14 +381,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.success("🔴Actualizar Tabla bibliográfica")
             st.rerun()
 
-        # Guardar si hay cambios
-        if not df_edit_rmn1h.equals(df_rmn1h_tabla):
-            doc_ref.set({"filas": df_edit_rmn1h.to_dict(orient="records")})
-
-            # Botón de descarga de tabla de máscaras
+            # Botón de descarga de la Tabla Bibliográfica
             buffer_excel = BytesIO()
             with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                df_edit_rmn1h.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
+                df_edit_rmn1h.to_excel(writer, index=False, sheet_name="Tabla_Bibliográfica_RMN1H")
             buffer_excel.seek(0)
             st.download_button("Descargar Tabla Bibliográfica", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 

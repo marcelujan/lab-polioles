@@ -341,6 +341,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             ax.set_xlim(x_min, x_max)
         if y_min is not None and y_max is not None:
             ax.set_ylim(y_min, y_max)
+        ax.axhline(y=0, color="black", linewidth=0.7)
 
 
 

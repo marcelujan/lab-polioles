@@ -173,7 +173,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         colores = plt.cm.tab10.colors
-        fig, ax = plt.subplots(figsize=(6, 3.5))  # similar a FTIR y evita el achique por rango angosto
+        fig, ax = plt.subplots(figsize=(6, 3.5))  # evita el achique por rango angosto
 
 
 
@@ -381,7 +381,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-        st.pyplot(fig)
+        st.pyplot(fig, clear_figure=True)
+
 
         # Botón para descargar imagen del gráfico RMN 1H
         buffer_img = BytesIO()

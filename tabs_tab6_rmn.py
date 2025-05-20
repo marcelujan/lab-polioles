@@ -332,6 +332,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         ax.legend()
         
+        trazar_deltas = st.session_state.get("mostrar_deltas", False)
+        
         # --- Leer datos de tabla y preparar valores δ pico si corresponde ---
         tabla_path_rmn1h = "tabla_editable_rmn1h"
         doc_ref = db.collection("configuracion_global").document(tabla_path_rmn1h)
@@ -351,7 +353,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
         df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
 
-        trazar_deltas = st.session_state.get("mostrar_deltas", False)
+
         
         if trazar_deltas and not df_rmn1h_tabla.empty:
             for _, row in df_rmn1h_tabla.iterrows():

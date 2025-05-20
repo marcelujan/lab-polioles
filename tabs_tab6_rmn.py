@@ -352,7 +352,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
         df_rmn1h_tabla = df_rmn1h_tabla.sort_values(by="δ pico", ascending=False, na_position="last").reset_index(drop=True)
 
-        
+
         trazar_deltas = st.session_state.get("mostrar_deltas", False)
         
         if trazar_deltas and not df_rmn1h_tabla.empty:
@@ -368,7 +368,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             etiqueta,
                             rotation=90,                       # vertical
                             va="top", ha="left",
-                            fontsize=7, color="black"
+                            fontsize=4, color="black"
                         )
 
                 except:

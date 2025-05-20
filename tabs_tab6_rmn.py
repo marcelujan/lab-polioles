@@ -364,7 +364,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         ax.vlines(x=delta, ymin=0, ymax=50, color="black", linestyle="dashed", linewidth=1)
                         ax.text(
                             delta,
-                            52,
+                            51,
                             etiqueta,
                             rotation=90,  
                             va="bottom", ha="center",

@@ -332,6 +332,17 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         ax.legend()
         
+        # --- Trazar líneas verticales para 'δ pico' si se activa ---
+        if 'df_edit_rmn1h' in locals() and not df_edit_rmn1h.empty:
+            trazar_deltas = st.checkbox("Señales δ pico", value=False)
+
+            if trazar_deltas:
+                deltas = pd.to_numeric(df_edit_rmn1h["δ pico"], errors="coerce").dropna().unique()
+                for delta in deltas:
+                    ax.axvline(x=delta, color="gray", linestyle="dashed", linewidth=1)
+        else:
+            trazar_deltas = False
+
         st.pyplot(fig)
 
         # Botón para descargar imagen del gráfico RMN 1H
@@ -402,11 +413,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         # --- Trazar líneas verticales para 'δ pico' si se activa ---
         trazar_deltas = st.checkbox("Señales δ pico", value=False)
 
-        if trazar_deltas and not df_edit_rmn1h.empty:
-            # Obtener valores únicos de δ pico (ignorando NaN o vacíos)
-            deltas = pd.to_numeric(df_edit_rmn1h["δ pico"], errors="coerce").dropna().unique()
-            for delta in deltas:
-                ax.axvline(x=delta, color="gray", linestyle="dashed", linewidth=1)
 
 
 

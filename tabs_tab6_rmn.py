@@ -344,7 +344,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-        # --- Tabla bibliografia debajo del gráfico RMN 1H ---
+        # --- Tabla bibliografía debajo del gráfico RMN 1H ---
         tabla_path_rmn1h = "tabla_editable_rmn1h"
         doc_ref = db.collection("configuracion_global").document(tabla_path_rmn1h)
 
@@ -361,7 +361,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         for col in columnas_rmn1h:
             if col not in df_rmn1h_tabla.columns:
                 df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
-        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]  # asegurar orden
+        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
 
         df_edit_rmn1h = st.data_editor(
             df_rmn1h_tabla,
@@ -372,21 +372,24 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             column_config={
                 "X min": st.column_config.NumberColumn(format="%.2f"),
                 "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                "X max": st.column_config.NumberColumn(format="%.2f")})
+                "X max": st.column_config.NumberColumn(format="%.2f")
+            }
+        )
 
-        guardar_tabla_rmn1h = st.button("💾 Descargar Tabla Bibliográfica")
-
-        if guardar_tabla_rmn1h:
+        # ✅ BOTÓN de GUARDADO de tabla en Firebase
+        if st.button("💾 Actualizar tabla bibliográfica"):
             doc_ref.set({"filas": df_edit_rmn1h.to_dict(orient="records")})
-            st.success("🔴Actualizar Tabla bibliográfica")
+            st.success("✅ Tabla bibliográfica actualizada")
             st.rerun()
 
-            # Botón de descarga de la Tabla Bibliográfica
-            buffer_excel = BytesIO()
-            with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                df_edit_rmn1h.to_excel(writer, index=False, sheet_name="Tabla_Bibliográfica_RMN1H")
-            buffer_excel.seek(0)
-            st.download_button("Descargar Tabla Bibliográfica", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        # ✅ BOTÓN DE DESCARGA EXCEL (siempre visible)
+        buffer_excel = BytesIO()
+        with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+            df_edit_rmn1h.to_excel(writer, index=False, sheet_name="Tabla_Bibliográfica_RMN1H")
+        buffer_excel.seek(0)
+        st.download_button("📥 Descargar Tabla Bibliográfica", data=buffer_excel.getvalue(), file_name="tabla_bibliografica_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
 
         # --- Trazar líneas verticales para 'δ pico' si se activa ---
         trazar_deltas = st.checkbox("Señales δ pico", value=False)

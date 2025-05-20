@@ -380,7 +380,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         col1, col2 = st.columns([1, 1])
 
         with col1:
-            if st.button("💾 Actualizar tabla bibliográfica"):
+            if st.button("🔴Actualizar Tabla Bibliográfica"):
                 doc_ref.set({"filas": df_edit_rmn1h.to_dict(orient="records")})
                 st.success("✅ Tabla bibliográfica actualizada")
                 st.rerun()

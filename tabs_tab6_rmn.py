@@ -354,7 +354,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Obtener el documento actualizado
         doc_tabla = doc_ref.get()
-        columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "X pico", "X max", "Observaciones"]
+        columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "δ pico", "X max", "Observaciones"]
         filas_rmn1h = doc_tabla.to_dict().get("filas", [])
 
         df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
@@ -371,7 +371,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             key="editor_tabla_rmn1h",
             column_config={
                 "X min": st.column_config.NumberColumn(format="%.2f"),
-                "X pico": st.column_config.NumberColumn(format="%.2f"),
+                "δ pico": st.column_config.NumberColumn(format="%.2f"),
                 "X max": st.column_config.NumberColumn(format="%.2f")})
 
         # Guardar si hay cambios

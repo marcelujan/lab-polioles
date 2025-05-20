@@ -332,10 +332,27 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         ax.legend()
         
+        # --- Leer datos de tabla y preparar valores δ pico si corresponde ---
+        tabla_path_rmn1h = "tabla_editable_rmn1h"
+        doc_ref = db.collection("configuracion_global").document(tabla_path_rmn1h)
 
-        
+        # Crear documento si no existe
+        if not doc_ref.get().exists:
+            doc_ref.set({"filas": []})
+
+        # Obtener el documento
+        doc_tabla = doc_ref.get()
+        columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "δ pico", "X max", "Observaciones"]
+        filas_rmn1h = doc_tabla.to_dict().get("filas", [])
+
+        df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
+        for col in columnas_rmn1h:
+            if col not in df_rmn1h_tabla.columns:
+                df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
+        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
+
         trazar_deltas = st.session_state.get("mostrar_deltas", False)
-
+        
         if trazar_deltas and not df_rmn1h_tabla.empty:
             for _, row in df_rmn1h_tabla.iterrows():
                 try:
@@ -355,24 +372,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     continue
 
 
-        # --- Leer datos de tabla y preparar valores δ pico si corresponde ---
-        tabla_path_rmn1h = "tabla_editable_rmn1h"
-        doc_ref = db.collection("configuracion_global").document(tabla_path_rmn1h)
 
-        # Crear documento si no existe
-        if not doc_ref.get().exists:
-            doc_ref.set({"filas": []})
-
-        # Obtener el documento
-        doc_tabla = doc_ref.get()
-        columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "δ pico", "X max", "Observaciones"]
-        filas_rmn1h = doc_tabla.to_dict().get("filas", [])
-
-        df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
-        for col in columnas_rmn1h:
-            if col not in df_rmn1h_tabla.columns:
-                df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
-        df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
 
 
 

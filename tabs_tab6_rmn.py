@@ -174,15 +174,18 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         colores = plt.cm.tab10.colors
 
-        # --- Tamaño dinámico según el rango de X ---
+        # --- Tamaño dinámico del gráfico según rango de X ---
         if x_min is not None and x_max is not None:
             x_rango = abs(x_max - x_min)
         else:
-            x_rango = 10  # valor por defecto si no hay límites
+            x_rango = 10  # valor por defecto si no hay rango definido
 
-        ancho = max(6, x_rango * 2.5, 8)  # mínimo de 6 pulgadas de ancho, escala con el zoom
-        alto = 4                      # altura fija
+        # Escalar el ancho con el rango x, con límites mínimo y máximo
+        ancho = min(max(6, x_rango * 2.5), 6.1)  # mínimo 6, máximo 12 pulgadas de ancho
+        alto = 4                                # altura fija
+
         fig, ax = plt.subplots(figsize=(ancho, alto))
+
 
 
         # Graficar todos los espectros seleccionados

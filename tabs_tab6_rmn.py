@@ -320,16 +320,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     st.success("✅ Área, Área as y H recalculadas correctamente")
                     st.rerun()
 
-        # --- Trazar líneas verticales para 'δ pico' si se activa ---
-        trazar_deltas = st.checkbox("Señales δ pico", value=False)
 
-        if trazar_deltas and not df_edit_rmn1h.empty:
-            # Obtener valores únicos de δ pico (ignorando NaN o vacíos)
-            deltas = pd.to_numeric(df_edit_rmn1h["δ pico"], errors="coerce").dropna().unique()
-            for delta in deltas:
-                ax.axvline(x=delta, color="gray", linestyle="dashed", linewidth=1)
-
-                
 
 
         ax.set_xlabel("[ppm]")
@@ -397,7 +388,14 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             buffer_excel.seek(0)
             st.download_button("Descargar Tabla Bibliográfica", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
+        # --- Trazar líneas verticales para 'δ pico' si se activa ---
+        trazar_deltas = st.checkbox("Señales δ pico", value=False)
 
+        if trazar_deltas and not df_edit_rmn1h.empty:
+            # Obtener valores únicos de δ pico (ignorando NaN o vacíos)
+            deltas = pd.to_numeric(df_edit_rmn1h["δ pico"], errors="coerce").dropna().unique()
+            for delta in deltas:
+                ax.axvline(x=delta, color="gray", linestyle="dashed", linewidth=1)
 
 
 

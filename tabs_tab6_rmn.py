@@ -362,12 +362,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     if etiqueta and not np.isnan(delta):
                         ax.axvline(x=delta, color="black", linestyle="dashed", linewidth=1)
                         ax.text(
-                            delta + 0.03,                     # un poco a la derecha de la línea
+                            delta + 0.1,                     # un poco a la derecha de la línea
                             ax.get_ylim()[1] * 0.95,          # parte superior
                             etiqueta,
                             rotation=90,                       # vertical
                             va="top", ha="left",
-                            fontsize=5, color="black"
+                            fontsize=6, color="black"
                         )
 
                 except:

@@ -173,7 +173,17 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         colores = plt.cm.tab10.colors
-        fig, ax = plt.subplots(figsize=(160, 35))  # evita el achique por rango angosto
+
+        # --- Tamaño dinámico según el rango de X ---
+        if x_min is not None and x_max is not None:
+            x_rango = abs(x_max - x_min)
+        else:
+            x_rango = 10  # valor por defecto si no hay límites
+
+        ancho = max(6, x_rango * 2.5)  # mínimo de 6 pulgadas de ancho, escala con el zoom
+        alto = 4                      # altura fija
+        fig, ax = plt.subplots(figsize=(ancho, alto))
+
 
 
 

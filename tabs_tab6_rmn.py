@@ -173,7 +173,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         colores = plt.cm.tab10.colors
-        fig, ax = plt.subplots(figsize=(16, 35))  # evita el achique por rango angosto
+        fig, ax = plt.subplots(figsize=(160, 35))  # evita el achique por rango angosto
 
 
 

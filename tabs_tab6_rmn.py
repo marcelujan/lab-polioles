@@ -173,7 +173,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         colores = plt.cm.tab10.colors
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(6, 3.5))  # similar a FTIR y evita el achique por rango angosto
+
 
 
         # Graficar todos los espectros seleccionados

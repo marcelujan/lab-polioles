@@ -342,7 +342,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Obtener el documento
         doc_tabla = doc_ref.get()
-        columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "δ pico", "X max", "Observaciones"]
+        columnas_rmn1h = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
         filas_rmn1h = doc_tabla.to_dict().get("filas", [])
 
         df_rmn1h_tabla = pd.DataFrame(filas_rmn1h)
@@ -350,6 +350,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             if col not in df_rmn1h_tabla.columns:
                 df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
         df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
+        df_rmn1h_tabla = df_rmn1h_tabla.sort_values(by="δ pico", ascending=False, na_position="last")
 
         
         trazar_deltas = st.session_state.get("mostrar_deltas", False)

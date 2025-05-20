@@ -374,6 +374,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 "δ pico": st.column_config.NumberColumn(format="%.2f"),
                 "X max": st.column_config.NumberColumn(format="%.2f")})
 
+        guardar_tabla_rmn1h = st.button("💾 Guardar tabla bibliográfica RMN 1H")
+
+        if guardar_tabla_rmn1h:
+            doc_ref.set({"filas": df_edit_rmn1h.to_dict(orient="records")})
+            st.success("🔴Actualizar Tabla bibliográfica")
+            st.rerun()
+
         # Guardar si hay cambios
         if not df_edit_rmn1h.equals(df_rmn1h_tabla):
             doc_ref.set({"filas": df_edit_rmn1h.to_dict(orient="records")})

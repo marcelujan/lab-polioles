@@ -365,7 +365,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         ax.text(
                             delta,
                             52,
-                            ax.get_ylim()[1] * 0.95, 
                             etiqueta,
                             rotation=90,  
                             va="bottom", ha="center",

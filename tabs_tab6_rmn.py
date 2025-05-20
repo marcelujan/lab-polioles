@@ -368,7 +368,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             etiqueta,
                             rotation=90,  
                             va="bottom", ha="center",
-                            fontsize=5, color="black"
+                            fontsize=4, color="black"
                         )
                 except:
                     continue

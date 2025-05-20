@@ -332,12 +332,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         ax.legend()
         
-        # --- Trazar líneas verticales y etiquetas si el checkbox está activado ---
-        # Esta variable solo existe más abajo, así que inicializamos en False
+
+        
         trazar_deltas = st.session_state.get("mostrar_deltas", False)
 
-        if trazar_deltas and not df_edit_rmn1h.empty:
-            for _, row in df_edit_rmn1h.iterrows():
+        if trazar_deltas and not df_rmn1h_tabla.empty:
+            for _, row in df_rmn1h_tabla.iterrows():
                 try:
                     delta = float(row["δ pico"])
                     etiqueta = str(row.get("Grupo funcional", "")).strip()
@@ -355,7 +355,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     continue
 
 
-        # --- Tabla bibliografía debajo del gráfico RMN 1H ---
+        # --- Leer datos de tabla y preparar valores δ pico si corresponde ---
         tabla_path_rmn1h = "tabla_editable_rmn1h"
         doc_ref = db.collection("configuracion_global").document(tabla_path_rmn1h)
 
@@ -363,7 +363,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if not doc_ref.get().exists:
             doc_ref.set({"filas": []})
 
-        # Obtener el documento actualizado
+        # Obtener el documento
         doc_tabla = doc_ref.get()
         columnas_rmn1h = ["Tipo de muestra", "Grupo funcional", "X min", "δ pico", "X max", "Observaciones"]
         filas_rmn1h = doc_tabla.to_dict().get("filas", [])
@@ -374,7 +374,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 df_rmn1h_tabla[col] = "" if col in ["Tipo de muestra", "Grupo funcional", "Observaciones"] else np.nan
         df_rmn1h_tabla = df_rmn1h_tabla[columnas_rmn1h]
 
-        df_edit_rmn1h = df_rmn1h_tabla.copy()
 
 
 

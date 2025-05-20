@@ -128,7 +128,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         key=f"chk_mask_{row['id']}_{idx}"
                     )
             st.markdown("</div>", unsafe_allow_html=True)
-        
+            
+        activar_calculos = st.checkbox("Cálculos D/T2", value=False)
+
     # --- Rango de visualización (todo en una fila) ---
     if not df_rmn1H.empty:
         all_x = []
@@ -169,7 +171,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         else:
             x_min, x_max, y_min, y_max = None, None, None, None
 
-        activar_calculos = st.checkbox("Cálculos D/T2", value=False)
+
         colores = plt.cm.tab10.colors
         fig, ax = plt.subplots()
 

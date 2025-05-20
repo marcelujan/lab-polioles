@@ -180,7 +180,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         else:
             x_rango = 10  # valor por defecto si no hay límites
 
-        ancho = max(6, x_rango * 2.5, 12)  # mínimo de 6 pulgadas de ancho, escala con el zoom
+        ancho = max(6, x_rango * 2.5, 8)  # mínimo de 6 pulgadas de ancho, escala con el zoom
         alto = 4                      # altura fija
         fig, ax = plt.subplots(figsize=(ancho, alto))
 

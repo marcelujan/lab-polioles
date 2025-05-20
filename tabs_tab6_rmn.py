@@ -332,14 +332,27 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         ax.legend()
         
-        # --- Trazar líneas verticales para 'δ pico' si se activa ---
+        # --- Trazar líneas verticales y etiquetas 'Grupo funcional' para cada δ pico ---
         if 'df_edit_rmn1h' in locals() and not df_edit_rmn1h.empty:
             trazar_deltas = st.checkbox("Señales δ pico", value=False)
 
             if trazar_deltas:
-                deltas = pd.to_numeric(df_edit_rmn1h["δ pico"], errors="coerce").dropna().unique()
-                for delta in deltas:
-                    ax.axvline(x=delta, color="gray", linestyle="dashed", linewidth=1)
+                for _, row in df_edit_rmn1h.iterrows():
+                    try:
+                        delta = float(row["δ pico"])
+                        etiqueta = str(row.get("Grupo funcional", "")).strip()
+                        if etiqueta and not np.isnan(delta):
+                            ax.axvline(x=delta, color="gray", linestyle="dashed", linewidth=1)
+                            ax.text(
+                                delta,                          # posición x
+                                ax.get_ylim()[1]*0.95,          # posición y (superior)
+                                etiqueta,                       # texto
+                                rotation=90,
+                                va="top", ha="center",
+                                fontsize=7, color="gray"
+                            )
+                    except:
+                        continue
         else:
             trazar_deltas = False
 

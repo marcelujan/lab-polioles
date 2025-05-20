@@ -383,7 +383,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
                 df_edit_rmn1h.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
             buffer_excel.seek(0)
-            st.download_button("📁 Descargar máscaras D/T2", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button("Descargar Tabla Bibliográfica", data=buffer_excel.getvalue(), file_name="mascaras_rmn1h.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         # --- Trazar líneas verticales para 'δ pico' si se activa ---
         trazar_deltas = st.checkbox("Señales δ pico", value=False)

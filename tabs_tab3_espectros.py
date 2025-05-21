@@ -149,6 +149,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 "Tipo": e.get("tipo", ""),
                 "Archivo": e.get("nombre_archivo", ""),
                 "Fecha": e.get("fecha", ""),
+                "Peso": e.get("peso_muestra", ""), 
                 "Observaciones": e.get("observaciones", ""),
                 "ID": f"{m['nombre']}__{i}"
             }

@@ -673,7 +673,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Botón para descargar ZIP con todas las imágenes mostradas
         with TemporaryDirectory() as tmpdir:
-            # Construir nombre único del ZIP usando los campos definidos en hoja 3
+            import collections
+            # Construir nombre base del ZIP desde la primera fila válida
             primera_fila = df_rmn_img.iloc[0].to_dict() if not df_rmn_img.empty else {}
 
             muestra = primera_fila.get("muestra", "Desconocida")
@@ -683,16 +684,17 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             peso = primera_fila.get("peso") or primera_fila.get("peso_muestra") or "?"
 
             nombre_zip = f"{muestra} — {tipo} — {fecha} — {archivo} — {peso} g".replace(" ", "_").replace("—", "-")
-            nombre_zip = nombre_zip.replace(":", "-").replace("/", "-")  # evitar caracteres inválidos
-
+            nombre_zip = nombre_zip.replace(":", "-").replace("/", "-")
             zip_path = os.path.join(tmpdir, f"{nombre_zip}.zip")
+
+            # Prevenir nombres repetidos dentro del ZIP
+            nombre_usado = collections.Counter()
 
             with zipfile.ZipFile(zip_path, "w") as zipf:
                 for _, row in df_rmn_img.iterrows():
                     base_name = row["archivo"]
                     nombre_usado[base_name] += 1
 
-                    # Si se repite, agregamos sufijo
                     if nombre_usado[base_name] > 1:
                         nombre_archivo = f"{os.path.splitext(base_name)[0]}_{nombre_usado[base_name]}{os.path.splitext(base_name)[1]}"
                     else:
@@ -709,7 +711,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         zipf.write(ruta, arcname=nombre_archivo)
                     except:
                         continue
+
             with open(zip_path, "rb") as final_zip:
-                st.download_button("📦 Descargar imágenes RMN", data=final_zip.read(), file_name=os.path.basename(zip_path), mime="application/zip")
+                st.download_button(
+                    "📦 Descargar imágenes RMN",
+                    data=final_zip.read(),
+                    file_name=os.path.basename(zip_path),
+                    mime="application/zip"
+                )
 
     mostrar_sector_flotante(db, key_suffix="tab6")

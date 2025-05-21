@@ -344,7 +344,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                     # Guardar conjunto completo actualizado
                     doc_dt2.set({"filas": df_actualizado.to_dict(orient="records")})
-                    
+
                     st.success("✅ Área, Área as y H recalculadas correctamente")
                     st.rerun()
 
@@ -676,16 +676,24 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             zip_path = os.path.join(tmpdir, f"imagenes_rmn_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip")
             with zipfile.ZipFile(zip_path, "w") as zipf:
                 for _, row in df_rmn_img.iterrows():
-                    nombre = row["archivo"]
+                    base_name = row["archivo"]
+                    nombre_usado[base_name] += 1
+
+                    # Si se repite, agregamos sufijo
+                    if nombre_usado[base_name] > 1:
+                        nombre_archivo = f"{os.path.splitext(base_name)[0]}_{nombre_usado[base_name]}{os.path.splitext(base_name)[1]}"
+                    else:
+                        nombre_archivo = base_name
+
                     contenido = row["contenido"]
                     if not contenido:
                         continue
                     try:
                         img_bytes = base64.b64decode(contenido)
-                        ruta = os.path.join(tmpdir, nombre)
+                        ruta = os.path.join(tmpdir, nombre_archivo)
                         with open(ruta, "wb") as f:
                             f.write(img_bytes)
-                        zipf.write(ruta, arcname=nombre)
+                        zipf.write(ruta, arcname=nombre_archivo)
                     except:
                         continue
             with open(zip_path, "rb") as final_zip:

@@ -232,6 +232,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             filas_guardadas = doc_data.get("filas", [])
             df_dt2 = pd.DataFrame(filas_guardadas)
 
+            # 🔁 Filtrar solo las muestras seleccionadas en el multiselect
+            if not df_dt2.empty and muestras_sel:
+                df_dt2 = df_dt2[df_dt2["Muestra"].isin(muestras_sel)]
+
             for col in columnas_dt2:
                 if col not in df_dt2.columns:
                     df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
@@ -328,7 +332,19 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             st.warning(f"⚠️ Error en fila {i}: {e}")
                             continue
 
-                    doc_dt2.set({"filas": df_dt2_edit.to_dict(orient="records")})
+                    # Cargar todas las filas originales
+                    todas_las_filas = doc_dt2.get().to_dict().get("filas", [])
+                    df_todas = pd.DataFrame(todas_las_filas)
+
+                    # Eliminar las filas de muestras activas
+                    df_restantes = df_todas[~df_todas["Muestra"].isin(muestras_sel)] if not df_todas.empty else pd.DataFrame()
+
+                    # Combinar las editadas (filtradas) con las no modificadas
+                    df_actualizado = pd.concat([df_restantes, df_dt2_edit], ignore_index=True)
+
+                    # Guardar conjunto completo actualizado
+                    doc_dt2.set({"filas": df_actualizado.to_dict(orient="records")})
+                    
                     st.success("✅ Área, Área as y H recalculadas correctamente")
                     st.rerun()
 

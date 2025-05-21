@@ -172,11 +172,15 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     df_mascaras = pd.DataFrame(filas_mascaras)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
+        def descripcion_espectro(i):
+            fila = df_esp_tabla[df_esp_tabla['ID'] == i].iloc[0]
+            return f"{fila['Muestra']} — {fila['Tipo']} — {fila['Fecha']} — {fila['Archivo']}"
+
         seleccion = st.selectbox(
             "Eliminar espectro",
             df_esp_tabla["ID"],
-            format_func=lambda i: df_esp_tabla[df_esp_tabla['ID'] == i]['Archivo'].values[0]
-            )
+            format_func=descripcion_espectro
+        )        
         st.markdown("")
         confirmar = st.checkbox(f"Confirmar eliminación del espectro: {df_esp_tabla[df_esp_tabla['ID'] == seleccion]['Archivo'].values[0]}", key="chk_eliminar_esp")
         if st.button("Eliminar espectro"):

@@ -673,7 +673,20 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Botón para descargar ZIP con todas las imágenes mostradas
         with TemporaryDirectory() as tmpdir:
-            zip_path = os.path.join(tmpdir, f"imagenes_rmn_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip")
+            # Construir nombre único del ZIP usando los campos definidos en hoja 3
+            primera_fila = df_rmn_img.iloc[0].to_dict() if not df_rmn_img.empty else {}
+
+            muestra = primera_fila.get("muestra", "Desconocida")
+            tipo = primera_fila.get("tipo", "RMN")
+            fecha = primera_fila.get("fecha", datetime.now().strftime("%Y-%m-%d"))
+            archivo = primera_fila.get("archivo", "archivo")
+            peso = primera_fila.get("peso") or primera_fila.get("peso_muestra") or "?"
+
+            nombre_zip = f"{muestra} — {tipo} — {fecha} — {archivo} — {peso} g".replace(" ", "_").replace("—", "-")
+            nombre_zip = nombre_zip.replace(":", "-").replace("/", "-")  # evitar caracteres inválidos
+
+            zip_path = os.path.join(tmpdir, f"{nombre_zip}.zip")
+
             with zipfile.ZipFile(zip_path, "w") as zipf:
                 for _, row in df_rmn_img.iterrows():
                     base_name = row["archivo"]

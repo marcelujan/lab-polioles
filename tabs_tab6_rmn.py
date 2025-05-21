@@ -692,7 +692,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
             with zipfile.ZipFile(zip_path, "w") as zipf:
                 for _, row in df_rmn_img.iterrows():
-                    base_name = row["archivo"]
+                    base_name = row.get("archivo", "espectro_desconocido.xlsx").strip()
+                    base_name = base_name.replace(" ", "_").replace("—", "-").replace("/", "-").replace("\\", "-")
                     nombre_usado[base_name] += 1
 
                     if nombre_usado[base_name] > 1:

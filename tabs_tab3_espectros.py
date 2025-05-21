@@ -234,7 +234,13 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             if not contenido:
                                 continue
                             carpeta = f"{m['nombre']}"
-                            nombre = e.get("nombre_archivo", "espectro")
+                            nombre_original = e.get("nombre_archivo", f"espectro_{i}.xlsx")
+                            muestra_abrev = m["nombre"].replace(" ", "")[:8]
+                            fecha = e.get("fecha", "fecha")
+                            tipo = e.get("tipo", "tipo").replace(" ", "")
+                            nombre_archivo = os.path.splitext(nombre_original)[0][:25]  # acortar si es muy largo
+                            nombre_final = f"{muestra_abrev}__{tipo}__{fecha}__{nombre_archivo}__idx{i}.xlsx"
+                            nombre_final = nombre_final.replace("—", "-").replace(" ", "_").replace("/", "-").replace("\\", "-")
                             fullpath = os.path.join(tmpdir, carpeta)
                             os.makedirs(fullpath, exist_ok=True)
                             file_path = os.path.join(fullpath, nombre)

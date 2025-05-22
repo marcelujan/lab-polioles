@@ -58,7 +58,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         espectros_sel[muestra] = st.multiselect(
             f"Espectros para {muestra}",
             options=espectros_validos,
-            default=espectros_validos[:1]
+            default=[]
         )
 
 

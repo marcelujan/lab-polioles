@@ -143,10 +143,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             ax.plot(df[col_x], df[col_y], label=f"{archivo}", color=color)
             graficado = True
 
-            checkbox_key = f"chk_masc_{row['id']}"
-            mostrar_mascara = st.checkbox(f"{archivo}", key=checkbox_key, value=False)
-
-
             if activar_mascara:
                 checkbox_key = f"chk_masc_{row['id']}"
                 mostrar_mascara = st.checkbox(f"{archivo}", key=checkbox_key, value=False)

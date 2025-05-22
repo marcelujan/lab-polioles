@@ -243,14 +243,14 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             nombre_final = nombre_final.replace("—", "-").replace(" ", "_").replace("/", "-").replace("\\", "-")
                             fullpath = os.path.join(tmpdir, carpeta)
                             os.makedirs(fullpath, exist_ok=True)
-                            file_path = os.path.join(fullpath, nombre)
+                            file_path = os.path.join(fullpath, nombre_final)
                             with open(file_path, "wb") as file_out:
                                 try:
                                     file_out.write(base64.b64decode(contenido))
                                 except Exception as error:
                                     st.error(f"Error al decodificar archivo: {nombre} — {error}")
                                     continue
-                            zipf.write(file_path, arcname=os.path.join(carpeta, nombre))
+                            zipf.write(file_path, arcname=os.path.join(carpeta, nombre_final))
 
                 with open(zip_path, "rb") as final_zip:
                     zip_bytes = final_zip.read()

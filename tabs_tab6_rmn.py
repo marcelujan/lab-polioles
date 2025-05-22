@@ -224,41 +224,58 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Cálculos D/T2 sólo si el checkbox está activado
         if activar_calculos:
-            doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
-            doc_data = doc_dt2.get().to_dict() or {}
-            filas_guardadas = doc_data.get("filas", [])
+            filas_guardadas = []
 
-            # 🔄 Auto-cargar máscaras D/T2 desde espectros seleccionados (si no hay datos previos)
-            if not filas_guardadas and activar_mascara:
-                nuevas_filas = []
-                for _, row in df_rmn1H.iterrows():
-                    if not usar_mascara.get(row["id"], False):
-                        continue
-                    nombre_muestra = row["muestra"]
-                    archivo = row["archivo"]
-                    for m in row.get("mascaras", []):
-                        nuevas_filas.append({
-                            "Muestra": nombre_muestra,
-                            "Archivo": archivo,
-                            "X min": m.get("x_min"),
-                            "X max": m.get("x_max"),
-                            "D": m.get("difusividad"),
-                            "T2": m.get("t2"),
-                            "Grupo funcional": "",
-                            "δ pico": None,
-                            "Área": None,
-                            "Xas min": None,
-                            "Xas max": None,
-                            "Has": None,
-                            "Área as": None,
-                            "H": None,
-                            "Observaciones": ""
-                        })
-                if nuevas_filas:
-                    doc_dt2.set({"filas": nuevas_filas})
-                    filas_guardadas = nuevas_filas  # actualizar para mostrar
+            # 📥 Cargar datos existentes desde Firebase por muestra
+            for m in muestras_sel:
+                doc = db.collection("muestras").document(m["nombre"]).collection("dt2").document("datos")
+                data = doc.get().to_dict()
+                if data and "filas" in data:
+                    filas_guardadas.extend(data["filas"])
 
-            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", 
+            # 🔄 Auto-cargar máscaras D/T2 si hay máscara activa y faltan muestras
+            if activar_mascara and muestras_sel:
+                muestras_ya_cargadas = {f.get("Muestra") for f in filas_guardadas}
+                for muestra_obj in muestras_sel:
+                    nombre_muestra = muestra_obj["nombre"]
+                    if nombre_muestra in muestras_ya_cargadas:
+                        continue  # Ya está cargada
+
+                    nuevas_filas = []
+                    for _, row in df_rmn1H.iterrows():
+                        if row["muestra"] != nombre_muestra:
+                            continue
+                        if not usar_mascara.get(row["id"], False):
+                            continue
+
+                        archivo = row["archivo"]
+                        for m in row.get("mascaras", []):
+                            nuevas_filas.append({
+                                "Muestra": nombre_muestra,
+                                "Archivo": archivo,
+                                "X min": m.get("x_min"),
+                                "X max": m.get("x_max"),
+                                "D": m.get("difusividad"),
+                                "T2": m.get("t2"),
+                                "Grupo funcional": "",
+                                "δ pico": None,
+                                "Área": None,
+                                "Xas min": None,
+                                "Xas max": None,
+                                "Has": None,
+                                "Área as": None,
+                                "H": None,
+                                "Observaciones": ""
+                            })
+
+                    if nuevas_filas:
+                        # Guardar en Firebase por muestra
+                        doc_muestra = db.collection("muestras").document(nombre_muestra).collection("dt2").document("datos")
+                        doc_muestra.set({"filas": nuevas_filas})
+                        filas_guardadas.extend(nuevas_filas)
+
+            # 🧾 Mostrar tabla
+            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                             "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
             df_dt2 = pd.DataFrame(filas_guardadas)
 

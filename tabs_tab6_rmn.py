@@ -204,6 +204,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     # --- Señales pico bibliografía ---
     activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas")
+    col_pico, col_editar = st.columns([1, 1])
+    with col_pico:
+        activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas")
+    with col_editar:
+        editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio")
 
     if activar_picos:
         doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")

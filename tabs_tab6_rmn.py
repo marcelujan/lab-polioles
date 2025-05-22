@@ -98,6 +98,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_rmn1h")
 
+
+    
     # Generar gráfico
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.set_title("Espectros RMN 1H")
@@ -106,9 +108,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.axhline(y=0, color="black", linewidth=0.7)
-
-    colores = plt.cm.tab10.colors
     graficado = False
+    colores = plt.cm.tab10.colors
 
     for idx, row in df_rmn1h.iterrows():
         muestra = row["muestra"]

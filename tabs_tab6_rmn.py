@@ -406,9 +406,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 try:
                     delta = float(row["δ pico"])
                     etiqueta = str(row["Grupo funcional"])
-                    ax.axvline(x=delta, linestyle="dashed", color="black", linewidth=1)
+                    ax.axvline(x=delta, linestyle="dashed", color="black", linewidth=0.5)
+                    y_etiqueta = ax.get_ylim()[0] + 0.7 * (ax.get_ylim()[1] - ax.get_ylim()[0])
                     ax.text(
-                        delta, ax.get_ylim()[1], etiqueta,
+                        delta, y_etiqueta, etiqueta,
                         rotation=90, va="bottom", ha="center",
                         fontsize=6, color="black"
                     )

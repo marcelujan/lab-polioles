@@ -204,10 +204,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     # --- Señales pico bibliografía ---
     col_pico, col_editar = st.columns([1, 1])
+    activar_picos = editar_tabla_biblio = False  # inicializar
     with col_pico:
-        activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas")
-    with col_editar:
-        editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio")
+        activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas_biblio")
+    if activar_picos:
+        with col_editar:
+            editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio")
 
     # Cargar y preparar la tabla
     df_biblio = None  # Inicializar para evitar error si no se activa el checkbox

@@ -97,7 +97,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     y_min = coly1.number_input("Y mínimo", value=0.0)
     y_max = coly2.number_input("Y máximo", value=80.0)
 
-    activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_rmn1h")
+   # activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_rmn1h")
     
     # Generar gráfico
     fig, ax = plt.subplots(figsize=(8, 4))
@@ -141,62 +141,70 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             ax.plot(df[col_x], df[col_y], label=f"{archivo}", color=color)
             graficado = True
 
+            activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_global_rmn1h")
+
             if activar_mascara:
-                cols = st.columns(len(df_rmn1h))  # Crear una columna por espectro
+                cols = st.columns(len(df_rmn1h))  # una columna por espectro
+                checkbox_estado = {}
 
-                for idx, row in enumerate(df_rmn1h.itertuples()):
-                    muestra = row.muestra
-                    archivo = row.archivo
-                    contenido = row.contenido
-                    mascaras = getattr(row, "mascaras", [])
-                    checkbox_key = f"chk_masc_{row.id}"
+            # Bucle principal
+            for idx, row in df_rmn1h.iterrows():
+                muestra = row["muestra"]
+                archivo = row["archivo"]
+                contenido = row["contenido"]
+                mascaras = row.get("mascaras", [])
 
-                    with cols[idx]:
-                        mostrar_mascara = st.checkbox(f"{archivo}", key=checkbox_key, value=False)
+                try:
+                    contenido_bin = BytesIO(base64.b64decode(contenido))
+                    extension = os.path.splitext(archivo)[1].lower()
+                    if extension == ".xlsx":
+                        df = pd.read_excel(contenido_bin)
+                    else:
+                        for sep in [",", ";", "\t", " "]:
+                            contenido_bin.seek(0)
+                            try:
+                                df = pd.read_csv(contenido_bin, sep=sep)
+                                if df.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            continue
 
-                    if mostrar_mascara:
-                        try:
-                            contenido_bin = BytesIO(base64.b64decode(contenido))
-                            extension = os.path.splitext(archivo)[1].lower()
+                    col_x, col_y = df.columns[:2]
+                    df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                    df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                    df = df.dropna()
 
-                            if extension == ".xlsx":
-                                df = pd.read_excel(contenido_bin)
-                            else:
-                                for sep in [",", ";", "\t", " "]:
-                                    contenido_bin.seek(0)
-                                    try:
-                                        df = pd.read_csv(contenido_bin, sep=sep)
-                                        if df.shape[1] >= 2:
-                                            break
-                                    except:
-                                        continue
-                                else:
-                                    continue
+                    color = colores[idx % len(colores)]
+                    ax.plot(df[col_x], df[col_y], label=f"{archivo}", color=color)
+                    graficado = True
 
-                            col_x, col_y = df.columns[:2]
-                            df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
-                            df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
-                            df = df.dropna()
+                    # Checkbox horizontal por espectro
+                    if activar_mascara:
+                        with cols[idx]:
+                            key_chk = f"chk_masc_{row['muestra']}_{archivo}"
+                            mostrar_mascara = st.checkbox(archivo, key=key_chk, value=False)
 
-                            color = colores[idx % len(colores)]
-                            for mascara in mascaras:
-                                x0 = mascara.get("x_min")
-                                x1 = mascara.get("x_max")
-                                d = mascara.get("difusividad")
-                                t2 = mascara.get("t2")
-                                if x0 is not None and x1 is not None:
-                                    ax.axvspan(x0, x1, color=color, alpha=0.2)
-                                    y_etiqueta = min(50, ax.get_ylim()[1] * 0.95)
-                                    if d and t2:
-                                        ax.text(
-                                            (x0 + x1) / 2, y_etiqueta,
-                                            f"D={d:.1e} T2={t2:.3f}",
-                                            ha="center", va="center", fontsize=6, color="black", rotation=90
-                                        )
-                        except Exception as e:
-                            st.warning(f"No se pudo aplicar máscara para {archivo}: {e}")
-        except Exception as e:
-            st.warning(f"No se pudo graficar {archivo}: {e}")
+                            if mostrar_mascara:
+                                for mascara in mascaras:
+                                    x0 = mascara.get("x_min")
+                                    x1 = mascara.get("x_max")
+                                    d = mascara.get("difusividad")
+                                    t2 = mascara.get("t2")
+                                    if x0 is not None and x1 is not None:
+                                        ax.axvspan(x0, x1, color=color, alpha=0.2)
+                                        y_etiqueta = min(50, ax.get_ylim()[1] * 0.95)
+                                        if d and t2:
+                                            ax.text(
+                                                (x0 + x1) / 2, y_etiqueta,
+                                                f"D={d:.1e} T2={t2:.3f}",
+                                                ha="center", va="center", fontsize=6, color="black", rotation=90
+                                            )
+
+                except Exception as e:
+                    st.warning(f"No se pudo graficar {archivo}: {e}")
+
 
     if graficado:
         ax.legend()

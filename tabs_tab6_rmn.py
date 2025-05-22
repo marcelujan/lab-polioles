@@ -22,9 +22,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Análisis RMN")
     st.session_state["current_tab"] = "Análisis RMN"
 
-    # --- NUEVO SELECTOR UNIFICADO ---
-    st.subheader("🔍 Selección de muestras y espectros")
-
+    # --- SELECTOR UNIFICADO ---
     # Cargar muestras desde Firebase
     muestras = cargar_muestras(db)
     if not muestras:
@@ -170,7 +168,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
     # --- Cálculo D/T2 desde df_sel ---
-    st.subheader("🧮 Cálculo D/T2")
     activar_calculo_dt2 = st.checkbox("Cálculo D/T2", value=False, key="chk_calc_dt2_dfsel")
 
     if activar_calculo_dt2:
@@ -282,7 +279,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.rerun()
 
     # --- Señales Pico Bibliografía desde df_sel ---
-    st.subheader("📚 Señales Pico Bibliografía")
     col_bib1, col_bib2 = st.columns([1, 1])
     activar_picos = editar_tabla_biblio = False
     with col_bib1:
@@ -356,7 +352,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
     # --- Cálculo de señales desde df_sel ---
-    st.subheader("📐 Cálculo de señales")
     activar_calculo_senales = st.checkbox("Cálculo de señales", value=False, key="chk_calc_senales_dfsel")
 
     if activar_calculo_senales:

@@ -143,19 +143,23 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             ax.plot(df[col_x], df[col_y], label=f"{archivo}", color=color)
             graficado = True
 
-            if activar_mascara:
+            checkbox_key = f"chk_masc_{row['id']}"
+            mostrar_mascara = st.checkbox(f"Máscara para {archivo}", key=checkbox_key, value=False)
+
+            if mostrar_mascara:
                 for mascara in mascaras:
                     x0 = mascara.get("x_min")
                     x1 = mascara.get("x_max")
                     d = mascara.get("difusividad")
                     t2 = mascara.get("t2")
-                    if x0 is None or x1 is None:
-                        continue
-                    ax.axvspan(x0, x1, color=color, alpha=0.2)
-                    if d and t2:
+                    if x0 is not None and x1 is not None:
+                        ax.axvspan(x0, x1, color=color, alpha=0.2)
                         y_etiqueta = min(50, ax.get_ylim()[1] * 0.95)  # máximo 50 o 95% del eje Y
-                        ax.text((x0 + x1) / 2, y_etiqueta,
-                            f"D={d:.1e} T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
+                        if d and t2:
+                            ax.text((x0 + x1) / 2, y_etiqueta, f"D={d:.1e} T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
+
+
+
         except Exception as e:
             st.warning(f"No se pudo graficar {archivo}: {e}")
 

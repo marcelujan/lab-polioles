@@ -70,18 +70,23 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.subheader("🔬 RMN 1H")
 
     # --- Máscara D/T2 ---
-    activar_mascara = st.checkbox("Máscara D/T2", value=False)
+    activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_global_mascara_dt2")
     usar_mascara = {}
     if activar_mascara:
         st.markdown("Activar sombreado individual por muestra:")
         cols = st.columns(len(muestras_sel))
         for idx, muestra in enumerate(muestras_sel):
             with cols[idx]:
-                usar_mascara[muestra] = st.checkbox(muestra, key=f"chk_mask_{muestra}", value=False)
+                usar_mascara[muestra] = st.checkbox(
+                    label=muestra,
+                    key=f"chk_mask_{muestra}_{idx}",
+                    value=False
+                )
+
 
     # --- Cálculo D/T2 ---
     espectros_activos = {m: archivos for m, archivos in espectros_sel.items() if archivos}
-    activar_calculo_dt2 = st.checkbox("Cálculo D/T2", value=False)
+    activar_calculo_dt2 = st.checkbox("Cálculo D/T2", value=False, key="chk_calc_dt2")
     if activar_calculo_dt2:
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                         "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
@@ -208,7 +213,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 num_rows="dynamic"
             )
 
-    mostrar_deltas = st.checkbox("Señales Pico Bibliografía", value=False)
+    mostrar_deltas = st.checkbox("Señales Pico Bibliografía", value=False, key="chk_deltas")
 
     if mostrar_deltas:
         doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")
@@ -225,7 +230,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 df_biblio[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
         df_biblio = df_biblio[columnas_biblio]
 
-        editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False)
+        editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio")
         if editar_tabla_biblio:
             df_biblio_edit = st.data_editor(
                 df_biblio,
@@ -297,7 +302,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # === Cálculo de señales =======
     # ==============================
     espectros_activos = {m: archivos for m, archivos in espectros_sel.items() if archivos}
-    activar_calculo_senales = st.checkbox("Cálculo de señales", value=False)
+    activar_calculo_senales = st.checkbox("Cálculo de señales", value=False, key="chk_calc_senales")
     if activar_calculo_senales:
         columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                              "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]

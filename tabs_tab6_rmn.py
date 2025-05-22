@@ -331,7 +331,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     )
                 except Exception as e:
                     st.warning(f"⚠️ Error al trazar δ pico: {e}")
-
+                    
+# --- Configuración de ejes (mover antes del gráfico) ---
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0)
     x_max = colx2.number_input("X máximo", value=10.0)
@@ -348,9 +349,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     ax.set_ylim(y_min, y_max)
     ax.axhline(y=0, color="black", linewidth=0.7)
 
-    colores = plt.cm.tab10.colors
     graficado = False
-    
+    colores = plt.cm.tab10.colors
+
+
     st.pyplot(fig)
 
     # --- Cálculo de señales desde df_sel ---

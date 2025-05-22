@@ -112,62 +112,66 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     colores = plt.cm.tab10.colors
 
     for idx, row in df_rmn1h.iterrows():
-                muestra = row["muestra"]
-                archivo = row["archivo"]
-                contenido = row["contenido"]
-                mascaras = row.get("mascaras", [])
+        muestra = row["muestra"]
+        archivo = row["archivo"]
+        contenido = row["contenido"]
+        mascaras = row.get("mascaras", [])
 
-                try:
-                    contenido_bin = BytesIO(base64.b64decode(contenido))
-                    extension = os.path.splitext(archivo)[1].lower()
-                    if extension == ".xlsx":
-                        df = pd.read_excel(contenido_bin)
-                    else:
-                        for sep in [",", ";", "\t", " "]:
-                            contenido_bin.seek(0)
-                            try:
-                                df = pd.read_csv(contenido_bin, sep=sep)
-                                if df.shape[1] >= 2:
-                                    break
-                            except:
-                                continue
-                        else:
-                            continue
+        try:
+            contenido_bin = BytesIO(base64.b64decode(contenido))
+            contenido_bin.seek(0)  # 🔒 Reiniciar buffer antes de lectura
+            extension = os.path.splitext(archivo)[1].lower()
+            if extension == ".xlsx":
+                df = pd.read_excel(contenido_bin)
+            else:
+                for sep in [",", ";", "\t", " "]:
+                    contenido_bin.seek(0)
+                    try:
+                        df = pd.read_csv(contenido_bin, sep=sep)
+                        if df.shape[1] >= 2:
+                            break
+                    except:
+                        continue
+                else:
+                    st.warning(f"⚠️ {archivo}: no se pudo leer con separadores comunes.")
+                    continue
 
-                    col_x, col_y = df.columns[:2]
-                    df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
-                    df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
-                    df = df.dropna()
+            if df.shape[1] < 2:
+                st.warning(f"⚠️ {archivo}: el archivo no tiene al menos 2 columnas.")
+                continue
 
-                    color = colores[idx % len(colores)]
-                    ax.plot(df[col_x], df[col_y], label=f"{archivo}", color=color)
-                    graficado = True
+            col_x, col_y = df.columns[:2]
+            df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+            df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+            df = df.dropna()
 
-                    # Checkbox horizontal por espectro
-                    if activar_mascara:
-                        with cols[idx]:
-                            key_chk = f"chk_masc_{row['muestra']}_{archivo}"
-                            mostrar_mascara = st.checkbox(archivo, key=key_chk, value=False)
+            color = colores[idx % len(colores)]
+            ax.plot(df[col_x], df[col_y], label=f"{archivo}", color=color)
+            graficado = True
 
-                            if mostrar_mascara:
-                                for mascara in mascaras:
-                                    x0 = mascara.get("x_min")
-                                    x1 = mascara.get("x_max")
-                                    d = mascara.get("difusividad")
-                                    t2 = mascara.get("t2")
-                                    if x0 is not None and x1 is not None:
-                                        ax.axvspan(x0, x1, color=color, alpha=0.2)
-                                        y_etiqueta = min(50, ax.get_ylim()[1] * 0.95)
-                                        if d and t2:
-                                            ax.text(
-                                                (x0 + x1) / 2, y_etiqueta,
-                                                f"D={d:.1e} T2={t2:.3f}",
-                                                ha="center", va="center", fontsize=6, color="black", rotation=90
-                                            )
+            if activar_mascara:
+                with cols[idx]:
+                    key_chk = f"chk_masc_{row['muestra']}_{archivo}"
+                    mostrar_mascara = st.checkbox(archivo, key=key_chk, value=False)
 
-                except Exception as e:
-                    st.warning(f"No se pudo graficar {archivo}: {e}")
+                if mostrar_mascara:
+                    for mascara in mascaras:
+                        x0 = mascara.get("x_min")
+                        x1 = mascara.get("x_max")
+                        d = mascara.get("difusividad")
+                        t2 = mascara.get("t2")
+                        if x0 is not None and x1 is not None:
+                            ax.axvspan(x0, x1, color=color, alpha=0.2)
+                            y_etiqueta = min(50, ax.get_ylim()[1] * 0.95)
+                            if d and t2:
+                                ax.text(
+                                    (x0 + x1) / 2, y_etiqueta,
+                                    f"D={d:.1e} T2={t2:.3f}",
+                                    ha="center", va="center", fontsize=6, color="black", rotation=90
+                                )
 
+        except Exception as e:
+            st.warning(f"No se pudo graficar {archivo}: {e}")
 
     if graficado:
         ax.legend()

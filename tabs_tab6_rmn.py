@@ -87,8 +87,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # === SECCIÓN RMN 1H ===========
     # ==============================
     st.subheader("🔬 RMN 1H")
-
     df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
+
+    if df_rmn1h.empty:
+        return  # o st.stop() si no querés seguir con el resto de esta sección
+
 
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0)

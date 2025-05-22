@@ -227,8 +227,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             filas_guardadas = []
 
             # 📥 Cargar datos existentes desde Firebase por muestra
-            for m in muestras_sel:
-                doc = db.collection("muestras").document(m["nombre"]).collection("dt2").document("datos")
+            for nombre_muestra in muestras_sel:
+                doc = db.collection("muestras").document(nombre_muestra).collection("dt2").document("datos")
                 data = doc.get().to_dict()
                 if data and "filas" in data:
                     filas_guardadas.extend(data["filas"])
@@ -236,8 +236,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             # 🔄 Auto-cargar máscaras D/T2 si hay máscara activa y faltan muestras
             if activar_mascara and muestras_sel:
                 muestras_ya_cargadas = {f.get("Muestra") for f in filas_guardadas}
-                for muestra_obj in muestras_sel:
-                    nombre_muestra = muestra_obj["nombre"]
+                for nombre_muestra in muestras_sel:
                     if nombre_muestra in muestras_ya_cargadas:
                         continue
 
@@ -272,6 +271,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         doc = db.collection("muestras").document(nombre_muestra).collection("dt2").document("datos")
                         doc.set({"filas": nuevas_filas})
                         filas_guardadas.extend(nuevas_filas)
+
 
             # 🧾 Mostrar tabla editable
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",

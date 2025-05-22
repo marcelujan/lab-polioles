@@ -203,19 +203,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
     # --- Señales pico bibliografía ---
-    activar_picos = st.checkbox("Señales Pico Bibliografía", value=False)
+    activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas")
+
     if activar_picos:
-        editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False)
-        if editar_tabla_biblio:
-            st.data_editor(
-                pd.DataFrame(columns=["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]),
-                use_container_width=True,
-                num_rows="dynamic"
-            )
-
-    mostrar_deltas = st.checkbox("Señales Pico Bibliografía", value=False, key="chk_deltas")
-
-    if mostrar_deltas:
         doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")
 
         if not doc_biblio.get().exists:
@@ -231,6 +221,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         df_biblio = df_biblio[columnas_biblio]
 
         editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio")
+
         if editar_tabla_biblio:
             df_biblio_edit = st.data_editor(
                 df_biblio,
@@ -264,7 +255,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-        # Graficar líneas δ pico en gráfico principal si hay valores
+        # Graficar líneas δ pico
         if "fig" in locals() and not df_biblio.empty:
             for _, row in df_biblio.iterrows():
                 try:
@@ -278,7 +269,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     )
                 except:
                     continue
-
 
     # --- Control de ejes del gráfico ---
     colx1, colx2, coly1, coly2 = st.columns(4)

@@ -418,6 +418,89 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     st.pyplot(fig)
 
+    # --- Mostrar gráficos individuales por muestra ---
+    mostrar_individuales = st.checkbox("📊 Mostrar gráficos individuales por muestra")
+
+    if mostrar_individuales:
+        for idx, row in df_rmn1h.iterrows():
+            try:
+                muestra = row["muestra"]
+                archivo = row["archivo"]
+                contenido = row["contenido"]
+                mascaras = row.get("mascaras", [])
+
+                contenido_bin = BytesIO(base64.b64decode(contenido))
+                extension = os.path.splitext(archivo)[1].lower()
+                if extension == ".xlsx":
+                    df = pd.read_excel(contenido_bin)
+                else:
+                    for sep in [",", ";", "\t", " "]:
+                        contenido_bin.seek(0)
+                        try:
+                            df = pd.read_csv(contenido_bin, sep=sep)
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        st.warning(f"{archivo}: no se pudo leer.")
+                        continue
+
+                col_x, col_y = df.columns[:2]
+                df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                df = df.dropna()
+
+                fig_ind, ax_ind = plt.subplots(figsize=(8, 4))
+                ax_ind.plot(df[col_x], df[col_y], label=archivo, color="black")
+                ax_ind.set_title(f"{muestra} – {archivo}")
+                ax_ind.set_xlim(x_min, x_max)
+                ax_ind.set_ylim(y_min, y_max)
+                ax_ind.axhline(y=0, color="black", linewidth=0.5)
+
+                # Máscaras D/T2
+                if activar_mascara:
+                    for mascara in mascaras:
+                        x0 = mascara.get("x_min")
+                        x1 = mascara.get("x_max")
+                        d = mascara.get("difusividad")
+                        t2 = mascara.get("t2")
+                        if x0 is not None and x1 is not None:
+                            ax_ind.axvspan(x0, x1, color="orange", alpha=0.2)
+                            if d and t2:
+                                ax_ind.text((x0 + x1) / 2, y_max * 0.95,
+                                            f"D={d:.1e} T2={t2:.3f}",
+                                            ha="center", va="top", fontsize=6, rotation=90)
+
+                # Señales bibliográficas
+                if activar_picos and not df_biblio.empty:
+                    for _, bib in df_biblio.iterrows():
+                        try:
+                            delta = float(bib["δ pico"])
+                            etiqueta = str(bib["Grupo funcional"])
+                            ax_ind.plot([delta, delta], [0, 50], linestyle="dashed", color="black", linewidth=0.5)
+                            ax_ind.text(delta, 50, etiqueta, rotation=90, va="bottom", ha="center", fontsize=6)
+                        except:
+                            continue
+
+                ax_ind.legend()
+                st.pyplot(fig_ind)
+
+                # Descarga individual
+                buffer_img = BytesIO()
+                fig_ind.savefig(buffer_img, format="png", dpi=300, bbox_inches="tight")
+                buffer_img.seek(0)
+                st.download_button(
+                    f"📥 Descargar gráfico: {archivo}",
+                    data=buffer_img.getvalue(),
+                    file_name=f"grafico_{archivo.replace(' ', '_')}.png",
+                    mime="image/png"
+                )
+
+            except Exception as e:
+                st.warning(f"⚠️ Error en gráfico individual de {archivo}: {e}")
+
+
     # --- Cálculo de señales desde df_sel ---
     activar_calculo_senales = st.checkbox("Cálculo de señales", value=False, key="chk_calc_senales_dfsel")
 

@@ -233,27 +233,28 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             contenido = e.get("contenido")
                             if not contenido:
                                 continue
-                            carpeta = f"{m['nombre']}"
+
+                            # Campos base
                             nombre_original = e.get("nombre_archivo", f"espectro_{i}.xlsx")
                             muestra_abrev = m["nombre"].replace(" ", "")[:8]
                             fecha = e.get("fecha", "fecha")
                             tipo = e.get("tipo", "tipo").replace(" ", "")
-                            nombre_archivo = os.path.splitext(nombre_original)[0][:25]  # acortar si es muy largo
-                            contenido_bytes = base64.b64decode(e.get("contenido", ""))
+                            contenido_bytes = base64.b64decode(contenido)
                             import hashlib
-                            hash_id = hashlib.sha1(contenido_bytes).hexdigest()[:6]
+                            hash_id = hashlib.sha1(contenido_bytes + str(i).encode()).hexdigest()[:6]
+
+                            # Nombre final 100% único
+                            nombre_archivo = os.path.splitext(nombre_original)[0][:25].replace(" ", "_").replace("/", "-").replace("\\", "-")
                             nombre_final = f"{muestra_abrev}__{tipo}__{fecha}__{nombre_archivo}__idx{i}__{hash_id}.xlsx"
-                            nombre_final = nombre_final.replace("—", "-").replace(" ", "_").replace("/", "-").replace("\\", "-")
-                            fullpath = os.path.join(tmpdir, carpeta)
-                            os.makedirs(fullpath, exist_ok=True)
-                            file_path = os.path.join(fullpath, nombre_final)
-                            with open(file_path, "wb") as file_out:
-                                try:
-                                    file_out.write(base64.b64decode(contenido))
-                                except Exception as error:
-                                    st.error(f"Error al decodificar archivo: {nombre} — {error}")
-                                    continue
-                            zipf.write(file_path, arcname=f"{muestra_abrev}_{tipo}_{i}_{hash_id}.xlsx")
+
+                            # Guardar archivo en tmpdir
+                            file_path = os.path.join(tmpdir, nombre_final)
+                            with open(file_path, "wb") as f:
+                                f.write(contenido_bytes)
+
+                            # Agregar al ZIP sin carpetas internas
+                            zipf.write(file_path, arcname=nombre_final)
+
 
                 with open(zip_path, "rb") as final_zip:
                     zip_bytes = final_zip.read()

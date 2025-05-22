@@ -277,6 +277,69 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     y_min = coly1.number_input("Y mínimo", value=0.0)
     y_max = coly2.number_input("Y máximo", value=100.0)
 
+    colores = plt.cm.tab10.colors
+    graficado = False
+
+    for idx, (muestra, archivos) in enumerate(espectros_activos.items()):
+        for archivo in archivos:
+            espectros = db.collection("muestras").document(muestra).collection("espectros").stream()
+            espectro = next((e.to_dict() for e in espectros if e.to_dict().get("nombre_archivo") == archivo), None)
+            if not espectro:
+                continue
+
+            try:
+                contenido = BytesIO(base64.b64decode(espectro["contenido"]))
+                extension = os.path.splitext(archivo)[1].lower()
+                if extension == ".xlsx":
+                    df = pd.read_excel(contenido)
+                else:
+                    for sep in [",", ";", "\t", " "]:
+                        contenido.seek(0)
+                        try:
+                            df = pd.read_csv(contenido, sep=sep)
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        continue
+
+                col_x, col_y = df.columns[:2]
+                df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                df = df.dropna()
+
+                color = colores[idx % len(colores)]
+                ax.plot(df[col_x], df[col_y], label=f"{muestra} - {archivo}", color=color)
+                graficado = True
+
+                # Mostrar máscaras si están activadas
+                if activar_mascara and usar_mascara.get(muestra, False):
+                    for mascara in espectro.get("mascaras", []):
+                        x0 = mascara.get("x_min")
+                        x1 = mascara.get("x_max")
+                        d = mascara.get("difusividad")
+                        t2 = mascara.get("t2")
+                        obs = mascara.get("observacion", "")
+                        sub_df = df[(df[col_x] >= min(x0, x1)) & (df[col_x] <= max(x0, x1))]
+                        if sub_df.empty:
+                            continue
+                        ax.axvspan(x0, x1, color=color, alpha=0.2)
+                        if d and t2:
+                            ax.text((x0+x1)/2, ax.get_ylim()[1]*0.9,
+                                    f"D={d:.1e}\nT2={t2:.2f}", ha="center", va="center", fontsize=6, rotation=90)
+
+            except Exception as e:
+                st.warning(f"No se pudo graficar {archivo}: {e}")
+
+    # Mostrar leyenda solo si se graficó algo
+    if graficado:
+        ax.legend()
+    else:
+        ax.text((x_max + x_min)/2, (y_max + y_min)/2, "No se han graficado espectros.\nVerificá la selección.",
+                ha="center", va="center", fontsize=10, color="red")
+
+
     # --- Gráfico combinado ---
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.set_title("Espectros RMN 1H")

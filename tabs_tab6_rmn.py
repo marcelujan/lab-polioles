@@ -158,8 +158,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         if d and t2:
                             ax.text((x0 + x1) / 2, y_etiqueta, f"D={d:.1e} T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
 
-
-
         except Exception as e:
             st.warning(f"No se pudo graficar {archivo}: {e}")
 

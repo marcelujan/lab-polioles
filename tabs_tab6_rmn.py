@@ -701,59 +701,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             except:
                 st.warning(f"No se pudo mostrar imagen: {row['archivo']}")
 
-        # Botón para descargar ZIP con todas las imágenes mostradas
-        with TemporaryDirectory() as tmpdir:
-            import collections
-            # Construir nombre base del ZIP desde la primera fila válida
-            primera_fila = df_rmn_img.iloc[0].to_dict() if not df_rmn_img.empty else {}
 
-            muestra = primera_fila.get("muestra", "Desconocida")
-            tipo = primera_fila.get("tipo", "RMN")
-            fecha = primera_fila.get("fecha", datetime.now().strftime("%Y-%m-%d"))
-            archivo = primera_fila.get("archivo", "archivo")
-            peso = primera_fila.get("peso") or primera_fila.get("peso_muestra") or "?"
-
-            nombre_zip = f"{muestra} — {tipo} — {fecha} — {archivo} — {peso} g".replace(" ", "_").replace("—", "-")
-            nombre_zip = nombre_zip.replace(":", "-").replace("/", "-")
-            zip_path = os.path.join(tmpdir, f"{nombre_zip}.zip")
-
-            # Prevenir nombres repetidos dentro del ZIP
-            nombre_usado = collections.Counter()
-
-            import hashlib
-
-            with zipfile.ZipFile(zip_path, "w") as zipf:
-                for idx, row in df_rmn_img.iterrows():
-                    muestra = row.get("muestra", "muestra").replace(" ", "")[:8]
-                    archivo = row.get("archivo", "espectro.xlsx")
-                    fecha = row.get("fecha", "fecha")
-
-                    # Parte del nombre original, acortada
-                    base_archivo = os.path.splitext(archivo)[0][:20].replace(" ", "_")
-
-                    # Hash de contenido (garantiza unicidad)
-                    contenido_bytes = base64.b64decode(row.get("contenido", ""))
-                    hash_id = hashlib.sha1(contenido_bytes).hexdigest()[:6]
-
-                    # Generar nombre final: Poliol08__Abertura894__2025-05-14__idx0__a1b2c3.xlsx
-                    nombre_archivo = f"{muestra}__{base_archivo}__{fecha}__idx{idx}__{hash_id}.xlsx"
-                    nombre_archivo = nombre_archivo.replace("—", "-").replace("/", "-").replace("\\", "-")
-
-                    # Guardar archivo temporal
-                    ruta = os.path.join(tmpdir, nombre_archivo)
-                    try:
-                        with open(ruta, "wb") as f:
-                            f.write(contenido_bytes)
-                        zipf.write(ruta, arcname=nombre_archivo)
-                    except Exception as e:
-                        st.warning(f"⚠️ No se pudo agregar {archivo}: {e}")
-
-            with open(zip_path, "rb") as final_zip:
-                st.download_button(
-                    "📦 Descargar imágenes RMN",
-                    data=final_zip.read(),
-                    file_name=os.path.basename(zip_path),
-                    mime="application/zip"
-                )
 
     mostrar_sector_flotante(db, key_suffix="tab6")

@@ -232,6 +232,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 data = doc.get().to_dict()
                 if data and "filas" in data:
                     filas_guardadas.extend(data["filas"])
+            st.write("👀 Filas cargadas desde Firebase:", filas_guardadas)
 
             # 🔄 Auto-cargar máscaras D/T2 si hay máscara activa y faltan muestras
             if activar_mascara and muestras_sel:

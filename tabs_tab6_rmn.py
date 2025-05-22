@@ -94,19 +94,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_rmn1h")
 
 
-
-    # Generar gráfico
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.set_title("Espectros RMN 1H")
-    ax.set_xlabel("[ppm]")
-    ax.set_ylabel("Señal")
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_min, y_max)
-    ax.axhline(y=0, color="black", linewidth=0.7)
-
-    colores = plt.cm.tab10.colors
-    graficado = False
-
     for idx, row in df_rmn1h.iterrows():
         muestra = row["muestra"]
         archivo = row["archivo"]
@@ -345,12 +332,24 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 except Exception as e:
                     st.warning(f"⚠️ Error al trazar δ pico: {e}")
 
-
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0)
     x_max = colx2.number_input("X máximo", value=10.0)
     y_min = coly1.number_input("Y mínimo", value=0.0)
     y_max = coly2.number_input("Y máximo", value=100.0)
+
+
+    # Generar gráfico
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.set_title("Espectros RMN 1H")
+    ax.set_xlabel("[ppm]")
+    ax.set_ylabel("Señal")
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.axhline(y=0, color="black", linewidth=0.7)
+
+    colores = plt.cm.tab10.colors
+    graficado = False
     
     st.pyplot(fig)
 

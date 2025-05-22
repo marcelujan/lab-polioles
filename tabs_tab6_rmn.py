@@ -210,9 +210,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     with col_editar:
         editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio")
 
+    # Cargar y preparar la tabla
     if activar_picos:
         doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")
-
         if not doc_biblio.get().exists:
             doc_biblio.set({"filas": []})
 
@@ -224,8 +224,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             if col not in df_biblio.columns:
                 df_biblio[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
         df_biblio = df_biblio[columnas_biblio]
-
-        editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio")
 
         if editar_tabla_biblio:
             df_biblio_edit = st.data_editor(
@@ -254,7 +252,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     df_biblio_edit.to_excel(writer, index=False, sheet_name="Tabla_Bibliográfica")
                 buffer_excel.seek(0)
                 st.download_button(
-                    "📥 Descargar tabla",
+                    "📅 Descargar tabla",
                     data=buffer_excel.getvalue(),
                     file_name="tabla_bibliografica_rmn1h.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

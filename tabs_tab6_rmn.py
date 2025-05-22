@@ -239,7 +239,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 for muestra_obj in muestras_sel:
                     nombre_muestra = muestra_obj["nombre"]
                     if nombre_muestra in muestras_ya_cargadas:
-                        continue  # Ya está cargada
+                        continue
 
                     nuevas_filas = []
                     for _, row in df_rmn1H.iterrows():
@@ -269,17 +269,16 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             })
 
                     if nuevas_filas:
-                        # Guardar en Firebase por muestra
-                        doc_muestra = db.collection("muestras").document(nombre_muestra).collection("dt2").document("datos")
-                        doc_muestra.set({"filas": nuevas_filas})
+                        doc = db.collection("muestras").document(nombre_muestra).collection("dt2").document("datos")
+                        doc.set({"filas": nuevas_filas})
                         filas_guardadas.extend(nuevas_filas)
 
-            # 🧾 Mostrar tabla
+            # 🧾 Mostrar tabla editable
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                             "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+
             df_dt2 = pd.DataFrame(filas_guardadas)
 
-            # 🔁 Filtrar solo las muestras seleccionadas en el multiselect
             if not df_dt2.empty and muestras_sel:
                 df_dt2 = df_dt2[df_dt2["Muestra"].isin(muestras_sel)]
 
@@ -313,7 +312,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 )
 
                 recalcular = st.form_submit_button("🔴Recalcular 'Área', 'Área as' y 'H'")
-
 
                 if recalcular:
                     for i, row in df_dt2_edit.iterrows():
@@ -360,12 +358,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             df_espectro[col_y] = pd.to_numeric(df_espectro[col_y], errors="coerce")
                             df_espectro = df_espectro.dropna().sort_values(by=col_x)
 
-                            # Cálculo área total
                             df_sub = df_espectro[(df_espectro[col_x] >= min(x_min, x_max)) & (df_espectro[col_x] <= max(x_min, x_max))]
                             area = np.trapz(df_sub[col_y], df_sub[col_x]) if not df_sub.empty else None
                             df_dt2_edit.at[i, "Área"] = round(area, 2) if area is not None else None
 
-                            # Cálculo área as y H
                             if xas_min is not None and xas_max is not None:
                                 df_sub_as = df_espectro[(df_espectro[col_x] >= min(xas_min, xas_max)) & (df_espectro[col_x] <= max(xas_min, xas_max))]
                                 area_as = np.trapz(df_sub_as[col_y], df_sub_as[col_x]) if not df_sub_as.empty else None
@@ -379,22 +375,16 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             st.warning(f"⚠️ Error en fila {i}: {e}")
                             continue
 
-                    # Cargar todas las filas originales
-                    todas_las_filas = doc_dt2.get().to_dict().get("filas", [])
-                    df_todas = pd.DataFrame(todas_las_filas)
+                    # 🔄 Sincronizar cambios en Firebase por muestra
+                    filas_actualizadas = df_dt2_edit.to_dict(orient="records")
+                    muestras_modificadas = set(f["Muestra"] for f in filas_actualizadas)
+                    for muestra in muestras_modificadas:
+                        filas_muestra = [f for f in filas_actualizadas if f["Muestra"] == muestra]
+                        doc = db.collection("muestras").document(muestra).collection("dt2").document("datos")
+                        doc.set({"filas": filas_muestra})
 
-                    # Eliminar las filas de muestras activas
-                    df_restantes = df_todas[~df_todas["Muestra"].isin(muestras_sel)] if not df_todas.empty else pd.DataFrame()
-
-                    # Combinar las editadas (filtradas) con las no modificadas
-                    df_actualizado = pd.concat([df_restantes, df_dt2_edit], ignore_index=True)
-
-                    # Guardar conjunto completo actualizado
-                    doc_dt2.set({"filas": df_actualizado.to_dict(orient="records")})
-
-                    st.success("✅ Área, Área as y H recalculadas correctamente")
+                    st.success("✅ Área, Área as y H recalculadas y guardadas correctamente.")
                     st.rerun()
-
 
 
 

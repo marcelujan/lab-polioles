@@ -1,4 +1,6 @@
-# tabs_tab7_consola.py
+# Con esta configuracion de descargas, los nombres de archivo se duplican porque no entran las caracteristicas comparativas que los diferencian
+#las nuevas versiones añaden un numero para que no haya duplicados pero se pierde info en el nombre corto
+# # tabs_tab7_consola.py
 import streamlit as st
 import pandas as pd
 import base64
@@ -6,9 +8,8 @@ from io import BytesIO
 import os
 import zipfile
 from datetime import datetime
-from tempfile import TemporaryDirectory3
-import warnings 
-warnings.filterwarnings("ignore", category=UserWarning, module="zipfile")
+from tempfile import TemporaryDirectory
+
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]

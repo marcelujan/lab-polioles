@@ -255,21 +255,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-        # Graficar líneas δ pico
-        if "fig" in locals() and not df_biblio.empty:
-            for _, row in df_biblio.iterrows():
-                try:
-                    delta = float(row["δ pico"])
-                    etiqueta = str(row["Grupo funcional"])
-                    ax.axvline(x=delta, linestyle="dashed", color="black", linewidth=1)
-                    ax.text(
-                        delta, ax.get_ylim()[1], etiqueta,
-                        rotation=90, va="bottom", ha="center",
-                        fontsize=6, color="black"
-                    )
-                except:
-                    continue
-
     # --- Control de ejes del gráfico ---
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0)
@@ -286,7 +271,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.axhline(y=0, color="black", linewidth=0.7)
-    
+
     colores = plt.cm.tab10.colors
     graficado = False
 
@@ -349,7 +334,20 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         ax.text((x_max + x_min)/2, (y_max + y_min)/2, "No se han graficado espectros.\nVerificá la selección.",
                 ha="center", va="center", fontsize=10, color="red")
 
-
+    # Graficar líneas δ pico
+    if "fig" in locals() and not df_biblio.empty:
+            for _, row in df_biblio.iterrows():
+                try:
+                    delta = float(row["δ pico"])
+                    etiqueta = str(row["Grupo funcional"])
+                    ax.axvline(x=delta, linestyle="dashed", color="black", linewidth=1)
+                    ax.text(
+                        delta, ax.get_ylim()[1], etiqueta,
+                        rotation=90, va="bottom", ha="center",
+                        fontsize=6, color="black"
+                    )
+                except:
+                    continue
     st.pyplot(fig)
 
 

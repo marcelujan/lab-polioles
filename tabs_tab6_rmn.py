@@ -701,6 +701,59 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             except:
                 st.warning(f"No se pudo mostrar imagen: {row['archivo']}")
 
+        # Botón para descargar ZIP con todas las imágenes mostradas
+        with TemporaryDirectory() as tmpdir:
+            import hashlib
 
+            # Construir nombre base del ZIP desde la primera fila válida
+            primera_fila = df_rmn_img.iloc[0].to_dict() if not df_rmn_img.empty else {}
+            muestra = primera_fila.get("muestra", "Desconocida")
+            tipo = primera_fila.get("tipo", "RMN")
+            fecha = primera_fila.get("fecha", datetime.now().strftime("%Y-%m-%d"))
+            archivo = primera_fila.get("archivo", "archivo")
+            peso = primera_fila.get("peso") or primera_fila.get("peso_muestra") or "?"
+
+            nombre_zip = f"{muestra} — {tipo} — {fecha} — {archivo} — {peso} g"
+            nombre_zip = nombre_zip.replace(" ", "_").replace("—", "-").replace(":", "-").replace("/", "-").replace("\\", "-")
+            zip_path = os.path.join(tmpdir, f"{nombre_zip}.zip")
+
+            with zipfile.ZipFile(zip_path, "w") as zipf:
+                for idx, row in df_rmn_img.iterrows():
+                    contenido = row.get("contenido")
+                    if not contenido:
+                        continue
+
+                    muestra = row.get("muestra", "muestra").replace(" ", "")[:8]
+                    archivo = row.get("archivo", "espectro.xlsx")
+                    fecha = row.get("fecha", "fecha").replace(" ", "_")
+                    tipo = row.get("tipo", "tipo").replace(" ", "_")
+
+                    # Parte significativa del nombre base
+                    base_archivo = os.path.splitext(archivo)[0][:25].replace(" ", "_").replace("/", "-").replace("\\", "-")
+
+                    # Hash único para evitar duplicados
+                    contenido_bytes = base64.b64decode(contenido)
+                    hash_id = hashlib.sha1(contenido_bytes + str(idx).encode()).hexdigest()[:6]
+
+                    # Nombre de archivo final seguro y único
+                    nombre_final = f"{muestra}_{tipo}_{fecha}_idx{idx}_{hash_id}.xlsx"
+                    nombre_final = nombre_final.replace("—", "-").replace(":", "-").replace("/", "-").replace("\\", "-")
+
+                    ruta = os.path.join(tmpdir, nombre_final)
+                    try:
+                        with open(ruta, "wb") as f:
+                            f.write(contenido_bytes)
+                        zipf.write(ruta, arcname=nombre_final)
+                    except Exception as e:
+                        st.warning(f"⚠️ No se pudo agregar {archivo}: {e}")
+
+            # Botón de descarga final
+            with open(zip_path, "rb") as final_zip:
+                st.download_button(
+                    "📦 Descargar imágenes RMN",
+                    data=final_zip.read(),
+                    file_name=os.path.basename(zip_path),
+                    mime="application/zip"
+                )
 
     mostrar_sector_flotante(db, key_suffix="tab6")

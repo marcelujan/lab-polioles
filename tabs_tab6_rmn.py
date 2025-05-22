@@ -274,6 +274,22 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 except Exception as e:
                     st.warning(f"Error al trazar δ pico: {e}")
 
+    # --- Máscara D/T2 --- solo para muestras con espectros seleccionados
+    espectros_activos = {m: archivos for m, archivos in espectros_sel.items() if archivos}
+    muestras_con_espectros = list(espectros_activos.keys())
+    activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_global_mascara_dt2")
+    usar_mascara = {}
+    if activar_mascara and muestras_con_espectros:
+        st.markdown("Activar sombreado individual por muestra:")
+        cols = st.columns(len(muestras_con_espectros))
+        for idx, muestra in enumerate(muestras_con_espectros):
+            with cols[idx]:
+                usar_mascara[muestra] = st.checkbox(
+                    label=muestra,
+                    key=f"chk_mask_{muestra}_{idx}",
+                    value=False
+                )
+
     # --- Control de ejes del gráfico ---
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0)

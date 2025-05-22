@@ -237,7 +237,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             if activar_mascara and muestras_sel:
                 muestras_ya_cargadas = {f.get("Muestra") for f in filas_guardadas}
                 for nombre_muestra in muestras_sel:
-                    if not row.get("mascaras"):
+                    if not any(r["muestra"] == nombre_muestra and r.get("mascaras") for _, r in df_rmn1H.iterrows()):
                         continue
 
                     nuevas_filas = []
@@ -490,13 +490,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-        # --- Checkbox para activar las líneas δ pico ---
-        st.session_state["mostrar_deltas"] = st.checkbox("Señales δ pico", value=st.session_state.get("mostrar_deltas", False))
+        if "mostrar_deltas" not in st.session_state:
+            st.session_state["mostrar_deltas"] = False
 
-
-
-        # --- Trazar líneas verticales para 'δ pico' si se activa ---
-       # trazar_deltas = st.checkbox("Señales δ pico", value=False)
+        mostrar_deltas_checkbox = st.checkbox("Señales δ pico", value=st.session_state["mostrar_deltas"])
+        st.session_state["mostrar_deltas"] = mostrar_deltas_checkbox
 
 
 

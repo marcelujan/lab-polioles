@@ -206,7 +206,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if st.button("📦 Preparar descarga"):  # Preparar descarga de espectros (Excel y ZIP)
             with TemporaryDirectory() as tmpdir:
                 # Construir nombre único del ZIP usando la primera fila visible
-                primera_fila = df_rmn_img.iloc[0].to_dict() if not df_rmn_img.empty else {}
+                primera_fila = df_esp_tabla.iloc[0].to_dict() if not df_esp_tabla.empty else {}
                 muestra = primera_fila.get("muestra", "Desconocida")
                 tipo = primera_fila.get("tipo", "RMN")
                 fecha = primera_fila.get("fecha", datetime.now().strftime("%Y-%m-%d"))

@@ -720,31 +720,33 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             # Prevenir nombres repetidos dentro del ZIP
             nombre_usado = collections.Counter()
 
+            import hashlib
+
             with zipfile.ZipFile(zip_path, "w") as zipf:
-                for _, row in df_rmn_img.iterrows():
-                    # Base única por muestra y archivo
-                    muestra = row.get("muestra", "muestra").replace(" ", "_")
-                    archivo = row.get("archivo", "espectro.xlsx").replace(" ", "_").replace("/", "-").replace("\\", "-")
-                    base_name = f"{muestra}__{archivo}"
+                for idx, row in df_rmn_img.iterrows():
+                    muestra = row.get("muestra", "muestra").replace(" ", "")[:8]
+                    archivo = row.get("archivo", "espectro.xlsx")
+                    fecha = row.get("fecha", "fecha")
 
-                    # Contador por nombre base
-                    nombre_usado[base_name] += 1
-                    if nombre_usado[base_name] > 1:
-                        nombre_archivo = f"{os.path.splitext(base_name)[0]}_{nombre_usado[base_name]}{os.path.splitext(base_name)[1]}"
-                    else:
-                        nombre_archivo = base_name
+                    # Parte del nombre original, acortada
+                    base_archivo = os.path.splitext(archivo)[0][:20].replace(" ", "_")
 
-                    contenido = row["contenido"]
-                    if not contenido:
-                        continue
+                    # Hash de contenido (garantiza unicidad)
+                    contenido_bytes = base64.b64decode(row.get("contenido", ""))
+                    hash_id = hashlib.sha1(contenido_bytes).hexdigest()[:6]
+
+                    # Generar nombre final: Poliol08__Abertura894__2025-05-14__idx0__a1b2c3.xlsx
+                    nombre_archivo = f"{muestra}__{base_archivo}__{fecha}__idx{idx}__{hash_id}.xlsx"
+                    nombre_archivo = nombre_archivo.replace("—", "-").replace("/", "-").replace("\\", "-")
+
+                    # Guardar archivo temporal
+                    ruta = os.path.join(tmpdir, nombre_archivo)
                     try:
-                        img_bytes = base64.b64decode(contenido)
-                        ruta = os.path.join(tmpdir, nombre_archivo)
                         with open(ruta, "wb") as f:
-                            f.write(img_bytes)
+                            f.write(contenido_bytes)
                         zipf.write(ruta, arcname=nombre_archivo)
-                    except:
-                        continue
+                    except Exception as e:
+                        st.warning(f"⚠️ No se pudo agregar {archivo}: {e}")
 
             with open(zip_path, "rb") as final_zip:
                 st.download_button(

@@ -206,6 +206,36 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_dt2 = df_dt2[columnas_dt2]
 
+        # Si no hay datos, permitir agregar fila nueva asociada
+        if df_dt2.empty:
+            st.warning("⚠️ No hay datos previos para Cálculo D/T2 en estas muestras.")
+            muestras_activas = sorted({row["muestra"] for _, row in df_sel.iterrows()})
+            muestra_nueva = st.selectbox("Seleccionar muestra para comenzar", muestras_activas, key="nueva_muestra_dt2")
+
+            archivos_disp = sorted({
+                row["archivo"] for _, row in df_sel.iterrows()
+                if row["muestra"] == muestra_nueva
+            })
+            archivo_nuevo = st.selectbox("Seleccionar archivo", archivos_disp, key="nuevo_archivo_dt2")
+
+            df_dt2 = pd.DataFrame([{
+                "Muestra": muestra_nueva,
+                "Grupo funcional": "",
+                "δ pico": None,
+                "X min": None,
+                "X max": None,
+                "Área": None,
+                "D": None,
+                "T2": None,
+                "Xas min": None,
+                "Xas max": None,
+                "Has": None,
+                "Área as": None,
+                "H": None,
+                "Observaciones": "",
+                "Archivo": archivo_nuevo,
+            }])
+
         with st.form("form_dt2_dfsel"):
             df_dt2_edit = st.data_editor(
                 df_dt2,

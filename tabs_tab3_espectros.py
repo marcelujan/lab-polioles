@@ -203,11 +203,10 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 st.warning("Debes confirmar la eliminación marcando la casilla.")
 
 
-        if st.button("📦 Preparar descarga"):   #Preparar descarga de espectros (Excel y ZIP)
+        if st.button("📦 Preparar descarga"):  # Preparar descarga de espectros (Excel y ZIP)
             with TemporaryDirectory() as tmpdir:
-                # Construir nombre único del ZIP usando los campos definidos en hoja 3
+                # Construir nombre único del ZIP usando la primera fila visible
                 primera_fila = df_rmn_img.iloc[0].to_dict() if not df_rmn_img.empty else {}
-
                 muestra = primera_fila.get("muestra", "Desconocida")
                 tipo = primera_fila.get("tipo", "RMN")
                 fecha = primera_fila.get("fecha", datetime.now().strftime("%Y-%m-%d"))
@@ -215,21 +214,23 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 peso = primera_fila.get("peso") or primera_fila.get("peso_muestra") or "?"
 
                 nombre_zip = f"{muestra} — {tipo} — {fecha} — {archivo} — {peso} g".replace(" ", "_").replace("—", "-")
-                nombre_zip = nombre_zip.replace(":", "-").replace("/", "-")  # evitar caracteres inválidos
-
+                nombre_zip = nombre_zip.replace(":", "-").replace("/", "-").replace("\\", "-")
                 zip_path = os.path.join(tmpdir, f"{nombre_zip}.zip")
 
+                # Exportar tabla de espectros a Excel
                 excel_path = os.path.join(tmpdir, "tabla_espectros.xlsx")
-
                 with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
                     df_esp_tabla.drop(columns=["ID"]).to_excel(writer, index=False, sheet_name="Espectros")
                     if not df_mascaras.empty:
                         df_mascaras.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")
-                        
+
+                # Preparar archivo ZIP
                 with zipfile.ZipFile(zip_path, "w") as zipf:
                     zipf.write(excel_path, arcname="tabla_espectros.xlsx")
+
                     for m in muestras:
-                        for i, e in enumerate(obtener_espectros_para_muestra(db, m["nombre"])):
+                        espectros = obtener_espectros_para_muestra(db, m["nombre"])
+                        for i, e in enumerate(espectros):
                             contenido = e.get("contenido")
                             if not contenido:
                                 continue
@@ -237,34 +238,40 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             # Campos base
                             nombre_original = e.get("nombre_archivo", f"espectro_{i}.xlsx")
                             muestra_abrev = m["nombre"].replace(" ", "")[:8]
-                            fecha = e.get("fecha", "fecha")
-                            tipo = e.get("tipo", "tipo").replace(" ", "")
+                            fecha = e.get("fecha", "fecha").replace(" ", "_")
+                            tipo = e.get("tipo", "tipo").replace(" ", "_")
                             contenido_bytes = base64.b64decode(contenido)
+
+                            # Generar hash único con contenido + índice
                             import hashlib
                             hash_id = hashlib.sha1(contenido_bytes + str(i).encode()).hexdigest()[:6]
 
-                            # Nombre final 100% único
-                            nombre_archivo = os.path.splitext(nombre_original)[0][:25].replace(" ", "_").replace("/", "-").replace("\\", "-")
-                            nombre_final = f"{muestra_abrev}__{tipo}__{fecha}__{nombre_archivo}__idx{i}__{hash_id}.xlsx"
+                            # Crear nombre corto y único para el archivo
+                            nombre_archivo = os.path.splitext(nombre_original)[0][:25]
+                            nombre_archivo = nombre_archivo.replace(" ", "_").replace("/", "-").replace("\\", "-")
+                            nombre_final = f"{muestra_abrev}_{tipo}_{fecha}_idx{i}_{hash_id}.xlsx"
+                            nombre_final = nombre_final.replace("—", "-").replace(" ", "_").replace(":", "-")
 
-                            # Guardar archivo en tmpdir
+                            # Guardar archivo temporal
                             file_path = os.path.join(tmpdir, nombre_final)
                             with open(file_path, "wb") as f:
                                 f.write(contenido_bytes)
 
-                            # Agregar al ZIP sin carpetas internas
+                            # Agregar al ZIP (sin carpetas internas)
                             zipf.write(file_path, arcname=nombre_final)
 
-
+                # Guardar ZIP en sesión para descarga
                 with open(zip_path, "rb") as final_zip:
                     zip_bytes = final_zip.read()
                     st.session_state["zip_bytes"] = zip_bytes
                     st.session_state["zip_name"] = os.path.basename(zip_path)
 
-        if "zip_bytes" in st.session_state:   # Botón de descarga del ZIP preparado
+        # Botón de descarga del ZIP preparado
+        if "zip_bytes" in st.session_state:
             st.download_button("📦 Descargar espectros", data=st.session_state["zip_bytes"],
-                               file_name=st.session_state["zip_name"],
-                               mime="application/zip")
+                            file_name=st.session_state["zip_name"],
+                            mime="application/zip")
+
     else:
         st.info("No hay espectros cargados.")
 

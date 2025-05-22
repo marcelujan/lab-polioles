@@ -229,7 +229,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 with zipfile.ZipFile(zip_path, "w") as zipf:
                     zipf.write(excel_path, arcname="tabla_espectros.xlsx")
                     for m in muestras:
-                        for e in obtener_espectros_para_muestra(db, m["nombre"]):
+                        for i, e in enumerate(obtener_espectros_para_muestra(db, m["nombre"])):
                             contenido = e.get("contenido")
                             if not contenido:
                                 continue
@@ -239,7 +239,10 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             fecha = e.get("fecha", "fecha")
                             tipo = e.get("tipo", "tipo").replace(" ", "")
                             nombre_archivo = os.path.splitext(nombre_original)[0][:25]  # acortar si es muy largo
-                            nombre_final = f"{muestra_abrev}__{tipo}__{fecha}__{nombre_archivo}__idx{i}.xlsx"
+                            contenido_bytes = base64.b64decode(e.get("contenido", ""))
+                            import hashlib
+                            hash_id = hashlib.sha1(contenido_bytes).hexdigest()[:6]
+                            nombre_final = f"{muestra_abrev}__{tipo}__{fecha}__{nombre_archivo}__idx{i}__{hash_id}.xlsx"
                             nombre_final = nombre_final.replace("—", "-").replace(" ", "_").replace("/", "-").replace("\\", "-")
                             fullpath = os.path.join(tmpdir, carpeta)
                             os.makedirs(fullpath, exist_ok=True)

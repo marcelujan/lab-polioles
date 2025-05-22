@@ -111,7 +111,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     graficado = False
     colores = plt.cm.tab10.colors
 
-    activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_rmn1h")
     for idx, row in df_rmn1h.iterrows():
         muestra = row["muestra"]
         archivo = row["archivo"]

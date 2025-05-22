@@ -211,9 +211,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         with col_editar:
             editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio")
 
-    # Cargar y preparar la tabla
-    df_biblio = None  # Inicializar para evitar error si no se activa el checkbox
-    if activar_picos:
+        # Cargar y preparar la tabla
+        df_biblio = None  # Inicializar para evitar error si no se activa el checkbox
         doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")
         if not doc_biblio.get().exists:
             doc_biblio.set({"filas": []})
@@ -259,6 +258,21 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     file_name="tabla_bibliografica_rmn1h.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
+
+        # Graficar las señales δ-pico si el gráfico ya existe
+        if 'ax' in locals() and df_biblio is not None and not df_biblio.empty:
+            for _, row in df_biblio.iterrows():
+                try:
+                    delta = float(row["δ pico"])
+                    etiqueta = str(row["Grupo funcional"])
+                    ax.axvline(x=delta, linestyle="dashed", color="black", linewidth=1)
+                    ax.text(
+                        delta, ax.get_ylim()[1], etiqueta,
+                        rotation=90, va="bottom", ha="center",
+                        fontsize=6, color="black"
+                    )
+                except Exception as e:
+                    st.warning(f"Error al trazar δ pico: {e}")
 
     # --- Control de ejes del gráfico ---
     colx1, colx2, coly1, coly2 = st.columns(4)

@@ -48,10 +48,19 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # --- Selección de espectros por muestra ---
     espectros_sel = {}
     for muestra in muestras_sel:
-        espectros_ref = db.collection("muestras").document(muestra).collection("espectros").stream()
-        espectros = [doc.to_dict() for doc in espectros_ref]
-        nombres_archivos = [e.get("nombre_archivo", "sin nombre") for e in espectros]
-        espectros_sel[muestra] = st.multiselect(f"Espectros para {muestra}", nombres_archivos, default=nombres_archivos[:1])
+        espectros_validos = []
+        for doc in db.collection("muestras").document(muestra).collection("espectros").stream():
+            espectro = doc.to_dict()
+            tipo = (espectro.get("tipo") or "").upper()
+            if tipo in ["RMN 1H", "RMN 13C", "RMN-LF 1H"]:
+                espectros_validos.append(espectro.get("nombre_archivo", "sin nombre"))
+
+        espectros_sel[muestra] = st.multiselect(
+            f"Espectros para {muestra}",
+            options=espectros_validos,
+            default=espectros_validos[:1]
+        )
+
 
     st.divider()
 
@@ -71,6 +80,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 usar_mascara[muestra] = st.checkbox(muestra, key=f"chk_mask_{muestra}", value=False)
 
     # --- Cálculo D/T2 ---
+    espectros_activos = {m: archivos for m, archivos in espectros_sel.items() if archivos}
     activar_calculo_dt2 = st.checkbox("Cálculo D/T2", value=False)
     if activar_calculo_dt2:
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
@@ -79,10 +89,15 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Cargar filas desde Firebase
         for muestra in muestras_sel:
+            if muestra not in espectros_activos:
+                continue
             doc = db.collection("muestras").document(muestra).collection("dt2").document("datos")
             data = doc.get().to_dict()
             if data and "filas" in data:
-                filas_guardadas.extend(data["filas"])
+                for fila in data["filas"]:
+                    if fila.get("Archivo") in espectros_activos[muestra]:
+                        filas_guardadas.append(fila)
+
 
         df_dt2 = pd.DataFrame(filas_guardadas)
         for col in columnas_dt2:
@@ -193,6 +208,73 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 num_rows="dynamic"
             )
 
+    mostrar_deltas = st.checkbox("Señales Pico Bibliografía", value=False)
+
+    if mostrar_deltas:
+        doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")
+
+        if not doc_biblio.get().exists:
+            doc_biblio.set({"filas": []})
+
+        filas_biblio = doc_biblio.get().to_dict().get("filas", [])
+        columnas_biblio = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
+        df_biblio = pd.DataFrame(filas_biblio)
+
+        for col in columnas_biblio:
+            if col not in df_biblio.columns:
+                df_biblio[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
+        df_biblio = df_biblio[columnas_biblio]
+
+        editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False)
+        if editar_tabla_biblio:
+            df_biblio_edit = st.data_editor(
+                df_biblio,
+                use_container_width=True,
+                hide_index=True,
+                num_rows="dynamic",
+                key="editor_tabla_biblio",
+                column_config={
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                }
+            )
+
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("🔴Actualizar Tabla Bibliográfica"):
+                    doc_biblio.set({"filas": df_biblio_edit.to_dict(orient="records")})
+                    st.success("✅ Tabla bibliográfica actualizada.")
+                    st.rerun()
+            with col2:
+                buffer_excel = BytesIO()
+                with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+                    df_biblio_edit.to_excel(writer, index=False, sheet_name="Tabla_Bibliográfica")
+                buffer_excel.seek(0)
+                st.download_button(
+                    "📥 Descargar tabla",
+                    data=buffer_excel.getvalue(),
+                    file_name="tabla_bibliografica_rmn1h.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+        # Graficar líneas δ pico en gráfico principal si hay valores
+        if "fig" in locals() and not df_biblio.empty:
+            for _, row in df_biblio.iterrows():
+                try:
+                    delta = float(row["δ pico"])
+                    etiqueta = str(row["Grupo funcional"])
+                    ax.axvline(x=delta, linestyle="dashed", color="black", linewidth=1)
+                    ax.text(
+                        delta, ax.get_ylim()[1], etiqueta,
+                        rotation=90, va="bottom", ha="center",
+                        fontsize=6, color="black"
+                    )
+                except:
+                    continue
+
+
     # --- Control de ejes del gráfico ---
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0)
@@ -210,9 +292,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     ax.axhline(y=0, color="black", linewidth=0.7)
     st.pyplot(fig)
 
+
     # ==============================
     # === Cálculo de señales =======
     # ==============================
+    espectros_activos = {m: archivos for m, archivos in espectros_sel.items() if archivos}
     activar_calculo_senales = st.checkbox("Cálculo de señales", value=False)
     if activar_calculo_senales:
         columnas_integral = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
@@ -222,7 +306,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if not doc_ref.get().exists:
             doc_ref.set({"filas": []})
 
-        filas_actuales = doc_ref.get().to_dict().get("filas", [])
+        filas_total = doc_ref.get().to_dict().get("filas", [])
+        filas_actuales = [
+            f for f in filas_total
+            if f.get("Muestra") in espectros_activos
+            and f.get("Archivo") in espectros_activos.get(f.get("Muestra"), [])
+        ]
         df_integral = pd.DataFrame(filas_actuales)
 
         for col in columnas_integral:

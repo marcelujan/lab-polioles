@@ -142,16 +142,43 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             graficado = True
 
             if activar_mascara:
-                checkbox_key = f"chk_masc_{row['id']}"
-                mostrar_mascara = st.checkbox(f"{archivo}", key=checkbox_key, value=False)
-                cols = st.columns(len(df_rmn1h))  # Una columna por espectro
+                cols = st.columns(len(df_rmn1h))  # Crear una columna por espectro
 
                 for idx, row in enumerate(df_rmn1h.itertuples()):
-                    with cols[idx]:
-                        checkbox_key = f"chk_masc_{row.id}"
-                        mostrar_mascara = st.checkbox(f"{row.archivo}", key=checkbox_key, value=False)
+                    muestra = row.muestra
+                    archivo = row.archivo
+                    contenido = row.contenido
+                    mascaras = getattr(row, "mascaras", [])
+                    checkbox_key = f"chk_masc_{row.id}"
 
-                        if mostrar_mascara:
+                    with cols[idx]:
+                        mostrar_mascara = st.checkbox(f"{archivo}", key=checkbox_key, value=False)
+
+                    if mostrar_mascara:
+                        try:
+                            contenido_bin = BytesIO(base64.b64decode(contenido))
+                            extension = os.path.splitext(archivo)[1].lower()
+
+                            if extension == ".xlsx":
+                                df = pd.read_excel(contenido_bin)
+                            else:
+                                for sep in [",", ";", "\t", " "]:
+                                    contenido_bin.seek(0)
+                                    try:
+                                        df = pd.read_csv(contenido_bin, sep=sep)
+                                        if df.shape[1] >= 2:
+                                            break
+                                    except:
+                                        continue
+                                else:
+                                    continue
+
+                            col_x, col_y = df.columns[:2]
+                            df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                            df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                            df = df.dropna()
+
+                            color = colores[idx % len(colores)]
                             for mascara in mascaras:
                                 x0 = mascara.get("x_min")
                                 x1 = mascara.get("x_max")
@@ -159,10 +186,15 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                                 t2 = mascara.get("t2")
                                 if x0 is not None and x1 is not None:
                                     ax.axvspan(x0, x1, color=color, alpha=0.2)
-                                    y_etiqueta = min(50, ax.get_ylim()[1] * 0.95)  # máximo 50 o 95% del eje Y
+                                    y_etiqueta = min(50, ax.get_ylim()[1] * 0.95)
                                     if d and t2:
-                                        ax.text((x0 + x1) / 2, y_etiqueta, f"D={d:.1e} T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
-
+                                        ax.text(
+                                            (x0 + x1) / 2, y_etiqueta,
+                                            f"D={d:.1e} T2={t2:.3f}",
+                                            ha="center", va="center", fontsize=6, color="black", rotation=90
+                                        )
+                        except Exception as e:
+                            st.warning(f"No se pudo aplicar máscara para {archivo}: {e}")
         except Exception as e:
             st.warning(f"No se pudo graficar {archivo}: {e}")
 

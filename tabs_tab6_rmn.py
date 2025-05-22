@@ -93,11 +93,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_rmn1h")
 
-    colx1, colx2, coly1, coly2 = st.columns(4)
-    x_min = colx1.number_input("X mínimo", value=0.0)
-    x_max = colx2.number_input("X máximo", value=10.0)
-    y_min = coly1.number_input("Y mínimo", value=0.0)
-    y_max = coly2.number_input("Y máximo", value=100.0)
 
 
     # Generar gráfico
@@ -350,6 +345,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 except Exception as e:
                     st.warning(f"⚠️ Error al trazar δ pico: {e}")
 
+
+    colx1, colx2, coly1, coly2 = st.columns(4)
+    x_min = colx1.number_input("X mínimo", value=0.0)
+    x_max = colx2.number_input("X máximo", value=10.0)
+    y_min = coly1.number_input("Y mínimo", value=0.0)
+    y_max = coly2.number_input("Y máximo", value=100.0)
+    
     st.pyplot(fig)
 
     # --- Cálculo de señales desde df_sel ---

@@ -291,27 +291,26 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 doc = db.collection("muestras").document(muestra).collection("dt2").document("datos")
                 doc.set({"filas": filas_m})
 
-        # Actualizar el campo "mascaras" en cada espectro correspondiente
-        for fila in filas_m:
-            archivo = fila.get("Archivo")
-            mascaras_actualizadas = [
-                {
-                    "x_min": f.get("X min"),
-                    "x_max": f.get("X max"),
-                    "difusividad": f.get("D"),
-                    "t2": f.get("T2")
-                }
-                for f in filas_m if f.get("Archivo") == archivo and f.get("X min") is not None and f.get("X max") is not None
-            ]
+                # Actualizar el campo "mascaras" en cada espectro correspondiente
+                for fila in filas_m:
+                    archivo = fila.get("Archivo")
+                    mascaras_actualizadas = [
+                        {
+                            "x_min": f.get("X min"),
+                            "x_max": f.get("X max"),
+                            "difusividad": f.get("D"),
+                            "t2": f.get("T2")
+                        }
+                        for f in filas_m if f.get("Archivo") == archivo and f.get("X min") is not None and f.get("X max") is not None
+                    ]
 
-            # Buscar documento de espectro por nombre de archivo
-            espectros = db.collection("muestras").document(muestra).collection("espectros").stream()
-            for doc_esp in espectros:
-                e_dict = doc_esp.to_dict()
-                if e_dict.get("nombre_archivo") == archivo:
-                    doc_esp.reference.update({"mascaras": mascaras_actualizadas})
-                    break
-
+                    # Buscar documento de espectro por nombre de archivo
+                    espectros = db.collection("muestras").document(muestra).collection("espectros").stream()
+                    for doc_esp in espectros:
+                        e_dict = doc_esp.to_dict()
+                        if e_dict.get("nombre_archivo") == archivo:
+                            doc_esp.reference.update({"mascaras": mascaras_actualizadas})
+                            break
 
             st.success("✅ Datos recalculados y guardados correctamente.")
             st.rerun()

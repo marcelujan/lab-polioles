@@ -234,46 +234,45 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     filas_guardadas.extend(data["filas"])
             st.write("👀 Filas cargadas desde Firebase:", filas_guardadas)
 
-            # 🔄 Auto-cargar máscaras D/T2 si hay muestras sin datos en Firebase
-            if muestras_sel:
-                muestras_ya_cargadas = {f.get("Muestra") for f in filas_guardadas}
-                for nombre_muestra in muestras_sel:
-                    if nombre_muestra in muestras_ya_cargadas:
+            # 🔄 Auto-cargar máscaras D/T2 si hay muestras sin datos en Firebase (independiente de checkbox)
+            muestras_ya_cargadas = {f.get("Muestra") for f in filas_guardadas}
+            for nombre_muestra in muestras_sel:
+                if nombre_muestra in muestras_ya_cargadas:
+                    continue
+
+                nuevas_filas = []
+                for _, row in df_rmn1H.iterrows():
+                    if row["muestra"] != nombre_muestra:
+                        continue
+                    if not row.get("mascaras"):
                         continue
 
-                    nuevas_filas = []
-                    for _, row in df_rmn1H.iterrows():
-                        if row["muestra"] != nombre_muestra:
-                            continue
+                    archivo = row["archivo"]
+                    for m in row["mascaras"]:
+                        nuevas_filas.append({
+                            "Muestra": nombre_muestra,
+                            "Archivo": archivo,
+                            "X min": m.get("x_min"),
+                            "X max": m.get("x_max"),
+                            "D": m.get("difusividad"),
+                            "T2": m.get("t2"),
+                            "Grupo funcional": "",
+                            "δ pico": None,
+                            "Área": None,
+                            "Xas min": None,
+                            "Xas max": None,
+                            "Has": None,
+                            "Área as": None,
+                            "H": None,
+                            "Observaciones": ""
+                        })
 
-                        # Cargar todas las máscaras, sin depender del checkbox
-                        if not row.get("mascaras"):
-                            continue
+                if nuevas_filas:
+                    doc = db.collection("muestras").document(nombre_muestra).collection("dt2").document("datos")
+                    doc.set({"filas": nuevas_filas})
+                    filas_guardadas.extend(nuevas_filas)
 
-                        archivo = row["archivo"]
-                        for m in row["mascaras"]:
-                            nuevas_filas.append({
-                                "Muestra": nombre_muestra,
-                                "Archivo": archivo,
-                                "X min": m.get("x_min"),
-                                "X max": m.get("x_max"),
-                                "D": m.get("difusividad"),
-                                "T2": m.get("t2"),
-                                "Grupo funcional": "",
-                                "δ pico": None,
-                                "Área": None,
-                                "Xas min": None,
-                                "Xas max": None,
-                                "Has": None,
-                                "Área as": None,
-                                "H": None,
-                                "Observaciones": ""
-                            })
 
-                    if nuevas_filas:
-                        doc = db.collection("muestras").document(nombre_muestra).collection("dt2").document("datos")
-                        doc.set({"filas": nuevas_filas})
-                        filas_guardadas.extend(nuevas_filas)
 
 
 

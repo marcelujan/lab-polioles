@@ -97,8 +97,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     y_min = coly1.number_input("Y mínimo", value=0.0)
     y_max = coly2.number_input("Y máximo", value=80.0)
 
-   # activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_rmn1h")
-    
+    activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_rmn1h")
+    cols = st.columns(len(df_rmn1h)) if activar_mascara else []
+
     # Generar gráfico
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.set_xlabel("[ppm]")
@@ -106,49 +107,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.axhline(y=0, color="black", linewidth=0.7)
+
     graficado = False
     colores = plt.cm.tab10.colors
 
     for idx, row in df_rmn1h.iterrows():
-        muestra = row["muestra"]
-        archivo = row["archivo"]
-        contenido = row["contenido"]
-        mascaras = row.get("mascaras", [])
-
-        try:
-            contenido_bin = BytesIO(base64.b64decode(contenido))
-            extension = os.path.splitext(archivo)[1].lower()
-            if extension == ".xlsx":
-                df = pd.read_excel(contenido_bin)
-            else:
-                for sep in [",", ";", "\\t", " "]:
-                    contenido_bin.seek(0)
-                    try:
-                        df = pd.read_csv(contenido_bin, sep=sep)
-                        if df.shape[1] >= 2:
-                            break
-                    except:
-                        continue
-                else:
-                    continue
-
-            col_x, col_y = df.columns[:2]
-            df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
-            df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
-            df = df.dropna()
-
-            color = colores[idx % len(colores)]
-            ax.plot(df[col_x], df[col_y], label=f"{archivo}", color=color)
-            graficado = True
-
-            activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_global_rmn1h")
-
-            if activar_mascara:
-                cols = st.columns(len(df_rmn1h))  # una columna por espectro
-                checkbox_estado = {}
-
-            # Bucle principal
-            for idx, row in df_rmn1h.iterrows():
                 muestra = row["muestra"]
                 archivo = row["archivo"]
                 contenido = row["contenido"]

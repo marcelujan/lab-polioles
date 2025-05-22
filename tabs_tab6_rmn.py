@@ -234,22 +234,24 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     filas_guardadas.extend(data["filas"])
             st.write("👀 Filas cargadas desde Firebase:", filas_guardadas)
 
-            # 🔄 Auto-cargar máscaras D/T2 si hay máscara activa y faltan muestras
-            if activar_mascara and muestras_sel:
+            # 🔄 Auto-cargar máscaras D/T2 si hay muestras sin datos en Firebase
+            if muestras_sel:
                 muestras_ya_cargadas = {f.get("Muestra") for f in filas_guardadas}
                 for nombre_muestra in muestras_sel:
-                    if not any(r["muestra"] == nombre_muestra and r.get("mascaras") for _, r in df_rmn1H.iterrows()):
+                    if nombre_muestra in muestras_ya_cargadas:
                         continue
 
                     nuevas_filas = []
                     for _, row in df_rmn1H.iterrows():
                         if row["muestra"] != nombre_muestra:
                             continue
-                        if not usar_mascara.get(row["id"], False):
+
+                        # Cargar todas las máscaras, sin depender del checkbox
+                        if not row.get("mascaras"):
                             continue
 
                         archivo = row["archivo"]
-                        for m in row.get("mascaras", []):
+                        for m in row["mascaras"]:
                             nuevas_filas.append({
                                 "Muestra": nombre_muestra,
                                 "Archivo": archivo,
@@ -272,6 +274,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         doc = db.collection("muestras").document(nombre_muestra).collection("dt2").document("datos")
                         doc.set({"filas": nuevas_filas})
                         filas_guardadas.extend(nuevas_filas)
+
 
 
             # 🧾 Mostrar tabla editable

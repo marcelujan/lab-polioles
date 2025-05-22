@@ -238,7 +238,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             if activar_mascara and muestras_sel:
                 muestras_ya_cargadas = {f.get("Muestra") for f in filas_guardadas}
                 for nombre_muestra in muestras_sel:
-                    if nombre_muestra in muestras_ya_cargadas:
+                    if not row.get("mascaras"):
                         continue
 
                     nuevas_filas = []

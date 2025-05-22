@@ -140,7 +140,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             df = df.dropna()
 
             color = colores[idx % len(colores)]
-            ax.plot(df[col_x], df[col_y], label=f"{muestra} – {archivo}", color=color)
+            ax.plot(df[col_x], df[col_y], label=f"{archivo}", color=color)
             graficado = True
 
             if activar_mascara:

@@ -230,7 +230,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             for nombre_muestra in muestras_sel:
                 doc = db.collection("muestras").document(nombre_muestra).collection("dt2").document("datos")
                 data = doc.get().to_dict()
-                st.write(f"📥 Datos Firebase para '{nombre_muestra}':", data)
                 if data and "filas" in data:
                     filas_guardadas.extend(data["filas"])
 

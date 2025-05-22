@@ -153,7 +153,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         continue
                     ax.axvspan(x0, x1, color=color, alpha=0.2)
                     if d and t2:
-                        ax.text((x0 + x1) / 2, 50,
+                        y_etiqueta = min(50, ax.get_ylim()[1] * 0.95)  # máximo 50 o 95% del eje Y
+                        ax.text((x0 + x1) / 2, y_etiqueta,
                             f"D={d:.1e} T2={t2:.3f}", ha="center", va="center", fontsize=6, color="black", rotation=90)
         except Exception as e:
             st.warning(f"No se pudo graficar {archivo}: {e}")

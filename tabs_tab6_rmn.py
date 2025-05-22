@@ -277,6 +277,16 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     y_min = coly1.number_input("Y mínimo", value=0.0)
     y_max = coly2.number_input("Y máximo", value=100.0)
 
+
+    # --- Gráfico combinado ---
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.set_title("Espectros RMN 1H")
+    ax.set_xlabel("[ppm]")
+    ax.set_ylabel("Señal")
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.axhline(y=0, color="black", linewidth=0.7)
+    
     colores = plt.cm.tab10.colors
     graficado = False
 
@@ -340,14 +350,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 ha="center", va="center", fontsize=10, color="red")
 
 
-    # --- Gráfico combinado ---
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.set_title("Espectros RMN 1H")
-    ax.set_xlabel("[ppm]")
-    ax.set_ylabel("Señal")
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_min, y_max)
-    ax.axhline(y=0, color="black", linewidth=0.7)
     st.pyplot(fig)
 
 

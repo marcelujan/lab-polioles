@@ -315,79 +315,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.success("✅ Datos recalculados y guardados correctamente.")
             st.rerun()
 
-    # --- Señales Pico Bibliografía desde df_sel ---
-    col_bib1, col_bib2 = st.columns([1, 1])
-    activar_picos = editar_tabla_biblio = False
-    with col_bib1:
-        activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas_biblio_dfsel")
-    if activar_picos:
-        with col_bib2:
-            editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio_dfsel")
-
-        doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")
-        if not doc_biblio.get().exists:
-            doc_biblio.set({"filas": []})
-
-        filas_biblio = doc_biblio.get().to_dict().get("filas", [])
-        columnas_biblio = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
-        df_biblio = pd.DataFrame(filas_biblio)
-
-        for col in columnas_biblio:
-            if col not in df_biblio.columns:
-                df_biblio[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
-        df_biblio = df_biblio[columnas_biblio]
-
-        if editar_tabla_biblio:
-            df_biblio_edit = st.data_editor(
-                df_biblio,
-                use_container_width=True,
-                hide_index=True,
-                num_rows="dynamic",
-                key="editor_tabla_biblio_dfsel",
-                column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                    "X min": st.column_config.NumberColumn(format="%.2f"),
-                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                    "X max": st.column_config.NumberColumn(format="%.2f"),
-                }
-            )
-
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                if st.button("🔴Actualizar Tabla Bibliográfica"):
-                    doc_biblio.set({"filas": df_biblio_edit.to_dict(orient="records")})
-                    st.success("✅ Tabla bibliográfica actualizada.")
-                    st.rerun()
-            with col2:
-                buffer_excel = BytesIO()
-                with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                    df_biblio_edit.to_excel(writer, index=False, sheet_name="Tabla_Bibliográfica")
-                buffer_excel.seek(0)
-                st.download_button(
-                    "📥 Descargar tabla",
-                    data=buffer_excel.getvalue(),
-                    file_name="tabla_bibliografica_rmn1h.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-        # Trazado de líneas δ-pico si hay gráfico existente
-        if "ax" in locals() and not df_biblio.empty:
-            for _, row in df_biblio.iterrows():
-                try:
-                    delta = float(row["δ pico"])
-                    etiqueta = str(row["Grupo funcional"])
-                    ax.axvline(x=delta, linestyle="dashed", color="black", linewidth=1)
-                    ax.text(
-                        delta, ax.get_ylim()[1], etiqueta,
-                        rotation=90, va="bottom", ha="center",
-                        fontsize=6, color="black"
-                    )
-                except Exception as e:
-                    st.warning(f"⚠️ Error al trazar δ pico: {e}")
-
-    st.pyplot(fig)
-
-
     # --- Cálculo de señales desde df_sel ---
     activar_calculo_senales = st.checkbox("Cálculo de señales", value=False, key="chk_calc_senales_dfsel")
 
@@ -400,13 +327,44 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             doc_ref.set({"filas": []})
 
         filas_total = doc_ref.get().to_dict().get("filas", [])
-        archivos_validos = [(r["muestra"], r["archivo"]) for _, r in df_sel.iterrows()]
+
+        # Extraer combinaciones válidas de muestra + archivo seleccionadas
+        combinaciones_activas = {(row["muestra"], row["archivo"]) for _, row in df_sel.iterrows()}
+
+        # Filtrar filas existentes para solo las muestras activas
         filas_actuales = [
             f for f in filas_total
-            if (f.get("Muestra"), f.get("Archivo")) in archivos_validos
+            if (f.get("Muestra"), f.get("Archivo")) in combinaciones_activas
         ]
+
         df_integral = pd.DataFrame(filas_actuales)
 
+        # Si no hay datos, permitir agregar fila nueva manualmente
+        if df_integral.empty:
+            st.warning("⚠️ No hay datos previos guardados para estas muestras.")
+            muestra_nueva = st.selectbox("Seleccionar muestra para comenzar", sorted({m for m, _ in combinaciones_activas}))
+            archivos_disp = sorted({a for m, a in combinaciones_activas if m == muestra_nueva})
+            archivo_nuevo = st.selectbox("Seleccionar archivo", archivos_disp)
+
+            df_integral = pd.DataFrame([{
+                "Muestra": muestra_nueva,
+                "Grupo funcional": "",
+                "δ pico": None,
+                "X min": None,
+                "X max": None,
+                "Área": None,
+                "D": None,
+                "T2": None,
+                "Xas min": None,
+                "Xas max": None,
+                "Has": None,
+                "Área as": None,
+                "H": None,
+                "Observaciones": "",
+                "Archivo": archivo_nuevo,
+            }])
+
+        # Asegurar todas las columnas estén presentes
         for col in columnas_integral:
             if col not in df_integral.columns:
                 df_integral[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
@@ -495,6 +453,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             doc_ref.set({"filas": df_integral_edit.to_dict(orient="records")})
             st.success("✅ Datos recalculados y guardados correctamente.")
             st.rerun()
+
 
 
 

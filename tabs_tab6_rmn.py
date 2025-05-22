@@ -110,6 +110,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     graficado = False
     colores = plt.cm.tab10.colors
+    col_idx = 0  # índice seguro para st.columns()
 
     for idx, row in df_rmn1h.iterrows():
         muestra = row["muestra"]
@@ -119,7 +120,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         try:
             contenido_bin = BytesIO(base64.b64decode(contenido))
-            contenido_bin.seek(0)  # 🔒 Reiniciar buffer antes de lectura
+            contenido_bin.seek(0)
             extension = os.path.splitext(archivo)[1].lower()
             if extension == ".xlsx":
                 df = pd.read_excel(contenido_bin)
@@ -149,8 +150,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             ax.plot(df[col_x], df[col_y], label=f"{archivo}", color=color)
             graficado = True
 
-            if activar_mascara:
-                with cols[idx]:
+            if activar_mascara and col_idx < len(cols):
+                with cols[col_idx]:
                     key_chk = f"chk_masc_{row['muestra']}_{archivo}"
                     mostrar_mascara = st.checkbox(archivo, key=key_chk, value=False)
 
@@ -169,6 +170,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                                     f"D={d:.1e} T2={t2:.3f}",
                                     ha="center", va="center", fontsize=6, color="black", rotation=90
                                 )
+
+                col_idx += 1
 
         except Exception as e:
             st.warning(f"No se pudo graficar {archivo}: {e}")

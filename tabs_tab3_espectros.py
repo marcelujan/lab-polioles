@@ -253,7 +253,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                                 except Exception as error:
                                     st.error(f"Error al decodificar archivo: {nombre} — {error}")
                                     continue
-                            zipf.write(file_path, arcname=os.path.join(carpeta, nombre_final))
+                            zipf.write(file_path, arcname=f"{muestra_abrev}_{tipo}_{i}_{hash_id}.xlsx")
 
                 with open(zip_path, "rb") as final_zip:
                     zip_bytes = final_zip.read()

@@ -224,7 +224,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Cálculos D/T2 sólo si el checkbox está activado
         if activar_calculos:
-            doc_dt2 = db.collection("tablas     doc_data = doc_dt2.get().to_dict() or {}
+            doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
+            doc_data = doc_dt2.get().to_dict() or {}
             filas_guardadas = doc_data.get("filas", [])
 
             # 🔄 Auto-cargar máscaras D/T2 desde espectros seleccionados (si no hay datos previos)

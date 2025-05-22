@@ -203,7 +203,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
     # --- Señales pico bibliografía ---
-  #  activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas")
     col_pico, col_editar = st.columns([1, 1])
     with col_pico:
         activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas")
@@ -211,6 +210,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio")
 
     # Cargar y preparar la tabla
+    df_biblio = None  # Inicializar para evitar error si no se activa el checkbox
     if activar_picos:
         doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")
         if not doc_biblio.get().exists:
@@ -338,7 +338,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 ha="center", va="center", fontsize=10, color="red")
 
     # Graficar líneas δ pico
-    if "fig" in locals() and not df_biblio.empty:
+    if activar_picos and 'ax' in locals() and df_biblio is not None and not df_biblio.empty:
             for _, row in df_biblio.iterrows():
                 try:
                     delta = float(row["δ pico"])

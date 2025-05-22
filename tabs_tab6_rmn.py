@@ -277,7 +277,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # --- Máscara D/T2 --- solo para muestras con espectros seleccionados
     espectros_activos = {m: archivos for m, archivos in espectros_sel.items() if archivos}
     muestras_con_espectros = list(espectros_activos.keys())
-    activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_global_mascara_dt2")
+    activar_mascara = st.checkbox("Máscara D/T2", value=False, key="chk_mascara_dt2_filtrada")
     usar_mascara = {}
     if activar_mascara and muestras_con_espectros:
         st.markdown("Activar sombreado individual por muestra:")

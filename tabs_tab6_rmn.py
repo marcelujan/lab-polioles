@@ -258,8 +258,39 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", 
                             "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
 
-            doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
-            doc_data = doc_dt2.get().to_dict() or {}
+        doc_dt2 = db.collection("tablas_dt2").document("cuantificable")
+        doc_data = doc_dt2.get().to_dict() or {}
+        filas_guardadas = doc_data.get("filas", [])
+
+        # 🔄 Auto-cargar máscaras D/T2 desde espectros seleccionados (si no hay datos previos)
+        if not filas_guardadas and activar_mascara:
+            nuevas_filas = []
+            for _, row in df_rmn1H.iterrows():
+                if not usar_mascara.get(row["id"], False):
+                    continue
+                nombre_muestra = row["muestra"]
+                archivo = row["archivo"]
+                for m in row.get("mascaras", []):
+                    nuevas_filas.append({
+                        "Muestra": nombre_muestra,
+                        "Archivo": archivo,
+                        "X min": m.get("x_min"),
+                        "X max": m.get("x_max"),
+                        "D": m.get("difusividad"),
+                        "T2": m.get("t2"),
+                        "Grupo funcional": "",
+                        "δ pico": None,
+                        "Área": None,
+                        "Xas min": None,
+                        "Xas max": None,
+                        "Has": None,
+                        "Área as": None,
+                        "H": None,
+                        "Observaciones": ""
+                    })
+            if nuevas_filas:
+                doc_dt2.set({"filas": nuevas_filas})
+                filas_guardadas = nuevas_filas  # actualizar para mostrar
 
             df_dt2 = pd.DataFrame(filas_guardadas)
 

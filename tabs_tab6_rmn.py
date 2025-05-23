@@ -326,6 +326,55 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             st.success("✅ Datos recalculados y guardados correctamente.")
             st.rerun()
 
+# --- Tabla Bibliográfica de señales pico δ (RMN 13C) ---
+    if tipo == "RMN 13C":
+        mostrar_tabla_biblio_13c = st.checkbox("📚 Mostrar tabla Bibliográfica 13C", value=False, key=f"mostrar_biblio_13c_{key_sufijo}")
+        if mostrar_tabla_biblio_13c:
+            doc_biblio_13c = db.collection("configuracion_global").document("tabla_editable_rmn13c")
+            if not doc_biblio_13c.get().exists:
+                doc_biblio_13c.set({"filas": []})
+
+            filas_biblio_13c = doc_biblio_13c.get().to_dict().get("filas", [])
+            columnas_bib13c = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
+            df_biblio_13c = pd.DataFrame(filas_biblio_13c)
+
+            for col in columnas_bib13c:
+                if col not in df_biblio_13c.columns:
+                    df_biblio_13c[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
+            df_biblio_13c = df_biblio_13c[columnas_bib13c]
+
+            st.markdown("### Tabla bibliográfica de señales RMN 13C")
+            df_biblio_edit_13c = st.data_editor(
+                df_biblio_13c,
+                column_config={
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=["CH3", "CH2", "OH", "Aromático", "Epóxido", "Ester"]),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key=f"tabla_biblio_13c_{key_sufijo}"
+            )
+
+            colb1, colb2 = st.columns([1, 1])
+            with colb1:
+                if st.button("💾 Guardar tabla bibliográfica 13C"):
+                    doc_biblio_13c.set({"filas": df_biblio_edit_13c.to_dict(orient="records")})
+                    st.success("✅ Datos bibliográficos actualizados.")
+            with colb2:
+                buffer_excel_13c = BytesIO()
+                with pd.ExcelWriter(buffer_excel_13c, engine="xlsxwriter") as writer:
+                    df_biblio_edit_13c.to_excel(writer, index=False, sheet_name="Bibliografía 13C")
+                buffer_excel_13c.seek(0)
+                st.download_button(
+                    "📥 Descargar tabla 13C",
+                    data=buffer_excel_13c.getvalue(),
+                    file_name="tabla_bibliografica_rmn13c.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
 # --- Trazado ---
     fig = go.Figure()
     for _, row in df.iterrows():

@@ -434,6 +434,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         check_d_por_espectro[archivo] = col_d.checkbox(f"D – {archivo}", key=f"chk_d_{archivo}_{key_sufijo}")
         check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
 
+# --- Sombreados por Cálculo de señales ---
+    aplicar_sombra_senales = st.checkbox("☑️ Sombrear regiones de señales", value=False, key=f"sombra_senales_{key_sufijo}")
 
 # --- Trazado ---
     fig = go.Figure()
@@ -517,7 +519,27 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             annotation_text="T2",
                             annotation_position="top right"
                         )
-                        
+
+           # Aplicar sombreado por Cálculo de señales si está activo
+        if aplicar_sombra_senales:
+            doc_senales = db.collection("tablas_integrales").document("rmn1h")
+            if doc_senales.get().exists:
+                filas_senales = doc_senales.get().to_dict().get("filas", [])
+                for f in filas_senales:
+                    if f.get("Archivo") == archivo_actual:
+                        x1 = f.get("X min")
+                        x2 = f.get("X max")
+                        if x1 is not None and x2 is not None:
+                            fig.add_vrect(
+                                x0=min(x1, x2),
+                                x1=max(x1, x2),
+                                fillcolor="rgba(0,255,0,0.1)",
+                                layer="below",
+                                line_width=0,
+                                annotation_text=f.get("δ pico", ""),
+                                annotation_position="top"
+                            )
+
     st.plotly_chart(fig, use_container_width=True)
 
 def decodificar_csv_o_excel(contenido_base64, archivo):

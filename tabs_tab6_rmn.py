@@ -70,6 +70,16 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
     restar_espectro = col3.checkbox("Restar espectro de fondo", key=f"resta_{key_sufijo}")
     ajuste_y_manual = col4.checkbox("Ajuste manual eje Y", key=f"ajuste_y_{key_sufijo}")
 
+    ajustes_y = {}
+    if ajuste_y_manual:
+        st.markdown("#### Ajustes verticales por espectro")
+        for _, row in df.iterrows():
+            clave = row["archivo"]
+            ajustes_y[clave] = st.number_input(f"Ajuste Y para {clave}", value=0.0, step=0.1, key=f"ajuste_val_{clave}")
+    else:
+        for _, row in df.iterrows():
+            ajustes_y[row["archivo"]] = 0.0col4.checkbox("Ajuste manual eje Y", key=f"ajuste_y_{key_sufijo}")
+
     seleccion_resta = None
     if restar_espectro:
         opciones_restar = [f"{row['muestra']} – {row['archivo']}" for _, row in df.iterrows()]
@@ -115,13 +125,15 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
                 espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
                 y_data = df_esp["y"] - espectro_resta_interp
             if normalizar:
+                y_data = y_data + ajustes_y.get(row["archivo"], 0.0)
+            if normalizar:
                 y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
             x_vals = df_esp["x"] if "x" in df_esp.columns else df_esp[col_x]
             fig.add_trace(go.Scatter(
                 x=x_vals,
                 y=y_data,
                 mode='lines',
-                name=f"{row['muestra']} – {row['archivo']}"
+                name=row["archivo"]
             ))
 
     fig.update_layout(

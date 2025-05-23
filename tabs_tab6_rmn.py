@@ -109,7 +109,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
                 espectro_resta.columns = ["x", "y"]
                 espectro_resta.dropna(inplace=True)
 
-    # --- Trazado ---
+    # --- Parámetros de picos ---
+    if mostrar_picos:
+        colp1, colp2 = st.columns(2)
+        altura_min = colp1.number_input("Altura mínima", value=0.05, step=0.01, key=f"altura_min_{key_sufijo}")
+        distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key=f"distancia_min_{key_sufijo}")
+
+# --- Trazado ---
     fig = go.Figure()
     for _, row in df.iterrows():
         df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
@@ -132,6 +138,24 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
                 mode='lines',
                 name=row["archivo"]
             ))
+
+            # Detección de picos
+            if mostrar_picos:
+                from scipy.signal import find_peaks
+                try:
+                    peaks, _ = find_peaks(y_data, height=altura_min, distance=distancia_min)
+                    for p in peaks:
+                        fig.add_trace(go.Scatter(
+                            x=[x_vals.iloc[p]],
+                            y=[y_data.iloc[p]],
+                            mode="markers+text",
+                            marker=dict(color="black", size=6),
+                            text=[f"{x_vals.iloc[p]:.2f}"],
+                            textposition="top center",
+                            showlegend=False
+                        ))
+                except:
+                    st.warning(f"⚠️ No se pudieron detectar picos en {row['archivo']}.")
 
     fig.update_layout(
         xaxis_title="[ppm]",

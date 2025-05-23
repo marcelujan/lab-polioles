@@ -487,7 +487,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         except:
                             continue
 
-                ax_ind.legend()
+
                 st.pyplot(fig_ind)
 
                 # Descarga individual
@@ -839,7 +839,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 except Exception as e:
                     st.warning(f"⚠️ Error al trazar δ pico (13C): {e}")
 
-        ax13.legend()
+
         st.pyplot(fig13)
 
        # Gráficos individuales
@@ -890,7 +890,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             except:
                                 continue
 
-                    ax_ind13.legend()
                     st.pyplot(fig_ind13)
 
                     # Descarga

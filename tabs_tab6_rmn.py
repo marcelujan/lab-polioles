@@ -226,30 +226,105 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     # --- Tabla de Cálculo de señales ---
     mostrar_tabla_senales = st.checkbox("📈 Mostrar tabla de Cálculo de señales", value=False, key=f"mostrar_senales_{key_sufijo}")
     if mostrar_tabla_senales:
-        columnas_senales = ["Muestra", "Tipo", "δ pico", "X min", "X max", "Área", "H", "Observaciones", "Archivo"]
-        df_senales = pd.DataFrame(columns=columnas_senales)
+        columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+        doc_ref = db.collection("tablas_integrales").document("rmn1h")
+        if not doc_ref.get().exists:
+            doc_ref.set({"filas": []})
+
+        filas_guardadas = doc_ref.get().to_dict().get("filas", [])
+        combinaciones = {(row["muestra"], row["archivo"]) for _, row in df.iterrows()}
+        filas_activas = [f for f in filas_guardadas if (f.get("Muestra"), f.get("Archivo")) in combinaciones]
+
+        df_senales = pd.DataFrame(filas_activas)
+        for col in columnas_senales:
+            if col not in df_senales.columns:
+                df_senales[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
+        df_senales = df_senales[columnas_senales]
 
         st.markdown("### Cálculo de señales")
         with st.form(f"form_senales_{key_sufijo}"):
             df_senales_edit = st.data_editor(
                 df_senales,
                 column_config={
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=["CH3", "CH2", "OH", "Aromático", "Epóxido", "Ester"]),
                     "δ pico": st.column_config.NumberColumn(format="%.2f"),
                     "X min": st.column_config.NumberColumn(format="%.2f"),
                     "X max": st.column_config.NumberColumn(format="%.2f"),
-                    "Área": st.column_config.NumberColumn(format="%.2f"),
-                    "H": st.column_config.NumberColumn(format="%.2f"),
+                    "Área": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "D": st.column_config.NumberColumn(format="%.2e"),
+                    "T2": st.column_config.NumberColumn(format="%.3f"),
+                    "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                    "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                    "Has": st.column_config.NumberColumn(format="%.2f"),
+                    "Área as": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "H": st.column_config.NumberColumn(format="%.2f", disabled=True),
                     "Observaciones": st.column_config.TextColumn(),
                     "Archivo": st.column_config.TextColumn(disabled=True),
                     "Muestra": st.column_config.TextColumn(disabled=True),
-                    "Tipo": st.column_config.TextColumn(disabled=True),
                 },
                 hide_index=True,
                 use_container_width=True,
                 num_rows="dynamic",
                 key=f"tabla_senales_{key_sufijo}"
             )
-            st.form_submit_button("💾 Guardar cambios")
+            recalcular = st.form_submit_button("🔴 Recalcular 'Área', 'Área as' y 'H'")
+
+        if recalcular:
+            for i, row in df_senales_edit.iterrows():
+                try:
+                    muestra = row["Muestra"]
+                    archivo = row["Archivo"]
+                    x_min = float(row["X min"])
+                    x_max = float(row["X max"])
+                    xas_min = float(row["Xas min"]) if row["Xas min"] not in [None, ""] else None
+                    xas_max = float(row["Xas max"]) if row["Xas max"] not in [None, ""] else None
+                    has = float(row["Has"]) if row["Has"] not in [None, ""] else None
+
+                    espectros = db.collection("muestras").document(muestra).collection("espectros").stream()
+                    espectro = next((e.to_dict() for e in espectros if e.to_dict().get("nombre_archivo") == archivo), None)
+                    if not espectro:
+                        continue
+
+                    contenido = BytesIO(base64.b64decode(espectro["contenido"]))
+                    extension = os.path.splitext(archivo)[1].lower()
+                    if extension == ".xlsx":
+                        df_esp = pd.read_excel(contenido)
+                    else:
+                        for sep in [",", ";", "	", " "]:
+                            contenido.seek(0)
+                            try:
+                                df_esp = pd.read_csv(contenido, sep=sep)
+                                if df_esp.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            continue
+
+                    col_x, col_y = df_esp.columns[:2]
+                    df_esp[col_x] = pd.to_numeric(df_esp[col_x], errors="coerce")
+                    df_esp[col_y] = pd.to_numeric(df_esp[col_y], errors="coerce")
+                    df_esp = df_esp.dropna()
+
+                    df_main = df_esp[(df_esp[col_x] >= min(x_min, x_max)) & (df_esp[col_x] <= max(x_min, x_max))]
+                    area = np.trapz(df_main[col_y], df_main[col_x]) if not df_main.empty else None
+                    df_senales_edit.at[i, "Área"] = round(area, 2) if area else None
+
+                    if xas_min is not None and xas_max is not None:
+                        df_as = df_esp[(df_esp[col_x] >= min(xas_min, xas_max)) & (df_esp[col_x] <= max(xas_min, xas_max))]
+                        area_as = np.trapz(df_as[col_y], df_as[col_x]) if not df_as.empty else None
+                        df_senales_edit.at[i, "Área as"] = round(area_as, 2) if area_as else None
+
+                        if area and area_as and has and area_as != 0:
+                            h_calc = (area * has) / area_as
+                            df_senales_edit.at[i, "H"] = round(h_calc, 2)
+
+                except Exception as e:
+                    st.warning(f"⚠️ Error en fila {i}: {e}")
+
+            doc_ref.set({"filas": df_senales_edit.to_dict(orient="records")})
+            st.success("✅ Datos recalculados y guardados correctamente.")
+            st.rerun()
 
 # --- Trazado ---
     fig = go.Figure()

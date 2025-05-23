@@ -93,27 +93,25 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         return
 
     # === 1. Filtros ===
-    with st.expander("⚙️ Filtros y opciones", expanded=True):
-        col_f1, col_f2 = st.columns(2)
-        normalizar = col_f1.checkbox("Normalizar intensidad", value=False, key=f"chk_norm_{key_sufijo}")
-        restar_espectro = col_f2.checkbox("Restar espectro de fondo", value=False, key=f"chk_restar_{key_sufijo}")
-        mostrar_picos = col_f1.checkbox("Mostrar picos detectados", value=False, key=f"chk_picos_{key_sufijo}")
-        ajuste_y_manual = col_f2.checkbox("Ajuste manual eje Y", value=False, key=f"chk_y_manual_{key_sufijo}")
+    # === Filtros estilo hoja 5 ===
+    col1, col2, col3, col4 = st.columns(4)
+    normalizar = col1.checkbox("Normalizar intensidad", key=f"norm_{key_sufijo}")
+    mostrar_picos = col2.checkbox("Mostrar picos detectados", key=f"picos_{key_sufijo}")
+    restar_espectro = col3.checkbox("Restar espectro de fondo", key=f"resta_{key_sufijo}")
+    ajuste_y_manual = col4.checkbox("Ajuste manual eje Y", key=f"ajuste_y_{key_sufijo}")
 
-        if restar_espectro and not df.empty:
-            opciones_restar = [f"{row['muestra']} – {row['archivo']}" for _, row in df.iterrows()]
-            seleccion_resta = st.selectbox("Seleccionar espectro de fondo a restar:", opciones_restar, key=f"sel_resta_{key_sufijo}")
-        else:
-            seleccion_resta = None
+    if restar_espectro and not df.empty:
+        opciones_restar = [f"{row['muestra']} – {row['archivo']}" for _, row in df.iterrows()]
+        seleccion_resta = st.selectbox("Seleccionar espectro a restar:", opciones_restar, key=f"sel_resta_{key_sufijo}")
+    else:
+        seleccion_resta = None
 
-    # === Rango de visualización (fuera del bloque de filtros) ===
     st.markdown("### Rango de visualización")
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
     x_max = colx2.number_input("X máximo", value=10.0 if tipo == "RMN 1H" else 220.0, key=f"x_max_{key_sufijo}")
-    if ajuste_y_manual:
-        y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
-        y_max = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2.0, key=f"y_max_{key_sufijo}")
+    y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}") if ajuste_y_manual else None
+    y_max = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2.0, key=f"y_max_{key_sufijo}") if ajuste_y_manual else None = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2.0, key=f"y_max_{key_sufijo}")
     else:
         y_min, y_max = None, None if ajuste_y_manual else None if ajuste_y_manual else None
 
@@ -144,20 +142,20 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
         if df_esp is not None:
             col_x, col_y = df_esp.columns[:2]
-            y_data = df_esp[col_y].copy()
+                        y_data = df_esp[col_y].copy()
             if espectro_resta is not None:
                 df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
                 espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
                 y_data = df_esp["y"] - espectro_resta_interp
             if normalizar:
                 y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
-                x_vals = df_esp["x"] if "x" in df_esp.columns else df_esp[col_x]
+                        x_vals = df_esp["x"] if "x" in df_esp.columns else df_esp[col_x]
             
                 x=x_vals,
                 y=y_data,
                 mode='lines',
                 name=f"{row['muestra']} – {row['archivo']}"
-            
+            ))
 
     fig.update_layout(
         xaxis_title="[ppm]",

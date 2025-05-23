@@ -694,7 +694,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         ax13.set_xlabel("[ppm]")
         ax13.set_ylabel("Señal")
         ax13.axhline(y=0, color="black", linewidth=0.7)
-        ax13.grid(True, which="both", linestyle="-", linewidth=0.5)
+        ax13.xaxis.set_minor_locator(AutoMinorLocator(4))
+        ax13.yaxis.set_minor_locator(AutoMinorLocator(4))
+        ax13.grid(True, which='both', linestyle=':', linewidth=0.5)
         for _, row in df_rmn13C.iterrows():
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))

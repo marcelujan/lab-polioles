@@ -144,7 +144,7 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
         if df_esp is not None:
             col_x, col_y = df_esp.columns[:2]
-                        y_data = df_esp[col_y].copy()
+            y_data = df_esp[col_y].copy()
             if espectro_resta is not None:
                 df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
                 espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])

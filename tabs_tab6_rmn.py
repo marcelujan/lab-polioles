@@ -437,6 +437,9 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 # --- Sombreados por Cálculo de señales ---
     aplicar_sombra_senales = st.checkbox("☑️ Sombrear regiones de señales", value=False, key=f"sombra_senales_{key_sufijo}")
 
+# --- Sombreados por tabla bibliográfica (δ pico) ---
+    aplicar_sombra_biblio = st.checkbox("☑️ Sombrear señales bibliográficas", value=False, key=f"sombra_biblio_{key_sufijo}")
+
 # --- Trazado ---
     fig = go.Figure()
     for _, row in df.iterrows():
@@ -540,6 +543,21 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                                 annotation_position="top"
                             )
 
+            # Aplicar sombreado por bibliografía si está activo
+        if aplicar_sombra_biblio:
+            doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c")
+            if doc_biblio.get().exists:
+                filas_biblio = doc_biblio.get().to_dict().get("filas", [])
+                for f in filas_biblio:
+                    delta = f.get("δ pico")
+                    if delta is not None:
+                        fig.add_vline(
+                            x=delta,
+                            line=dict(color="black", dash="dot"),
+                            annotation_text=f"δ = {delta:.2f}",
+                            annotation_position="top right"
+                        )
+                        
     st.plotly_chart(fig, use_container_width=True)
 
 def decodificar_csv_o_excel(contenido_base64, archivo):

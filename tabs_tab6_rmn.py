@@ -690,7 +690,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         x_min_13c = col13x1.number_input("X mínimo 13C", value=0.0, key="x_min_13c")
         x_max_13c = col13x2.number_input("X máximo 13C", value=200.0, key="x_max_13c")
         y_min_13c = col13y1.number_input("Y mínimo 13C", value=0.0, key="y_min_13c")
-        y_max_13c = col13y2.number_input("Y máximo 13C", value=80.0, key="y_max_13c")
+        y_max_13c = col13y2.number_input("Y máximo 13C", value=1.25, key="y_max_13c")
         fig13, ax13 = plt.subplots()
         ax13.set_xlim(x_min_13c, x_max_13c)
         ax13.set_ylim(y_min_13c, y_max_13c)

@@ -725,6 +725,72 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         ax13.set_xlabel("[ppm]")
         ax13.set_ylabel("Señal")
         ax13.legend()
+
+        # --- Señales Pico Bibliográfica RMN 13C ---
+        col_bib13a, col_bib13b = st.columns([1, 1])
+        activar_picos_13c = col_bib13a.checkbox("Señales Pico Bibliográfica 13C", value=False, key="chk_deltas_biblio_13c")
+        editar_biblio_13c = col_bib13b.checkbox("Tabla Bibliográfica 13C", value=False, key="chk_editar_biblio_13c")
+
+        doc_biblio_13c = db.collection("configuracion_global").document("tabla_editable_rmn13c")
+        if not doc_biblio_13c.get().exists:
+            doc_biblio_13c.set({"filas": []})
+
+        filas_biblio_13c = doc_biblio_13c.get().to_dict().get("filas", [])
+        columnas_bib13c = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
+        df_biblio_13c = pd.DataFrame(filas_biblio_13c)
+        for col in columnas_bib13c:
+            if col not in df_biblio_13c.columns:
+                df_biblio_13c[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
+        df_biblio_13c = df_biblio_13c[columnas_bib13c]
+
+        if editar_biblio_13c:
+            df_edit_bib13c = st.data_editor(
+                df_biblio_13c,
+                use_container_width=True,
+                hide_index=True,
+                num_rows="dynamic",
+                key="editor_tabla_biblio_13c",
+                column_config={
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                }
+            )
+
+            colu1, colu2 = st.columns([1, 1])
+            with colu1:
+                if st.button("🔴Actualizar Tabla Bibliográfica 13C"):
+                    doc_biblio_13c.set({"filas": df_edit_bib13c.to_dict(orient="records")})
+                    st.success("✅ Tabla bibliográfica actualizada.")
+                    st.rerun()
+            with colu2:
+                buffer_excel_13c = BytesIO()
+                with pd.ExcelWriter(buffer_excel_13c, engine="xlsxwriter") as writer:
+                    df_edit_bib13c.to_excel(writer, index=False, sheet_name="Bibliográfica 13C")
+                buffer_excel_13c.seek(0)
+                st.download_button(
+                    "📥 Descargar tabla 13C",
+                    data=buffer_excel_13c.getvalue(),
+                    file_name="tabla_bibliografica_rmn13c.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+        if activar_picos_13c and not df_biblio_13c.empty:
+            for _, row in df_biblio_13c.iterrows():
+                try:
+                    delta = float(row["δ pico"])
+                    etiqueta = str(row["Grupo funcional"])
+                    ax13.plot([delta, delta], [y_min_13c, y_max_13c], linestyle="dashed", color="black", linewidth=0.5)
+                    y_etiqueta = y_min_13c + 0.65 * (y_max_13c - y_min_13c)
+                    ax13.text(
+                        delta, y_etiqueta, etiqueta,
+                        rotation=90, va="bottom", ha="center",
+                        fontsize=6, color="black"
+                    )
+                except Exception as e:
+                    st.warning(f"⚠️ Error al trazar δ pico (13C): {e}")
+
         st.pyplot(fig13)
 
         # Botón para descargar imagen del gráfico RMN 13C

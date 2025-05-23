@@ -557,8 +557,94 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             annotation_text=f"δ = {delta:.2f}",
                             annotation_position="top right"
                         )
-                        
+
     st.plotly_chart(fig, use_container_width=True)
+
+    # --- Gráficos individuales con sombreados ---
+    mostrar_indiv = st.checkbox("Mostrar gráficos individuales", key=f"chk_indiv_{key_sufijo}")
+    if mostrar_indiv:
+        for _, row in df.iterrows():
+            archivo_actual = row["archivo"]
+            muestra_actual = row["muestra"]
+            df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
+            if df_esp is None:
+                continue
+
+            col_x, col_y = df_esp.columns[:2]
+            y_data = df_esp[col_y].copy() + ajustes_y.get(archivo_actual, 0.0)
+            if normalizar:
+                y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
+            x_vals = df_esp[col_x]
+
+            fig_indiv = go.Figure()
+            fig_indiv.add_trace(go.Scatter(x=x_vals, y=y_data, mode='lines', name=archivo_actual))
+
+            # Sombreado D/T2
+            if tipo == "RMN 1H":
+                doc_dt2 = db.collection("muestras").document(muestra_actual).collection("dt2").document("datos")
+                if doc_dt2.get().exists:
+                    filas_dt2 = doc_dt2.get().to_dict().get("filas", [])
+                    for f in filas_dt2:
+                        if f.get("Archivo") == archivo_actual:
+                            if check_d_por_espectro.get(archivo_actual) and f.get("X min") and f.get("X max"):
+                                fig_indiv.add_vrect(
+                                    x0=min(f["X min"], f["X max"]),
+                                    x1=max(f["X min"], f["X max"]),
+                                    fillcolor="rgba(255,0,0,0.1)", line_width=0,
+                                    annotation_text="D", annotation_position="top left"
+                                )
+                            if check_t2_por_espectro.get(archivo_actual) and f.get("Xas min") and f.get("Xas max"):
+                                fig_indiv.add_vrect(
+                                    x0=min(f["Xas min"], f["Xas max"]),
+                                    x1=max(f["Xas min"], f["Xas max"]),
+                                    fillcolor="rgba(0,0,255,0.1)", line_width=0,
+                                    annotation_text="T2", annotation_position="top right"
+                                )
+
+            # Sombreado por señales
+            if aplicar_sombra_senales:
+                doc_senales = db.collection("tablas_integrales").document("rmn1h")
+                if doc_senales.get().exists:
+                    filas_senales = doc_senales.get().to_dict().get("filas", [])
+                    for f in filas_senales:
+                        if f.get("Archivo") == archivo_actual:
+                            x1 = f.get("X min")
+                            x2 = f.get("X max")
+                            if x1 is not None and x2 is not None:
+                                fig_indiv.add_vrect(
+                                    x0=min(x1, x2),
+                                    x1=max(x1, x2),
+                                    fillcolor="rgba(0,255,0,0.1)", line_width=0,
+                                    annotation_text=f.get("δ pico", ""), annotation_position="top"
+                                )
+
+            # Sombreado por bibliografía
+            if aplicar_sombra_biblio:
+                doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c")
+                if doc_biblio.get().exists:
+                    filas_biblio = doc_biblio.get().to_dict().get("filas", [])
+                    for f in filas_biblio:
+                        delta = f.get("δ pico")
+                        if delta is not None:
+                            fig_indiv.add_vline(
+                                x=delta,
+                                line=dict(color="black", dash="dot"),
+                                annotation_text=f"δ = {delta:.2f}",
+                                annotation_position="top right"
+                            )
+
+            fig_indiv.update_layout(
+                title=f"{archivo_actual}",
+                xaxis_title="[ppm]",
+                yaxis_title="Intensidad",
+                xaxis=dict(range=[x_max, x_min]),
+                yaxis=dict(range=[y_min, y_max] if y_min is not None and y_max is not None else None),
+                height=400,
+                template="simple_white"
+            )
+
+            st.plotly_chart(fig_indiv, use_container_width=True)
+
 
 def decodificar_csv_o_excel(contenido_base64, archivo):
     try:

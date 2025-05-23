@@ -52,13 +52,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     st.markdown("## 🧪 RMN 1H")
     df_1h = df_sel[df_sel["tipo"] == "RMN 1H"]
-    render_rmn_plot(df_1h, tipo="RMN 1H", key_sufijo="rmn1h")
+    render_rmn_plot(df_1h, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
 
     st.markdown("## 🧪 RMN 13C")
     df_13c = df_sel[df_sel["tipo"] == "RMN 13C"]
-    render_rmn_plot(df_13c, tipo="RMN 13C", key_sufijo="rmn13c")
+    render_rmn_plot(df_13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
 
-def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
+def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:
         st.info(f"No hay espectros disponibles para {tipo}.")
         return

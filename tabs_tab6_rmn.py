@@ -84,7 +84,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
         y_max = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2.0, key=f"y_max_{key_sufijo}")
     else:
-        y_min, y_max = None, None
+        y_min = None
+        y_max = None
 
     # --- Decodificar espectro de fondo si aplica ---
     espectro_resta = None
@@ -94,11 +95,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         if fila_resta is not None:
             try:
                 espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
-            except:
-                espectro_resta = None
                 if espectro_resta is not None:
                     espectro_resta.columns = ["x", "y"]
                     espectro_resta.dropna(inplace=True)
+            except:
+                espectro_resta = None
+                espectro_resta.columns = ["x", "y"]
+                espectro_resta.dropna(inplace=True)
 
     # --- Trazado ---
     fig = go.Figure()
@@ -127,7 +130,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         xaxis=dict(range=[x_min, x_max], autorange="reversed"),
         yaxis=dict(range=[y_min, y_max] if y_min is not None and y_max is not None else None),
         template="simple_white",
-        height=400
+        height=500,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
     )
 
     st.plotly_chart(fig, use_container_width=True)

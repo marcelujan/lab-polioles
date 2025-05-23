@@ -108,6 +108,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.axhline(y=0, color="black", linewidth=0.7)
+    ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+    ax.grid(True, which='both', linestyle=':', linewidth=0.5)
 
     graficado = False
     colores = plt.cm.tab10.colors
@@ -455,6 +458,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 ax_ind.set_xlim(x_min, x_max)
                 ax_ind.set_ylim(y_min, y_max)
                 ax_ind.axhline(y=0, color="black", linewidth=0.5)
+                ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+                ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+                ax.grid(True, which='both', linestyle=':', linewidth=0.5)
 
                 # Máscaras D/T2
                 if activar_mascara:
@@ -697,7 +703,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         ax13.axhline(y=0, color="black", linewidth=0.7)
         ax13.xaxis.set_minor_locator(AutoMinorLocator(4))
         ax13.yaxis.set_minor_locator(AutoMinorLocator(4))
-        ax13.grid(True, which='both', linestyle=':', linewidth=0.5)
+        ax13.grid(True, which='both', linestyle='-', linewidth=0.5)
         for _, row in df_rmn13C.iterrows():
             try:
                 contenido = BytesIO(base64.b64decode(row["contenido"]))

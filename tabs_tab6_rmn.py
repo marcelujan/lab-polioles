@@ -116,7 +116,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key=f"distancia_min_{key_sufijo}")
 
 # --- Tabla de Cálculo D/T2 ---
-    if tipo == "RMN 1H":
+    mostrar_tabla_dt2 = st.checkbox("🧮 Mostrar tabla de Cálculo D/T2", value=False, key=f"mostrar_dt2_{key_sufijo}")
+    if mostrar_tabla_dt2:
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                          "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
 

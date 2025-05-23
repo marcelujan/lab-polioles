@@ -106,11 +106,16 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         else:
             seleccion_resta = None
 
-        colx1, colx2, coly1, coly2 = st.columns(4)
-        x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
-        x_max = colx2.number_input("X máximo", value=10.0 if tipo == "RMN 1H" else 220.0, key=f"x_max_{key_sufijo}")
-        y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}") if ajuste_y_manual else None
-        y_max = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2.0, key=f"y_max_{key_sufijo}") if ajuste_y_manual else None
+    # === Rango de visualización (fuera del bloque de filtros) ===
+    st.markdown("### Rango de visualización")
+    colx1, colx2, coly1, coly2 = st.columns(4)
+    x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
+    x_max = colx2.number_input("X máximo", value=10.0 if tipo == "RMN 1H" else 220.0, key=f"x_max_{key_sufijo}")
+    if ajuste_y_manual:
+        y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
+        y_max = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2.0, key=f"y_max_{key_sufijo}")
+    else:
+        y_min, y_max = None, None if ajuste_y_manual else None if ajuste_y_manual else None
 
     # === 2. Tablas (Cálculo D/T2, Señales, Bibliografía) ===
     # TODO: insertar aquí la tabla editable de Cálculo D/T2
@@ -139,7 +144,7 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
         if df_esp is not None:
             col_x, col_y = df_esp.columns[:2]
-            y_data = df_esp[col_y].copy()
+                        y_data = df_esp[col_y].copy()
             if espectro_resta is not None:
                 df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
                 espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
@@ -147,7 +152,7 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
             if normalizar:
                 y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
             fig.add_trace(go.Scatter(
-                x=df_esp[col_x],
+                x=df_esp["x"],
                 y=y_data,
                 mode='lines',
                 name=f"{row['muestra']} – {row['archivo']}"

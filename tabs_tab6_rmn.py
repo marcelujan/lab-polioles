@@ -120,6 +120,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         if df_esp is not None:
             col_x, col_y = df_esp.columns[:2]
             y_data = df_esp[col_y].copy()
+            y_data = y_data + ajustes_y.get(row["archivo"], 0.0)
             if espectro_resta is not None:
                 df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
                 espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
@@ -139,7 +140,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
     fig.update_layout(
         xaxis_title="[ppm]",
         yaxis_title="Intensidad",
-        xaxis=dict(range=[x_min, x_max], autorange="reversed"),
+        xaxis=dict(range=[x_max, x_min]),
         yaxis=dict(range=[y_min, y_max] if y_min is not None and y_max is not None else None),
         template="simple_white",
         height=500,

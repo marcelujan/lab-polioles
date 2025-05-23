@@ -911,6 +911,136 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         fig13.savefig(buffer_img13, format="png", dpi=300, bbox_inches="tight")
         st.download_button("📷 Descargar gráfico RMN 13C", data=buffer_img13.getvalue(), file_name="grafico_rmn13c.png", mime="image/png")
 
+        # --- Tabla de integración RMN 13C ---
+        activar_integracion_13c = st.checkbox("Cálculo de señales RMN 13C", value=False, key="chk_integracion_rmn13c")
+
+        if activar_integracion_13c:
+            columnas_integral_13c = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área",
+                                     "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
+
+            doc_ref_13c = db.collection("tablas_integrales").document("rmn13c")
+            if not doc_ref_13c.get().exists:
+                doc_ref_13c.set({"filas": []})
+
+            filas_total_13c = doc_ref_13c.get().to_dict().get("filas", [])
+
+            combinaciones_activas_13c = {(row["muestra"], row["archivo"]) for _, row in df_rmn13C.iterrows()}
+            filas_actuales_13c = [
+                f for f in filas_total_13c
+                if (f.get("Muestra"), f.get("Archivo")) in combinaciones_activas_13c
+            ]
+
+            df_integral_13c = pd.DataFrame(filas_actuales_13c)
+
+            if df_integral_13c.empty:
+                st.warning("⚠️ No hay datos previos guardados para estas muestras.")
+                muestra_nueva = st.selectbox("Seleccionar muestra para comenzar (13C)",
+                                             sorted({m for m, _ in combinaciones_activas_13c}))
+                archivos_disp = sorted({a for m, a in combinaciones_activas_13c if m == muestra_nueva})
+                archivo_nuevo = st.selectbox("Seleccionar archivo", archivos_disp)
+
+                df_integral_13c = pd.DataFrame([{
+                    "Muestra": muestra_nueva,
+                    "Grupo funcional": "",
+                    "δ pico": None,
+                    "X min": None,
+                    "X max": None,
+                    "Área": None,
+                    "Xas min": None,
+                    "Xas max": None,
+                    "Cas": None,
+                    "Área as": None,
+                    "C": None,
+                    "Observaciones": "",
+                    "Archivo": archivo_nuevo,
+                }])
+
+            for col in columnas_integral_13c:
+                if col not in df_integral_13c.columns:
+                    df_integral_13c[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
+            df_integral_13c = df_integral_13c[columnas_integral_13c]
+
+            with st.form("form_integral_13c"):
+                df_edit_13c = st.data_editor(
+                    df_integral_13c,
+                    column_config={
+                        "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                        "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                        "X min": st.column_config.NumberColumn(format="%.2f"),
+                        "X max": st.column_config.NumberColumn(format="%.2f"),
+                        "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
+                        "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                        "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                        "Cas": st.column_config.NumberColumn(format="%.2f"),
+                        "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
+                        "C": st.column_config.NumberColumn(format="%.2f", label="🔴C", disabled=True),
+                        "Observaciones": st.column_config.TextColumn(),
+                        "Archivo": st.column_config.TextColumn(),
+                    },
+                    hide_index=True,
+                    use_container_width=True,
+                    num_rows="dynamic",
+                    key="tabla_integral_13c"
+                )
+                recalcular_13c = st.form_submit_button("🔴 Recalcular 'Área', 'Área as' y 'C'")
+
+            if recalcular_13c:
+                for i, row in df_edit_13c.iterrows():
+                    try:
+                        muestra = row.get("Muestra")
+                        archivo = row.get("Archivo")
+                        x_min = float(row.get("X min"))
+                        x_max = float(row.get("X max"))
+                        xas_min = float(row.get("Xas min")) if row.get("Xas min") not in [None, ""] else None
+                        xas_max = float(row.get("Xas max")) if row.get("Xas max") not in [None, ""] else None
+                        cas = float(row.get("Cas")) if row.get("Cas") not in [None, ""] else None
+
+                        espectros = db.collection("muestras").document(muestra).collection("espectros").stream()
+                        espectro = next((e.to_dict() for e in espectros if e.to_dict().get("nombre_archivo") == archivo), None)
+                        if not espectro:
+                            continue
+
+                        contenido = BytesIO(base64.b64decode(espectro["contenido"]))
+                        extension = os.path.splitext(archivo)[1].lower()
+                        if extension == ".xlsx":
+                            df_esp = pd.read_excel(contenido)
+                        else:
+                            for sep in [",", ";", "\t", " "]:
+                                contenido.seek(0)
+                                try:
+                                    df_esp = pd.read_csv(contenido, sep=sep)
+                                    if df_esp.shape[1] >= 2:
+                                        break
+                                except:
+                                    continue
+                            else:
+                                continue
+
+                        col_x, col_y = df_esp.columns[:2]
+                        df_esp[col_x] = pd.to_numeric(df_esp[col_x], errors="coerce")
+                        df_esp[col_y] = pd.to_numeric(df_esp[col_y], errors="coerce")
+                        df_esp = df_esp.dropna()
+
+                        df_main = df_esp[(df_esp[col_x] >= min(x_min, x_max)) & (df_esp[col_x] <= max(x_min, x_max))]
+                        area = np.trapz(df_main[col_y], df_main[col_x]) if not df_main.empty else None
+                        df_edit_13c.at[i, "Área"] = round(area, 2) if area else None
+
+                        if xas_min is not None and xas_max is not None:
+                            df_as = df_esp[(df_esp[col_x] >= min(xas_min, xas_max)) & (df_esp[col_x] <= max(xas_min, xas_max))]
+                            area_as = np.trapz(df_as[col_y], df_as[col_x]) if not df_as.empty else None
+                            df_edit_13c.at[i, "Área as"] = round(area_as, 2) if area_as else None
+
+                            if area and area_as and cas and area_as != 0:
+                                c_calc = (area * cas) / area_as
+                                df_edit_13c.at[i, "C"] = round(c_calc, 2)
+
+                    except Exception as e:
+                        st.warning(f"⚠️ Error en fila {i}: {e}")
+
+                doc_ref_13c.set({"filas": df_edit_13c.to_dict(orient="records")})
+                st.success("✅ Datos recalculados y guardados correctamente.")
+                st.rerun()
+
     # --- Zona Imágenes ---
     st.subheader("🖼️ Espectros imagen")
     df_rmn_img = df_sel[df_sel["es_imagen"]]

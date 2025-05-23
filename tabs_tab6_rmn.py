@@ -8,102 +8,103 @@ from io import BytesIO
 import base64
 import os
 
-st.title("Análisis RMN – 1H y 13C")
+def render_tab6(db):
+    st.title("Análisis RMN – 1H y 13C")
 
-# ================================
-# === Funciones auxiliares de carga ===
-# ================================
+    # ================================
+    # === Funciones auxiliares de carga ===
+    # ================================
 
-def cargar_muestras(db):
-    try:
-        docs = db.collection("muestras").stream()
-        return [{"nombre": doc.id} for doc in docs]
-    except:
-        st.warning("⚠️ Error al cargar muestras (simulado sin Firebase).")
-        return []
-
-def cargar_espectros_rmn_unificados(muestras, db):
-    espectros = []
-    for m in muestras:
-        nombre = m["nombre"]
+    def cargar_muestras(db):
         try:
-            subcoleccion = db.collection("muestras").document(nombre).collection("espectros").stream()
-            for i, doc in enumerate(subcoleccion):
-                datos = doc.to_dict()
-                tipo = (datos.get("tipo") or "").upper()
-                if "RMN" in tipo:
-                    espectros.append({
-                        "muestra": nombre,
-                        "tipo": tipo,
-                        "archivo": datos.get("nombre_archivo", "sin nombre"),
-                        "contenido": datos.get("contenido"),
-                        "fecha": datos.get("fecha"),
-                        "mascaras": datos.get("mascaras", []),
-                        "es_imagen": datos.get("es_imagen", False),
-                        "id": f"{nombre}__{i}"
-                    })
+            docs = db.collection("muestras").stream()
+            return [{"nombre": doc.id} for doc in docs]
         except:
-            st.warning(f"⚠️ No se pudo acceder a espectros de la muestra {nombre}.")
-    return espectros
+            st.warning("⚠️ Error al cargar muestras.")
+            return []
 
-# ================================
-# === 1. Cargar muestras y espectros ===
-# ================================
+    def cargar_espectros_rmn_unificados(muestras, db):
+        espectros = []
+        for m in muestras:
+            nombre = m["nombre"]
+            try:
+                subcoleccion = db.collection("muestras").document(nombre).collection("espectros").stream()
+                for i, doc in enumerate(subcoleccion):
+                    datos = doc.to_dict()
+                    tipo = (datos.get("tipo") or "").upper()
+                    if "RMN" in tipo:
+                        espectros.append({
+                            "muestra": nombre,
+                            "tipo": tipo,
+                            "archivo": datos.get("nombre_archivo", "sin nombre"),
+                            "contenido": datos.get("contenido"),
+                            "fecha": datos.get("fecha"),
+                            "mascaras": datos.get("mascaras", []),
+                            "es_imagen": datos.get("es_imagen", False),
+                            "id": f"{nombre}__{i}"
+                        })
+            except:
+                st.warning(f"⚠️ No se pudo acceder a espectros de la muestra {nombre}.")
+        return espectros
 
-muestras = cargar_muestras(db)
-if not muestras:
-    st.warning("No hay muestras disponibles.")
-    st.stop()
+    # ================================
+    # === 1. Cargar muestras y espectros ===
+    # ================================
 
-# Obtener espectros unificados
-espectros_rmn = cargar_espectros_rmn_unificados(muestras, db)  # asume implementación existente
+    muestras = cargar_muestras(db)
+    if not muestras:
+        st.warning("No hay muestras disponibles.")
+        st.stop()
 
-# Crear dataframe
-df_total = pd.DataFrame(espectros_rmn)
-if df_total.empty:
-    st.warning("No hay espectros RMN disponibles.")
-    st.stop()
+    # Obtener espectros unificados
+    espectros_rmn = cargar_espectros_rmn_unificados(muestras, db)
 
-# ================================
-# === 2. Selector de muestras y espectros ===
-# ================================
+    # Crear dataframe
+    df_total = pd.DataFrame(espectros_rmn)
+    if df_total.empty:
+        st.warning("No hay espectros RMN disponibles.")
+        st.stop()
 
-muestras_disp = sorted(df_total["muestra"].unique())
-muestras_sel = st.multiselect("Seleccionar muestras", muestras_disp)
+    # ================================
+    # === 2. Selector de muestras y espectros ===
+    # ================================
 
-df_filtrado = df_total[df_total["muestra"].isin(muestras_sel)]
+    muestras_disp = sorted(df_total["muestra"].unique())
+    muestras_sel = st.multiselect("Seleccionar muestras", muestras_disp)
 
-ids_info = [
-    {"id": row["id"], "nombre": f"{row['muestra']} – {row['archivo']}"}
-    for _, row in df_filtrado.iterrows()
-]
+    df_filtrado = df_total[df_total["muestra"].isin(muestras_sel)]
 
-ids_legibles = {e["id"]: e["nombre"] for e in ids_info}
-ids_disponibles = list(ids_legibles.keys())
+    ids_info = [
+        {"id": row["id"], "nombre": f"{row['muestra']} – {row['archivo']}"}
+        for _, row in df_filtrado.iterrows()
+    ]
 
-ids_sel = st.multiselect(
-    "Seleccionar espectros a visualizar:",
-    options=ids_disponibles,
-    format_func=lambda i: ids_legibles.get(i, i)
-)
+    ids_legibles = {e["id"]: e["nombre"] for e in ids_info}
+    ids_disponibles = list(ids_legibles.keys())
 
-df_sel = df_filtrado[df_filtrado["id"].isin(ids_sel)]
+    ids_sel = st.multiselect(
+        "Seleccionar espectros a visualizar:",
+        options=ids_disponibles,
+        format_func=lambda i: ids_legibles.get(i, i)
+    )
 
-# ================================
-# === 3. Sección RMN 1H ===
-# ================================
+    df_sel = df_filtrado[df_filtrado["id"].isin(ids_sel)]
 
-st.markdown("## 🧪 RMN 1H")
-df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
-render_rmn_tipo(df_rmn1h, tipo="RMN 1H", key_sufijo="rmn1h")
+    # ================================
+    # === 3. Sección RMN 1H ===
+    # ================================
 
-# ================================
-# === 4. Sección RMN 13C ===
-# ================================
+    st.markdown("## 🧪 RMN 1H")
+    df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
+    render_rmn_tipo(df_rmn1h, tipo="RMN 1H", key_sufijo="rmn1h")
 
-st.markdown("## 🧪 RMN 13C")
-df_rmn13c = df_sel[df_sel["tipo"] == "RMN 13C"]
-render_rmn_tipo(df_rmn13c, tipo="RMN 13C", key_sufijo="rmn13c")
+    # ================================
+    # === 4. Sección RMN 13C ===
+    # ================================
+
+    st.markdown("## 🧪 RMN 13C")
+    df_rmn13c = df_sel[df_sel["tipo"] == "RMN 13C"]
+    render_rmn_tipo(df_rmn13c, tipo="RMN 13C", key_sufijo="rmn13c")
 
 # ================================
 # === Función de visualización general ===

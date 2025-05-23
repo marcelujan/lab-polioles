@@ -144,20 +144,20 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
         if df_esp is not None:
             col_x, col_y = df_esp.columns[:2]
-                        y_data = df_esp[col_y].copy()
+            y_data = df_esp[col_y].copy()
             if espectro_resta is not None:
                 df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
                 espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
                 y_data = df_esp["y"] - espectro_resta_interp
             if normalizar:
                 y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
-                        x_vals = df_esp["x"] if "x" in df_esp.columns else df_esp[col_x]
+                x_vals = df_esp["x"] if "x" in df_esp.columns else df_esp[col_x]
             
                 x=x_vals,
                 y=y_data,
                 mode='lines',
                 name=f"{row['muestra']} – {row['archivo']}"
-            ))
+            
 
     fig.update_layout(
         xaxis_title="[ppm]",

@@ -786,6 +786,44 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
+        fig13, ax13 = plt.subplots()
+        ax13.set_xlim(x_min_13c, x_max_13c)
+        ax13.set_ylim(y_min_13c, y_max_13c)
+        ax13.set_xlabel("[ppm]")
+        ax13.set_ylabel("Señal")
+        ax13.axhline(y=0, color="black", linewidth=0.7)
+        ax13.xaxis.set_minor_locator(AutoMinorLocator(4))
+        ax13.yaxis.set_minor_locator(AutoMinorLocator(4))
+        ax13.grid(True, which='both', linestyle=':', linewidth=0.5)
+
+        for _, row in df_rmn13C.iterrows():
+            try:
+                contenido = BytesIO(base64.b64decode(row["contenido"]))
+                extension = os.path.splitext(row["archivo"])[1].lower()
+                if extension == ".xlsx":
+                    df = pd.read_excel(contenido)
+                else:
+                    sep_try = [",", ";", "\t", " "]
+                    for sep in sep_try:
+                        contenido.seek(0)
+                        try:
+                            df = pd.read_csv(contenido, sep=sep, engine="python")
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        raise ValueError("No se pudo leer el archivo.")
+
+                col_x, col_y = df.columns[:2]
+                df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                df = df.dropna()
+
+                ax13.plot(df[col_x], df[col_y], label=f"{row['muestra']}")
+            except:
+                st.warning(f"No se pudo graficar espectro: {row['archivo']}")
+
         if activar_picos_13c and not df_biblio_13c.empty:
             for _, row in df_biblio_13c.iterrows():
                 try:
@@ -801,7 +839,73 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 except Exception as e:
                     st.warning(f"⚠️ Error al trazar δ pico (13C): {e}")
 
+        ax13.legend()
         st.pyplot(fig13)
+
+       # Gráficos individuales
+        if st.checkbox("📊 Mostrar gráficos individuales por muestra (13C)"):
+            for _, row in df_rmn13C.iterrows():
+                try:
+                    contenido = BytesIO(base64.b64decode(row["contenido"]))
+                    extension = os.path.splitext(row["archivo"])[1].lower()
+                    if extension == ".xlsx":
+                        df = pd.read_excel(contenido)
+                    else:
+                        for sep in [",", ";", "\t", " "]:
+                            contenido.seek(0)
+                            try:
+                                df = pd.read_csv(contenido, sep=sep)
+                                if df.shape[1] >= 2:
+                                    break
+                            except:
+                                continue
+                        else:
+                            st.warning(f"{row['archivo']}: no se pudo leer.")
+                            continue
+
+                    col_x, col_y = df.columns[:2]
+                    df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                    df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                    df = df.dropna()
+
+                    fig_ind13, ax_ind13 = plt.subplots(figsize=(8, 4))
+                    ax_ind13.plot(df[col_x], df[col_y], label=row['archivo'], color="black")
+                    ax_ind13.set_title(f"{row['muestra']} – {row['archivo']}")
+                    ax_ind13.set_xlim(x_min_13c, x_max_13c)
+                    ax_ind13.set_ylim(y_min_13c, y_max_13c)
+                    ax_ind13.set_xlabel("[ppm]")
+                    ax_ind13.set_ylabel("Señal")
+                    ax_ind13.axhline(y=0, color="black", linewidth=0.7)
+                    ax_ind13.xaxis.set_minor_locator(AutoMinorLocator(4))
+                    ax_ind13.yaxis.set_minor_locator(AutoMinorLocator(4))
+                    ax_ind13.grid(True, which='both', linestyle=':', linewidth=0.5)
+
+                    if activar_picos_13c and not df_biblio_13c.empty:
+                        for _, bib in df_biblio_13c.iterrows():
+                            try:
+                                delta = float(bib["δ pico"])
+                                etiqueta = str(bib["Grupo funcional"])
+                                ax_ind13.plot([delta, delta], [y_min_13c, y_max_13c], linestyle="--", color="black", linewidth=0.5)
+                                ax_ind13.text(delta, y_max_13c * 0.95, etiqueta, rotation=90, va="bottom", ha="center", fontsize=6)
+                            except:
+                                continue
+
+                    ax_ind13.legend()
+                    st.pyplot(fig_ind13)
+
+                    # Descarga
+                    buffer_img_ind13 = BytesIO()
+                    fig_ind13.savefig(buffer_img_ind13, format="png", dpi=300, bbox_inches="tight")
+                    buffer_img_ind13.seek(0)
+                    st.download_button(
+                        f"📅 Descargar gráfico: {row['archivo']}",
+                        data=buffer_img_ind13.getvalue(),
+                        file_name=f"grafico_{row['archivo'].replace(' ', '_')}.png",
+                        mime="image/png"
+                    )
+
+                except Exception as e:
+                    st.warning(f"⚠️ Error en gráfico individual de {row['archivo']}: {e}")
 
         # Botón para descargar imagen del gráfico RMN 13C
         buffer_img13 = BytesIO()

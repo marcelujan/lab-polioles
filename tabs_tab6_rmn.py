@@ -90,12 +90,15 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
     espectro_resta = None
     if restar_espectro and seleccion_resta:
         id_resta = seleccion_resta.split(" – ")[-1].strip()
-        fila_resta = df[df["archivo"] == id_resta].iloc[0] if id_resta in list(df["archivo"]) else None
+        fila_resta = df[df["archivo"] == id_resta].iloc[0] if id_resta in set(df["archivo"]) else None
         if fila_resta is not None:
-            espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
-            if espectro_resta is not None:
-                espectro_resta.columns = ["x", "y"]
-                espectro_resta.dropna(inplace=True)
+            try:
+                espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
+            except:
+                espectro_resta = None
+                if espectro_resta is not None:
+                    espectro_resta.columns = ["x", "y"]
+                    espectro_resta.dropna(inplace=True)
 
     # --- Trazado ---
     fig = go.Figure()
@@ -122,7 +125,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         xaxis_title="[ppm]",
         yaxis_title="Intensidad",
         xaxis=dict(range=[x_min, x_max], autorange="reversed"),
-        yaxis=dict(range=[y_min, y_max] if y_min is not None else None),
+        yaxis=dict(range=[y_min, y_max] if y_min is not None and y_max is not None else None),
         template="simple_white",
         height=400
     )

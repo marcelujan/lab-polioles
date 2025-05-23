@@ -1039,7 +1039,20 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                 doc_ref_13c.set({"filas": df_edit_13c.to_dict(orient="records")})
                 st.success("✅ Datos recalculados y guardados correctamente.")
+
+                # Exportar a Excel
+                buffer_excel_13c = BytesIO()
+                with pd.ExcelWriter(buffer_excel_13c, engine="xlsxwriter") as writer:
+                    df_edit_13c.to_excel(writer, index=False, sheet_name="RMN_13C")
+                buffer_excel_13c.seek(0)
+                st.download_button(
+                    "📥 Descargar tabla RMN 13C",
+                    data=buffer_excel_13c.getvalue(),
+                    file_name="tabla_integral_rmn13c.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
                 st.rerun()
+
 
     # --- Zona Imágenes ---
     st.subheader("🖼️ Espectros imagen")

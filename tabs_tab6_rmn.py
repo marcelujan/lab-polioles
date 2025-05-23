@@ -11,6 +11,42 @@ import os
 st.title("Análisis RMN – 1H y 13C")
 
 # ================================
+# === Funciones auxiliares de carga ===
+# ================================
+
+def cargar_muestras(db):
+    try:
+        docs = db.collection("muestras").stream()
+        return [{"nombre": doc.id} for doc in docs]
+    except:
+        st.warning("⚠️ Error al cargar muestras (simulado sin Firebase).")
+        return []
+
+def cargar_espectros_rmn_unificados(muestras, db):
+    espectros = []
+    for m in muestras:
+        nombre = m["nombre"]
+        try:
+            subcoleccion = db.collection("muestras").document(nombre).collection("espectros").stream()
+            for i, doc in enumerate(subcoleccion):
+                datos = doc.to_dict()
+                tipo = (datos.get("tipo") or "").upper()
+                if "RMN" in tipo:
+                    espectros.append({
+                        "muestra": nombre,
+                        "tipo": tipo,
+                        "archivo": datos.get("nombre_archivo", "sin nombre"),
+                        "contenido": datos.get("contenido"),
+                        "fecha": datos.get("fecha"),
+                        "mascaras": datos.get("mascaras", []),
+                        "es_imagen": datos.get("es_imagen", False),
+                        "id": f"{nombre}__{i}"
+                    })
+        except:
+            st.warning(f"⚠️ No se pudo acceder a espectros de la muestra {nombre}.")
+    return espectros
+
+# ================================
 # === 1. Cargar muestras y espectros ===
 # ================================
 

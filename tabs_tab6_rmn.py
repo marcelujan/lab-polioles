@@ -90,12 +90,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
     x_max = colx2.number_input("X máximo", value=10.0 if tipo == "RMN 1H" else 220.0, key=f"x_max_{key_sufijo}")
-    if ajuste_y_manual:
-        y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
-        y_max = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2.0, key=f"y_max_{key_sufijo}")
-    else:
-        y_min = None
-        y_max = None
+    y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
+    y_max = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2.0, key=f"y_max_{key_sufijo}")
 
     # --- Decodificar espectro de fondo si aplica ---
     espectro_resta = None

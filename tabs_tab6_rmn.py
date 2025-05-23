@@ -226,7 +226,30 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     # --- Tabla de Cálculo de señales ---
     mostrar_tabla_senales = st.checkbox("📈 Mostrar tabla de Cálculo de señales", value=False, key=f"mostrar_senales_{key_sufijo}")
     if mostrar_tabla_senales:
-        st.info("🧪 Aquí irá la tabla editable de señales. (Pendiente de implementación)")
+        columnas_senales = ["Muestra", "Tipo", "δ pico", "X min", "X max", "Área", "H", "Observaciones", "Archivo"]
+        df_senales = pd.DataFrame(columns=columnas_senales)
+
+        st.markdown("### Cálculo de señales")
+        with st.form(f"form_senales_{key_sufijo}"):
+            df_senales_edit = st.data_editor(
+                df_senales,
+                column_config={
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                    "Área": st.column_config.NumberColumn(format="%.2f"),
+                    "H": st.column_config.NumberColumn(format="%.2f"),
+                    "Observaciones": st.column_config.TextColumn(),
+                    "Archivo": st.column_config.TextColumn(disabled=True),
+                    "Muestra": st.column_config.TextColumn(disabled=True),
+                    "Tipo": st.column_config.TextColumn(disabled=True),
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key=f"tabla_senales_{key_sufijo}"
+            )
+            st.form_submit_button("💾 Guardar cambios")
 
 # --- Trazado ---
     fig = go.Figure()

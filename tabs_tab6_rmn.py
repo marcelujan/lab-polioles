@@ -8,7 +8,7 @@ from io import BytesIO
 import base64
 import os
 
-def render_tab6(db):
+def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Análisis RMN – 1H y 13C")
 
     # ================================

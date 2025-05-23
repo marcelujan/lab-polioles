@@ -15,7 +15,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # === Funciones auxiliares de carga ===
     # ================================
 
-    def cargar_muestras(db):
+    def cargar_muestras_local(db):
         try:
             docs = db.collection("muestras").stream()
             return [{"nombre": doc.id} for doc in docs]
@@ -47,27 +47,16 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 st.warning(f"⚠️ No se pudo acceder a espectros de la muestra {nombre}.")
         return espectros
 
-    # ================================
-    # === 1. Cargar muestras y espectros ===
-    # ================================
-
-    muestras = cargar_muestras(db)
+    muestras = cargar_muestras_local(db)
     if not muestras:
         st.warning("No hay muestras disponibles.")
         st.stop()
 
-    # Obtener espectros unificados
     espectros_rmn = cargar_espectros_rmn_unificados(muestras, db)
-
-    # Crear dataframe
     df_total = pd.DataFrame(espectros_rmn)
     if df_total.empty:
         st.warning("No hay espectros RMN disponibles.")
         st.stop()
-
-    # ================================
-    # === 2. Selector de muestras y espectros ===
-    # ================================
 
     muestras_disp = sorted(df_total["muestra"].unique())
     muestras_sel = st.multiselect("Seleccionar muestras", muestras_disp)
@@ -90,31 +79,20 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     df_sel = df_filtrado[df_filtrado["id"].isin(ids_sel)]
 
-    # ================================
-    # === 3. Sección RMN 1H ===
-    # ================================
-
     st.markdown("## 🧪 RMN 1H")
     df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
     render_rmn_tipo(df_rmn1h, tipo="RMN 1H", key_sufijo="rmn1h")
 
-    # ================================
-    # === 4. Sección RMN 13C ===
-    # ================================
-
     st.markdown("## 🧪 RMN 13C")
     df_rmn13c = df_sel[df_sel["tipo"] == "RMN 13C"]
     render_rmn_tipo(df_rmn13c, tipo="RMN 13C", key_sufijo="rmn13c")
-
-# ================================
-# === Función de visualización general ===
-# ================================
 
 def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
     if df.empty:
         st.info(f"No hay espectros disponibles para {tipo}.")
         return
 
+    # === 1. Filtros ===
     with st.expander("⚙️ Filtros y opciones", expanded=True):
         col_f1, col_f2 = st.columns(2)
         normalizar = col_f1.checkbox("Normalizar intensidad", value=False, key=f"chk_norm_{key_sufijo}")
@@ -128,6 +106,17 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}") if ajuste_y_manual else None
         y_max = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2.0, key=f"y_max_{key_sufijo}") if ajuste_y_manual else None
 
+    # === 2. Tablas (Cálculo D/T2, Señales, Bibliografía) ===
+    # TODO: insertar aquí la tabla editable de Cálculo D/T2
+    # TODO: insertar aquí la tabla editable de Cálculo de señales
+    # TODO: insertar aquí la tabla editable de bibliografía (δ picos)
+
+    # === 3. Sombreados activables ===
+    # TODO: sombreado con datos de tabla D/T2: checkboxes por espectro (D y T2)
+    # TODO: sombreado con rangos de tabla de señales
+    # TODO: sombreado/líneas con picos bibliográficos
+
+    # === 4. Gráfico combinado Plotly ===
     fig = go.Figure()
     for _, row in df.iterrows():
         df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
@@ -152,9 +141,11 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
 
     st.plotly_chart(fig, use_container_width=True)
 
-# ================================
-# === Función decodificadora ===
-# ================================
+    # === 5. Gráficos individuales ===
+    mostrar_indiv = st.checkbox("Mostrar gráficos individuales", key=f"chk_indiv_{key_sufijo}")
+    if mostrar_indiv:
+        # TODO: implementar trazado individual con filtros y sombreado aplicados
+        st.info("🔧 Gráficos individuales aún no implementados.")
 
 def decodificar_csv_o_excel(contenido_base64, archivo):
     try:

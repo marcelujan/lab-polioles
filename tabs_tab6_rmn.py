@@ -686,6 +686,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if df_rmn13C.empty:
         st.info("No hay espectros RMN 13C numéricos seleccionados.")
     else:
+        col13x1, col13x2, col13y1, col13y2 = st.columns(4)
+        x_min_13c = col13x1.number_input("X mínimo 13C", value=0.0, key="x_min_13c")
+        x_max_13c = col13x2.number_input("X máximo 13C", value=200.0, key="x_max_13c")
+        y_min_13c = col13y1.number_input("Y mínimo 13C", value=0.0, key="y_min_13c")
+        y_max_13c = col13y2.number_input("Y máximo 13C", value=80.0, key="y_max_13c")
         fig13, ax13 = plt.subplots()
         for _, row in df_rmn13C.iterrows():
             try:

@@ -375,6 +375,55 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
+# --- Tabla Bibliográfica de señales pico δ (RMN 1H) ---
+    if tipo == "RMN 1H":
+        mostrar_tabla_biblio_1h = st.checkbox("📚 Mostrar tabla Bibliográfica 1H", value=False, key=f"mostrar_biblio_1h_{key_sufijo}")
+        if mostrar_tabla_biblio_1h:
+            doc_biblio_1h = db.collection("configuracion_global").document("tabla_editable_rmn1h")
+            if not doc_biblio_1h.get().exists:
+                doc_biblio_1h.set({"filas": []})
+
+            filas_biblio_1h = doc_biblio_1h.get().to_dict().get("filas", [])
+            columnas_bib1h = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
+            df_biblio_1h = pd.DataFrame(filas_biblio_1h)
+
+            for col in columnas_bib1h:
+                if col not in df_biblio_1h.columns:
+                    df_biblio_1h[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
+            df_biblio_1h = df_biblio_1h[columnas_bib1h]
+
+            st.markdown("### Tabla bibliográfica de señales RMN 1H")
+            df_biblio_edit_1h = st.data_editor(
+                df_biblio_1h,
+                column_config={
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=["CH3", "CH2", "OH", "Aromático", "Epóxido", "Ester"]),
+                    "X min": st.column_config.NumberColumn(format="%.2f"),
+                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                    "X max": st.column_config.NumberColumn(format="%.2f"),
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="dynamic",
+                key=f"tabla_biblio_1h_{key_sufijo}"
+            )
+
+            colb1, colb2 = st.columns([1, 1])
+            with colb1:
+                if st.button("💾 Guardar tabla bibliográfica 1H"):
+                    doc_biblio_1h.set({"filas": df_biblio_edit_1h.to_dict(orient="records")})
+                    st.success("✅ Datos bibliográficos actualizados.")
+            with colb2:
+                buffer_excel_1h = BytesIO()
+                with pd.ExcelWriter(buffer_excel_1h, engine="xlsxwriter") as writer:
+                    df_biblio_edit_1h.to_excel(writer, index=False, sheet_name="Bibliografía 1H")
+                buffer_excel_1h.seek(0)
+                st.download_button(
+                    "📥 Descargar tabla 1H",
+                    data=buffer_excel_1h.getvalue(),
+                    file_name="tabla_bibliografica_rmn1h.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
 # --- Trazado ---
     fig = go.Figure()
     for _, row in df.iterrows():

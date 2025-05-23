@@ -223,7 +223,12 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 doc = db.collection("muestras").document(muestra).collection("dt2").document("datos")
                 doc.set({"filas": filas_m})
 
-    # --- Trazado ---
+    # --- Tabla de Cálculo de señales ---
+    mostrar_tabla_senales = st.checkbox("📈 Mostrar tabla de Cálculo de señales", value=False, key=f"mostrar_senales_{key_sufijo}")
+    if mostrar_tabla_senales:
+        st.info("🧪 Aquí irá la tabla editable de señales. (Pendiente de implementación)")
+
+# --- Trazado ---
     fig = go.Figure()
     for _, row in df.iterrows():
         df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])

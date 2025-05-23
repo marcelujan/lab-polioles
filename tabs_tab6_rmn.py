@@ -11,6 +11,7 @@ import base64
 import zipfile
 from tempfile import TemporaryDirectory
 import matplotlib.pyplot as plt #solo para pruebas
+from matplotlib.ticker import AutoMinorLocator
 
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O", "Alfa-C=C", "Vecino a alfa-carbonilo", "Alfa-epóxido", "CH2", "CH3"]

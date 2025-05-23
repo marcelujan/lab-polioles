@@ -100,6 +100,12 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
         mostrar_picos = col_f1.checkbox("Mostrar picos detectados", value=False, key=f"chk_picos_{key_sufijo}")
         ajuste_y_manual = col_f2.checkbox("Ajuste manual eje Y", value=False, key=f"chk_y_manual_{key_sufijo}")
 
+        if restar_espectro and not df.empty:
+            opciones_restar = [f"{row['muestra']} – {row['archivo']}" for _, row in df.iterrows()]
+            seleccion_resta = st.selectbox("Seleccionar espectro de fondo a restar:", opciones_restar, key=f"sel_resta_{key_sufijo}")
+        else:
+            seleccion_resta = None
+
         colx1, colx2, coly1, coly2 = st.columns(4)
         x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
         x_max = colx2.number_input("X máximo", value=10.0 if tipo == "RMN 1H" else 220.0, key=f"x_max_{key_sufijo}")

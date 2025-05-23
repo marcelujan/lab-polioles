@@ -679,6 +679,56 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         x_max_13c = col13x2.number_input("X máximo 13C", value=200.0, key="x_max_13c")
         y_min_13c = col13y1.number_input("Y mínimo 13C", value=0.0, key="y_min_13c")
         y_max_13c = col13y2.number_input("Y máximo 13C", value=1.25, key="y_max_13c")
+
+        import plotly.graph_objects as go
+
+        fig_plotly_13c = go.Figure()
+
+        for _, row in df_rmn13C.iterrows():
+            try:
+                contenido = BytesIO(base64.b64decode(row["contenido"]))
+                extension = os.path.splitext(row["archivo"])[1].lower()
+                if extension == ".xlsx":
+                    df = pd.read_excel(contenido)
+                else:
+                    for sep in [",", ";", "\t", " "]:
+                        contenido.seek(0)
+                        try:
+                            df = pd.read_csv(contenido, sep=sep)
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
+                    else:
+                        continue
+
+                col_x, col_y = df.columns[:2]
+                df[col_x] = pd.to_numeric(df[col_x], errors="coerce")
+                df[col_y] = pd.to_numeric(df[col_y], errors="coerce")
+                df = df.dropna()
+
+                fig_plotly_13c.add_trace(go.Scatter(
+                    x=df[col_x], y=df[col_y],
+                    mode="lines",
+                    name=row["archivo"]
+                ))
+
+            except Exception as e:
+                st.warning(f"No se pudo graficar {row['archivo']}: {e}")
+
+        fig_plotly_13c.update_layout(
+            title="Espectros combinados RMN 13C (interactivo)",
+            xaxis_title="[ppm]",
+            yaxis_title="Intensidad",
+            xaxis=dict(range=[x_min_13c, x_max_13c], autorange="reversed"),
+            yaxis=dict(range=[y_min_13c, y_max_13c]),
+            template="simple_white",
+            height=400
+        )
+
+        st.plotly_chart(fig_plotly_13c, use_container_width=True)
+
+
         fig13, ax13 = plt.subplots()
         ax13.set_xlim(x_min_13c, x_max_13c)
         ax13.set_ylim(y_min_13c, y_max_13c)

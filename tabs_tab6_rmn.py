@@ -85,7 +85,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # ==============================
     # === SECCIÓN RMN 1H ===========
     # ==============================
-    st.subheader("🔬 RMN 1H")
+    st.markdown("## 🔬 RMN 1H")
     df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
 
     if df_rmn1h.empty:
@@ -664,28 +664,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # --- Zona RMN 13C ---
-    st.subheader("🧪 RMN 13C")
+    st.markdown("---")
+    st.markdown("## 🧪 RMN 13C")
     df_rmn13C = df_sel[(df_sel["tipo"] == "RMN 13C") & (~df_sel["es_imagen"])].copy()
     if df_rmn13C.empty:
         st.info("No hay espectros RMN 13C numéricos seleccionados.")
@@ -1054,8 +1035,17 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 st.rerun()
 
 
+
+
+
+
+
+
+
+
     # --- Zona Imágenes ---
-    st.subheader("🖼️ Espectros imagen")
+    st.markdown("---")
+    st.markdown("## 🖼️ Espectros imagen")
     df_rmn_img = df_sel[df_sel["es_imagen"]]
     if df_rmn_img.empty:
         st.info("No hay espectros RMN en formato imagen seleccionados.")

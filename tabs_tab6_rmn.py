@@ -123,12 +123,29 @@ def render_rmn_tipo(df, tipo="RMN 1H", key_sufijo="rmn1h"):
     # TODO: sombreado/líneas con picos bibliográficos
 
     # === 4. Gráfico combinado Plotly ===
+    # Preparar espectro de fondo si corresponde
+    espectro_resta = None
+    if restar_espectro and seleccion_resta:
+        id_archivo = seleccion_resta.split(" – ")[-1].strip()
+        fila_resta = df[df["archivo"] == id_archivo].iloc[0] if id_archivo in list(df["archivo"]) else None
+        if fila_resta is not None:
+            espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
+            if espectro_resta is not None:
+                espectro_resta.columns = ["x", "y"]
+                espectro_resta.dropna(inplace=True)
+
     fig = go.Figure()
     for _, row in df.iterrows():
         df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
         if df_esp is not None:
             col_x, col_y = df_esp.columns[:2]
-            y_data = df_esp[col_y] / df_esp[col_y].max() if normalizar else df_esp[col_y]
+            y_data = df_esp[col_y].copy()
+            if espectro_resta is not None:
+                df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
+                espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
+                y_data = df_esp["y"] - espectro_resta_interp
+            if normalizar:
+                y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
             fig.add_trace(go.Scatter(
                 x=df_esp[col_x],
                 y=y_data,

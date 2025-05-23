@@ -348,57 +348,54 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     #  --- Señales Pico Bibliografía desde df_sel ---
     col_bib1, col_bib2 = st.columns([1, 1])
     activar_picos = editar_tabla_biblio = False
-    with col_bib1:
-        activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas_biblio_dfsel")
-    if activar_picos:
-        with col_bib2:
-            editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio_dfsel")
+    activar_picos = st.checkbox("Señales Pico Bibliográfica", value=False, key="chk_deltas_biblio_dfsel")
+    editar_tabla_biblio = st.checkbox("Editar Tabla Bibliográfica", value=False, key="chk_editar_biblio_dfsel")
 
-        doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")
-        if not doc_biblio.get().exists:
-            doc_biblio.set({"filas": []})
+    doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h")
+    if not doc_biblio.get().exists:
+        doc_biblio.set({"filas": []})
 
-        filas_biblio = doc_biblio.get().to_dict().get("filas", [])
-        columnas_biblio = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
-        df_biblio = pd.DataFrame(filas_biblio)
+    filas_biblio = doc_biblio.get().to_dict().get("filas", [])
+    columnas_biblio = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
+    df_biblio = pd.DataFrame(filas_biblio)
 
-        for col in columnas_biblio:
-            if col not in df_biblio.columns:
-                df_biblio[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
-        df_biblio = df_biblio[columnas_biblio]
+    for col in columnas_biblio:
+        if col not in df_biblio.columns:
+            df_biblio[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
+    df_biblio = df_biblio[columnas_biblio]
 
-        if editar_tabla_biblio:
-            df_biblio_edit = st.data_editor(
-                df_biblio,
-                use_container_width=True,
-                hide_index=True,
-                num_rows="dynamic",
-                key="editor_tabla_biblio_dfsel",
-                column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                    "X min": st.column_config.NumberColumn(format="%.2f"),
-                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                    "X max": st.column_config.NumberColumn(format="%.2f"),
-                }
+    if editar_tabla_biblio:
+        df_biblio_edit = st.data_editor(
+            df_biblio,
+            use_container_width=True,
+            hide_index=True,
+            num_rows="dynamic",
+            key="editor_tabla_biblio_dfsel",
+            column_config={
+                "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                "X min": st.column_config.NumberColumn(format="%.2f"),
+                "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                "X max": st.column_config.NumberColumn(format="%.2f"),
+            }
+        )
+
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("🔴Actualizar Tabla Bibliográfica"):
+                doc_biblio.set({"filas": df_biblio_edit.to_dict(orient="records")})
+                st.success("✅ Tabla bibliográfica actualizada.")
+                st.rerun()
+        with col2:
+            buffer_excel = BytesIO()
+            with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+                df_biblio_edit.to_excel(writer, index=False, sheet_name="Tabla_Bibliográfica")
+            buffer_excel.seek(0)
+            st.download_button(
+                "📥 Descargar tabla",
+                data=buffer_excel.getvalue(),
+                file_name="tabla_bibliografica_rmn1h.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                if st.button("🔴Actualizar Tabla Bibliográfica"):
-                    doc_biblio.set({"filas": df_biblio_edit.to_dict(orient="records")})
-                    st.success("✅ Tabla bibliográfica actualizada.")
-                    st.rerun()
-            with col2:
-                buffer_excel = BytesIO()
-                with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                    df_biblio_edit.to_excel(writer, index=False, sheet_name="Tabla_Bibliográfica")
-                buffer_excel.seek(0)
-                st.download_button(
-                    "📥 Descargar tabla",
-                    data=buffer_excel.getvalue(),
-                    file_name="tabla_bibliografica_rmn1h.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
 
         # Trazado de líneas δ-pico si hay gráfico existente
         if "ax" in locals() and not df_biblio.empty:

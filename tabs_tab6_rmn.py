@@ -78,7 +78,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h"):
             ajustes_y[clave] = st.number_input(f"Ajuste Y para {clave}", value=0.0, step=0.1, key=f"ajuste_val_{clave}")
     else:
         for _, row in df.iterrows():
-            ajustes_y[row["archivo"]] = 0.0col4.checkbox("Ajuste manual eje Y", key=f"ajuste_y_{key_sufijo}")
+            ajustes_y[row["archivo"]] = 0.0
 
     seleccion_resta = None
     if restar_espectro:

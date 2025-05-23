@@ -425,8 +425,14 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 )
 
 # --- Sombreados por D/T2 ---
-    aplicar_sombreado_d = st.checkbox("☑️ Sombrear regiones D", value=False, key=f"sombra_d_{key_sufijo}")
-    aplicar_sombreado_t2 = st.checkbox("☑️ Sombrear regiones T2", value=False, key=f"sombra_t2_{key_sufijo}")
+    st.markdown("### Sombreados por D/T2 (por espectro)")
+    check_d_por_espectro = {}
+    check_t2_por_espectro = {}
+    for _, row in df.iterrows():
+        archivo = row["archivo"]
+        col_d, col_t2 = st.columns([1, 1])
+        check_d_por_espectro[archivo] = col_d.checkbox(f"D – {archivo}", key=f"chk_d_{archivo}_{key_sufijo}")
+        check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
 
 
 # --- Trazado ---
@@ -491,7 +497,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             filas_dt2 = doc_dt2.get().to_dict().get("filas", [])
             for f in filas_dt2:
                 if f.get("Archivo") == archivo_actual:
-                    if aplicar_sombreado_d and f.get("X min") and f.get("X max"):
+                    if check_d_por_espectro.get(archivo_actual) and f.get("X min") and f.get("X max"):
                         fig.add_vrect(
                             x0=min(f["X min"], f["X max"]),
                             x1=max(f["X min"], f["X max"]),
@@ -501,7 +507,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             annotation_text="D",
                             annotation_position="top left"
                         )
-                    if aplicar_sombreado_t2 and f.get("Xas min") and f.get("Xas max"):
+                    if check_t2_por_espectro.get(archivo_actual) and f.get("Xas min") and f.get("Xas max"):
                         fig.add_vrect(
                             x0=min(f["Xas min"], f["Xas max"]),
                             x1=max(f["Xas min"], f["Xas max"]),

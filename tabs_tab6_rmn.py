@@ -241,6 +241,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             }])
 
         with st.form("form_dt2_dfsel"):
+            df_dt2_edit = df_dt2_edit.sort_values(by="δ pico", ascending=True)
             df_dt2_edit = st.data_editor(
                 df_dt2,
                 column_config={
@@ -369,6 +370,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     df_biblio = df_biblio[columnas_biblio]
 
     if editar_tabla_biblio:
+        df_biblio_edit = df_biblio.sort_values(by="δ pico", ascending=True)
         df_biblio_edit = st.data_editor(
             df_biblio,
             use_container_width=True,
@@ -561,6 +563,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         df_integral = df_integral[columnas_integral]
 
         with st.form("form_integral_dfsel"):
+            df_integral_edit = df_integral_edit.sort_values(by="δ pico", ascending=True)
             df_integral_edit = st.data_editor(
                 df_integral,
                 column_config={
@@ -735,6 +738,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         df_biblio_13c = df_biblio_13c[columnas_bib13c]
 
         if editar_biblio_13c:
+            df_edit_bib13c = df_biblio_13c.sort_values(by="δ pico", ascending=True)
             df_edit_bib13c = st.data_editor(
                 df_biblio_13c,
                 use_container_width=True,
@@ -942,6 +946,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             df_integral_13c = df_integral_13c[columnas_integral_13c]
 
             with st.form("form_integral_13c"):
+                df_edit_13c = df_edit_13c.sort_values(by="δ pico", ascending=True)
                 df_edit_13c = st.data_editor(
                     df_integral_13c,
                     column_config={

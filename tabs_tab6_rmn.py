@@ -424,9 +424,16 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
+# --- Sombreados por D/T2 ---
+    aplicar_sombreado_d = st.checkbox("☑️ Sombrear regiones D", value=False, key=f"sombra_d_{key_sufijo}")
+    aplicar_sombreado_t2 = st.checkbox("☑️ Sombrear regiones T2", value=False, key=f"sombra_t2_{key_sufijo}")
+
+
 # --- Trazado ---
     fig = go.Figure()
     for _, row in df.iterrows():
+        archivo_actual = row["archivo"]
+        muestra_actual = row["muestra"]
         df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
         if df_esp is not None:
             col_x, col_y = df_esp.columns[:2]
@@ -476,6 +483,35 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
     )
 
+
+        # Aplicar sombreado por D/T2 si está activo y tipo es RMN 1H
+    if tipo == "RMN 1H":
+        doc_dt2 = db.collection("muestras").document(muestra_actual).collection("dt2").document("datos")
+        if doc_dt2.get().exists:
+            filas_dt2 = doc_dt2.get().to_dict().get("filas", [])
+            for f in filas_dt2:
+                if f.get("Archivo") == archivo_actual:
+                    if aplicar_sombreado_d and f.get("X min") and f.get("X max"):
+                        fig.add_vrect(
+                            x0=min(f["X min"], f["X max"]),
+                            x1=max(f["X min"], f["X max"]),
+                            fillcolor="rgba(255,0,0,0.1)",
+                            layer="below",
+                            line_width=0,
+                            annotation_text="D",
+                            annotation_position="top left"
+                        )
+                    if aplicar_sombreado_t2 and f.get("Xas min") and f.get("Xas max"):
+                        fig.add_vrect(
+                            x0=min(f["Xas min"], f["Xas max"]),
+                            x1=max(f["Xas min"], f["Xas max"]),
+                            fillcolor="rgba(0,0,255,0.1)",
+                            layer="below",
+                            line_width=0,
+                            annotation_text="T2",
+                            annotation_position="top right"
+                        )
+                        
     st.plotly_chart(fig, use_container_width=True)
 
 def decodificar_csv_o_excel(contenido_base64, archivo):

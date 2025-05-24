@@ -139,7 +139,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_dt2 = df_dt2[columnas_dt2]
 
-        st.markdown("### Cálculo D/T2")
+        ### Cálculo D/T2"
         with st.form(f"form_dt2_{key_sufijo}"):
             df_dt2_edit = st.data_editor(
                 df_dt2,
@@ -244,7 +244,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 df_senales[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_senales = df_senales[columnas_senales]
 
-        st.markdown("### Cálculo de señales")
+        ### Cálculo de señales"
         with st.form(f"form_senales_{key_sufijo}"):
             df_senales_edit = st.data_editor(
                 df_senales,
@@ -346,7 +346,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     df_biblio_13c[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
             df_biblio_13c = df_biblio_13c[columnas_bib13c]
 
-            st.markdown("### Tabla bibliográfica de señales RMN 13C")
+            ### Tabla bibliográfica de señales RMN 13C
             df_biblio_edit_13c = st.data_editor(
                 df_biblio_13c,
                 column_config={
@@ -395,7 +395,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     df_biblio_1h[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
             df_biblio_1h = df_biblio_1h[columnas_bib1h]
 
-            st.markdown("### Tabla bibliográfica de señales RMN 1H")
+            ### Tabla bibliográfica de señales RMN 1H
             df_biblio_edit_1h = st.data_editor(
                 df_biblio_1h,
                 column_config={

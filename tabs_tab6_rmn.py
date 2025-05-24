@@ -363,7 +363,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
             colb1, colb2 = st.columns([1, 1])
             with colb1:
-                if st.button("💾 Guardar tabla bibliográfica 13C"):
+                if st.button("🔴 Actualizar Tabla Bibliográfica 13C"):
                     doc_biblio_13c.set({"filas": df_biblio_edit_13c.to_dict(orient="records")})
                     st.success("✅ Datos bibliográficos actualizados.")
             with colb2:
@@ -412,7 +412,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
             colb1, colb2 = st.columns([1, 1])
             with colb1:
-                if st.button("💾 Guardar tabla bibliográfica 1H"):
+                if st.button("🔴 Actualizar Tabla Bibliográfica 1H"):
                     doc_biblio_1h.set({"filas": df_biblio_edit_1h.to_dict(orient="records")})
                     st.success("✅ Datos bibliográficos actualizados.")
             with colb2:

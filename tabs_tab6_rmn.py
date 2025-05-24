@@ -230,10 +230,12 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 doc.set({"filas": filas_m})
 
     # --- Tabla de Cálculo de señales ---
-    mostrar_tabla_senales = st.checkbox("📈 Tabla de Cálculos", value=False, key=f"mostrar_senales_{key_sufijo}")
+    titulo_checkbox = "📈 Tabla de Cálculos RMN 1H" if tipo == "RMN 1H" else "📈 Tabla de Cálculos RMN 13C"
+    mostrar_tabla_senales = st.checkbox(titulo_checkbox, value=False, key=f"mostrar_senales_{key_sufijo}")
     if mostrar_tabla_senales:
         columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
-        doc_ref = db.collection("tablas_integrales").document("rmn1h")
+        tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+        doc_ref = db.collection("tablas_integrales").document(tipo_doc)
         if not doc_ref.get().exists:
             doc_ref.set({"filas": []})
 
@@ -263,7 +265,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     "Xas max": st.column_config.NumberColumn(format="%.2f"),
                     "Cas": st.column_config.NumberColumn(format="%.2f"),
                     "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                    "C": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
+                    "C": st.column_config.NumberColumn(format="%.2f", label="🔴H" if tipo == "RMN 1H" else "🔴C",disabled=True                    ),
                     "Observaciones": st.column_config.TextColumn(),
                     "Archivo": st.column_config.TextColumn(disabled=True),
                     "Muestra": st.column_config.TextColumn(disabled=True),
@@ -273,7 +275,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 num_rows="dynamic",
                 key=f"tabla_senales_{key_sufijo}"
             )
-            recalcular = st.form_submit_button("🔴 Recalcular 'Área', 'Área as' y 'H'")
+            texto_boton = "🔴 Recalcular 'Área', 'Área as' y 'H'" if tipo == "RMN 1H" else "🔴 Recalcular 'Área', 'Área as' y 'C'"
+            recalcular = st.form_submit_button(texto_boton)
 
         if recalcular:
             for i, row in df_senales_edit.iterrows():

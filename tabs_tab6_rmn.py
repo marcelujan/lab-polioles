@@ -7,6 +7,9 @@ from io import BytesIO
 import base64
 import os
 
+# --- Configuraciones globales ---
+GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O", "Alfa-C=C", "Vecino a alfa-carbonilo", "Alfa-epóxido", "CH2", "CH3"]
+
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # --- Cargar muestras y espectros ---
     muestras = cargar_muestras(db)
@@ -144,7 +147,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             df_dt2_edit = st.data_editor(
                 df_dt2,
                 column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn(options=["CH3", "CH2", "OH", "Aromático", "Epóxido", "Ester"]),
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
                     "δ pico": st.column_config.NumberColumn(format="%.2f"),
                     "X min": st.column_config.NumberColumn(format="%.2f"),
                     "X max": st.column_config.NumberColumn(format="%.2f"),
@@ -229,7 +232,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     # --- Tabla de Cálculo de señales ---
     mostrar_tabla_senales = st.checkbox("📈 Tabla de Cálculos", value=False, key=f"mostrar_senales_{key_sufijo}")
     if mostrar_tabla_senales:
-        columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+        columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
         doc_ref = db.collection("tablas_integrales").document("rmn1h")
         if not doc_ref.get().exists:
             doc_ref.set({"filas": []})
@@ -249,7 +252,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             df_senales_edit = st.data_editor(
                 df_senales,
                 column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn(options=["CH3", "CH2", "OH", "Aromático", "Epóxido", "Ester"]),
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
                     "δ pico": st.column_config.NumberColumn(format="%.2f"),
                     "X min": st.column_config.NumberColumn(format="%.2f"),
                     "X max": st.column_config.NumberColumn(format="%.2f"),
@@ -258,9 +261,9 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     "T2": st.column_config.NumberColumn(format="%.3f"),
                     "Xas min": st.column_config.NumberColumn(format="%.2f"),
                     "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                    "Has": st.column_config.NumberColumn(format="%.2f"),
+                    "Cas": st.column_config.NumberColumn(format="%.2f"),
                     "Área as": st.column_config.NumberColumn(format="%.2f", disabled=True),
-                    "H": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                    "C": st.column_config.NumberColumn(format="%.2f", disabled=True),
                     "Observaciones": st.column_config.TextColumn(),
                     "Archivo": st.column_config.TextColumn(disabled=True),
                     "Muestra": st.column_config.TextColumn(disabled=True),
@@ -350,7 +353,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             df_biblio_edit_13c = st.data_editor(
                 df_biblio_13c,
                 column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn(options=["CH3", "CH2", "OH", "Aromático", "Epóxido", "Ester"]),
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
                     "X min": st.column_config.NumberColumn(format="%.2f"),
                     "δ pico": st.column_config.NumberColumn(format="%.2f"),
                     "X max": st.column_config.NumberColumn(format="%.2f"),
@@ -399,7 +402,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             df_biblio_edit_1h = st.data_editor(
                 df_biblio_1h,
                 column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn(options=["CH3", "CH2", "OH", "Aromático", "Epóxido", "Ester"]),
+                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
                     "X min": st.column_config.NumberColumn(format="%.2f"),
                     "δ pico": st.column_config.NumberColumn(format="%.2f"),
                     "X max": st.column_config.NumberColumn(format="%.2f"),

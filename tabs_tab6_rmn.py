@@ -58,6 +58,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     df_13c = df_sel[df_sel["tipo"] == "RMN 13C"]
     render_rmn_plot(df_13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
 
+    st.markdown("## Imágenes")
+    render_imagenes(df)
+
 def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:
         st.info(f"No hay espectros disponibles para {tipo}.")
@@ -664,3 +667,23 @@ def decodificar_csv_o_excel(contenido_base64, archivo):
     except Exception as e:
         st.warning(f"Error al decodificar {archivo}: {e}")
     return None
+
+def render_imagenes(df):
+    st.markdown("## Imágenes")
+    imagenes_disponibles = df[df["archivo"].str.lower().str.endswith((".png", ".jpg", ".jpeg"))]
+
+    if imagenes_disponibles.empty:
+        st.info("No hay imágenes seleccionadas.")
+    else:
+        for _, row in imagenes_disponibles.iterrows():
+            st.markdown(f"**{row['archivo']}** – {row['muestra']}")
+            try:
+                from PIL import Image
+                from io import BytesIO
+                import base64
+
+                image_data = BytesIO(base64.b64decode(row["contenido"]))
+                image = Image.open(image_data)
+                st.image(image, use_column_width=True)
+            except Exception as e:
+                st.error(f"❌ No se pudo mostrar la imagen: {e}")

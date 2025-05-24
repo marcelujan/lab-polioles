@@ -119,7 +119,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key=f"distancia_min_{key_sufijo}")
 
 # --- Tabla de Cálculo D/T2 ---
-    mostrar_tabla_dt2 = st.checkbox("🧮 Tabla Cálculo D/T2 (FAMAF)", value=False, key=f"mostrar_dt2_{key_sufijo}")
+    mostrar_tabla_dt2 = st.checkbox("🧮 Tabla de Cálculos D/T2 (FAMAF)", value=False, key=f"mostrar_dt2_{key_sufijo}")
     if mostrar_tabla_dt2:
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                          "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
@@ -438,10 +438,10 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
 
 # --- Sombreados por Cálculo de señales ---
-    aplicar_sombra_senales = st.checkbox("Sombrear Tabla de cálculos", value=False, key=f"sombra_senales_{key_sufijo}")
+    aplicar_sombra_senales = st.checkbox("Sombrear Tabla de Cálculos", value=False, key=f"sombra_senales_{key_sufijo}")
 
 # --- Sombreados por tabla bibliográfica (δ pico) ---
-    aplicar_sombra_biblio = st.checkbox("Sombrear Tabla bibliográfica", value=False, key=f"sombra_biblio_{key_sufijo}")
+    aplicar_sombra_biblio = st.checkbox("Sombrear Tabla Bibliográfica 1H", value=False, key=f"sombra_biblio_{key_sufijo}")
 
 # --- Trazado ---
     fig = go.Figure()

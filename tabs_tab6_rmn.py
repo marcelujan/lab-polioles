@@ -122,6 +122,9 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key=f"distancia_min_{key_sufijo}")
 
 # --- Tabla de Cálculo D/T2 ---
+    titulo_checkbox_dt2 = "🧮 Tabla de Cálculos D/T2 (FAMAF) RMN 1H" if tipo == "RMN 1H" else "🧮 Tabla de Cálculos D/T2 (FAMAF) RMN 13C"
+    mostrar_tabla_dt2 = st.checkbox(titulo_checkbox_dt2, value=False, key=f"mostrar_dt2_{key_sufijo}")
+
     mostrar_tabla_dt2 = st.checkbox("🧮 Tabla de Cálculos D/T2 (FAMAF)", value=False, key=f"mostrar_dt2_{key_sufijo}")
     if mostrar_tabla_dt2:
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",

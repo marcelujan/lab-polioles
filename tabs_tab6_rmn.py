@@ -668,7 +668,7 @@ def decodificar_csv_o_excel(contenido_base64, archivo):
     return None
 
 def render_imagenes(df):
-    st.markdown("🧪 RMN Imágenes")
+    st.markdown("## 🧪 RMN Imágenes")
     imagenes_disponibles = df[df["archivo"].str.lower().str.endswith((".png", ".jpg", ".jpeg"))]
 
     if imagenes_disponibles.empty:

@@ -263,7 +263,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     "Xas max": st.column_config.NumberColumn(format="%.2f"),
                     "Cas": st.column_config.NumberColumn(format="%.2f"),
                     "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                    "C": st.column_config.NumberColumn(format="%.2f", label="🔴C", disabled=True),
+                    "C": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
                     "Observaciones": st.column_config.TextColumn(),
                     "Archivo": st.column_config.TextColumn(disabled=True),
                     "Muestra": st.column_config.TextColumn(disabled=True),
@@ -273,7 +273,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 num_rows="dynamic",
                 key=f"tabla_senales_{key_sufijo}"
             )
-            recalcular = st.form_submit_button("🔴 Recalcular 'Área', 'Área as' y 'C'")
+            recalcular = st.form_submit_button("🔴 Recalcular 'Área', 'Área as' y 'H'")
 
         if recalcular:
             for i, row in df_senales_edit.iterrows():

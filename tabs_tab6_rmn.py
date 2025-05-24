@@ -59,7 +59,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     render_rmn_plot(df_13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
 
     st.markdown("## Imágenes")
-    render_imagenes(df)
+    render_imagenes(df_sel)
 
 def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:

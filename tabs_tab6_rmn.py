@@ -270,7 +270,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 num_rows="dynamic",
                 key=f"tabla_senales_{key_sufijo}"
             )
-            recalcular = st.form_submit_button("🔴 Recalcular 'Área', 'Área as' y 'H'")
+            recalcular = st.form_submit_button("🔴 Recalcular 'Área', 'Área as' y 'C'")
 
         if recalcular:
             for i, row in df_senales_edit.iterrows():

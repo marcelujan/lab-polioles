@@ -1,5 +1,4 @@
-# --- Hoja 6: Análisis RMN (1H y 13C) con Plotly desde cero ---
-
+# --- Hoja 6: Análisis RMN ---
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -9,8 +8,6 @@ import base64
 import os
 
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
-    st.title("Análisis RMN – 1H y 13C")
-
     # --- Cargar muestras y espectros ---
     muestras = cargar_muestras(db)
     if not muestras:
@@ -93,7 +90,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         seleccion_resta = st.selectbox("Seleccionar espectro a restar:", opciones_restar, key=f"sel_resta_{key_sufijo}")
 
     # --- Rango de visualización ---
-    st.markdown("### Rango de visualización")
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
     x_max = colx2.number_input("X máximo", value=10.0 if tipo == "RMN 1H" else 220.0, key=f"x_max_{key_sufijo}")
@@ -123,7 +119,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key=f"distancia_min_{key_sufijo}")
 
 # --- Tabla de Cálculo D/T2 ---
-    mostrar_tabla_dt2 = st.checkbox("🧮 Mostrar tabla de Cálculo D/T2", value=False, key=f"mostrar_dt2_{key_sufijo}")
+    mostrar_tabla_dt2 = st.checkbox("🧮 Tabla Cálculo D/T2 (FAMAF)", value=False, key=f"mostrar_dt2_{key_sufijo}")
     if mostrar_tabla_dt2:
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                          "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
@@ -231,7 +227,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 doc.set({"filas": filas_m})
 
     # --- Tabla de Cálculo de señales ---
-    mostrar_tabla_senales = st.checkbox("📈 Mostrar tabla de Cálculo de señales", value=False, key=f"mostrar_senales_{key_sufijo}")
+    mostrar_tabla_senales = st.checkbox("📈 Tabla de Cálculos", value=False, key=f"mostrar_senales_{key_sufijo}")
     if mostrar_tabla_senales:
         columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
         doc_ref = db.collection("tablas_integrales").document("rmn1h")
@@ -335,7 +331,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
 # --- Tabla Bibliográfica de señales pico δ (RMN 13C) ---
     if tipo == "RMN 13C":
-        mostrar_tabla_biblio_13c = st.checkbox("📚 Mostrar tabla Bibliográfica 13C", value=False, key=f"mostrar_biblio_13c_{key_sufijo}")
+        mostrar_tabla_biblio_13c = st.checkbox("📚 Tabla Bibliográfica 13C", value=False, key=f"mostrar_biblio_13c_{key_sufijo}")
         if mostrar_tabla_biblio_13c:
             doc_biblio_13c = db.collection("configuracion_global").document("tabla_editable_rmn13c")
             if not doc_biblio_13c.get().exists:
@@ -384,7 +380,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
 # --- Tabla Bibliográfica de señales pico δ (RMN 1H) ---
     if tipo == "RMN 1H":
-        mostrar_tabla_biblio_1h = st.checkbox("📚 Mostrar tabla Bibliográfica 1H", value=False, key=f"mostrar_biblio_1h_{key_sufijo}")
+        mostrar_tabla_biblio_1h = st.checkbox("📚 Tabla Bibliográfica 1H", value=False, key=f"mostrar_biblio_1h_{key_sufijo}")
         if mostrar_tabla_biblio_1h:
             doc_biblio_1h = db.collection("configuracion_global").document("tabla_editable_rmn1h")
             if not doc_biblio_1h.get().exists:
@@ -442,10 +438,10 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
 
 # --- Sombreados por Cálculo de señales ---
-    aplicar_sombra_senales = st.checkbox("☑️ Sombrear regiones de señales", value=False, key=f"sombra_senales_{key_sufijo}")
+    aplicar_sombra_senales = st.checkbox("Sombrear Tabla de cálculos", value=False, key=f"sombra_senales_{key_sufijo}")
 
 # --- Sombreados por tabla bibliográfica (δ pico) ---
-    aplicar_sombra_biblio = st.checkbox("☑️ Sombrear señales bibliográficas", value=False, key=f"sombra_biblio_{key_sufijo}")
+    aplicar_sombra_biblio = st.checkbox("Sombrear Tabla bibliográfica", value=False, key=f"sombra_biblio_{key_sufijo}")
 
 # --- Trazado ---
     fig = go.Figure()
@@ -568,7 +564,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     st.plotly_chart(fig, use_container_width=True)
 
     # --- Gráficos individuales con sombreados ---
-    mostrar_indiv = st.checkbox("Mostrar gráficos individuales", key=f"chk_indiv_{key_sufijo}")
+    mostrar_indiv = st.checkbox("Gráficos individuales", key=f"chk_indiv_{key_sufijo}")
     if mostrar_indiv:
         for _, row in df.iterrows():
             archivo_actual = row["archivo"]

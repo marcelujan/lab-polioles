@@ -50,15 +50,20 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     df_sel = df_filtrado[df_filtrado["id"].isin([ids_map.get(s) for s in seleccion])]
 
-    st.markdown("## 🧪 RMN 1H")
-    df_1h = df_sel[df_sel["tipo"] == "RMN 1H"]
-    render_rmn_plot(df_1h, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
+    df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
+    if not df_rmn1h.empty:
+        st.markdown("## 🧪 RMN 1H")
+        render_rmn_plot(df_rmn1h, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
 
-    st.markdown("## 🧪 RMN 13C")
-    df_13c = df_sel[df_sel["tipo"] == "RMN 13C"]
-    render_rmn_plot(df_13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
+    df_rmn13c = df_sel[df_sel["tipo"] == "RMN 13C"]
+    if not df_rmn13c.empty:
+        st.markdown("## 🧪 RMN 13C")
+        render_rmn_plot(df_rmn13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
 
-    render_imagenes(df_sel)
+    imagenes_sel = df_sel[df_sel["archivo"].str.lower().str.endswith((".png", ".jpg", ".jpeg"))]
+    if not imagenes_sel.empty:
+        st.markdown("## 🧪 RMN Imágenes")
+        render_imagenes(imagenes_sel)
 
 def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:

@@ -683,6 +683,6 @@ def render_imagenes(df):
 
                 image_data = BytesIO(base64.b64decode(row["contenido"]))
                 image = Image.open(image_data)
-                st.image(image, use_column_width=True)
+                st.image(image, use_container_width=True)
             except Exception as e:
                 st.error(f"❌ No se pudo mostrar la imagen: {e}")

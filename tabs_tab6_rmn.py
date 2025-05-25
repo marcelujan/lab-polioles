@@ -181,7 +181,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     "Xas max": st.column_config.NumberColumn(format="%.2f"),
                     "Has": st.column_config.NumberColumn(format="%.2f"),
                     "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                    "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
+                    "H": st.column_config.NumberColumn(format="%.2f", label="🔴H" if tipo == "RMN 1H" else "🔴C", disabled=True),
                     "Observaciones": st.column_config.TextColumn(),
                     "Archivo": st.column_config.TextColumn(disabled=True),
                     "Muestra": st.column_config.TextColumn(disabled=True),
@@ -191,7 +191,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 num_rows="dynamic",
                 key=f"tabla_dt2_{key_sufijo}"
             )
-            recalcular = st.form_submit_button("🔴 Recalcular 'Área', 'Área as' y 'H'")
+            etiqueta_boton_dt2 = "🔴 Recalcular 'Área', 'Área as' y 'H'" if tipo == "RMN 1H" else "🔴 Recalcular 'Área', 'Área as' y 'C'"
+            recalcular = st.form_submit_button(etiqueta_boton_dt2)
 
         if recalcular:
             for i, row in df_dt2_edit.iterrows():

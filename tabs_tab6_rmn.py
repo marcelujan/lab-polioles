@@ -486,31 +486,47 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
                     x1 = f.get("X min")
                     x2 = f.get("X max")
-                    tiene_d = f.get("D") not in [None, ""]
-                    tiene_t2 = f.get("T2") not in [None, ""]
+                    d_val = f.get("D")
+                    t2_val = f.get("T2")
 
-                    if (check_d_por_espectro.get(archivo_actual) or check_t2_por_espectro.get(archivo_actual)) and x1 is not None and x2 is not None:
-                        etiqueta = None
-                        if tiene_d and check_d_por_espectro.get(archivo_actual) and tiene_t2 and check_t2_por_espectro.get(archivo_actual):
-                            etiqueta = "D, T2"
-                            color = "rgba(128,128,255,0.15)"
-                        elif tiene_d and check_d_por_espectro.get(archivo_actual):
-                            etiqueta = "D"
-                            color = "rgba(255,0,0,0.1)"
-                        elif tiene_t2 and check_t2_por_espectro.get(archivo_actual):
-                            etiqueta = "T2"
-                            color = "rgba(0,0,255,0.1)"
-                        else:
-                            continue
+                    tiene_d = d_val not in [None, ""]
+                    tiene_t2 = t2_val not in [None, ""]
 
-                        fig.add_vrect(
-                            x0=min(x1, x2),
-                            x1=max(x1, x2),
-                            fillcolor=color,
-                            line_width=0,
-                            annotation_text=etiqueta,
-                            annotation_position="top left"
-                        )
+                    mostrar_d = check_d_por_espectro.get(archivo_actual) and tiene_d
+                    mostrar_t2 = check_t2_por_espectro.get(archivo_actual) and tiene_t2
+
+                    if not (mostrar_d or mostrar_t2) or x1 is None or x2 is None:
+                        continue
+
+                    # Texto centrado con valores
+                    partes = []
+                    if mostrar_d:
+                        partes.append(f"D = {float(d_val):.2e}")
+                    if mostrar_t2:
+                        partes.append(f"T2 = {float(t2_val):.3f}")
+                    etiqueta = "   ".join(partes)
+
+                    color = "rgba(128,128,255,0.15)" if mostrar_d and mostrar_t2 else (
+                        "rgba(255,0,0,0.1)" if mostrar_d else "rgba(0,0,255,0.1)"
+                    )
+
+                    fig.add_vrect(
+                        x0=min(x1, x2),
+                        x1=max(x1, x2),
+                        fillcolor=color,
+                        line_width=0
+                    )
+
+                    fig.add_annotation(
+                        x=(x1 + x2) / 2,
+                        y=y_max,  # O podés usar y_max*0.98 para bajarlo un poco
+                        text=etiqueta,
+                        showarrow=False,
+                        font=dict(size=10, color="black"),
+                        xanchor="center",
+                        yanchor="top"
+                    )
+
 
 
            # Aplicar sombreado por Cálculo de señales si está activo

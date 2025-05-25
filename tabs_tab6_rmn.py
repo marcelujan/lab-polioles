@@ -668,3 +668,54 @@ def render_imagenes(df):
                 st.image(image, use_container_width=True)
             except Exception as e:
                 st.error(f"❌ No se pudo mostrar la imagen: {e}")
+
+
+
+
+
+
+@st.cache_resource
+def init_firebase_from_secrets():
+    if not firebase_admin._apps:
+        cred = credentials.Certificate({
+            "type": st.secrets["firebase"]["type"],
+            "project_id": st.secrets["firebase"]["project_id"],
+            "private_key_id": st.secrets["firebase"]["private_key_id"],
+            "private_key": st.secrets["firebase"]["private_key"].replace('\\n', '\n'),
+            "client_email": st.secrets["firebase"]["client_email"],
+            "client_id": st.secrets["firebase"]["client_id"],
+            "auth_uri": st.secrets["firebase"]["auth_uri"],
+            "token_uri": st.secrets["firebase"]["token_uri"],
+            "auth_provider_x509_cert_url": st.secrets["firebase"]["auth_provider_x509_cert_url"],
+            "client_x509_cert_url": st.secrets["firebase"]["client_x509_cert_url"]
+        })
+        initialize_app(cred)
+    return firestore.client()
+
+def migrar_dt2_datos_a_rmn1h():
+    db = init_firebase_from_secrets()
+    muestras = db.collection("muestras").stream()
+
+    reportes = []
+    for m in muestras:
+        nombre = m.id
+        doc_datos = db.collection("muestras").document(nombre).collection("dt2").document("datos").get()
+
+        if doc_datos.exists:
+            filas = doc_datos.to_dict().get("filas", [])
+            if filas:
+                db.collection("muestras").document(nombre).collection("dt2").document("rmn 1h").set({"filas": filas})
+                db.collection("muestras").document(nombre).collection("dt2").document("datos").delete()
+                reportes.append(f"✅ {nombre}: {len(filas)} filas migradas.")
+            else:
+                reportes.append(f"⚠️ {nombre}: documento 'datos' vacío.")
+        else:
+            reportes.append(f"— {nombre}: sin documento 'datos'.")
+
+    return reportes
+
+
+    if st.button("🔁 Migrar datos D/T2 desde 'datos' → 'rmn 1h'"):
+        resultados = migrar_dt2_datos_a_rmn1h()
+        for r in resultados:
+            st.write(r)

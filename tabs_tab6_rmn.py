@@ -206,6 +206,19 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             etiqueta_boton_dt2 = "🔴 Recalcular 'Área', 'Área as' y 'H'" if tipo == "RMN 1H" else "🔴 Recalcular 'Área', 'Área as' y 'C'"
             recalcular = st.form_submit_button(etiqueta_boton_dt2)
 
+        # Exportar tabla D/T2
+        buffer_dt2 = BytesIO()
+        nombre_hoja_dt2 = "Cálculos D-T2 1H" if tipo == "RMN 1H" else "Cálculos D-T2 13C"
+        with pd.ExcelWriter(buffer_dt2, engine="xlsxwriter") as writer:
+            df_dt2_edit.to_excel(writer, index=False, sheet_name=nombre_hoja_dt2)
+        buffer_dt2.seek(0)
+
+        st.download_button(
+            label=f"📥 Descargar Cálculos D/T2 {tipo}",
+            data=buffer_dt2.getvalue(),
+            file_name=f"tabla_dt2_{tipo.lower().replace(' ', '_')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
         if recalcular:
             for i, row in df_dt2_edit.iterrows():

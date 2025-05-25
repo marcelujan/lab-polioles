@@ -255,7 +255,10 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
     # --- Tabla de Cálculo de señales ---
     if mostrar_tabla_senales:
-        columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
+        if tipo == "RMN 1H":
+            columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+        else:
+            columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
         tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
         doc_ref = db.collection("tablas_integrales").document(tipo_doc)
         if not doc_ref.get().exists:

@@ -478,7 +478,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             muestra_actual = row["muestra"]
             archivo_actual = row["archivo"]
             doc_dt2 = db.collection("muestras").document(muestra_actual).collection("dt2").document(tipo.lower())
-            if doc_dt2.get().exists():
+            if doc_dt2.get().exists:
                 filas_dt2 = doc_dt2.get().to_dict().get("filas", [])
                 for f in filas_dt2:
                     if f.get("Archivo") != archivo_actual:

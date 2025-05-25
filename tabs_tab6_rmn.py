@@ -805,21 +805,19 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         grupo = f.get("Grupo funcional")
 
                         if delta is not None:
-                            # Línea punteada desde y_max*0.5 a y_max
                             fig_indiv.add_shape(
                                 type="line",
                                 x0=delta, x1=delta,
-                                y0=y_max * 0.5,
+                                y0=0,
                                 y1=y_max,
-                                line=dict(color="black", dash="dot"),
+                                line=dict(color="black", dash="dot", width=1),
                                 layer="above"
                             )
 
-                            # Etiqueta vertical debajo de la línea
                             texto = grupo if grupo not in [None, ""] else f"δ = {delta:.2f}"
                             fig_indiv.add_annotation(
                                 x=delta,
-                                y=y_max * 0.75,
+                                y=y_max * 0.95,
                                 text=texto,
                                 showarrow=False,
                                 textangle=270,
@@ -827,6 +825,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                                 xanchor="center",
                                 yanchor="top"
                             )
+
 
             fig_indiv.update_layout(
                 title=f"{archivo_actual}",

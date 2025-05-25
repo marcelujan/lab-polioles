@@ -203,44 +203,9 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 key=f"tabla_dt2_{key_sufijo}"
             )
 
-            col_dt1, col_dt2 = st.columns([1, 1])
-            with col_dt1:
-                etiqueta_boton_dt2 = "🔴 Recalcular 'Área', 'Área as' y 'H'" if tipo == "RMN 1H" else "🔴 Recalcular 'Área', 'Área as' y 'C'"
-                recalcular = st.form_submit_button(etiqueta_boton_dt2)
-           
-        col_dt1, col_dt2 = st.columns([1, 1])
-        with col_dt2:
-            buffer_dt2 = BytesIO()
-            nombre_hoja_dt2 = "Cálculos D-T2 1H" if tipo == "RMN 1H" else "Cálculos D-T2 13C"
-            with pd.ExcelWriter(buffer_dt2, engine="xlsxwriter") as writer:
-                df_dt2_edit.to_excel(writer, index=False, sheet_name=nombre_hoja_dt2)
-            buffer_dt2.seek(0)
+            etiqueta_boton_dt2 = "🔴 Recalcular 'Área', 'Área as' y 'H'" if tipo == "RMN 1H" else "🔴 Recalcular 'Área', 'Área as' y 'C'"
+            recalcular = st.form_submit_button(etiqueta_boton_dt2)
 
-            st.download_button(
-                label=f"📥 Descargar Cálculos D/T2 {tipo}",
-                data=buffer_dt2.getvalue(),
-                file_name=f"tabla_dt2_{tipo.lower().replace(' ', '_')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key=f"download_dt2_{key_sufijo}"
-            )
-
-
-
-
-
-        # Exportar tabla D/T2
-        buffer_dt2 = BytesIO()
-        nombre_hoja_dt2 = "Cálculos D-T2 1H" if tipo == "RMN 1H" else "Cálculos D-T2 13C"
-        with pd.ExcelWriter(buffer_dt2, engine="xlsxwriter") as writer:
-            df_dt2_edit.to_excel(writer, index=False, sheet_name=nombre_hoja_dt2)
-        buffer_dt2.seek(0)
-
-        st.download_button(
-            label=f"📥 Descargar Cálculos D/T2 {tipo}",
-            data=buffer_dt2.getvalue(),
-            file_name=f"tabla_dt2_{tipo.lower().replace(' ', '_')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
 
         if recalcular:
             for i, row in df_dt2_edit.iterrows():
@@ -419,22 +384,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             db.collection("tablas_integrales").document(tipo_doc).set({"filas": df_senales_edit.to_dict(orient="records")})
             st.success("✅ Datos recalculados y guardados correctamente.")
             st.rerun()
-
-
-        # Exportar tabla de cálculos
-        buffer_excel = BytesIO()
-        nombre_hoja = "Cálculos RMN 1H" if tipo == "RMN 1H" else "Cálculos RMN 13C"
-        with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-            df_senales_edit.to_excel(writer, index=False, sheet_name=nombre_hoja)
-        buffer_excel.seek(0)
-
-        st.download_button(
-            label=f"📥 Descargar Cálculos {tipo}",
-            data=buffer_excel.getvalue(),
-            file_name=f"tabla_calculos_{tipo.lower().replace(' ', '_')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key=f"download_senales_{key_sufijo}"
-        )
 
 
 

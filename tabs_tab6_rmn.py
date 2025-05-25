@@ -386,19 +386,19 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             st.rerun()
 
 
-            # Exportar tabla de cálculos
-            buffer_excel = BytesIO()
-            nombre_hoja = "Cálculos RMN 1H" if tipo == "RMN 1H" else "Cálculos RMN 13C"
-            with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-                df_senales_edit.to_excel(writer, index=False, sheet_name=nombre_hoja)
-            buffer_excel.seek(0)
+        # Exportar tabla de cálculos
+        buffer_excel = BytesIO()
+        nombre_hoja = "Cálculos RMN 1H" if tipo == "RMN 1H" else "Cálculos RMN 13C"
+        with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+            df_senales_edit.to_excel(writer, index=False, sheet_name=nombre_hoja)
+        buffer_excel.seek(0)
 
-            st.download_button(
-                label=f"📥 Descargar Cálculos {tipo}",
-                data=buffer_excel.getvalue(),
-                file_name=f"tabla_calculos_{tipo.lower().replace(' ', '_')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+        st.download_button(
+            label=f"📥 Descargar Cálculos {tipo}",
+            data=buffer_excel.getvalue(),
+            file_name=f"tabla_calculos_{tipo.lower().replace(' ', '_')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     # --- Tabla Bibliográfica de señales pico δ (RMN 1H o RMN 13C) ---
     if mostrar_tabla_biblio:

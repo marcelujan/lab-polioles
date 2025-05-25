@@ -489,24 +489,29 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     tiene_d = f.get("D") not in [None, ""]
                     tiene_t2 = f.get("T2") not in [None, ""]
 
-                    if check_d_por_espectro.get(archivo_actual) and tiene_d and x1 is not None and x2 is not None:
+                    if (check_d_por_espectro.get(archivo_actual) or check_t2_por_espectro.get(archivo_actual)) and x1 is not None and x2 is not None:
+                        etiqueta = None
+                        if tiene_d and check_d_por_espectro.get(archivo_actual) and tiene_t2 and check_t2_por_espectro.get(archivo_actual):
+                            etiqueta = "D, T2"
+                            color = "rgba(128,128,255,0.15)"
+                        elif tiene_d and check_d_por_espectro.get(archivo_actual):
+                            etiqueta = "D"
+                            color = "rgba(255,0,0,0.1)"
+                        elif tiene_t2 and check_t2_por_espectro.get(archivo_actual):
+                            etiqueta = "T2"
+                            color = "rgba(0,0,255,0.1)"
+                        else:
+                            continue
+
                         fig.add_vrect(
                             x0=min(x1, x2),
                             x1=max(x1, x2),
-                            fillcolor="rgba(255,0,0,0.1)",
+                            fillcolor=color,
                             line_width=0,
-                            annotation_text="D",
+                            annotation_text=etiqueta,
                             annotation_position="top left"
                         )
-                    if check_t2_por_espectro.get(archivo_actual) and tiene_t2 and x1 is not None and x2 is not None:
-                        fig.add_vrect(
-                            x0=min(x1, x2),
-                            x1=max(x1, x2),
-                            fillcolor="rgba(0,0,255,0.1)",
-                            line_width=0,
-                            annotation_text="T2",
-                            annotation_position="top right"
-                        )
+
 
            # Aplicar sombreado por Cálculo de señales si está activo
         if aplicar_sombra_senales:
@@ -580,24 +585,29 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         tiene_d = f.get("D") not in [None, ""]
                         tiene_t2 = f.get("T2") not in [None, ""]
 
-                        if check_d_por_espectro.get(archivo_actual) and tiene_d and x1 is not None and x2 is not None:
+                        if (check_d_por_espectro.get(archivo_actual) or check_t2_por_espectro.get(archivo_actual)) and x1 is not None and x2 is not None:
+                            etiqueta = None
+                            if tiene_d and check_d_por_espectro.get(archivo_actual) and tiene_t2 and check_t2_por_espectro.get(archivo_actual):
+                                etiqueta = "D, T2"
+                                color = "rgba(128,128,255,0.15)"
+                            elif tiene_d and check_d_por_espectro.get(archivo_actual):
+                                etiqueta = "D"
+                                color = "rgba(255,0,0,0.1)"
+                            elif tiene_t2 and check_t2_por_espectro.get(archivo_actual):
+                                etiqueta = "T2"
+                                color = "rgba(0,0,255,0.1)"
+                            else:
+                                continue
+
                             fig_indiv.add_vrect(
                                 x0=min(x1, x2),
                                 x1=max(x1, x2),
-                                fillcolor="rgba(255,0,0,0.1)",
+                                fillcolor=color,
                                 line_width=0,
-                                annotation_text="D",
+                                annotation_text=etiqueta,
                                 annotation_position="top left"
                             )
-                        if check_t2_por_espectro.get(archivo_actual) and tiene_t2 and x1 is not None and x2 is not None:
-                            fig_indiv.add_vrect(
-                                x0=min(x1, x2),
-                                x1=max(x1, x2),
-                                fillcolor="rgba(0,0,255,0.1)",
-                                line_width=0,
-                                annotation_text="T2",
-                                annotation_position="top right"
-                            )
+
 
 
             # Sombreado por señales

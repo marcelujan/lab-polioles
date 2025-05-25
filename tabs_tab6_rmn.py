@@ -519,10 +519,11 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
                     fig.add_annotation(
                         x=(x1 + x2) / 2,
-                        y=y_max,  # O podés usar y_max*0.98 para bajarlo un poco
+                        y=y_max * 0.98,  # o un valor más ajustado si lo querés más bajo
                         text=etiqueta,
                         showarrow=False,
                         font=dict(size=10, color="black"),
+                        textangle=90,
                         xanchor="center",
                         yanchor="top"
                     )

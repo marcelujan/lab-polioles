@@ -708,7 +708,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         if x1 is None or x2 is None:
                             continue
 
-                        fig_indiv.add_vrect(...)
+                        fig_indiv.add_vrect(
+                            x0=min(x1, x2),
+                            x1=max(x1, x2),
+                            fillcolor="rgba(0,255,0,0.3)",
+                            layer="below",
+                            line_width=0
+                        )
 
                         # Mostrar etiqueta con la misma lógica
                         if grupo not in [None, ""] or valor not in [None, ""]:

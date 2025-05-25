@@ -401,25 +401,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-
-            colb1, colb2 = st.columns([1, 1])
-            with colb1:
-                if st.button("🔴 Actualizar Tabla Bibliográfica 13C"):
-                    doc_biblio_13c.set({"filas": df_biblio_edit_13c.to_dict(orient="records")})
-                    st.success("✅ Datos bibliográficos actualizados.")
-            with colb2:
-                buffer_excel_13c = BytesIO()
-                with pd.ExcelWriter(buffer_excel_13c, engine="xlsxwriter") as writer:
-                    df_biblio_edit_13c.to_excel(writer, index=False, sheet_name="Bibliografía 13C")
-                buffer_excel_13c.seek(0)
-                st.download_button(
-                    "📥 Descargar tabla 13C",
-                    data=buffer_excel_13c.getvalue(),
-                    file_name="tabla_bibliografica_rmn13c.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-
     # --- Sombreados por D/T2 ---
     check_d_por_espectro = {}
     check_t2_por_espectro = {}

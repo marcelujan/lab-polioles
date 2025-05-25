@@ -679,6 +679,17 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             line_width=0
                         )
 
+                        fig_indiv.add_vline(
+                            x=x1,
+                            line=dict(color="black", width=1),
+                            layer="above"
+                        )
+                        fig_indiv.add_vline(
+                            x=x2,
+                            line=dict(color="black", width=1),
+                            layer="above"
+                        )
+
                         fig_indiv.add_annotation(
                             x=(x1 + x2) / 2,
                             y=y_max * 0.98,
@@ -717,6 +728,17 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             fillcolor="rgba(0,255,0,0.3)",
                             layer="below",
                             line_width=0
+                        )
+
+                        fig_indiv.add_vline(
+                            x=x1,
+                            line=dict(color="black", width=1),
+                            layer="above"
+                        )
+                        fig_indiv.add_vline(
+                            x=x2,
+                            line=dict(color="black", width=1),
+                            layer="above"
                         )
 
                         # Mostrar etiqueta si hay grupo y/o valor

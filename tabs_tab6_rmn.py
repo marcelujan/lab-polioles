@@ -141,7 +141,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         nombre_sombra_senales = f"Sombrear Tabla de Cálculos {tipo}"
         aplicar_sombra_senales = st.checkbox(nombre_sombra_senales, value=False, key=f"sombra_senales_{key_sufijo}")
 
-        nombre_sombra_biblio = f"Sombrear Tabla Bibliográfica {tipo[-3:]}"
+        nombre_sombra_biblio = f"Delinear Tabla Bibliográfica {tipo[-3:]}"
         aplicar_sombra_biblio = st.checkbox(nombre_sombra_biblio, value=False, key=f"sombra_biblio_{key_sufijo}")
 
     # --- Tabla de Cálculo D/T2 ---
@@ -787,51 +787,51 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             )
 
 
-            # Aplicar sombreado por bibliografía si está activo
-            if aplicar_sombra_biblio:
-                doc_biblio = db.collection("configuracion_global").document(
-                    "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+                # Aplicar sombreado por bibliografía si está activo
+                if aplicar_sombra_biblio:
+                    doc_biblio = db.collection("configuracion_global").document(
+                        "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+                    )
+                    if doc_biblio.get().exists:
+                        filas_biblio = doc_biblio.get().to_dict().get("filas", [])
+                        for f in filas_biblio:
+                            delta = f.get("δ pico")
+                            grupo = f.get("Grupo funcional")
+
+                            if delta is not None:
+                                # Línea punteada hasta la mitad del eje Y
+                                fig_indiv.add_shape(
+                                    type="line",
+                                    x0=delta, x1=delta,
+                                    y0=y_max * 0.5, y1=y_max,
+                                    line=dict(color="black", dash="dot"),
+                                    layer="above"
+                                )
+
+                                # Etiqueta en la mitad inferior
+                                texto = grupo if grupo not in [None, ""] else f"δ = {delta:.2f}"
+                                fig_indiv.add_annotation(
+                                    x=delta,
+                                    y=y_max * 0.45,
+                                    text=texto,
+                                    showarrow=False,
+                                    textangle=270,
+                                    font=dict(size=10, color="black"),
+                                    xanchor="center",
+                                    yanchor="top"
+                                )
+
+                fig_indiv.update_layout(
+                    title=f"{archivo_actual}",
+                    xaxis_title="[ppm]",
+                    yaxis_title="Intensidad",
+                    xaxis=dict(range=[x_max, x_min]),
+                    yaxis=dict(range=[y_min, y_max] if y_min is not None and y_max is not None else None),
+                    height=400,
+                    template="simple_white"
                 )
-                if doc_biblio.get().exists:
-                    filas_biblio = doc_biblio.get().to_dict().get("filas", [])
-                    for f in filas_biblio:
-                        delta = f.get("δ pico")
-                        grupo = f.get("Grupo funcional")
 
-                        if delta is not None:
-                            # Línea punteada hasta la mitad del eje Y
-                            fig_indiv.add_shape(
-                                type="line",
-                                x0=delta, x1=delta,
-                                y0=y_max * 0.5, y1=y_max,
-                                line=dict(color="black", dash="dot"),
-                                layer="above"
-                            )
-
-                            # Etiqueta en la mitad inferior
-                            texto = grupo if grupo not in [None, ""] else f"δ = {delta:.2f}"
-                            fig_indiv.add_annotation(
-                                x=delta,
-                                y=y_max * 0.45,
-                                text=texto,
-                                showarrow=False,
-                                textangle=270,
-                                font=dict(size=10, color="black"),
-                                xanchor="center",
-                                yanchor="top"
-                            )
-
-            fig_indiv.update_layout(
-                title=f"{archivo_actual}",
-                xaxis_title="[ppm]",
-                yaxis_title="Intensidad",
-                xaxis=dict(range=[x_max, x_min]),
-                yaxis=dict(range=[y_min, y_max] if y_min is not None and y_max is not None else None),
-                height=400,
-                template="simple_white"
-            )
-
-            st.plotly_chart(fig_indiv, use_container_width=True)
+                st.plotly_chart(fig_indiv, use_container_width=True)
 
 
 def decodificar_csv_o_excel(contenido_base64, archivo):

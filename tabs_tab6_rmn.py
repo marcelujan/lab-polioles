@@ -618,16 +618,17 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     grupo = f.get("Grupo funcional")
 
                     if delta is not None:
-                        # Línea punteada hasta la mitad del eje Y
+                        # Línea punteada desde y_max*0.5 a y_max
                         fig.add_shape(
                             type="line",
                             x0=delta, x1=delta,
-                            y0=y_max * 0.5, y1=y_max,
+                            y0=y_max * 0.5,
+                            y1=y_max,
                             line=dict(color="black", dash="dot"),
                             layer="above"
                         )
 
-                        # Etiqueta en la mitad inferior
+                        # Etiqueta vertical debajo de la línea
                         texto = grupo if grupo not in [None, ""] else f"δ = {delta:.2f}"
                         fig.add_annotation(
                             x=delta,

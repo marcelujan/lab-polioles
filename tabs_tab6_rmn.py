@@ -149,9 +149,10 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         if tipo == "RMN 1H":
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                             "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
-        else:  # RMN 13C
+        else:
             columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                             "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
+
         filas_guardadas = []
         for _, row in df.iterrows():
             muestra = row["muestra"]
@@ -170,32 +171,41 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         ### Cálculo D/T2"
         st.markdown("**🧮 Tabla de Cálculos D/T2 (FAMAF)**")
         with st.form(f"form_dt2_{key_sufijo}"):
+            col_config = {
+                "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                "X min": st.column_config.NumberColumn(format="%.2f"),
+                "X max": st.column_config.NumberColumn(format="%.2f"),
+                "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
+                "D": st.column_config.NumberColumn(format="%.2e"),
+                "T2": st.column_config.NumberColumn(format="%.3f"),
+                "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
+                "Observaciones": st.column_config.TextColumn(),
+                "Archivo": st.column_config.TextColumn(disabled=True),
+                "Muestra": st.column_config.TextColumn(disabled=True),
+            }
+
+            if tipo == "RMN 1H":
+                col_config["Has"] = st.column_config.NumberColumn(format="%.2f")
+                col_config["H"] = st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True)
+            else:
+                col_config["Cas"] = st.column_config.NumberColumn(format="%.2f")
+                col_config["C"] = st.column_config.NumberColumn(format="%.2f", label="🔴C", disabled=True)
+
             df_dt2_edit = st.data_editor(
                 df_dt2,
-                column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                    "X min": st.column_config.NumberColumn(format="%.2f"),
-                    "X max": st.column_config.NumberColumn(format="%.2f"),
-                    "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
-                    "D": st.column_config.NumberColumn(format="%.2e"),
-                    "T2": st.column_config.NumberColumn(format="%.3f"),
-                    "Xas min": st.column_config.NumberColumn(format="%.2f"),
-                    "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                    "Has": st.column_config.NumberColumn(format="%.2f"),
-                    "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                    "H": st.column_config.NumberColumn(format="%.2f", label="🔴H" if tipo == "RMN 1H" else "🔴C", disabled=True),
-                    "Observaciones": st.column_config.TextColumn(),
-                    "Archivo": st.column_config.TextColumn(disabled=True),
-                    "Muestra": st.column_config.TextColumn(disabled=True),
-                },
+                column_config=col_config,
                 hide_index=True,
                 use_container_width=True,
                 num_rows="dynamic",
                 key=f"tabla_dt2_{key_sufijo}"
             )
+
             etiqueta_boton_dt2 = "🔴 Recalcular 'Área', 'Área as' y 'H'" if tipo == "RMN 1H" else "🔴 Recalcular 'Área', 'Área as' y 'C'"
             recalcular = st.form_submit_button(etiqueta_boton_dt2)
+
 
         if recalcular:
             for i, row in df_dt2_edit.iterrows():
@@ -206,8 +216,12 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     x_max = float(row["X max"])
                     xas_min = float(row["Xas min"]) if row["Xas min"] not in [None, ""] else None
                     xas_max = float(row["Xas max"]) if row["Xas max"] not in [None, ""] else None
-                    has = float(row["Has"]) if row["Has"] not in [None, ""] else None
 
+                    has_o_cas_key = "Has" if tipo == "RMN 1H" else "Cas"
+                    h_o_c_key = "H" if tipo == "RMN 1H" else "C"
+                    has_or_cas = float(row[has_o_cas_key]) if row[has_o_cas_key] not in [None, ""] else None
+
+                    # Buscar espectro correspondiente
                     espectros = db.collection("muestras").document(muestra).collection("espectros").stream()
                     espectro = next((e.to_dict() for e in espectros if e.to_dict().get("nombre_archivo") == archivo), None)
                     if not espectro:
@@ -218,7 +232,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     if extension == ".xlsx":
                         df_esp = pd.read_excel(contenido)
                     else:
-                        for sep in [",", ";", "	", " "]:
+                        for sep in [",", ";", "\t", " "]:
                             contenido.seek(0)
                             try:
                                 df_esp = pd.read_csv(contenido, sep=sep)
@@ -243,18 +257,20 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         area_as = np.trapz(df_as[col_y], df_as[col_x]) if not df_as.empty else None
                         df_dt2_edit.at[i, "Área as"] = round(area_as, 2) if area_as else None
 
-                        if area and area_as and has and area_as != 0:
-                            h_calc = (area * has) / area_as
-                            df_dt2_edit.at[i, "H"] = round(h_calc, 2)
+                        if area and area_as and has_or_cas and area_as != 0:
+                            resultado = (area * has_or_cas) / area_as
+                            df_dt2_edit.at[i, h_o_c_key] = round(resultado, 2)
 
                 except Exception as e:
                     st.warning(f"⚠️ Error en fila {i}: {e}")
 
+            # Guardar en Firebase separadamente por muestra
             filas_actualizadas = df_dt2_edit.to_dict(orient="records")
             for muestra in df_dt2_edit["Muestra"].unique():
                 filas_m = [f for f in filas_actualizadas if f["Muestra"] == muestra]
                 doc = db.collection("muestras").document(muestra).collection("dt2").document(tipo.lower())
                 doc.set({"filas": filas_m})
+
 
     # --- Tabla de Cálculo de señales ---
     if mostrar_tabla_senales:

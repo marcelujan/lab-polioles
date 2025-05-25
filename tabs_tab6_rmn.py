@@ -437,6 +437,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         )
 
 
+
     # --- Tabla Bibliográfica de señales pico δ (RMN 1H o RMN 13C) ---
     if mostrar_tabla_biblio:
         doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c")

@@ -432,8 +432,10 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             label=f"📥 Descargar Cálculos {tipo}",
             data=buffer_excel.getvalue(),
             file_name=f"tabla_calculos_{tipo.lower().replace(' ', '_')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key=f"download_senales_{key_sufijo}"
         )
+
 
     # --- Tabla Bibliográfica de señales pico δ (RMN 1H o RMN 13C) ---
     if mostrar_tabla_biblio:

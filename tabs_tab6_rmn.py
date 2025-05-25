@@ -144,11 +144,14 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         nombre_sombra_biblio = f"Sombrear Tabla Bibliográfica {tipo[-3:]}"
         aplicar_sombra_biblio = st.checkbox(nombre_sombra_biblio, value=False, key=f"sombra_biblio_{key_sufijo}")
 
-# --- Tabla de Cálculo D/T2 ---
+    # --- Tabla de Cálculo D/T2 ---
     if mostrar_tabla_dt2:
-        columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                         "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
-
+        if tipo == "RMN 1H":
+            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
+                            "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+        else:  # RMN 13C
+            columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
+                            "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
         filas_guardadas = []
         for _, row in df.iterrows():
             muestra = row["muestra"]

@@ -575,18 +575,17 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     if x1 is None or x2 is None:
                         continue
 
-                    # Sombrear siempre
-                    fig.add_vrect(
-                        x0=min(x1, x2),
-                        x1=max(x1, x2),
-                        fillcolor="rgba(0,255,0,0.3)",
-                        layer="below",
-                        line_width=0
-                    )
+                    fig.add_vrect(...)
 
-                    # Solo mostrar etiqueta si hay datos
-                    if grupo not in [None, ""] and valor not in [None, ""]:
-                        etiqueta = f"{grupo} = {valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}"
+                    # Mostrar etiqueta con la lógica flexible
+                    if grupo not in [None, ""] or valor not in [None, ""]:
+                        partes = []
+                        if grupo not in [None, ""]:
+                            partes.append(f"{grupo}")
+                        if valor not in [None, ""]:
+                            partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
+                        etiqueta = " = ".join(partes) if len(partes) == 2 else " ".join(partes)
+
                         fig.add_annotation(
                             x=(x1 + x2) / 2,
                             y=y_max * 0.98,
@@ -597,6 +596,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             xanchor="center",
                             yanchor="top"
                         )
+
 
 
 
@@ -705,20 +705,20 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         x2 = f.get("X max")
                         grupo = f.get("Grupo funcional")
                         valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
-
                         if x1 is None or x2 is None:
                             continue
 
-                        fig_indiv.add_vrect(
-                            x0=min(x1, x2),
-                            x1=max(x1, x2),
-                            fillcolor="rgba(0,255,0,0.3)",
-                            layer="below",
-                            line_width=0
-                        )
+                        fig_indiv.add_vrect(...)
 
-                        if grupo not in [None, ""] and valor not in [None, ""]:
-                            etiqueta = f"{grupo} = {valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}"
+                        # Mostrar etiqueta con la misma lógica
+                        if grupo not in [None, ""] or valor not in [None, ""]:
+                            partes = []
+                            if grupo not in [None, ""]:
+                                partes.append(f"{grupo}")
+                            if valor not in [None, ""]:
+                                partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
+                            etiqueta = " = ".join(partes) if len(partes) == 2 else " ".join(partes)
+
                             fig_indiv.add_annotation(
                                 x=(x1 + x2) / 2,
                                 y=y_max * 0.98,
@@ -729,6 +729,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                                 xanchor="center",
                                 yanchor="top"
                             )
+
 
 
 

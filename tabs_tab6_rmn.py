@@ -355,35 +355,52 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             st.success("✅ Datos recalculados y guardados correctamente.")
             st.rerun()
 
-# --- Tabla Bibliográfica de señales pico δ (RMN 13C) ---
-    if tipo == "RMN 13C" and mostrar_tabla_biblio:
-            doc_biblio_13c = db.collection("configuracion_global").document("tabla_editable_rmn13c")
-            if not doc_biblio_13c.get().exists:
-                doc_biblio_13c.set({"filas": []})
+    # --- Tabla Bibliográfica de señales pico δ (RMN 1H o RMN 13C) ---
+    if mostrar_tabla_biblio:
+        doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c")
+        if not doc_biblio.get().exists:
+            doc_biblio.set({"filas": []})
 
-            filas_biblio_13c = doc_biblio_13c.get().to_dict().get("filas", [])
-            columnas_bib13c = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
-            df_biblio_13c = pd.DataFrame(filas_biblio_13c)
+        filas_biblio = doc_biblio.get().to_dict().get("filas", [])
+        columnas_biblio = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
+        df_biblio = pd.DataFrame(filas_biblio)
 
-            for col in columnas_bib13c:
-                if col not in df_biblio_13c.columns:
-                    df_biblio_13c[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
-            df_biblio_13c = df_biblio_13c[columnas_bib13c]
+        for col in columnas_biblio:
+            if col not in df_biblio.columns:
+                df_biblio[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
+        df_biblio = df_biblio[columnas_biblio]
 
-            ### Tabla bibliográfica de señales RMN 13C
-            df_biblio_edit_13c = st.data_editor(
-                df_biblio_13c,
-                column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                    "X min": st.column_config.NumberColumn(format="%.2f"),
-                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                    "X max": st.column_config.NumberColumn(format="%.2f"),
-                },
-                hide_index=True,
-                use_container_width=True,
-                num_rows="dynamic",
-                key=f"tabla_biblio_13c_{key_sufijo}"
+        df_biblio_edit = st.data_editor(
+            df_biblio,
+            column_config={
+                "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                "X min": st.column_config.NumberColumn(format="%.2f"),
+                "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                "X max": st.column_config.NumberColumn(format="%.2f"),
+            },
+            hide_index=True,
+            use_container_width=True,
+            num_rows="dynamic",
+            key=f"tabla_biblio_{key_sufijo}"
+        )
+
+        colb1, colb2 = st.columns([1, 1])
+        with colb1:
+            if st.button(f"🔴 Actualizar Tabla Bibliográfica {tipo[-3:]}"):
+                doc_biblio.set({"filas": df_biblio_edit.to_dict(orient="records")})
+                st.success("✅ Datos bibliográficos actualizados.")
+        with colb2:
+            buffer_excel = BytesIO()
+            with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
+                df_biblio_edit.to_excel(writer, index=False, sheet_name=f"Bibliografía {tipo[-3:]}")
+            buffer_excel.seek(0)
+            st.download_button(
+                f"📥 Descargar tabla {tipo[-3:]}",
+                data=buffer_excel.getvalue(),
+                file_name=f"tabla_bibliografica_rmn{tipo[-3:].lower()}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+
 
             colb1, colb2 = st.columns([1, 1])
             with colb1:
@@ -402,52 +419,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-# --- Tabla Bibliográfica de señales pico δ (RMN 1H) ---
-    if tipo == "RMN 1H" and mostrar_tabla_biblio:
-            doc_biblio_1h = db.collection("configuracion_global").document("tabla_editable_rmn1h")
-            if not doc_biblio_1h.get().exists:
-                doc_biblio_1h.set({"filas": []})
-
-            filas_biblio_1h = doc_biblio_1h.get().to_dict().get("filas", [])
-            columnas_bib1h = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
-            df_biblio_1h = pd.DataFrame(filas_biblio_1h)
-
-            for col in columnas_bib1h:
-                if col not in df_biblio_1h.columns:
-                    df_biblio_1h[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
-            df_biblio_1h = df_biblio_1h[columnas_bib1h]
-
-            ### Tabla bibliográfica de señales RMN 1H
-            df_biblio_edit_1h = st.data_editor(
-                df_biblio_1h,
-                column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                    "X min": st.column_config.NumberColumn(format="%.2f"),
-                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                    "X max": st.column_config.NumberColumn(format="%.2f"),
-                },
-                hide_index=True,
-                use_container_width=True,
-                num_rows="dynamic",
-                key=f"tabla_biblio_1h_{key_sufijo}"
-            )
-
-            colb1, colb2 = st.columns([1, 1])
-            with colb1:
-                if st.button("🔴 Actualizar Tabla Bibliográfica 1H"):
-                    doc_biblio_1h.set({"filas": df_biblio_edit_1h.to_dict(orient="records")})
-                    st.success("✅ Datos bibliográficos actualizados.")
-            with colb2:
-                buffer_excel_1h = BytesIO()
-                with pd.ExcelWriter(buffer_excel_1h, engine="xlsxwriter") as writer:
-                    df_biblio_edit_1h.to_excel(writer, index=False, sheet_name="Bibliografía 1H")
-                buffer_excel_1h.seek(0)
-                st.download_button(
-                    "📥 Descargar tabla 1H",
-                    data=buffer_excel_1h.getvalue(),
-                    file_name="tabla_bibliografica_rmn1h.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
 
     # --- Sombreados por D/T2 ---
     check_d_por_espectro = {}
@@ -551,7 +522,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
            # Aplicar sombreado por Cálculo de señales si está activo
         if aplicar_sombra_senales:
-            doc_senales = db.collection("tablas_integrales").document("rmn1h")
+            tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+            doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
             if doc_senales.get().exists:
                 filas_senales = doc_senales.get().to_dict().get("filas", [])
                 for f in filas_senales:
@@ -569,7 +541,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                                 annotation_position="top"
                             )
 
-            # Aplicar sombreado por bibliografía si está activo
+        # Aplicar sombreado por bibliografía si está activo
         if aplicar_sombra_biblio:
             doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c")
             if doc_biblio.get().exists:
@@ -577,12 +549,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 for f in filas_biblio:
                     delta = f.get("δ pico")
                     if delta is not None:
-                        fig.add_vline(
+                        (fig if 'fig' in locals() else fig_indiv).add_vline(
                             x=delta,
                             line=dict(color="black", dash="dot"),
                             annotation_text=f"δ = {delta:.2f}",
                             annotation_position="top right"
                         )
+
 
     st.plotly_chart(fig, use_container_width=True)
 
@@ -629,7 +602,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
             # Sombreado por señales
             if aplicar_sombra_senales:
-                doc_senales = db.collection("tablas_integrales").document("rmn1h")
+                tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+                doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
                 if doc_senales.get().exists:
                     filas_senales = doc_senales.get().to_dict().get("filas", [])
                     for f in filas_senales:
@@ -644,7 +618,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                                     annotation_text=f.get("δ pico", ""), annotation_position="top"
                                 )
 
-            # Sombreado por bibliografía
+            # Aplicar sombreado por bibliografía si está activo
             if aplicar_sombra_biblio:
                 doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c")
                 if doc_biblio.get().exists:
@@ -652,12 +626,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     for f in filas_biblio:
                         delta = f.get("δ pico")
                         if delta is not None:
-                            fig_indiv.add_vline(
+                            (fig if 'fig' in locals() else fig_indiv).add_vline(
                                 x=delta,
                                 line=dict(color="black", dash="dot"),
                                 annotation_text=f"δ = {delta:.2f}",
                                 annotation_position="top right"
                             )
+
 
             fig_indiv.update_layout(
                 title=f"{archivo_actual}",

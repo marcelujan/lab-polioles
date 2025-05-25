@@ -436,15 +436,19 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-# --- Sombreados por D/T2 ---
-    st.markdown("### Sombreados por D/T2 (por espectro)")
+    # --- Sombreados por D/T2 ---
     check_d_por_espectro = {}
     check_t2_por_espectro = {}
-    for _, row in df.iterrows():
-        archivo = row["archivo"]
-        col_d, col_t2 = st.columns([1, 1])
-        check_d_por_espectro[archivo] = col_d.checkbox(f"D – {archivo}", key=f"chk_d_{archivo}_{key_sufijo}")
-        check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
+    activar_sombra_dt2_1h = st.checkbox("Sombrear Tabla de Cálculos D/T2 (FAMAF) RMN 1H", value=False, key=f"sombra_dt2_1h_{key_sufijo}")
+    activar_sombra_dt2_13c = st.checkbox("Sombrear Tabla de Cálculos D/T2 (FAMAF) RMN 13C", value=False, key=f"sombra_dt2_13c_{key_sufijo}")
+    if (tipo == "RMN 1H" and activar_sombra_dt2_1h) or (tipo == "RMN 13C" and activar_sombra_dt2_13c):
+        st.markdown("### Sombreados por D/T2 (por espectro)")
+        for _, row in df.iterrows():
+            archivo = row["archivo"]
+            col_d, col_t2 = st.columns([1, 1])
+            check_d_por_espectro[archivo] = col_d.checkbox(f"D – {archivo}", key=f"chk_d_{archivo}_{key_sufijo}")
+            check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
+
 
 # --- Sombreados por Cálculo de señales ---
     aplicar_sombra_senales = st.checkbox("Sombrear Tabla de Cálculos", value=False, key=f"sombra_senales_{key_sufijo}")

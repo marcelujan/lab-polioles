@@ -406,7 +406,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     check_t2_por_espectro = {}
 
     if aplicar_sombra_dt2:
-        st.markdown("### Sombreados por D/T2 (por espectro)")
+        st.markdown("**Sombreados por D/T2 (por espectro)**")
         for _, row in df.iterrows():
             archivo = row["archivo"]
             col_d, col_t2 = st.columns([1, 1])

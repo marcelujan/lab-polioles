@@ -3,7 +3,7 @@ from firebase_admin import credentials, firestore
 from collections import defaultdict
 
 # Inicializar Firebase con tu archivo de credenciales
-cred = credentials.Certificate("ruta/a/credencial.json")
+cred = credentials.Certificate("G:\Mi unidad\lab-polioles\.devcontainer\devcontainer.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 

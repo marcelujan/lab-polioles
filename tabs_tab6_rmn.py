@@ -53,12 +53,14 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
     if not df_rmn1h.empty:
         st.markdown("## 🧪 RMN 1H")
-        render_rmn_plot(df_rmn1h, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
+        key_1h = "rmn1h_" + "_".join(df_rmn1h["archivo"].unique())
+        render_rmn_plot(df_rmn1h, tipo="RMN 1H", key_sufijo=key_1h, db=db)
 
     df_rmn13c = df_sel[df_sel["tipo"] == "RMN 13C"]
     if not df_rmn13c.empty:
         st.markdown("## 🧪 RMN 13C")
-        render_rmn_plot(df_rmn13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
+        key_13c = "rmn13c_" + "_".join(df_rmn13c["archivo"].unique())
+        render_rmn_plot(df_rmn13c, tipo="RMN 13C", key_sufijo=key_13c, db=db)
 
     imagenes_sel = df_sel[df_sel["archivo"].str.lower().str.endswith((".png", ".jpg", ".jpeg"))]
     if not imagenes_sel.empty:

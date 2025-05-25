@@ -220,8 +220,10 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 label=f"📥 Descargar Cálculos D/T2 {tipo}",
                 data=buffer_dt2.getvalue(),
                 file_name=f"tabla_dt2_{tipo.lower().replace(' ', '_')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key=f"download_dt2_{key_sufijo}"
             )
+
 
 
 

@@ -453,10 +453,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
 
 # --- Sombreados por Cálculo de señales ---
-    aplicar_sombra_senales = st.checkbox("Sombrear Tabla de Cálculos", value=False, key=f"sombra_senales_{key_sufijo}")
+    etiqueta_sombra_senales = "Sombrear Tabla de Cálculos RMN 1H" if tipo == "RMN 1H" else "Sombrear Tabla de Cálculos RMN 13C"
+    aplicar_sombra_senales = st.checkbox(etiqueta_sombra_senales, value=False, key=f"sombra_senales_{key_sufijo}")
+
 
 # --- Sombreados por tabla bibliográfica (δ pico) ---
-    aplicar_sombra_biblio = st.checkbox("Sombrear Tabla Bibliográfica 1H", value=False, key=f"sombra_biblio_{key_sufijo}")
+    etiqueta_sombra_biblio = "Sombrear Tabla Bibliográfica 1H" if tipo == "RMN 1H" else "Sombrear Tabla Bibliográfica 13C"
+    aplicar_sombra_biblio = st.checkbox(etiqueta_sombra_biblio, value=False, key=f"sombra_biblio_{key_sufijo}")
 
 # --- Trazado ---
     fig = go.Figure()

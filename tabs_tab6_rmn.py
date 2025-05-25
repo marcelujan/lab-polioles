@@ -356,8 +356,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             st.rerun()
 
 # --- Tabla Bibliográfica de señales pico δ (RMN 13C) ---
-    if tipo == "RMN 13C":
-        if mostrar_tabla_biblio_13c:
+    if tipo == "RMN 13C" and mostrar_tabla_biblio:
             doc_biblio_13c = db.collection("configuracion_global").document("tabla_editable_rmn13c")
             if not doc_biblio_13c.get().exists:
                 doc_biblio_13c.set({"filas": []})
@@ -404,8 +403,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 )
 
 # --- Tabla Bibliográfica de señales pico δ (RMN 1H) ---
-    if tipo == "RMN 1H":
-        if mostrar_tabla_biblio_1h:
+    if tipo == "RMN 1H" and mostrar_tabla_biblio:
             doc_biblio_1h = db.collection("configuracion_global").document("tabla_editable_rmn1h")
             if not doc_biblio_1h.get().exists:
                 doc_biblio_1h.set({"filas": []})

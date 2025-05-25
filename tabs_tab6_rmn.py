@@ -540,39 +540,41 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     st.warning(f"⚠️ No se pudieron detectar picos en {row['archivo']}.")
 
         # Aplicar sombreado por bibliografía si está activo
-        if aplicar_sombra_biblio:
-            doc_biblio = db.collection("configuracion_global").document(
-                "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
-            )
-            if doc_biblio.get().exists:
-                filas_biblio = doc_biblio.get().to_dict().get("filas", [])
-                for f in filas_biblio:
-                    delta = f.get("δ pico")
-                    grupo = f.get("Grupo funcional")
+    if aplicar_sombra_biblio:
+        doc_biblio = db.collection("configuracion_global").document(
+            "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+        )
+        if doc_biblio.get().exists:
+            filas_biblio = doc_biblio.get().to_dict().get("filas", [])
+            if y_max is None:
+                y_max = 1.05 * max([trace.y.max() for trace in fig.data if hasattr(trace, "y")])
 
-                    if delta is not None:
-                        # Línea punteada desde y_max*0.5 a y_max
-                        fig.add_shape(
-                            type="line",
-                            x0=delta, x1=delta,
-                            y0=y_max * 0.5,
-                            y1=y_max,
-                            line=dict(color="black", dash="dot"),
-                            layer="above"
-                        )
+            for f in filas_biblio:
+                delta = f.get("δ pico")
+                grupo = f.get("Grupo funcional")
 
-                        # Etiqueta vertical debajo de la línea
-                        texto = grupo if grupo not in [None, ""] else f"δ = {delta:.2f}"
-                        fig.add_annotation(
-                            x=delta,
-                            y=y_max * 0.75,
-                            text=texto,
-                            showarrow=False,
-                            textangle=270,
-                            font=dict(size=10, color="black"),
-                            xanchor="center",
-                            yanchor="top"
-                        )
+                if delta is not None:
+                    fig.add_shape(
+                        type="line",
+                        x0=delta, x1=delta,
+                        y0=y_max * 0.5,
+                        y1=y_max,
+                        line=dict(color="black", dash="dot"),
+                        layer="above"
+                    )
+
+                    texto = grupo if grupo not in [None, ""] else f"δ = {delta:.2f}"
+                    fig.add_annotation(
+                        x=delta,
+                        y=y_max * 0.75,
+                        text=texto,
+                        showarrow=False,
+                        textangle=270,
+                        font=dict(size=10, color="black"),
+                        xanchor="center",
+                        yanchor="top"
+                    )
+
 
     fig.update_layout(
         xaxis_title="[ppm]",

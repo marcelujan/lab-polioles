@@ -570,7 +570,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             # Sombreado D/T2 (1H o 13C si hay datos) - INDIVIDUALES
             if aplicar_sombra_dt2:
                 doc_dt2 = db.collection("muestras").document(muestra_actual).collection("dt2").document(tipo.lower())
-                if doc_dt2.get().exists():
+                if doc_dt2.get().exists:
                     filas_dt2 = doc_dt2.get().to_dict().get("filas", [])
                     for f in filas_dt2:
                         if f.get("Archivo") == archivo_actual:

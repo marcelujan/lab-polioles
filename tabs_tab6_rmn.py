@@ -564,19 +564,37 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             if doc_senales.get().exists:
                 filas_senales = doc_senales.get().to_dict().get("filas", [])
                 for f in filas_senales:
-                    if f.get("Archivo") == archivo_actual:
-                        x1 = f.get("X min")
-                        x2 = f.get("X max")
-                        if x1 is not None and x2 is not None:
-                            fig.add_vrect(
-                                x0=min(x1, x2),
-                                x1=max(x1, x2),
-                                fillcolor="rgba(0,255,0,0.3)",
-                                layer="below",
-                                line_width=0,
-                                annotation_text=f.get("δ pico", ""),
-                                annotation_position="top"
-                            )
+                    if f.get("Archivo") != archivo_actual:
+                        continue
+
+                    x1 = f.get("X min")
+                    x2 = f.get("X max")
+                    grupo = f.get("Grupo funcional")
+                    valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
+
+                    if x1 is None or x2 is None or grupo in [None, ""] or valor in [None, ""]:
+                        continue
+
+                    etiqueta = f"{grupo} = {valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}"
+
+                    fig.add_vrect(
+                        x0=min(x1, x2),
+                        x1=max(x1, x2),
+                        fillcolor="rgba(0,255,0,0.3)",
+                        layer="below",
+                        line_width=0
+                    )
+
+                    fig.add_annotation(
+                        x=(x1 + x2) / 2,
+                        y=y_max * 0.98,
+                        text=etiqueta,
+                        showarrow=False,
+                        font=dict(size=10, color="black"),
+                        textangle=270,
+                        xanchor="center",
+                        yanchor="top"
+                    )
 
         # Aplicar sombreado por bibliografía si está activo
         if aplicar_sombra_biblio:
@@ -669,23 +687,45 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         )
 
 
-            # Sombreado por señales
+            # Sombreado por señales - INDIVIDUALES
             if aplicar_sombra_senales:
                 tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
                 doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
                 if doc_senales.get().exists:
                     filas_senales = doc_senales.get().to_dict().get("filas", [])
                     for f in filas_senales:
-                        if f.get("Archivo") == archivo_actual:
-                            x1 = f.get("X min")
-                            x2 = f.get("X max")
-                            if x1 is not None and x2 is not None:
-                                fig_indiv.add_vrect(
-                                    x0=min(x1, x2),
-                                    x1=max(x1, x2),
-                                    fillcolor="rgba(0,255,0,0.3)", line_width=0,
-                                    annotation_text=f.get("δ pico", ""), annotation_position="top"
-                                )
+                        if f.get("Archivo") != archivo_actual:
+                            continue
+
+                        x1 = f.get("X min")
+                        x2 = f.get("X max")
+                        grupo = f.get("Grupo funcional")
+                        valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
+
+                        if x1 is None or x2 is None or grupo in [None, ""] or valor in [None, ""]:
+                            continue
+
+                        etiqueta = f"{grupo} = {valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}"
+
+                        fig_indiv.add_vrect(
+                            x0=min(x1, x2),
+                            x1=max(x1, x2),
+                            fillcolor="rgba(0,255,0,0.3)",
+                            layer="below",
+                            line_width=0
+                        )
+
+                        fig_indiv.add_annotation(
+                            x=(x1 + x2) / 2,
+                            y=y_max * 0.98,
+                            text=etiqueta,
+                            showarrow=False,
+                            font=dict(size=10, color="black"),
+                            textangle=270,
+                            xanchor="center",
+                            yanchor="top"
+                        )
+
 
             # Aplicar sombreado por bibliografía si está activo
             if aplicar_sombra_biblio:

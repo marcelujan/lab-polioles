@@ -705,9 +705,12 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         x2 = f.get("X max")
                         grupo = f.get("Grupo funcional")
                         valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
+
+                        # Validación obligatoria para evitar errores en min/max
                         if x1 is None or x2 is None:
                             continue
 
+                        # Sombrear siempre que haya Xmin y Xmax
                         fig_indiv.add_vrect(
                             x0=min(x1, x2),
                             x1=max(x1, x2),
@@ -716,7 +719,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             line_width=0
                         )
 
-                        # Mostrar etiqueta con la misma lógica
+                        # Mostrar etiqueta si hay grupo y/o valor
                         if grupo not in [None, ""] or valor not in [None, ""]:
                             partes = []
                             if grupo not in [None, ""]:
@@ -735,6 +738,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                                 xanchor="center",
                                 yanchor="top"
                             )
+
 
 
 

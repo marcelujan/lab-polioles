@@ -53,14 +53,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
     if not df_rmn1h.empty:
         st.markdown("## 🧪 RMN 1H")
-        key_1h = "rmn1h_" + "_".join(df_rmn1h["archivo"].unique())
-        render_rmn_plot(df_rmn1h, tipo="RMN 1H", key_sufijo=key_1h, db=db)
+        render_rmn_plot(df_rmn1h, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
 
     df_rmn13c = df_sel[df_sel["tipo"] == "RMN 13C"]
     if not df_rmn13c.empty:
         st.markdown("## 🧪 RMN 13C")
-        key_13c = "rmn13c_" + "_".join(df_rmn13c["archivo"].unique())
-        render_rmn_plot(df_rmn13c, tipo="RMN 13C", key_sufijo=key_13c, db=db)
+        render_rmn_plot(df_rmn13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
 
     imagenes_sel = df_sel[df_sel["archivo"].str.lower().str.endswith((".png", ".jpg", ".jpeg"))]
     if not imagenes_sel.empty:
@@ -126,8 +124,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 # --- Tabla de Cálculo D/T2 ---
     titulo_checkbox_dt2 = "🧮 Tabla de Cálculos D/T2 (FAMAF) RMN 1H" if tipo == "RMN 1H" else "🧮 Tabla de Cálculos D/T2 (FAMAF) RMN 13C"
     mostrar_tabla_dt2 = st.checkbox(titulo_checkbox_dt2, value=False, key=f"mostrar_dt2_{key_sufijo}")
-
-    mostrar_tabla_dt2 = st.checkbox("🧮 Tabla de Cálculos D/T2 (FAMAF)", value=False, key=f"mostrar_dt2_{key_sufijo}")
     if mostrar_tabla_dt2:
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                          "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]

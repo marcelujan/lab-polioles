@@ -523,11 +523,10 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         text=etiqueta,
                         showarrow=False,
                         font=dict(size=10, color="black"),
-                        textangle=90,
+                        textangle=270,
                         xanchor="center",
                         yanchor="top"
                     )
-
 
 
            # Aplicar sombreado por Cálculo de señales si está activo

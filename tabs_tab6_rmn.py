@@ -608,17 +608,36 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
         # Aplicar sombreado por bibliografía si está activo
         if aplicar_sombra_biblio:
-            doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c")
+            doc_biblio = db.collection("configuracion_global").document(
+                "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+            )
             if doc_biblio.get().exists:
                 filas_biblio = doc_biblio.get().to_dict().get("filas", [])
                 for f in filas_biblio:
                     delta = f.get("δ pico")
+                    grupo = f.get("Grupo funcional")
+
                     if delta is not None:
-                        (fig if 'fig' in locals() else fig_indiv).add_vline(
-                            x=delta,
+                        # Línea punteada hasta la mitad del eje Y
+                        fig.add_shape(
+                            type="line",
+                            x0=delta, x1=delta,
+                            y0=y_max * 0.5, y1=y_max,
                             line=dict(color="black", dash="dot"),
-                            annotation_text=f"δ = {delta:.2f}",
-                            annotation_position="top right"
+                            layer="above"
+                        )
+
+                        # Etiqueta en la mitad inferior
+                        texto = grupo if grupo not in [None, ""] else f"δ = {delta:.2f}"
+                        fig.add_annotation(
+                            x=delta,
+                            y=y_max * 0.45,
+                            text=texto,
+                            showarrow=False,
+                            textangle=270,
+                            font=dict(size=10, color="black"),
+                            xanchor="center",
+                            yanchor="top"
                         )
 
 
@@ -768,24 +787,39 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             )
 
 
-
-
-
             # Aplicar sombreado por bibliografía si está activo
             if aplicar_sombra_biblio:
-                doc_biblio = db.collection("configuracion_global").document("tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c")
+                doc_biblio = db.collection("configuracion_global").document(
+                    "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+                )
                 if doc_biblio.get().exists:
                     filas_biblio = doc_biblio.get().to_dict().get("filas", [])
                     for f in filas_biblio:
                         delta = f.get("δ pico")
+                        grupo = f.get("Grupo funcional")
+
                         if delta is not None:
-                            (fig if 'fig' in locals() else fig_indiv).add_vline(
-                                x=delta,
+                            # Línea punteada hasta la mitad del eje Y
+                            fig_indiv.add_shape(
+                                type="line",
+                                x0=delta, x1=delta,
+                                y0=y_max * 0.5, y1=y_max,
                                 line=dict(color="black", dash="dot"),
-                                annotation_text=f"δ = {delta:.2f}",
-                                annotation_position="top right"
+                                layer="above"
                             )
 
+                            # Etiqueta en la mitad inferior
+                            texto = grupo if grupo not in [None, ""] else f"δ = {delta:.2f}"
+                            fig_indiv.add_annotation(
+                                x=delta,
+                                y=y_max * 0.45,
+                                text=texto,
+                                showarrow=False,
+                                textangle=270,
+                                font=dict(size=10, color="black"),
+                                xanchor="center",
+                                yanchor="top"
+                            )
 
             fig_indiv.update_layout(
                 title=f"{archivo_actual}",

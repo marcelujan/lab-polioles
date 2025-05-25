@@ -472,6 +472,55 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 name=row["archivo"]
             ))
 
+        # Sombreado por Cálculo de señales
+        if aplicar_sombra_senales:
+            tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+            doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
+            if doc_senales.get().exists:
+                filas_senales = doc_senales.get().to_dict().get("filas", [])
+                for f in filas_senales:
+                    if f.get("Archivo") != archivo_actual:
+                        continue
+
+                    x1 = f.get("X min")
+                    x2 = f.get("X max")
+                    grupo = f.get("Grupo funcional")
+                    valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
+
+                    if x1 is None or x2 is None:
+                        continue
+
+                    fig.add_vrect(
+                        x0=min(x1, x2),
+                        x1=max(x1, x2),
+                        fillcolor="rgba(0,255,0,0.3)",
+                        layer="below",
+                        line_width=0
+                    )
+
+                    fig.add_vline(x=x1, line=dict(color="black", width=1), layer="above")
+                    fig.add_vline(x=x2, line=dict(color="black", width=1), layer="above")
+
+                    if grupo not in [None, ""] or valor not in [None, ""]:
+                        partes = []
+                        if grupo not in [None, ""]:
+                            partes.append(f"{grupo}")
+                        if valor not in [None, ""]:
+                            partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
+                        etiqueta = " = ".join(partes) if len(partes) == 2 else " ".join(partes)
+
+                        fig.add_annotation(
+                            x=(x1 + x2) / 2,
+                            y=y_max * 0.98,
+                            text=etiqueta,
+                            showarrow=False,
+                            font=dict(size=10, color="black"),
+                            textangle=270,
+                            xanchor="center",
+                            yanchor="top"
+                        )
+
+
             # Detección de picos
             if mostrar_picos:
                 from scipy.signal import find_peaks
@@ -556,55 +605,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         xanchor="center",
                         yanchor="top"
                     )
-
-
-        # Aplicar sombreado por Cálculo de señales si está activo
-        if aplicar_sombra_senales:
-            tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
-            doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
-            if doc_senales.get().exists:
-                filas_senales = doc_senales.get().to_dict().get("filas", [])
-                for f in filas_senales:
-                    if f.get("Archivo") != archivo_actual:
-                        continue
-
-                    x1 = f.get("X min")
-                    x2 = f.get("X max")
-                    grupo = f.get("Grupo funcional")
-                    valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
-                    if x1 is None or x2 is None:
-                        continue
-
-                    fig.add_vrect(
-                        x0=min(x1, x2),
-                        x1=max(x1, x2),
-                        fillcolor="rgba(0,255,0,0.3)",
-                        layer="below",
-                        line_width=0
-                    )
-
-                    # Mostrar etiqueta con la lógica flexible
-                    if grupo not in [None, ""] or valor not in [None, ""]:
-                        partes = []
-                        if grupo not in [None, ""]:
-                            partes.append(f"{grupo}")
-                        if valor not in [None, ""]:
-                            partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
-                        etiqueta = " = ".join(partes) if len(partes) == 2 else " ".join(partes)
-
-                        fig.add_annotation(
-                            x=(x1 + x2) / 2,
-                            y=y_max * 0.98,
-                            text=etiqueta,
-                            showarrow=False,
-                            font=dict(size=10, color="black"),
-                            textangle=270,
-                            xanchor="center",
-                            yanchor="top"
-                        )
-
-
-
 
         # Aplicar sombreado por bibliografía si está activo
         if aplicar_sombra_biblio:

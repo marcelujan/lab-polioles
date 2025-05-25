@@ -65,6 +65,18 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.markdown("## 🧪 RMN Imágenes")
         render_imagenes(imagenes_sel)
 
+
+    
+    if st.button("🔁 Migrar datos D/T2 desde 'datos' → 'rmn 1h'"):
+        resultados = migrar_dt2_datos_a_rmn1h()
+        for r in resultados:
+            st.write(r)
+
+
+
+
+
+
 def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:
         st.info(f"No hay espectros disponibles para {tipo}.")
@@ -669,13 +681,6 @@ def render_imagenes(df):
             except Exception as e:
                 st.error(f"❌ No se pudo mostrar la imagen: {e}")
 
-
-
-    
-    if st.button("🔁 Migrar datos D/T2 desde 'datos' → 'rmn 1h'"):
-        resultados = migrar_dt2_datos_a_rmn1h()
-        for r in resultados:
-            st.write(r)
 
 
 @st.cache_resource

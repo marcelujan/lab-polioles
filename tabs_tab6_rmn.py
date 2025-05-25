@@ -668,3 +668,39 @@ def render_imagenes(df):
                 st.image(image, use_container_width=True)
             except Exception as e:
                 st.error(f"❌ No se pudo mostrar la imagen: {e}")
+
+
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+
+    cred = credentials.Certificate("ruta/a/tu/credencial.json")
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+
+    def buscar_tablas_en_muestras():
+        print("🔎 Buscando tablas en colección 'muestras'...\n")
+        muestras = db.collection("muestras").stream()
+
+        for m in muestras:
+            nombre_muestra = m.id
+            print(f"📁 Muestra: {nombre_muestra}")
+
+            # Obtener subcolecciones dentro de cada muestra
+            subcolecciones = db.collection("muestras").document(nombre_muestra).collections()
+
+            for subcol in subcolecciones:
+                nombre_subcol = subcol.id
+                documentos = subcol.stream()
+                for doc in documentos:
+                    datos = doc.to_dict()
+                    if "filas" in datos and isinstance(datos["filas"], list):
+                        cant_filas = len(datos["filas"])
+                        print(f"  ✅ {nombre_subcol}/{doc.id} → {cant_filas} filas")
+                    else:
+                        # También puede haber datos útiles con otra estructura
+                        if any(isinstance(v, list) and all(isinstance(x, dict) for x in v) for v in datos.values()):
+                            print(f"  ⚠️ {nombre_subcol}/{doc.id} contiene listas de dicts (posible tabla)")
+            print("-" * 40)
+
+    if __name__ == "__main__":
+        buscar_tablas_en_muestras()

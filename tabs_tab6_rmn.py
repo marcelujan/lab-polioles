@@ -165,6 +165,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         df_dt2 = df_dt2[columnas_dt2]
 
         ### Cálculo D/T2"
+        st.markdown("**🧮 Tabla de Cálculos D/T2 (FAMAF)**")
         with st.form(f"form_dt2_{key_sufijo}"):
             df_dt2_edit = st.data_editor(
                 df_dt2,
@@ -270,6 +271,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         df_senales = df_senales[columnas_senales]
 
         ### Cálculo de señales"
+        st.markdown("**📈 Tabla de Cálculos**")
         with st.form(f"form_senales_{key_sufijo}"):
             df_senales_edit = st.data_editor(
                 df_senales,
@@ -369,7 +371,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             if col not in df_biblio.columns:
                 df_biblio[col] = "" if col in ["Grupo funcional", "Tipo de muestra", "Observaciones"] else None
         df_biblio = df_biblio[columnas_biblio]
-
+        st.markdown(f"**📚 Tabla Bibliográfica {tipo[-3:]}**")
         df_biblio_edit = st.data_editor(
             df_biblio,
             column_config={

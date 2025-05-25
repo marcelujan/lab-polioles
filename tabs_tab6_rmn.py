@@ -332,8 +332,12 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     x_max = float(row["X max"])
                     xas_min = float(row["Xas min"]) if row["Xas min"] not in [None, ""] else None
                     xas_max = float(row["Xas max"]) if row["Xas max"] not in [None, ""] else None
-                    has = float(row["Has"]) if row["Has"] not in [None, ""] else None
 
+                    has_o_cas_key = "Has" if tipo == "RMN 1H" else "Cas"
+                    h_o_c_key = "H" if tipo == "RMN 1H" else "C"
+                    has_or_cas = float(row[has_o_cas_key]) if row[has_o_cas_key] not in [None, ""] else None
+
+                    # Buscar espectro correspondiente
                     espectros = db.collection("muestras").document(muestra).collection("espectros").stream()
                     espectro = next((e.to_dict() for e in espectros if e.to_dict().get("nombre_archivo") == archivo), None)
                     if not espectro:
@@ -344,7 +348,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     if extension == ".xlsx":
                         df_esp = pd.read_excel(contenido)
                     else:
-                        for sep in [",", ";", "	", " "]:
+                        for sep in [",", ";", "\t", " "]:
                             contenido.seek(0)
                             try:
                                 df_esp = pd.read_csv(contenido, sep=sep)
@@ -369,16 +373,18 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         area_as = np.trapz(df_as[col_y], df_as[col_x]) if not df_as.empty else None
                         df_senales_edit.at[i, "Área as"] = round(area_as, 2) if area_as else None
 
-                        if area and area_as and has and area_as != 0:
-                            h_calc = (area * has) / area_as
-                            df_senales_edit.at[i, "H"] = round(h_calc, 2)
+                        if area and area_as and has_or_cas and area_as != 0:
+                            resultado = (area * has_or_cas) / area_as
+                            df_senales_edit.at[i, h_o_c_key] = round(resultado, 2)
 
                 except Exception as e:
                     st.warning(f"⚠️ Error en fila {i}: {e}")
 
-            doc_ref.set({"filas": df_senales_edit.to_dict(orient="records")})
+            tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+            db.collection("tablas_integrales").document(tipo_doc).set({"filas": df_senales_edit.to_dict(orient="records")})
             st.success("✅ Datos recalculados y guardados correctamente.")
             st.rerun()
+
 
     # --- Tabla Bibliográfica de señales pico δ (RMN 1H o RMN 13C) ---
     if mostrar_tabla_biblio:

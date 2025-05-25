@@ -506,8 +506,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         partes.append(f"T2 = {float(t2_val):.3f}")
                     etiqueta = "   ".join(partes)
 
-                    color = "rgba(128,128,255,0.15)" if mostrar_d and mostrar_t2 else (
-                        "rgba(255,0,0,0.1)" if mostrar_d else "rgba(0,0,255,0.1)"
+                    color = "rgba(128,128,255,0.3)" if mostrar_d and mostrar_t2 else (
+                        "rgba(255,0,0,0.3)" if mostrar_d else "rgba(0,0,255,0.3)"
                     )
 
                     fig.add_vrect(
@@ -543,7 +543,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             fig.add_vrect(
                                 x0=min(x1, x2),
                                 x1=max(x1, x2),
-                                fillcolor="rgba(0,255,0,0.1)",
+                                fillcolor="rgba(0,255,0,0.3)",
                                 layer="below",
                                 line_width=0,
                                 annotation_text=f.get("δ pico", ""),
@@ -605,13 +605,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             etiqueta = None
                             if tiene_d and check_d_por_espectro.get(archivo_actual) and tiene_t2 and check_t2_por_espectro.get(archivo_actual):
                                 etiqueta = "D, T2"
-                                color = "rgba(128,128,255,0.15)"
+                                color = "rgba(128,128,255,0.3)"
                             elif tiene_d and check_d_por_espectro.get(archivo_actual):
                                 etiqueta = "D"
-                                color = "rgba(255,0,0,0.1)"
+                                color = "rgba(255,0,0,0.3)"
                             elif tiene_t2 and check_t2_por_espectro.get(archivo_actual):
                                 etiqueta = "T2"
-                                color = "rgba(0,0,255,0.1)"
+                                color = "rgba(0,0,255,0.3)"
                             else:
                                 continue
 
@@ -640,7 +640,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                                 fig_indiv.add_vrect(
                                     x0=min(x1, x2),
                                     x1=max(x1, x2),
-                                    fillcolor="rgba(0,255,0,0.1)", line_width=0,
+                                    fillcolor="rgba(0,255,0,0.3)", line_width=0,
                                     annotation_text=f.get("δ pico", ""), annotation_position="top"
                                 )
 

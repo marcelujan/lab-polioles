@@ -557,7 +557,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     )
 
 
-           # Aplicar sombreado por Cálculo de señales si está activo
+        # Aplicar sombreado por Cálculo de señales si está activo
         if aplicar_sombra_senales:
             tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
             doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
@@ -572,10 +572,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     grupo = f.get("Grupo funcional")
                     valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
 
-                    if x1 is None or x2 is None or grupo in [None, ""] or valor in [None, ""]:
+                    if x1 is None or x2 is None:
                         continue
-
-                    etiqueta = f"{grupo} = {valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}"
 
                     fig.add_vrect(
                         x0=min(x1, x2),
@@ -585,16 +583,20 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         line_width=0
                     )
 
-                    fig.add_annotation(
-                        x=(x1 + x2) / 2,
-                        y=y_max * 0.98,
-                        text=etiqueta,
-                        showarrow=False,
-                        font=dict(size=10, color="black"),
-                        textangle=270,
-                        xanchor="center",
-                        yanchor="top"
-                    )
+                    # Solo mostrar etiqueta si hay grupo y valor
+                    if grupo not in [None, ""] and valor not in [None, ""]:
+                        etiqueta = f"{grupo} = {valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}"
+                        fig.add_annotation(
+                            x=(x1 + x2) / 2,
+                            y=y_max * 0.98,
+                            text=etiqueta,
+                            showarrow=False,
+                            font=dict(size=10, color="black"),
+                            textangle=270,
+                            xanchor="center",
+                            yanchor="top"
+                        )
+
 
         # Aplicar sombreado por bibliografía si está activo
         if aplicar_sombra_biblio:

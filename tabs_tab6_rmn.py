@@ -715,7 +715,7 @@ def migrar_dt2_datos_a_rmn1h():
     return reportes
 
 
-    if st.button("🔁 Migrar datos D/T2 desde 'datos' → 'rmn 1h'"):
-        resultados = migrar_dt2_datos_a_rmn1h()
-        for r in resultados:
-            st.write(r)
+if st.button("🔁 Migrar datos D/T2 desde 'datos' → 'rmn 1h'"):
+    resultados = migrar_dt2_datos_a_rmn1h()
+    for r in resultados:
+        st.write(r)

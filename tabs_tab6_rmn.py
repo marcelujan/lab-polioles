@@ -153,7 +153,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         for _, row in df.iterrows():
             muestra = row["muestra"]
             archivo = row["archivo"]
-            doc = db.collection("muestras").document(muestra).collection("dt2").document("datos")
+            doc = db.collection("muestras").document(muestra).collection("dt2").document(tipo.lower())
             data = doc.get().to_dict()
             if data and "filas" in data:
                 filas_guardadas.extend([f for f in data["filas"] if f.get("Archivo") == archivo])
@@ -250,7 +250,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             filas_actualizadas = df_dt2_edit.to_dict(orient="records")
             for muestra in df_dt2_edit["Muestra"].unique():
                 filas_m = [f for f in filas_actualizadas if f["Muestra"] == muestra]
-                doc = db.collection("muestras").document(muestra).collection("dt2").document("datos")
+                doc = db.collection("muestras").document(muestra).collection("dt2").document(tipo.lower())
                 doc.set({"filas": filas_m})
 
     # --- Tabla de Cálculo de señales ---

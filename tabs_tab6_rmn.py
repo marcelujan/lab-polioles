@@ -444,7 +444,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         activar_sombra_dt2_13c = st.checkbox("Sombrear Tabla de Cálculos D/T2 (FAMAF) RMN 13C", value=False, key=f"sombra_dt2_13c_{key_sufijo}")
         activar_sombra_dt2_1h = False
     if (tipo == "RMN 1H" and activar_sombra_dt2_1h) or (tipo == "RMN 13C" and activar_sombra_dt2_13c):
-        st.markdown("### Sombreados por D/T2 (por espectro)")
+        ### Sombreados por D/T2 (por espectro)
         for _, row in df.iterrows():
             archivo = row["archivo"]
             col_d, col_t2 = st.columns([1, 1])

@@ -572,10 +572,10 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     x2 = f.get("X max")
                     grupo = f.get("Grupo funcional")
                     valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
-
                     if x1 is None or x2 is None:
                         continue
 
+                    # Sombrear siempre
                     fig.add_vrect(
                         x0=min(x1, x2),
                         x1=max(x1, x2),
@@ -584,7 +584,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         line_width=0
                     )
 
-                    # Solo mostrar etiqueta si hay grupo y valor
+                    # Solo mostrar etiqueta si hay datos
                     if grupo not in [None, ""] and valor not in [None, ""]:
                         etiqueta = f"{grupo} = {valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}"
                         fig.add_annotation(
@@ -597,6 +597,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             xanchor="center",
                             yanchor="top"
                         )
+
 
 
         # Aplicar sombreado por bibliografía si está activo
@@ -705,10 +706,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                         grupo = f.get("Grupo funcional")
                         valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
 
-                        if x1 is None or x2 is None or grupo in [None, ""] or valor in [None, ""]:
+                        if x1 is None or x2 is None:
                             continue
-
-                        etiqueta = f"{grupo} = {valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}"
 
                         fig_indiv.add_vrect(
                             x0=min(x1, x2),
@@ -718,16 +717,19 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                             line_width=0
                         )
 
-                        fig_indiv.add_annotation(
-                            x=(x1 + x2) / 2,
-                            y=y_max * 0.98,
-                            text=etiqueta,
-                            showarrow=False,
-                            font=dict(size=10, color="black"),
-                            textangle=270,
-                            xanchor="center",
-                            yanchor="top"
-                        )
+                        if grupo not in [None, ""] and valor not in [None, ""]:
+                            etiqueta = f"{grupo} = {valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}"
+                            fig_indiv.add_annotation(
+                                x=(x1 + x2) / 2,
+                                y=y_max * 0.98,
+                                text=etiqueta,
+                                showarrow=False,
+                                font=dict(size=10, color="black"),
+                                textangle=270,
+                                xanchor="center",
+                                yanchor="top"
+                            )
+
 
 
             # Aplicar sombreado por bibliografía si está activo

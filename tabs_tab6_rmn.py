@@ -121,9 +121,30 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         altura_min = colp1.number_input("Altura mínima", value=0.05, step=0.01, key=f"altura_min_{key_sufijo}")
         distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key=f"distancia_min_{key_sufijo}")
 
+    # --- Sección reorganizada: Checkboxes de tablas y sombreado ---
+    col_tabla, col_sombra = st.columns(2)
+
+    with col_tabla:
+        nombre_tabla_dt2 = f"🧮 Tabla de Cálculos D/T2 (FAMAF) {tipo}"
+        mostrar_tabla_dt2 = st.checkbox(nombre_tabla_dt2, value=False, key=f"mostrar_dt2_{key_sufijo}")
+
+        nombre_tabla_senales = f"📈 Tabla de Cálculos {tipo}"
+        mostrar_tabla_senales = st.checkbox(nombre_tabla_senales, value=False, key=f"mostrar_senales_{key_sufijo}")
+
+        nombre_tabla_biblio = f"📚 Tabla Bibliográfica {tipo[-3:]}"  # 1H o 13C
+        mostrar_tabla_biblio = st.checkbox(nombre_tabla_biblio, value=False, key=f"mostrar_biblio_{tipo.lower()}_{key_sufijo}")
+
+    with col_sombra:
+        nombre_sombra_dt2 = f"Sombrear Tabla de Cálculos D/T2 (FAMAF) {tipo}"
+        aplicar_sombra_dt2 = st.checkbox(nombre_sombra_dt2, value=False, key=f"sombra_dt2_{key_sufijo}")
+
+        nombre_sombra_senales = f"Sombrear Tabla de Cálculos {tipo}"
+        aplicar_sombra_senales = st.checkbox(nombre_sombra_senales, value=False, key=f"sombra_senales_{key_sufijo}")
+
+        nombre_sombra_biblio = f"Sombrear Tabla Bibliográfica {tipo[-3:]}"
+        aplicar_sombra_biblio = st.checkbox(nombre_sombra_biblio, value=False, key=f"sombra_biblio_{key_sufijo}")
+
 # --- Tabla de Cálculo D/T2 ---
-    titulo_checkbox_dt2 = "🧮 Tabla de Cálculos D/T2 (FAMAF) RMN 1H" if tipo == "RMN 1H" else "🧮 Tabla de Cálculos D/T2 (FAMAF) RMN 13C"
-    mostrar_tabla_dt2 = st.checkbox(titulo_checkbox_dt2, value=False, key=f"mostrar_dt2_{key_sufijo}")
     if mostrar_tabla_dt2:
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                          "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
@@ -231,8 +252,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 doc.set({"filas": filas_m})
 
     # --- Tabla de Cálculo de señales ---
-    titulo_checkbox = "📈 Tabla de Cálculos RMN 1H" if tipo == "RMN 1H" else "📈 Tabla de Cálculos RMN 13C"
-    mostrar_tabla_senales = st.checkbox(titulo_checkbox, value=False, key=f"mostrar_senales_{key_sufijo}")
     if mostrar_tabla_senales:
         columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
         tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
@@ -338,7 +357,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
 # --- Tabla Bibliográfica de señales pico δ (RMN 13C) ---
     if tipo == "RMN 13C":
-        mostrar_tabla_biblio_13c = st.checkbox("📚 Tabla Bibliográfica 13C", value=False, key=f"mostrar_biblio_13c_{key_sufijo}")
         if mostrar_tabla_biblio_13c:
             doc_biblio_13c = db.collection("configuracion_global").document("tabla_editable_rmn13c")
             if not doc_biblio_13c.get().exists:
@@ -387,7 +405,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
 # --- Tabla Bibliográfica de señales pico δ (RMN 1H) ---
     if tipo == "RMN 1H":
-        mostrar_tabla_biblio_1h = st.checkbox("📚 Tabla Bibliográfica 1H", value=False, key=f"mostrar_biblio_1h_{key_sufijo}")
         if mostrar_tabla_biblio_1h:
             doc_biblio_1h = db.collection("configuracion_global").document("tabla_editable_rmn1h")
             if not doc_biblio_1h.get().exists:
@@ -450,16 +467,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             col_d, col_t2 = st.columns([1, 1])
             check_d_por_espectro[archivo] = col_d.checkbox(f"D – {archivo}", key=f"chk_d_{archivo}_{key_sufijo}")
             check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
-
-
-# --- Sombreados por Cálculo de señales ---
-    etiqueta_sombra_senales = "Sombrear Tabla de Cálculos RMN 1H" if tipo == "RMN 1H" else "Sombrear Tabla de Cálculos RMN 13C"
-    aplicar_sombra_senales = st.checkbox(etiqueta_sombra_senales, value=False, key=f"sombra_senales_{key_sufijo}")
-
-
-# --- Sombreados por tabla bibliográfica (δ pico) ---
-    etiqueta_sombra_biblio = "Sombrear Tabla Bibliográfica 1H" if tipo == "RMN 1H" else "Sombrear Tabla Bibliográfica 13C"
-    aplicar_sombra_biblio = st.checkbox(etiqueta_sombra_biblio, value=False, key=f"sombra_biblio_{key_sufijo}")
 
 # --- Trazado ---
     fig = go.Figure()

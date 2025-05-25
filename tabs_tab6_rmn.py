@@ -7,6 +7,10 @@ from io import BytesIO
 import base64
 import os
 
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O", "Alfa-C=C", "Vecino a alfa-carbonilo", "Alfa-epóxido", "CH2", "CH3"]
 

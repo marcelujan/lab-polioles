@@ -338,53 +338,37 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         df_senales = df_senales[columnas_senales]
         df_senales = df_senales.sort_values(by=["Archivo", "X max"])
 
-        # --- Menú combinado para agregar fila nueva solo si faltan combinaciones ---
-        muestras_activas = sorted(set(df["muestra"]))
-        archivos_activados = sorted(set(df["archivo"]))
-        combinaciones_existentes = set(
-            (f.get("Muestra"), f.get("Archivo")) for f in filas_guardadas
+        # --- Menú combinado para agregar fila nueva ---
+        combo_dict = {
+            f"{row['muestra']} – {row['archivo']}": (row["muestra"], row["archivo"])
+            for _, row in df.iterrows()
+        }
+        combo_opciones = list(combo_dict.keys())
+
+        combo_seleccion = st.selectbox(
+            "➕ Crear nueva fila para:",
+            combo_opciones,
+            key=f"combo_fila_nueva_{key_sufijo}"
         )
-        combinaciones_posibles = [
-            (m, a) for m in muestras_activas for a in archivos_activados
-            if (m, a) not in combinaciones_existentes
-        ]
 
-        if df_senales.empty or combinaciones_posibles:
-            # Diccionario seguro: texto visible → (muestra, archivo)
-            combo_dict = {
-                f"{m} – {a}": (m, a)
-                for (m, a) in combinaciones_posibles
-            }
-            combo_opciones = list(combo_dict.keys())
-            combo_seleccion = st.selectbox("➕ Crear nueva fila para:", combo_opciones, key=f"combo_fila_nueva_{key_sufijo}")
+        if st.button("➕ Nueva fila", key=f"btn_fila_nueva_{key_sufijo}"):
+            muestra_nueva, archivo_nuevo = combo_dict.get(combo_seleccion, (None, None))
+            if not muestra_nueva or not archivo_nuevo:
+                st.warning("⚠️ Selección inválida.")
+            else:
+                fila_vacia = {col: None for col in columnas_senales}
+                fila_vacia["Muestra"] = muestra_nueva
+                fila_vacia["Archivo"] = archivo_nuevo
 
-            if st.button("➕ Nueva fila", key=f"btn_fila_nueva_{key_sufijo}"):
-                muestra_nueva, archivo_nuevo = combo_dict.get(combo_seleccion, (None, None))
-                if not muestra_nueva or not archivo_nuevo:
-                    st.warning("⚠️ Selección inválida.")
-                else:
-                    fila_vacia = {col: None for col in columnas_senales}
-                    fila_vacia["Muestra"] = muestra_nueva
-                    fila_vacia["Archivo"] = archivo_nuevo
+                tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+                doc_ref = db.collection("tablas_integrales").document(tipo_doc)
+                doc_data = doc_ref.get().to_dict() or {}
+                filas_previas = doc_data.get("filas", [])
 
-                    tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
-                    doc_ref = db.collection("tablas_integrales").document(tipo_doc)
-                    doc_data = doc_ref.get().to_dict() or {}
-                    filas_previas = doc_data.get("filas", [])
-
-                    # Evitar duplicados
-                    combinacion_nueva = (fila_vacia["Muestra"], fila_vacia["Archivo"])
-                    filas_previas = [
-                        f for f in filas_previas
-                        if (f.get("Muestra"), f.get("Archivo")) != combinacion_nueva
-                    ]
-
-                    filas_previas.append(fila_vacia)
-                    doc_ref.set({"filas": filas_previas})
-                    st.rerun()
-
-
-
+                filas_previas.append(fila_vacia)
+                doc_ref.set({"filas": filas_previas})
+                st.success(f"✅ Fila añadida para: {muestra_nueva} – {archivo_nuevo}")
+                st.rerun()
 
         ### Cálculo de señales"
         st.markdown("**📈 Tabla de Cálculos**")

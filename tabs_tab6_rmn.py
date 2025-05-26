@@ -337,7 +337,24 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         df_senales = df_senales[columnas_senales]
 
         # Si no hay filas, permitir agregar una inicial de forma controlada
-        if df_senales.empty:
+        # Determinar muestras activas en la selección actual
+        muestras_activas = set(df["muestra"])
+        archivos_activados = set(df["archivo"])
+
+        # Ver qué combinaciones ya existen en la tabla
+        combinaciones_existentes = set(
+            (f.get("Muestra"), f.get("Archivo")) for f in filas_guardadas
+        )
+
+        # Ver si falta al menos una combinación
+        faltan_filas = any(
+            (m, a) not in combinaciones_existentes
+            for m in muestras_activas
+            for a in archivos_activados
+        )
+
+        if df_senales.empty or faltan_filas:
+
             st.warning("⚠️ La tabla está vacía. Seleccioná una muestra y archivo para crear una fila inicial.")
 
             muestras_disponibles = sorted(set(df["muestra"]))

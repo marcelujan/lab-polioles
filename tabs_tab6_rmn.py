@@ -167,6 +167,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             if col not in df_dt2.columns:
                 df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_dt2 = df_dt2[columnas_dt2]
+        df_dt2 = df_dt2.sort_values(by=["Archivo", "δ pico"])
 
         if df_dt2.empty:
             st.warning("⚠️ La tabla D/T2 está vacía. Seleccioná una muestra y archivo para crear una fila inicial.")
@@ -335,6 +336,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             if col not in df_senales.columns:
                 df_senales[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_senales = df_senales[columnas_senales]
+        df_senales = df_senales.sort_values(by=["Archivo", "δ pico"])
 
         # --- Menú combinado para agregar fila nueva solo si faltan combinaciones ---
         muestras_activas = sorted(set(df["muestra"]))
@@ -348,23 +350,29 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         ]
 
         if df_senales.empty or combinaciones_posibles:
-            opciones_combo = [f"{m} – {a}" for (m, a) in combinaciones_posibles]
-            combo_seleccion = st.selectbox("➕ Crear nueva fila para:", opciones_combo, key=f"combo_fila_nueva_{key_sufijo}")
+            # Diccionario seguro: texto visible → (muestra, archivo)
+            combo_dict = {
+                f"{m} – {a}": (m, a)
+                for (m, a) in combinaciones_posibles
+            }
+            combo_opciones = list(combo_dict.keys())
+            combo_seleccion = st.selectbox("➕ Crear nueva fila para:", combo_opciones, key=f"combo_fila_nueva_{key_sufijo}")
 
             if st.button("➕ Nueva fila", key=f"btn_fila_nueva_{key_sufijo}"):
-                try:
-                    muestra_nueva, archivo_nuevo = combo_seleccion.split(" – ", 1)
+                muestra_nueva, archivo_nuevo = combo_dict.get(combo_seleccion, (None, None))
+                if not muestra_nueva or not archivo_nuevo:
+                    st.warning("⚠️ Selección inválida.")
+                else:
                     fila_vacia = {col: None for col in columnas_senales}
                     fila_vacia["Muestra"] = muestra_nueva
                     fila_vacia["Archivo"] = archivo_nuevo
 
-                    # Guardar inmediatamente
                     tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
                     doc_ref = db.collection("tablas_integrales").document(tipo_doc)
                     doc_data = doc_ref.get().to_dict() or {}
                     filas_previas = doc_data.get("filas", [])
 
-                    # Evitar duplicados defensivamente
+                    # Evitar duplicados
                     combinacion_nueva = (fila_vacia["Muestra"], fila_vacia["Archivo"])
                     filas_previas = [
                         f for f in filas_previas
@@ -375,8 +383,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     doc_ref.set({"filas": filas_previas})
                     st.rerun()
 
-                except Exception as e:
-                    st.warning(f"No se pudo crear la fila: {e}")
 
 
 

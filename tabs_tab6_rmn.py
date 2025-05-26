@@ -417,17 +417,36 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 except Exception as e:
                     st.warning(f"⚠️ Error en fila {i}: {e}")
 
-            # Guardar en Firebase por muestra
+            # Obtener filas recalculadas actuales
             filas_actualizadas = df_senales_edit.to_dict(orient="records")
-            for muestra in df_senales_edit["Muestra"].unique():
-                filas_m = [f for f in filas_actualizadas if f["Muestra"] == muestra]
-                doc_ref = db.collection("tablas_integrales").document(tipo_doc)
-                doc_ref.set({"filas": filas_guardadas + filas_m})
 
+            # Recuperar todas las filas previamente guardadas en Firebase
             tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
-            db.collection("tablas_integrales").document(tipo_doc).set({"filas": df_senales_edit.to_dict(orient="records")})
+            doc_ref = db.collection("tablas_integrales").document(tipo_doc)
+            filas_previas = []
+
+            doc_data = doc_ref.get().to_dict()
+            if doc_data and "filas" in doc_data:
+                filas_previas = doc_data["filas"]
+
+            # Identificar las combinaciones de muestra+archivo que se están actualizando
+            combinaciones_actualizadas = set(
+                (f["Muestra"], f["Archivo"]) for f in filas_actualizadas if f.get("Muestra") and f.get("Archivo")
+            )
+
+            # Conservar filas previas que no se están actualizando
+            filas_conservadas = [
+                f for f in filas_previas
+                if (f.get("Muestra"), f.get("Archivo")) not in combinaciones_actualizadas
+            ]
+
+            # Combinar y guardar
+            filas_finales = filas_conservadas + filas_actualizadas
+            doc_ref.set({"filas": filas_finales})
+
             st.success("✅ Datos recalculados y guardados correctamente.")
             st.rerun()
+
 
 
 

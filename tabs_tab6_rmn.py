@@ -201,8 +201,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 "Xas max": st.column_config.NumberColumn(format="%.2f"),
                 "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
                 "Observaciones": st.column_config.TextColumn(),
-                "Archivo": st.column_config.TextColumn(disabled=True),
-                "Muestra": st.column_config.TextColumn(disabled=True),
+                "Archivo": st.column_config.TextColumn(disabled=False),
+                "Muestra": st.column_config.TextColumn(disabled=False),
             }
 
             if tipo == "RMN 1H":
@@ -431,8 +431,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
                     "C": st.column_config.NumberColumn(format="%.2f", label="🔴H" if tipo == "RMN 1H" else "🔴C",disabled=True                    ),
                     "Observaciones": st.column_config.TextColumn(),
-                    "Archivo": st.column_config.TextColumn(disabled=True),
-                    "Muestra": st.column_config.TextColumn(disabled=True),
+                    "Archivo": st.column_config.TextColumn(disabled=False),
+                    "Muestra": st.column_config.TextColumn(disabled=False),
                 },
                 hide_index=True,
                 use_container_width=True,

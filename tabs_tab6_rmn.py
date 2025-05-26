@@ -167,7 +167,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             if col not in df_dt2.columns:
                 df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_dt2 = df_dt2[columnas_dt2]
-        df_dt2 = df_dt2.sort_values(by=["Archivo", "δ pico"])
+        df_dt2 = df_dt2.sort_values(by=["Archivo", "X max"])
 
         if df_dt2.empty:
             st.warning("⚠️ La tabla D/T2 está vacía. Seleccioná una muestra y archivo para crear una fila inicial.")
@@ -336,7 +336,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             if col not in df_senales.columns:
                 df_senales[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_senales = df_senales[columnas_senales]
-        df_senales = df_senales.sort_values(by=["Archivo", "δ pico"])
+        df_senales = df_senales.sort_values(by=["Archivo", "X max"])
 
         # --- Menú combinado para agregar fila nueva solo si faltan combinaciones ---
         muestras_activas = sorted(set(df["muestra"]))

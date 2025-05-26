@@ -500,34 +500,38 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     st.warning(f"⚠️ Error en fila {i}: {e}")
 
             # Obtener filas recalculadas actuales
-            filas_actualizadas = df_senales_edit.to_dict(orient="records")
+            filas_actualizadas_raw = df_senales_edit.to_dict(orient="records")
 
-            # Recuperar todas las filas previamente guardadas en Firebase
-            tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
-            doc_ref = db.collection("tablas_integrales").document(tipo_doc)
-            filas_previas = []
+            # Validar y filtrar filas que tengan Muestra y Archivo válidos
+            filas_actualizadas = []
+            for fila in filas_actualizadas_raw:
+                muestra = fila.get("Muestra")
+                archivo = fila.get("Archivo")
+                if not muestra or not archivo:
+                    continue  # ignorar filas incompletas
+                filas_actualizadas.append(fila)
 
-            doc_data = doc_ref.get().to_dict()
-            if doc_data and "filas" in doc_data:
-                filas_previas = doc_data["filas"]
+            if not filas_actualizadas:
+                st.warning("⚠️ No se guardó ninguna fila porque faltan datos en 'Muestra' o 'Archivo'.")
+            else:
+                # Recuperar filas previas
+                tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+                doc_ref = db.collection("tablas_integrales").document(tipo_doc)
+                doc_data = doc_ref.get().to_dict()
+                filas_previas = doc_data.get("filas", []) if doc_data else []
 
-            # Identificar las combinaciones de muestra+archivo que se están actualizando
-            combinaciones_actualizadas = set(
-                (f["Muestra"], f["Archivo"]) for f in filas_actualizadas if f.get("Muestra") and f.get("Archivo")
-            )
+                combinaciones_actualizadas = {(f["Muestra"], f["Archivo"]) for f in filas_actualizadas}
 
-            # Conservar filas previas que no se están actualizando
-            filas_conservadas = [
-                f for f in filas_previas
-                if (f.get("Muestra"), f.get("Archivo")) not in combinaciones_actualizadas
-            ]
+                filas_conservadas = [
+                    f for f in filas_previas
+                    if (f.get("Muestra"), f.get("Archivo")) not in combinaciones_actualizadas
+                ]
 
-            # Combinar y guardar
-            filas_finales = filas_conservadas + filas_actualizadas
-            doc_ref.set({"filas": filas_finales})
+                filas_finales = filas_conservadas + filas_actualizadas
+                doc_ref.set({"filas": filas_finales})
+                st.success("✅ Datos recalculados y guardados correctamente.")
+                st.rerun()
 
-            st.success("✅ Datos recalculados y guardados correctamente.")
-            st.rerun()
 
 
 

@@ -371,7 +371,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     filas_previas.append(fila_vacia)
                     doc_ref.set({"filas": filas_previas})
 
-                    st.experimental_rerun()
+                    st.rerun()
 
 
         ### Cálculo de señales"

@@ -323,8 +323,9 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             doc_ref.set({"filas": []})
 
         filas_guardadas = doc_ref.get().to_dict().get("filas", [])
-        combinaciones = {(row["muestra"], row["archivo"]) for _, row in df.iterrows()}
-        filas_activas = [f for f in filas_guardadas if (f.get("Muestra"), f.get("Archivo")) in combinaciones]
+        combinaciones_activas = {(row["muestra"], row["archivo"]) for _, row in df_sel.iterrows()}
+        filas_activas = [f for f in filas_guardadas if (f.get("Muestra"), f.get("Archivo")) in combinaciones_activas]
+
 
         # Si no hay combinaciones activas (por ejemplo, justo después de recargar), conservar todas las filas
         if not filas_activas and filas_guardadas:

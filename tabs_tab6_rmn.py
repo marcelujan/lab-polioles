@@ -282,13 +282,34 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 except Exception as e:
                     st.warning(f"⚠️ Error en fila {i}: {e}")
 
-            # Guardar en Firebase separadamente por muestra
             filas_actualizadas = df_dt2_edit.to_dict(orient="records")
+
             for muestra in df_dt2_edit["Muestra"].unique():
                 filas_m = [f for f in filas_actualizadas if f["Muestra"] == muestra]
-                doc = db.collection("muestras").document(muestra).collection("dt2").document(tipo.lower())
-                doc.set({"filas": filas_m})
 
+                doc = db.collection("muestras").document(muestra).collection("dt2").document(tipo.lower())
+
+                # Recuperar las filas previas (guardadas) si existen
+                filas_previas = []
+                doc_data = doc.get().to_dict()
+                if doc_data and "filas" in doc_data:
+                    filas_previas = doc_data["filas"]
+
+                # Determinar combinaciones activas a actualizar (por archivo)
+                archivos_actualizados = set(f["Archivo"] for f in filas_m if f.get("Archivo"))
+
+                # Conservar filas previas que NO estén siendo actualizadas
+                filas_conservadas = [
+                    f for f in filas_previas
+                    if f.get("Archivo") not in archivos_actualizados
+                ]
+
+                # Guardar combinación: conservadas + nuevas
+                filas_finales = filas_conservadas + filas_m
+                doc.set({"filas": filas_finales})
+
+            st.success("✅ Datos D/T2 recalculados y guardados correctamente.")
+            st.rerun()
 
     # --- Tabla de Cálculo de señales ---
     if mostrar_tabla_senales:

@@ -312,57 +312,65 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             st.success("✅ Datos D/T2 recalculados y guardados correctamente.")
             st.rerun()
 
-    # --- Tabla de Cálculo de señales (versión con fila por defecto) ---
+    # --- Tabla de Cálculo de señales ---
     if mostrar_tabla_senales:
         if tipo == "RMN 1H":
-            columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                                "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+            columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
         else:
-            columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                                "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
-
+            columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2", "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
         tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
         doc_ref = db.collection("tablas_integrales").document(tipo_doc)
-        doc_data = doc_ref.get().to_dict() or {}
-        filas_guardadas = doc_data.get("filas", [])
+        if not doc_ref.get().exists:
+            doc_ref.set({"filas": []})
 
-        # Combos reales de muestra + archivo activos
-        combinaciones_real = {(row["muestra"], row["archivo"]) for _, row in df.iterrows()}
+        filas_guardadas = doc_ref.get().to_dict().get("filas", [])
+        combinaciones = {(row["muestra"], row["archivo"]) for _, row in df.iterrows()}
+        filas_activas = [f for f in filas_guardadas if f.get("Archivo") in df["archivo"].values]
 
-        # Agrupar filas existentes por combinacion
-        agrupadas = {}
-        for fila in filas_guardadas:
-            clave = (fila.get("Muestra"), fila.get("Archivo"))
-            if clave in combinaciones_real:
-                agrupadas.setdefault(clave, []).append(fila)
+        # Si no hay combinaciones activas (por ejemplo, justo después de recargar), conservar todas las filas
+        if not filas_activas and filas_guardadas:
+            filas_activas = filas_guardadas
 
-        # Generar una fila vacía por combinación activa si no hay ninguna fila
-        filas_totales = []
-        for (m, a) in combinaciones_real:
-            filas = agrupadas.get((m, a), [])
-            if not filas:
-                fila_vacia = {col: None for col in columnas_senales}
-                fila_vacia["Muestra"] = m
-                fila_vacia["Archivo"] = a
-                filas = [fila_vacia]
-            filas_totales.extend(filas)
-
-            # Si la última fila no está completamente vacía → agregamos otra fila vacía
-            ultima = filas[-1]
-            campos_editables = [ultima.get("δ pico"), ultima.get("X min"), ultima.get("X max")]
-            if any(c not in [None, ""] for c in campos_editables):
-                nueva = {col: None for col in columnas_senales}
-                nueva["Muestra"] = m
-                nueva["Archivo"] = a
-                filas_totales.append(nueva)
-
-        df_senales = pd.DataFrame(filas_totales)
+        df_senales = pd.DataFrame(filas_activas)
         for col in columnas_senales:
             if col not in df_senales.columns:
                 df_senales[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_senales = df_senales[columnas_senales]
         df_senales = df_senales.sort_values(by=["Archivo", "X max"])
 
+        # --- Menú combinado para agregar fila nueva ---
+        combo_dict = {
+            f"{row['muestra']} – {row['archivo']}": (row["muestra"], row["archivo"])
+            for _, row in df.iterrows()
+        }
+        combo_opciones = list(combo_dict.keys())
+
+        combo_seleccion = st.selectbox(
+            "➕ Crear nueva fila para:",
+            combo_opciones,
+            key=f"combo_fila_nueva_{key_sufijo}"
+        )
+
+        if st.button("➕ Nueva fila", key=f"btn_fila_nueva_{key_sufijo}"):
+            muestra_nueva, archivo_nuevo = combo_dict.get(combo_seleccion, (None, None))
+            if not muestra_nueva or not archivo_nuevo:
+                st.warning("⚠️ Selección inválida.")
+            else:
+                fila_vacia = {col: None for col in columnas_senales}
+                fila_vacia["Muestra"] = muestra_nueva
+                fila_vacia["Archivo"] = archivo_nuevo
+
+                tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+                doc_ref = db.collection("tablas_integrales").document(tipo_doc)
+                doc_data = doc_ref.get().to_dict() or {}
+                filas_previas = doc_data.get("filas", [])
+
+                filas_previas.append(fila_vacia)
+                doc_ref.set({"filas": filas_previas})
+                st.success(f"✅ Fila añadida para: {muestra_nueva} – {archivo_nuevo}")
+
+
+        ### Cálculo de señales"
         st.markdown("**📈 Tabla de Cálculos**")
         with st.form(f"form_senales_{key_sufijo}"):
             df_senales_edit = st.data_editor(
@@ -377,9 +385,9 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     "T2": st.column_config.NumberColumn(format="%.3f"),
                     "Xas min": st.column_config.NumberColumn(format="%.2f"),
                     "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                    "Cas": st.column_config.NumberColumn(format="%.2f"),
                     "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                    "C" if tipo != "RMN 1H" else "H": st.column_config.NumberColumn(format="%.2f", label="🔴H" if tipo == "RMN 1H" else "🔴C", disabled=True),
-                    "Cas" if tipo != "RMN 1H" else "Has": st.column_config.NumberColumn(format="%.2f"),
+                    "C": st.column_config.NumberColumn(format="%.2f", label="🔴H" if tipo == "RMN 1H" else "🔴C",disabled=True                    ),
                     "Observaciones": st.column_config.TextColumn(),
                     "Archivo": st.column_config.TextColumn(disabled=False),
                     "Muestra": st.column_config.TextColumn(disabled=False),
@@ -389,10 +397,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 num_rows="dynamic",
                 key=f"tabla_senales_{key_sufijo}"
             )
-
             texto_boton = "🔴 Recalcular 'Área', 'Área as' y 'H'" if tipo == "RMN 1H" else "🔴 Recalcular 'Área', 'Área as' y 'C'"
             recalcular = st.form_submit_button(texto_boton)
-
 
         if recalcular:
             for i, row in df_senales_edit.iterrows():

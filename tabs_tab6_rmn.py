@@ -336,8 +336,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 df_senales[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_senales = df_senales[columnas_senales]
 
-        # Si no hay filas, permitir agregar una inicial de forma controlada
-        # Determinar muestras activas en la selección actual
+        # permitir agregar una inicial de forma controlada
         muestras_activas = set(df["muestra"])
         archivos_activados = set(df["archivo"])
 

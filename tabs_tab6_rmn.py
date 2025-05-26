@@ -293,6 +293,25 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 df_senales[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_senales = df_senales[columnas_senales]
 
+        # Si no hay filas, permitir agregar una inicial de forma controlada
+        if df_senales.empty:
+            st.warning("⚠️ La tabla está vacía. Seleccioná una muestra y archivo para crear una fila inicial.")
+
+            muestras_disponibles = sorted(set(df["muestra"]))
+            archivos_disponibles = sorted(set(df["archivo"]))
+
+            col1, col2, col3 = st.columns([2, 2, 1])
+            with col1:
+                muestra_nueva = st.selectbox("📌 Muestra", muestras_disponibles, key="muestra_nueva_senales")
+            with col2:
+                archivo_nuevo = st.selectbox("📁 Archivo", archivos_disponibles, key="archivo_nuevo_senales")
+            with col3:
+                if st.button("➕ Crear fila inicial"):
+                    fila_vacia = {col: None for col in columnas_senales}
+                    fila_vacia["Muestra"] = muestra_nueva
+                    fila_vacia["Archivo"] = archivo_nuevo
+                    df_senales = pd.DataFrame([fila_vacia])
+
         ### Cálculo de señales"
         st.markdown("**📈 Tabla de Cálculos**")
         with st.form(f"form_senales_{key_sufijo}"):

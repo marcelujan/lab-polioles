@@ -353,24 +353,45 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             for a in archivos_activados
         )
 
+        # Determinar muestras y archivos activos
+        muestras_activas = sorted(set(df["muestra"]))
+        archivos_activados = sorted(set(df["archivo"]))
+        combinaciones_existentes = set(
+            (f.get("Muestra"), f.get("Archivo")) for f in filas_guardadas
+        )
+        faltan_filas = any(
+            (m, a) not in combinaciones_existentes
+            for m in muestras_activas
+            for a in archivos_activados
+        )
+
         if df_senales.empty or faltan_filas:
-
-            st.warning("⚠️ La tabla está vacía. Seleccioná una muestra y archivo para crear una fila inicial.")
-
-            muestras_disponibles = sorted(set(df["muestra"]))
-            archivos_disponibles = sorted(set(df["archivo"]))
+            st.warning("⚠️ Faltan combinaciones muestra/archivo en la tabla. Podés crear nuevas filas.")
 
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
-                muestra_nueva = st.selectbox("📌 Muestra", muestras_disponibles, key="muestra_nueva_senales")
+                muestra_nueva = st.selectbox("📌 Muestra", muestras_activas, key="muestra_nueva_senales")
             with col2:
-                archivo_nuevo = st.selectbox("📁 Archivo", archivos_disponibles, key="archivo_nuevo_senales")
+                archivo_nuevo = st.selectbox("📁 Archivo", archivos_activados, key="archivo_nuevo_senales")
             with col3:
                 if st.button("➕ Crear fila inicial"):
-                    fila_vacia = {col: None for col in columnas_senales}
-                    fila_vacia["Muestra"] = muestra_nueva
-                    fila_vacia["Archivo"] = archivo_nuevo
-                    df_senales = pd.DataFrame([fila_vacia])
+                    if (muestra_nueva, archivo_nuevo) in combinaciones_existentes:
+                        st.warning("⚠️ Esa combinación ya existe en la tabla.")
+                    else:
+                        fila_vacia = {col: None for col in columnas_senales}
+                        fila_vacia["Muestra"] = muestra_nueva
+                        fila_vacia["Archivo"] = archivo_nuevo
+
+                        # Guardar inmediatamente
+                        tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+                        doc_ref = db.collection("tablas_integrales").document(tipo_doc)
+                        doc_data = doc_ref.get().to_dict() or {}
+                        filas_previas = doc_data.get("filas", [])
+
+                        filas_previas.append(fila_vacia)
+                        doc_ref.set({"filas": filas_previas})
+                        st.rerun()
+
 
                     # Guardar inmediatamente en Firebase
                     tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"

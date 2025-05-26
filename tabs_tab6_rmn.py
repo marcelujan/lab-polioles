@@ -325,7 +325,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
         filas_guardadas = doc_ref.get().to_dict().get("filas", [])
         combinaciones = {(row["muestra"], row["archivo"]) for _, row in df.iterrows()}
-        filas_activas = [f for f in filas_guardadas if (f.get("Muestra"), f.get("Archivo")) in combinaciones]
+        filas_activas = [f for f in filas_guardadas if f.get("Archivo") in df["archivo"].values]
 
         # Si no hay combinaciones activas (por ejemplo, justo después de recargar), conservar todas las filas
         if not filas_activas and filas_guardadas:
@@ -368,7 +368,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 filas_previas.append(fila_vacia)
                 doc_ref.set({"filas": filas_previas})
                 st.success(f"✅ Fila añadida para: {muestra_nueva} – {archivo_nuevo}")
-                st.rerun()
+
 
         ### Cálculo de señales"
         st.markdown("**📈 Tabla de Cálculos**")

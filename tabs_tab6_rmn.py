@@ -373,18 +373,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
         st.markdown("**📈 Tabla de Cálculos**")
         with st.form(f"form_senales_{key_sufijo}"):
-
-
-
-            st.markdown("### 🔍 [DEBUG] Combinaciones activas y filas cargadas")
-            st.write("Combinaciones reales:", combinaciones_real)
-            st.write("Filas agrupadas por combinación:")
-            for clave, filas in agrupadas.items():
-                st.write(f"🟢 {clave} → {len(filas)} filas")
-                st.write(filas)
-
-
-
             df_senales_edit = st.data_editor(
                 df_senales,
                 column_config={

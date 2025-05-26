@@ -50,21 +50,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     df_sel = df_filtrado[df_filtrado["id"].isin([ids_map.get(s) for s in seleccion])]
 
-
-
-    if not df_sel.empty:
-        st.markdown("### 🔎 [DEBUG] Espectros seleccionados")
-        st.dataframe(df_sel[["muestra", "archivo", "tipo", "id"]])
-
-        tipos_detectados = df_sel["tipo"].dropna().unique()
-        st.markdown(f"**Tipos detectados:** {tipos_detectados}")
-
-        df_13c = df_sel[df_sel["tipo"] == "RMN 13C"]
-        st.markdown(f"**Cantidad de espectros RMN 13C encontrados:** {len(df_13c)}")
-        st.dataframe(df_13c[["muestra", "archivo", "tipo"]])
-
-
-
     df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
     if not df_rmn1h.empty:
         st.markdown("## 🧪 RMN 1H")
@@ -380,8 +365,21 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         df_senales = df_senales[columnas_senales]
         df_senales = df_senales.sort_values(by=["Archivo", "X max"])
 
+
         st.markdown("**📈 Tabla de Cálculos**")
         with st.form(f"form_senales_{key_sufijo}"):
+
+
+
+            st.markdown("### 🔍 [DEBUG] Combinaciones activas y filas cargadas")
+            st.write("Combinaciones reales:", combinaciones_real)
+            st.write("Filas agrupadas por combinación:")
+            for clave, filas in agrupadas.items():
+                st.write(f"🟢 {clave} → {len(filas)} filas")
+                st.write(filas)
+
+
+
             df_senales_edit = st.data_editor(
                 df_senales,
                 column_config={

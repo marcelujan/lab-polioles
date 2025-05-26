@@ -168,6 +168,24 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 df_dt2[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
         df_dt2 = df_dt2[columnas_dt2]
 
+        if df_dt2.empty:
+            st.warning("⚠️ La tabla D/T2 está vacía. Seleccioná una muestra y archivo para crear una fila inicial.")
+
+            muestras_disponibles = sorted(set(df["muestra"]))
+            archivos_disponibles = sorted(set(df["archivo"]))
+
+            col1, col2, col3 = st.columns([2, 2, 1])
+            with col1:
+                muestra_nueva = st.selectbox("📌 Muestra", muestras_disponibles, key="muestra_nueva_dt2")
+            with col2:
+                archivo_nuevo = st.selectbox("📁 Archivo", archivos_disponibles, key="archivo_nuevo_dt2")
+            with col3:
+                if st.button("➕ Crear fila inicial D/T2"):
+                    fila_vacia = {col: None for col in columnas_dt2}
+                    fila_vacia["Muestra"] = muestra_nueva
+                    fila_vacia["Archivo"] = archivo_nuevo
+                    df_dt2 = pd.DataFrame([fila_vacia])
+
         ### Cálculo D/T2"
         st.markdown("**🧮 Tabla de Cálculos D/T2 (FAMAF)**")
         with st.form(f"form_dt2_{key_sufijo}"):
@@ -398,6 +416,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
                 except Exception as e:
                     st.warning(f"⚠️ Error en fila {i}: {e}")
+
+            # Guardar en Firebase por muestra
+            filas_actualizadas = df_senales_edit.to_dict(orient="records")
+            for muestra in df_senales_edit["Muestra"].unique():
+                filas_m = [f for f in filas_actualizadas if f["Muestra"] == muestra]
+                doc_ref = db.collection("tablas_integrales").document(tipo_doc)
+                doc_ref.set({"filas": filas_guardadas + filas_m})
 
             tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
             db.collection("tablas_integrales").document(tipo_doc).set({"filas": df_senales_edit.to_dict(orient="records")})

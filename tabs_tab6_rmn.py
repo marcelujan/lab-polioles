@@ -374,7 +374,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             with col2:
                 archivo_nuevo = st.selectbox("📁 Archivo", archivos_activados, key=f"archivo_nuevo_senales_{key_sufijo}")
             with col3:
-                if st.button("➕ Crear fila inicial"):
+                if st.button("➕ Crear fila inicial", key=f"btn_fila_inicial_{key_sufijo}"):
                     if (muestra_nueva, archivo_nuevo) in combinaciones_existentes:
                         st.warning("⚠️ Esa combinación ya existe en la tabla.")
                     else:

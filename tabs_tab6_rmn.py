@@ -366,15 +366,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         )
 
         if df_senales.empty or faltan_filas:
-            st.warning("⚠️ Faltan combinaciones muestra/archivo en la tabla. Podés crear nuevas filas.")
-
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
                 muestra_nueva = st.selectbox("📌 Muestra", muestras_activas, key=f"muestra_nueva_senales_{key_sufijo}")
             with col2:
                 archivo_nuevo = st.selectbox("📁 Archivo", archivos_activados, key=f"archivo_nuevo_senales_{key_sufijo}")
             with col3:
-                if st.button("➕ Crear fila inicial", key=f"btn_fila_inicial_{key_sufijo}"):
+                if st.button("➕ Crear fila nueva", key=f"btn_fila_nueva_{key_sufijo}"):
                     if (muestra_nueva, archivo_nuevo) in combinaciones_existentes:
                         st.warning("⚠️ Esa combinación ya existe en la tabla.")
                     else:

@@ -347,10 +347,12 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 filas = [fila_vacia]
             filas_totales.extend(filas)
 
-            # Si la última fila no está completamente vacía → agregamos otra fila vacía
-            ultima = filas[-1]
-            campos_editables = [ultima.get("δ pico"), ultima.get("X min"), ultima.get("X max")]
-            if any(c not in [None, ""] for c in campos_editables):
+            # Solo agregamos nueva fila si NO hay ninguna vacía ya presente
+            hay_fila_vacia = any(
+                all(f.get(campo) in [None, ""] for campo in ["δ pico", "X min", "X max"])
+                for f in filas
+            )
+            if not hay_fila_vacia:
                 nueva = {col: None for col in columnas_senales}
                 nueva["Muestra"] = m
                 nueva["Archivo"] = a
@@ -397,6 +399,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         if recalcular:
             for i, row in df_senales_edit.iterrows():
                 try:
+                    if not row.get("Muestra") or not row.get("Archivo") or row.get("X min") in [None, ""] or row.get("X max") in [None, ""]:
+                        continue  # ignorar filas vacías o mal definidas
                     muestra = row["Muestra"]
                     archivo = row["Archivo"]
                     x_min = float(row["X min"])

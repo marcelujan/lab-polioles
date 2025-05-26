@@ -355,6 +355,25 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                     fila_vacia["Archivo"] = archivo_nuevo
                     df_senales = pd.DataFrame([fila_vacia])
 
+                    # Guardar inmediatamente en Firebase
+                    tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+                    doc_ref = db.collection("tablas_integrales").document(tipo_doc)
+                    doc_data = doc_ref.get().to_dict() or {}
+                    filas_previas = doc_data.get("filas", [])
+
+                    # Evitar duplicados por muestra+archivo
+                    combinacion_nueva = (fila_vacia["Muestra"], fila_vacia["Archivo"])
+                    filas_previas = [
+                        f for f in filas_previas
+                        if (f.get("Muestra"), f.get("Archivo")) != combinacion_nueva
+                    ]
+
+                    filas_previas.append(fila_vacia)
+                    doc_ref.set({"filas": filas_previas})
+
+                    st.experimental_rerun()
+
+
         ### Cálculo de señales"
         st.markdown("**📈 Tabla de Cálculos**")
         with st.form(f"form_senales_{key_sufijo}"):

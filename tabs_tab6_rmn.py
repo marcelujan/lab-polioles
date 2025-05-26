@@ -348,10 +348,15 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             filas_totales.extend(filas)
 
             # Solo agregamos nueva fila si NO hay ninguna vacía ya presente
+            import math
             hay_fila_vacia = any(
-                all(f.get(campo) in [None, ""] for campo in ["δ pico", "X min", "X max"])
+                all(
+                    f.get(campo) in [None, ""] or (isinstance(f.get(campo), float) and math.isnan(f.get(campo)))
+                    for campo in ["δ pico", "X min", "X max"]
+                )
                 for f in filas
             )
+
             if not hay_fila_vacia:
                 nueva = {col: None for col in columnas_senales}
                 nueva["Muestra"] = m

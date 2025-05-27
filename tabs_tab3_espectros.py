@@ -191,8 +191,9 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     if m["nombre"] == nombre:
                         espectros = obtener_espectros_para_muestra(db, nombre)
                         docs = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())
-                        if docs:
-                            espectro_id = docs[0].id
+                        idx = int(idx)  # asegurar tipo entero
+                        if docs and idx < len(docs):
+                            espectro_id = docs[idx].id
                         else:
                             st.warning(f"No hay espectros disponibles para la muestra '{nombre}'")
                             return

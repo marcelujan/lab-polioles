@@ -764,7 +764,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
     # --- Gráfico con desplazamiento vertical estilo stacked ---
     if superposicion_vertical:
-        st.markdown("### 📊 Superposición vertical de espectros")
         offset_auto = round((y_max - y_min) / (len(df) + 1), 2) if (y_max is not None and y_min is not None and y_max > y_min) else 1.0
         offset_manual = st.slider(
             "Separación entre espectros (offset)",

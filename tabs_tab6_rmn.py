@@ -791,7 +791,14 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             xaxis=dict(range=[x_max, x_min]),
             height=400 + 40 * len(df),
             showlegend=True,
-            template="simple_white"
+            template="simple_white",
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=-0.3,
+                xanchor="center",
+                x=0.5
+            )
         )
         st.plotly_chart(fig_offset, use_container_width=True)
 

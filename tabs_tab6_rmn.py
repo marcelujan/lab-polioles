@@ -765,8 +765,17 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     # --- Gráfico con desplazamiento vertical estilo stacked ---
     if superposicion_vertical:
         st.markdown("### 📊 Superposición vertical de espectros")
+        offset_auto = round((y_max - y_min) / (len(df) + 1), 2) if (y_max is not None and y_min is not None and y_max > y_min) else 1.0
+        offset_manual = st.slider(
+            "Separación entre espectros (offset)",
+            min_value=0.1,
+            max_value=10.0,
+            value=offset_auto,
+            step=0.1,
+            key=f"offset_val_{key_sufijo}"
+        )
         fig_offset = go.Figure()
-        step_offset = (y_max - y_min) / (len(df) + 1) if y_max > y_min else 1.0  # espaciado automático
+        step_offset = offset_manual
 
         for i, (_, row) in enumerate(df.iterrows()):
             df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])

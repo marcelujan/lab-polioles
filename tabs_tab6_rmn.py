@@ -793,15 +793,11 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 name=row["archivo"]
             ))
 
-        altura_base = 400
-        altura_extra = int(offset_manual * 60 * len(df))  # o ajustá 60 según densidad
-        altura_final = altura_base + altura_extra
-
         fig_offset.update_layout(
             xaxis_title="[ppm]",
             yaxis_title="Offset + Intensidad",
             xaxis=dict(range=[x_max, x_min]),
-            height=altura_final,
+            height=600,
             showlegend=True,
             template="simple_white",
             legend=dict(

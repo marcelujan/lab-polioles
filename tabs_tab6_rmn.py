@@ -92,6 +92,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         opciones_restar = [f"{row['muestra']} – {row['archivo']}" for _, row in df.iterrows()]
         seleccion_resta = st.selectbox("Seleccionar espectro a restar:", opciones_restar, key=f"sel_resta_{key_sufijo}")
 
+    superposicion_vertical = st.checkbox("📊 Superposición vertical de espectros", key=f"offset_{key_sufijo}")
+
     # --- Rango de visualización ---
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
@@ -759,6 +761,39 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
 
     st.plotly_chart(fig, use_container_width=True)
+
+    # --- Gráfico con desplazamiento vertical estilo stacked ---
+    if superposicion_vertical:
+        st.markdown("### 📊 Superposición vertical de espectros")
+        fig_offset = go.Figure()
+        step_offset = (y_max - y_min) / (len(df) + 1) if y_max > y_min else 1.0  # espaciado automático
+
+        for i, (_, row) in enumerate(df.iterrows()):
+            df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
+            if df_esp is None:
+                continue
+            col_x, col_y = df_esp.columns[:2]
+            y_data = df_esp[col_y].copy()
+            if normalizar:
+                y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
+
+            offset = step_offset * i
+            fig_offset.add_trace(go.Scatter(
+                x=df_esp[col_x],
+                y=y_data + offset,
+                mode='lines',
+                name=row["archivo"]
+            ))
+
+        fig_offset.update_layout(
+            xaxis_title="[ppm]",
+            yaxis_title="Offset + Intensidad",
+            xaxis=dict(range=[x_max, x_min]),
+            height=400 + 40 * len(df),
+            showlegend=True,
+            template="simple_white"
+        )
+        st.plotly_chart(fig_offset, use_container_width=True)
 
     # --- Gráficos individuales con sombreados ---
     mostrar_indiv = st.checkbox("Gráficos individuales", key=f"chk_indiv_{key_sufijo}")

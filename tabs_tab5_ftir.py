@@ -394,7 +394,7 @@ def exportar_figura_plotly_png(fig, nombre_base="FTIR"):
                        file_name=nombre_archivo, mime="image/png")
 
 def render_controles_preprocesamiento(datos_plotly):
-    st.markdown("### Preprocesamiento y visualización")
+#    st.markdown("### Preprocesamiento y visualización")
 
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     aplicar_suavizado = col1.checkbox("Suavizado SG", value=False, key="suavizado_ftir")
@@ -645,7 +645,7 @@ def obtener_espectros_para_muestra(db, nombre):
 
 # Nueva versión que retorna todos los valores clave
 def render_comparacion_espectros_ftir(db, muestras):
-    st.subheader("Comparación de espectros FTIR")
+#    st.subheader("Comparación de espectros FTIR")
     tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
     espectros_dict = {}
 
@@ -701,7 +701,7 @@ def render_comparacion_espectros_ftir(db, muestras):
         return [], None, {}, None, None, None, None, None, None
 
 
-    st.markdown("### Preprocesamiento y visualización")
+#    st.markdown("### Preprocesamiento y visualización")
 
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     aplicar_suavizado = col1.checkbox("Suavizado SG", value=False, key="suavizado_ftir")
@@ -767,10 +767,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     if not datos_plotly:
         return  # Evita errores si no se seleccionaron espectros
 
+
     # 2. Deconvolución FTIR (opcional)
     if st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir"):
         render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max)
-
 
     if st.checkbox("Mostrar opciones de exportación", value=False):
         exportar_resultados_ftir(

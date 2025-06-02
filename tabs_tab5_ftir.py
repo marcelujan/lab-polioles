@@ -435,7 +435,10 @@ def render_controles_preprocesamiento(datos_plotly):
     ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
     mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
 
-    offset_vertical = st.slider("Separación vertical entre espectros", 0.0, 1.0, 0.2, 0.05)
+    if mostrar_grafico_vertical:
+        offset_vertical = st.slider("Separación vertical entre espectros", 0.0, 1.0, 0.2, 0.05)
+    else:
+        offset_vertical = 0.0  # o None, si querés no aplicar desplazamiento
 
     # Rango XY automático
     todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])

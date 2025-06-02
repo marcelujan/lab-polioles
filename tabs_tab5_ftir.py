@@ -311,11 +311,17 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         y_data = y.copy()  # y ya tiene suavizado, normalizado, offset, etc.
 
         if x_ref is not None and y_ref is not None:
+            x_min_ref = np.min(x_ref)
+            x_max_ref = np.max(x_ref)
+            mascara_valida = (x >= x_min_ref) & (x <= x_max_ref)
+            x = x[mascara_valida]
+            y_data = y_data[mascara_valida]
+
             try:
                 y_interp = np.interp(x, x_ref, y_ref)
                 y_data = y_data - y_interp
             except Exception as e:
-                st.warning(f"Error al restar espectro de referencia: {e}")
+                st.warning(f"Error en interpolación: {e}")
 
         if i == 0:
             st.write("📈 y_data original:", y_data[:5])
@@ -351,7 +357,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         yaxis_title="Absorbancia",
         margin=dict(l=10, r=10, t=30, b=10),
         height=500,
-        xaxis=dict(range=[x_min, x_max]),
+        xaxis=dict(range=[x_max, x_min]),
         yaxis=dict(range=[y_min, y_max] if not normalizar else None),
         legend=dict(
             orientation="h",

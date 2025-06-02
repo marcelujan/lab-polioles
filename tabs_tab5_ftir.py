@@ -303,16 +303,16 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
             y = y + i * 0.2
         y = y + ajustes_y.get(clave, 0.0)
 
-        if restar_espectro and x_ref is not None and y_ref is not None:
-            y_interp = np.interp(x, x_ref, y_ref)
-            y = y - y_interp
+        col_x, col_y = df.columns[:2]
+        df = df.rename(columns={col_x: "x", col_y: "y"}).dropna()
+        x = df["x"]
+        y_data = df["y"].copy()
 
-        fig.add_trace(go.Scatter(
-            x=x, y=y,
-            mode="lines",
-            name=clave,
-            hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"
-        ))
+        if x_ref is not None and y_ref is not None:
+            y_interp = np.interp(x, x_ref, y_ref)
+            y_data = y_data - y_interp
+
+        fig.add_trace(go.Scatter(x=x, y=y_data, mode="lines", name=archivo, hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"))
 
     if mostrar_picos:
         from scipy.signal import find_peaks

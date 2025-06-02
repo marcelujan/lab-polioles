@@ -696,7 +696,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         xaxis_title="[ppm]",
         yaxis_title="Intensidad",
         xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(range=[y_min, y_max] if y_min is not None and y_max is not None else None),
+        yaxis=dict(range=[y_min, y_max] if not normalizar and y_min is not None and y_max is not None else None),
         template="simple_white",
         height=500,
         legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)

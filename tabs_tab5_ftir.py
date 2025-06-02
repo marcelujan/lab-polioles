@@ -286,7 +286,7 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
 def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normalizar,
                                    offset_vertical, ajustes_y, restar_espectro,
                                    x_ref, y_ref, x_min, x_max, y_min, y_max,
-                                   mostrar_picos=False):
+                                   mostrar_picos=False, altura_min=0.01, distancia_min=5)
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         clave = f"{muestra} – {tipo} – {archivo}"
         df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
@@ -320,7 +320,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
     if mostrar_picos:
         from scipy.signal import find_peaks
         try:
-            peaks, _ = find_peaks(y, height=0.05, distance=5)
+            peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
             for p in peaks:
                 fig.add_trace(go.Scatter(
                     x=[x[p]],
@@ -333,6 +333,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
                 ))
         except Exception as e:
             st.warning(f"⚠️ Error al detectar picos en {clave}: {e}")
+
 
 
     if "fig_extra_shapes" in st.session_state:
@@ -745,6 +746,13 @@ def render_comparacion_espectros_ftir(db, muestras):
     x_max = colx2.number_input("X max", value=float(np.max(todos_x)))
     y_min = coly1.number_input("Y min", value=float(np.min(todos_y)))
     y_max = coly2.number_input("Y max", value=float(np.max(todos_y)))
+    
+    altura_min = 0.05
+    distancia_min = 5
+    if mostrar_picos:
+        colp1, colp2 = st.columns(2)
+        altura_min = colp1.number_input("Altura mínima", value=0.05, step=0.01, key="altura_min_ftir")
+        distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key="distancia_min_ftir")
 
     ajustes_y = {}
     if ajuste_y_manual:
@@ -777,8 +785,9 @@ def render_comparacion_espectros_ftir(db, muestras):
         fig, datos_plotly, aplicar_suavizado, normalizar,
         offset_vertical, ajustes_y, restar_espectro,
         x_ref, y_ref, x_min, x_max, y_min, y_max,
-        mostrar_picos
+        mostrar_picos, altura_min, distancia_min
     )
+
     preprocesados = generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar, offset_vertical, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max)
 
     return datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max

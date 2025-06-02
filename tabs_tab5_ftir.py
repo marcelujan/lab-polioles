@@ -284,9 +284,9 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
 
 
 def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normalizar,
-                                   offset_vertical, ajustes_y, restar_espectro,
-                                   x_ref, y_ref, x_min, x_max, y_min, y_max,
-                                   mostrar_picos=False, altura_min=0.01, distancia_min=5):
+                                    ajustes_y, restar_espectro,
+                                    x_ref, y_ref, x_min, x_max, y_min, y_max,
+                                    mostrar_picos, altura_min, distancia_min):
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         clave = f"{muestra} – {tipo} – {archivo}"
         df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
@@ -792,7 +792,7 @@ def render_comparacion_espectros_ftir(db, muestras):
     fig = go.Figure()
     render_grafico_combinado_ftir(
         fig, datos_plotly, aplicar_suavizado, normalizar,
-        offset_vertical, ajustes_y, restar_espectro,
+        ajustes_y, restar_espectro,
         x_ref, y_ref, x_min, x_max, y_min, y_max,
         mostrar_picos, altura_min, distancia_min
     )
@@ -856,8 +856,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     x_min=x_min, x_max=x_max
                 )
                 exportar_figura_plotly_png(fig, nombre_base="FTIR")
-
-
 
 
     # 3. Índice OH espectroscópico (siempre visible al final)

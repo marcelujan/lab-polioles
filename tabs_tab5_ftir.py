@@ -325,7 +325,14 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         margin=dict(l=10, r=10, t=30, b=10),
         height=500,
         xaxis=dict(range=[x_min, x_max]),
-        yaxis=dict(range=[y_min, y_max])
+        yaxis=dict(range=[y_min, y_max]),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.35,
+            xanchor="center",
+            x=0.5
+        )
     )
 
     st.plotly_chart(fig, use_container_width=True)

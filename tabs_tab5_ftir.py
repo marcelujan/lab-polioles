@@ -624,7 +624,6 @@ def obtener_espectros_para_muestra(db, nombre):
     return st.session_state[clave]
 
 # Nueva versión que retorna todos los valores clave
-
 def render_comparacion_espectros_ftir(db, muestras):
     st.subheader("Comparación de espectros FTIR")
     tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
@@ -679,7 +678,8 @@ def render_comparacion_espectros_ftir(db, muestras):
 
     if not datos_plotly:
         st.info("Seleccioná espectros válidos para graficar.")
-        return [], None, {}, None, None
+        return [], None, {}, None, None, None, None, None, None
+
 
     st.markdown("### Preprocesamiento y visualización")
 

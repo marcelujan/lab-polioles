@@ -747,7 +747,7 @@ def render_comparacion_espectros_ftir(db, muestras):
     y_min = coly1.number_input("Y min", value=float(np.min(todos_y)))
     y_max = coly2.number_input("Y max", value=float(np.max(todos_y)))
 
-    altura_min = 0.05
+    altura_min = 0.01
     distancia_min = 5
     if mostrar_picos:
         colp1, colp2 = st.columns(2)

@@ -288,6 +288,9 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
                                    x_ref, y_ref, x_min, x_max, y_min, y_max,
                                    mostrar_picos=False, altura_min=0.01, distancia_min=5):
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
+        if i == 0:
+            st.write(f"🔍 {archivo} – x:", x[:5], "...", x[-5:])
+            st.write(f"🔍 {archivo} – y:", y[:5], "...", y[-5:])
         clave = f"{muestra} – {tipo} – {archivo}"
         df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
         if df_filtrado.empty:
@@ -313,6 +316,11 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
                 y_data = y_data - y_interp
             except Exception as e:
                 st.warning(f"Error al restar espectro de referencia: {e}")
+                
+        if i == 0:
+            st.write("📈 y_data original:", y_data[:5])
+            st.write("📉 y_interp:", y_interp[:5])
+            st.write("🧮 y_data final:", (y_data - y_interp)[:5])
 
         fig.add_trace(go.Scatter(x=x, y=y_data, mode="lines", name=archivo, hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"))
 
@@ -791,6 +799,8 @@ def render_comparacion_espectros_ftir(db, muestras):
     preprocesados = generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar, offset_vertical, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max)
 
     return datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max
+    st.write("📌 x_ref:", x_ref[:5], "...", x_ref[-5:])
+    st.write("📌 y_ref:", y_ref[:5], "...", y_ref[-5:])
 
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):

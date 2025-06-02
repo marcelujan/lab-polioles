@@ -317,10 +317,12 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         aplicar_suavizado=aplicar_suavizado,
         normalizar=normalizar,
         restar_espectro=restar_espectro,
-        ajuste_y_manual=ajuste_y_manual,
+        ajustes_y=ajustes_y,
         offset_vertical=offset_vertical,
-        x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max
+        x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max,
+        x_ref=x_ref, y_ref=y_ref
     )
+
 
 
     ajustes_y = {}

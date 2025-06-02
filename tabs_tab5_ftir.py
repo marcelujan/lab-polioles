@@ -805,7 +805,15 @@ def render_comparacion_espectros_ftir(db, muestras):
         )
         st.plotly_chart(fig_vertical, use_container_width=True)
 
-    return datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max
+    return (
+        datos_plotly,
+        fig,
+        preprocesados,
+        controles["x_ref"], controles["y_ref"],
+        controles["x_min"], controles["x_max"],
+        controles["y_min"], controles["y_max"]
+        )
+
 
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):

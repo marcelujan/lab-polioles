@@ -693,12 +693,15 @@ def render_comparacion_espectros_ftir(db, muestras):
                     "muestra": nombre
                 }
 
-    archivos_disp = [k[1] for k in espectros_dict.keys() if k[0] == muestra_sel]
-    archivos_sel = st.multiselect("Seleccionar espectros de esa muestra", archivos_disp, key="archivos_ftir")
+    archivos_disponibles = [
+        f"{muestra} – {archivo}" for (muestra, archivo) in espectros_dict.keys()
+    ]
+    archivos_sel = st.multiselect("Seleccionar espectros", archivos_disponibles, key="archivos_ftir")
 
     datos_plotly = []
-    for archivo in archivos_sel:
-        clave = (muestra_sel, archivo)
+    for item in archivos_sel:
+        muestra, archivo = item.split(" – ", 1)
+        clave = (muestra, archivo)
         e = espectros_dict[clave]
         contenido = BytesIO(base64.b64decode(e["contenido"]))
         ext = archivo.split(".")[-1].lower()

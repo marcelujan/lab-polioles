@@ -294,10 +294,6 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
             continue
         x = df_filtrado["x"].values
         y = df_filtrado["y"].values
-        if i == 0:
-            st.write(f"🔍 {archivo} – x:", x[:5], "...", x[-5:])
-            st.write(f"🔍 {archivo} – y:", y[:5], "...", y[-5:])
-
         if aplicar_suavizado and len(y) >= 7:
             y = savgol_filter(y, window_length=7, polyorder=2)
         if normalizar and np.max(np.abs(y)) != 0:
@@ -324,11 +320,6 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
                 y_data = y_data[mask_validos]
                 y_interp = y_interp[mask_validos]
                 y_data = y_data - y_interp
-
-                if i == 0:
-                    st.write("📈 y_data original:", y_data[:5])
-                    st.write("📉 y_interp:", y_interp[:5])
-                    st.write("🧮 y_data final:", y_data[:5])
             except Exception as e:
                 st.warning(f"Error en interpolación: {e}")
 
@@ -810,8 +801,6 @@ def render_comparacion_espectros_ftir(db, muestras):
     preprocesados = generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar, offset_vertical, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max)
 
     return datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max
-    st.write("📌 x_ref:", x_ref[:5], "...", x_ref[-5:])
-    st.write("📌 y_ref:", y_ref[:5], "...", y_ref[-5:])
 
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):

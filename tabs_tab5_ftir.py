@@ -286,7 +286,7 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
 def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normalizar,
                                    offset_vertical, ajustes_y, restar_espectro,
                                    x_ref, y_ref, x_min, x_max, y_min, y_max,
-                                   mostrar_picos=False, altura_min=0.01, distancia_min=5)
+                                   mostrar_picos=False, altura_min=0.01, distancia_min=5):
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         clave = f"{muestra} – {tipo} – {archivo}"
         df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
@@ -746,7 +746,7 @@ def render_comparacion_espectros_ftir(db, muestras):
     x_max = colx2.number_input("X max", value=float(np.max(todos_x)))
     y_min = coly1.number_input("Y min", value=float(np.min(todos_y)))
     y_max = coly2.number_input("Y max", value=float(np.max(todos_y)))
-    
+
     altura_min = 0.05
     distancia_min = 5
     if mostrar_picos:

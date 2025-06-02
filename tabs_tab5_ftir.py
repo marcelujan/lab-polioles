@@ -436,7 +436,7 @@ def render_controles_preprocesamiento(datos_plotly):
     mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
 
     if mostrar_grafico_vertical:
-        offset_vertical = st.slider("Separación vertical entre espectros", 0.0, 1.0, 0.2, 0.05)
+        offset_vertical = st.slider("Separación vertical entre espectros", min_value=0.0, max_value=5.0, value=1.0, step=0.1)
     else:
         offset_vertical = 0.0  # o None, si querés no aplicar desplazamiento
 
@@ -813,7 +813,6 @@ def render_comparacion_espectros_ftir(db, muestras):
         controles["x_min"], controles["x_max"],
         controles["y_min"], controles["y_max"]
         )
-
 
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):

@@ -318,14 +318,14 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
                 y_data = y_data[mask_validos]
                 y_interp = y_interp[mask_validos]
                 y_data = y_data - y_interp
+
+                if i == 0:
+                    st.write("📈 y_data original:", y_data[:5])
+                    st.write("📉 y_interp:", y_interp[:5])
+                    st.write("🧮 y_data final:", y_data[:5])
             except Exception as e:
                 st.warning(f"Error en interpolación: {e}")
 
-
-        if i == 0:
-            st.write("📈 y_data original:", y_data[:5])
-            st.write("📉 y_interp:", y_interp[:5])
-            st.write("🧮 y_data final:", (y_data - y_interp)[:5])
 
         fig.add_trace(go.Scatter(x=x, y=y_data, mode="lines", name=archivo, hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"))
 

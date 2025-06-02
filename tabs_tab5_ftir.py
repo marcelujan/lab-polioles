@@ -505,7 +505,9 @@ def seleccionar_espectros_validos(db, muestras):
 
     # --- Selector de muestra y espectros ---
     muestras_disponibles = sorted(set(k[0] for k in espectros_dict.keys()))
-    muestra_sel = st.selectbox("Seleccionar muestra", muestras_disponibles, key="muestra_ftir")
+    muestras_sel = st.multiselect("Seleccionar muestras", opciones_muestras)
+    if not muestras_sel:
+        return
     archivos_disp = [k[1] for k in espectros_dict.keys() if k[0] == muestra_sel]
     archivos_sel = st.multiselect("Seleccionar espectros de esa muestra", archivos_disp, key="archivos_ftir")
 
@@ -692,7 +694,9 @@ def render_comparacion_espectros_ftir(db, muestras):
                 }
 
     muestras_disponibles = sorted(set(k[0] for k in espectros_dict.keys()))
-    muestra_sel = st.selectbox("Seleccionar muestra", muestras_disponibles, key="muestra_ftir")
+    muestras_sel = st.multiselect("Seleccionar muestras", opciones_muestras)
+    if not muestras_sel:
+        return
     archivos_disp = [k[1] for k in espectros_dict.keys() if k[0] == muestra_sel]
     archivos_sel = st.multiselect("Seleccionar espectros de esa muestra", archivos_disp, key="archivos_ftir")
 
@@ -796,7 +800,7 @@ def render_comparacion_espectros_ftir(db, muestras):
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 #    st.title("Análisis FTIR")
     st.session_state["current_tab"] = "Análisis FTIR"
-    muestras = cargar_muestras(db)
+    muestras = [m for m in cargar_muestras(db) if m["nombre"] in muestras_sel]
     if not muestras:
         st.info("No hay muestras cargadas.")
         st.stop()

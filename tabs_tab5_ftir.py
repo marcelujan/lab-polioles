@@ -738,65 +738,30 @@ def render_comparacion_espectros_ftir(db, muestras):
 
 #    st.markdown("### Preprocesamiento y visualización")
 
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    aplicar_suavizado = col1.checkbox("Suavizado SG", value=False, key="suavizado_ftir")
-    normalizar = col2.checkbox("Normalizar", value=False, key="normalizar_ftir")
-    mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")
-    restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
-    ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
-    mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
-
-    todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
-    todos_y = np.concatenate([df["y"].values for _, _, _, df in datos_plotly])
-    colx1, colx2, coly1, coly2 = st.columns(4)
-    x_min = colx1.number_input("X min", value=float(np.min(todos_x)))
-    x_max = colx2.number_input("X max", value=float(np.max(todos_x)))
-    y_min = coly1.number_input("Y min", value=float(np.min(todos_y)))
-    y_max = coly2.number_input("Y max", value=float(np.max(todos_y)))
-
-    altura_min = 0.01
-    distancia_min = 5
-    if mostrar_picos:
-        colp1, colp2 = st.columns(2)
-        altura_min = colp1.number_input("Altura mínima", value=0.05, step=0.01, key="altura_min_ftir")
-        distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key="distancia_min_ftir")
-
-    ajustes_y = {}
-    if ajuste_y_manual:
-        st.markdown("#### Ajuste Y individual por espectro")
-        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
-            clave = f"{muestra} – {tipo} – {archivo}"
-            ajustes_y[clave] = st.number_input(f"{clave}", step=0.1, value=0.0, key=f"ajuste_y_{clave}")
-    else:
-        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
-            clave = f"{muestra} – {tipo} – {archivo}"
-            ajustes_y[clave] = 0.0
-
-    x_ref, y_ref = None, None
-    if restar_espectro:
-        claves_validas = [f"{m} – {t} – {a}" for m, t, a, _ in datos_plotly]
-        espectro_ref = st.selectbox("Seleccionar espectro a restar", claves_validas, key="ref_ftir")
-        ajuste_y_ref = st.number_input("Ajuste Y referencia", value=0.0, step=0.1, key="ajuste_ref_ftir")
-
-        for m, t, a, df in datos_plotly:
-            if espectro_ref == f"{m} – {t} – {a}":
-                df_ref = df.copy()
-                x_ref = df_ref["x"].values
-                y_ref = df_ref["y"].values + ajuste_y_ref
-                break
+    controles = render_controles_preprocesamiento(datos_plotly)
 
     render_tabla_bibliografia_ftir(db)
 
     fig = go.Figure()
     render_grafico_combinado_ftir(
-        fig, datos_plotly, aplicar_suavizado, normalizar,
-        ajustes_y, restar_espectro,
-        x_ref, y_ref, x_min, x_max, y_min, y_max,
-        mostrar_picos, altura_min, distancia_min
+        fig, datos_plotly,
+        controles["suavizado"], controles["normalizar"],
+        controles["ajustes_y"], controles["restar"],
+        controles["x_ref"], controles["y_ref"],
+        controles["x_min"], controles["x_max"],
+        controles["y_min"], controles["y_max"],
+        controles["mostrar_picos"],
+        altura_min, distancia_min
     )
-
-    preprocesados = generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max)
-
+    
+    preprocesados = generar_preprocesados_ftir(
+        datos_plotly, controles["suavizado"], controles["normalizar"],
+        controles["mostrar_grafico_vertical"],  # o controles["offset_vertical"] si definís así
+        controles["ajustes_y"], controles["restar"],
+        controles["x_ref"], controles["y_ref"],
+        controles["x_min"], controles["x_max"]
+    )
+    
     if mostrar_grafico_vertical:
         fig_vertical = go.Figure()
         desplazamiento = (y_max - y_min) * 0.1

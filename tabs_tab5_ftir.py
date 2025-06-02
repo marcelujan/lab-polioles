@@ -181,6 +181,10 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
         with [col1, col2, col3, col4][i % 4]:
             checkboxes[clave] = st.checkbox(clave, value=False, key=f"deconv_{clave}")
 
+    # Inicializar acumulador
+    if "resultados_totales" not in st.session_state:
+        st.session_state["resultados_totales"] = {}
+
     for clave in claves_disponibles:
         if not checkboxes.get(clave):
             continue
@@ -242,9 +246,6 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
 **RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}""")
 
             df_result = pd.DataFrame(resultados)
-            # Guardar resultados para exportación total
-            if "resultados_totales" not in st.session_state:
-                st.session_state["resultados_totales"] = {}
             st.session_state["resultados_totales"][clave] = df_result
             st.dataframe(df_result, use_container_width=True)
 
@@ -267,9 +268,6 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
                 st.warning(f"❌ Error al ajustar {clave}: {e}")
 
     # --- Exportar todas las deconvoluciones seleccionadas ---
-    if "resultados_totales" not in st.session_state:
-        st.session_state["resultados_totales"] = {}
-
     if st.button("📦 Exportar TODO en Excel"):
         buffer = BytesIO()
         with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
@@ -278,9 +276,10 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
                 df.to_excel(writer, index=False, sheet_name=nombre_hoja)
         buffer.seek(0)
         st.download_button("📁 Descargar TODO", data=buffer.getvalue(),
-                        file_name="FTIR_Deconvoluciones.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        key="dl_total_deconv")
+                           file_name="FTIR_Deconvoluciones.xlsx",
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                           key="dl_total_deconv")
+
 
 
 def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normalizar,

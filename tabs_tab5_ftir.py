@@ -288,15 +288,15 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
                                    x_ref, y_ref, x_min, x_max, y_min, y_max,
                                    mostrar_picos=False, altura_min=0.01, distancia_min=5):
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
-        if i == 0:
-            st.write(f"🔍 {archivo} – x:", x[:5], "...", x[-5:])
-            st.write(f"🔍 {archivo} – y:", y[:5], "...", y[-5:])
         clave = f"{muestra} – {tipo} – {archivo}"
         df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
         if df_filtrado.empty:
             continue
         x = df_filtrado["x"].values
         y = df_filtrado["y"].values
+        if i == 0:
+            st.write(f"🔍 {archivo} – x:", x[:5], "...", x[-5:])
+            st.write(f"🔍 {archivo} – y:", y[:5], "...", y[-5:])
 
         if aplicar_suavizado and len(y) >= 7:
             y = savgol_filter(y, window_length=7, polyorder=2)
@@ -316,7 +316,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
                 y_data = y_data - y_interp
             except Exception as e:
                 st.warning(f"Error al restar espectro de referencia: {e}")
-                
+
         if i == 0:
             st.write("📈 y_data original:", y_data[:5])
             st.write("📉 y_interp:", y_interp[:5])

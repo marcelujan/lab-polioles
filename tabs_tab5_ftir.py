@@ -430,7 +430,7 @@ def render_controles_preprocesamiento(datos_plotly):
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     aplicar_suavizado = col1.checkbox("Suavizado SG", value=False, key="suavizado_ftir")
     normalizar = col2.checkbox("Normalizar", value=False, key="normalizar_ftir")
-    mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")  # No usado acá, solo flag
+    mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")
     restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
     ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
     mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
@@ -481,8 +481,10 @@ def render_controles_preprocesamiento(datos_plotly):
         "x_min": x_min,
         "x_max": x_max,
         "y_min": y_min,
-        "y_max": y_max
+        "y_max": y_max,
+        "mostrar_grafico_vertical": mostrar_grafico_vertical
     }
+
 
 def seleccionar_espectros_validos(db, muestras):
     tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
@@ -742,6 +744,7 @@ def render_comparacion_espectros_ftir(db, muestras):
     mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")
     restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
     ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
+    mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
 
     todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
     todos_y = np.concatenate([df["y"].values for _, _, _, df in datos_plotly])

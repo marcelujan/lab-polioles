@@ -746,8 +746,13 @@ def render_comparacion_espectros_ftir(db, muestras):
 
     controles = render_controles_preprocesamiento(datos_plotly)
 
-    altura_min = st.number_input("Altura mínima para detección de picos", value=0.02, step=0.01)
-    distancia_min = st.number_input("Distancia mínima entre picos", value=20, step=1)
+    # Mostrar controles de picos solo si está activado
+    altura_min = 0.02
+    distancia_min = 20
+    if controles["mostrar_picos"]:
+        colp1, colp2 = st.columns(2)
+        altura_min = colp1.number_input("Altura mínima para detección de picos", value=0.02, step=0.01)
+        distancia_min = colp2.number_input("Distancia mínima entre picos", value=20, step=1)
 
     render_tabla_bibliografia_ftir(db)
 

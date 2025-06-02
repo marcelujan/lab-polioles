@@ -800,6 +800,38 @@ def render_comparacion_espectros_ftir(db, muestras):
 
     preprocesados = generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar, offset_vertical, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max)
 
+    # ───────────── Superposición vertical ─────────────
+    if st.checkbox("Superposición vertical (gráfico separado)", key="superposicion_ftir"):
+        separacion = st.slider("Separación entre espectros", 0.0, 1.0, 0.3, 0.05)
+
+        fig_vertical = go.Figure()
+        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
+            clave = f"{muestra} – {tipo} – {archivo}"
+            df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
+            x = df_filtrado["x"].values
+            y = df_filtrado["y"].values.astype(float)
+
+            if aplicar_suavizado and len(y) >= 7:
+                y = savgol_filter(y, window_length=7, polyorder=2)
+            if normalizar and np.max(np.abs(y)) != 0:
+                y = y / np.max(np.abs(y))
+            y = y + i * separacion
+
+            fig_vertical.add_trace(go.Scatter(
+                x=x, y=y, mode="lines", name=archivo,
+                hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"
+            ))
+
+        fig_vertical.update_layout(
+            title="Superposición vertical (FTIR)",
+            xaxis_title="Número de onda [cm⁻¹]",
+            yaxis_title="Absorbancia (desplazada)",
+            height=500,
+            xaxis=dict(range=[x_max, x_min]),  # eje invertido
+            legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
+        )
+        st.plotly_chart(fig_vertical, use_container_width=True)
+
     return datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max
 
 

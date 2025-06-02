@@ -312,7 +312,13 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
 
         if x_ref is not None and y_ref is not None:
             try:
-                y_interp = np.interp(x, x_ref, y_ref, left=np.nan, right=np.nan)
+                # Ordenar referencia por eje x ascendente
+                idx_ref = np.argsort(x_ref)
+                x_ref_sorted = x_ref[idx_ref]
+                y_ref_sorted = y_ref[idx_ref]
+
+                # Interpolación segura con exclusión de NaN
+                y_interp = np.interp(x, x_ref_sorted, y_ref_sorted, left=np.nan, right=np.nan)
                 mask_validos = ~np.isnan(y_interp)
                 x = x[mask_validos]
                 y_data = y_data[mask_validos]

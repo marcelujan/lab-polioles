@@ -471,7 +471,15 @@ def render_controles_preprocesamiento(datos_plotly):
         for m, t, a, df in datos_plotly:
             if espectro_ref == f"{m} – {t} – {a}":
                 x_ref = df["x"].values
-                y_ref = df["y"].values + ajuste_y_ref
+                y_ref = df["y"].values.astype(float)
+
+                # Aplicar mismo suavizado y normalización que al resto
+                if aplicar_suavizado and len(y_ref) >= 7:
+                    y_ref = savgol_filter(y_ref, window_length=7, polyorder=2)
+                if normalizar and np.max(np.abs(y_ref)) != 0:
+                    y_ref = y_ref / np.max(np.abs(y_ref))
+
+                y_ref = y_ref + ajuste_y_ref
                 break
 
     return {

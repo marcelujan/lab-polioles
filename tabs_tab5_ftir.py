@@ -304,15 +304,8 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         y = y + ajustes_y.get(clave, 0.0)
 
         if restar_espectro and x_ref is not None and y_ref is not None:
-            # Intersección segura de dominio
-            mascara_valida = (x >= np.min(x_ref)) & (x <= np.max(x_ref))
-            x = x[mascara_valida]
-            y = y[mascara_valida]
-
-            # Interpolar y_ref sobre el eje x actual
             y_interp = np.interp(x, x_ref, y_ref)
             y = y - y_interp
-
 
         fig.add_trace(go.Scatter(
             x=x, y=y,
@@ -384,14 +377,9 @@ def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
         y = y + ajustes_y.get(clave, 0.0)
 
         if restar_espectro and x_ref is not None and y_ref is not None:
-            # Intersección segura de dominio
-            mascara_valida = (x >= np.min(x_ref)) & (x <= np.max(x_ref))
-            x = x[mascara_valida]
-            y = y[mascara_valida]
-
-            # Interpolar y_ref sobre el eje x actual
             y_interp = np.interp(x, x_ref, y_ref)
             y = y - y_interp
+
 
         df_pre = pd.DataFrame({"x": x, "y": y})
         preprocesados[clave] = df_pre

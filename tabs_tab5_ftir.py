@@ -197,6 +197,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             st.warning(f"Error al cargar {archivo}: {ex}")
 
     # --- Mostrar gráfico combinado con Plotly ---
+    seleccionados = pd.DataFrame()
     if datos_plotly:
         seleccionados = pd.DataFrame([
             {

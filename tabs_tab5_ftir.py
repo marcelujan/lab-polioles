@@ -351,8 +351,8 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         yaxis_title="Absorbancia",
         margin=dict(l=10, r=10, t=30, b=10),
         height=500,
-        xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(range=[y_min, y_max] if not normalizar else None),
+        xaxis=dict(range=[controles["x_max"], controles["x_min"]]),  # eje invertido
+        yaxis=dict(range=[controles["y_min"], controles["y_max"]] if not controles["normalizar"] else None),
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -799,7 +799,7 @@ def render_comparacion_espectros_ftir(db, muestras):
             title="📊 Superposición vertical de espectros (FTIR)",
             xaxis_title="Número de onda [cm⁻¹]",
             yaxis_title="Absorbancia desplazada",
-            xaxis=dict(range=[x_max, x_min]),  # eje invertido
+            xaxis=dict(range=[controles["x_max"], controles["x_min"]]),  # eje invertido
             height=500,
             legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
         )

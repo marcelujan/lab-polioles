@@ -811,8 +811,25 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
 
 
-    if not muestras_sel:
-        st.stop()
+    muestras = [m for m in cargar_muestras(db) if m["nombre"] in muestras_sel]
+
+    if muestras_sel and muestras:
+        # 1. Gráfica FTIR (internamente llama todo)
+        datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max = render_comparacion_espectros_ftir(db, muestras)
+
+        if datos_plotly:
+            if st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir"):
+                render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max)
+
+            if st.checkbox("Mostrar opciones de exportación", value=False):
+                exportar_resultados_ftir(
+                    preprocesados=preprocesados,
+                    resumen=None,
+                    fwhm_rows=None,
+                    x_min=x_min, x_max=x_max
+                )
+                exportar_figura_plotly_png(fig, nombre_base="FTIR")
+
     muestras = [m for m in cargar_muestras(db) if m["nombre"] in muestras_sel]
     if not muestras:
         st.info("No hay muestras cargadas.")
@@ -839,13 +856,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         )
         exportar_figura_plotly_png(fig, nombre_base="FTIR")
 
-
     # 3. Índice OH espectroscópico (siempre visible al final)
     st.subheader("Índice OH espectroscópico")
     df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
     if not df_oh.empty:
         st.dataframe(df_oh, use_container_width=True)
 
+    # 4. Calculadora manual de Índice OH
     calculadora_indice_oh_manual()
 
     # Sector flotante final

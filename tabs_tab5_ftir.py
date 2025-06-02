@@ -289,7 +289,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
                                     mostrar_picos, altura_min, distancia_min):
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         clave = f"{muestra} – {tipo} – {archivo}"
-        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
+        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)]
         if df_filtrado.empty:
             continue
         x = df_filtrado["x"].values
@@ -372,7 +372,7 @@ def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
 
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         clave = f"{muestra} – {tipo} – {archivo}"
-        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
+        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)]
         if df_filtrado.empty:
             continue
         x = df_filtrado["x"].values
@@ -435,6 +435,8 @@ def render_controles_preprocesamiento(datos_plotly):
     ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
     mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
 
+    offset_vertical = st.slider("Separación vertical entre espectros", 0.0, 1.0, 0.2, 0.05)
+
     # Rango XY automático
     todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
     todos_y = np.concatenate([df["y"].values for _, _, _, df in datos_plotly])
@@ -482,7 +484,8 @@ def render_controles_preprocesamiento(datos_plotly):
         "x_max": x_max,
         "y_min": y_min,
         "y_max": y_max,
-        "mostrar_grafico_vertical": mostrar_grafico_vertical
+        "mostrar_grafico_vertical": mostrar_grafico_vertical,
+        "offset_vertical": offset_vertical
     }
 
 
@@ -756,24 +759,23 @@ def render_comparacion_espectros_ftir(db, muestras):
     
     preprocesados = generar_preprocesados_ftir(
         datos_plotly, controles["suavizado"], controles["normalizar"],
-        controles["mostrar_grafico_vertical"],  # o controles["offset_vertical"] si definís así
         controles["ajustes_y"], controles["restar"],
         controles["x_ref"], controles["y_ref"],
         controles["x_min"], controles["x_max"]
     )
-    
-    if mostrar_grafico_vertical:
+
+    if controles["mostrar_grafico_vertical"]:
         fig_vertical = go.Figure()
-        desplazamiento = (y_max - y_min) * 0.1
+        desplazamiento = controles["offset_vertical"]
         for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
             y_offset = desplazamiento * i
-            df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
+            df_filtrado = df[(df["x"] >= controles["x_min"]) & (df["x"] <= controles["x_max"])].copy()
             x = df_filtrado["x"].values
             y = df_filtrado["y"].values.astype(float)
 
-            if aplicar_suavizado and len(y) >= 7:
+            if controles["suavizado"] and len(y) >= 7:
                 y = savgol_filter(y, window_length=7, polyorder=2)
-            if normalizar and np.max(np.abs(y)) != 0:
+            if controles["normalizar"] and np.max(np.abs(y)) != 0:
                 y = y / np.max(np.abs(y))
             y = y + y_offset
 

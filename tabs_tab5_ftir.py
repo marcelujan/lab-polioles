@@ -20,16 +20,275 @@ def obtener_espectros_para_muestra(db, nombre):
         st.session_state[clave] = [doc.to_dict() for doc in docs]
     return st.session_state[clave]
 
-def render_grafico_combinado_ftir(datos_plotly, aplicar_suavizado=False, normalizar=False,
-                                   restar_espectro=False, ajustes_y=None,
-                                   offset_vertical=False, x_min=None, x_max=None,
-                                   y_min=None, y_max=None,
-                                   x_ref=None, y_ref=None):
 
-    
+def render_tabla_calculos_ftir(db, datos_plotly):
+    import streamlit as st
+    import pandas as pd
+    import numpy as np
+    from io import BytesIO
+    import base64
+    import plotly.graph_objects as go
+
+    mostrar = st.checkbox("Mostrar Tabla de cálculos FTIR", value=False, key="mostrar_tabla_calculos_ftir")
+    if not mostrar:
+        return
+
+    st.subheader("Tabla de cálculos FTIR")
+    sombrear = st.checkbox("Sombrear Tabla de cálculos", value=False, key="sombrear_tabla_calculos_ftir")
+
+    filas_totales = []
+    claves_renderizadas = []
+
+    for muestra, tipo, archivo, df in datos_plotly:
+        clave = f"{muestra}/{archivo}"
+        claves_renderizadas.append((muestra, archivo))
+        doc_ref = db.collection("tablas_ftir_calculos").document(muestra).collection("archivos").document(archivo)
+        doc = doc_ref.get()
+        if doc.exists:
+            filas = doc.to_dict().get("filas", [])
+        else:
+            filas = []
+
+        for fila in filas:
+            fila["Muestra"] = muestra
+            fila["Tipo"] = tipo
+            fila["Archivo"] = archivo
+        filas_totales.extend(filas)
+
+    df_tabla = pd.DataFrame(filas_totales)
+    columnas = ["Muestra", "Tipo", "Archivo", "X min", "X max", "Área", "Grupo funcional", "Observaciones"]
+
+    if df_tabla.empty:
+        df_tabla = pd.DataFrame(columns=columnas)
+
+    editada = st.data_editor(
+        df_tabla,
+        column_order=columnas,
+        use_container_width=True,
+        key="tabla_calculos_ftir",
+        num_rows="dynamic"
+    )
+
+    # Botón para calcular área
+    if st.button("Recalcular áreas FTIR", key="recalc_area_ftir"):
+        nuevas_filas = []
+        for _, row in editada.iterrows():
+            try:
+                x0 = float(row["X min"])
+                x1 = float(row["X max"])
+                muestra = row["Muestra"]
+                archivo = row["Archivo"]
+                df = next((df for m, t, a, df in datos_plotly if m == muestra and a == archivo), None)
+                if df is not None:
+                    df_filt = df[(df["x"] >= x0) & (df["x"] <= x1)]
+                    area = np.trapz(df_filt["y"], df_filt["x"])
+                    row["Área"] = round(area, 6)
+            except:
+                continue
+            nuevas_filas.append(row)
+        editada = pd.DataFrame(nuevas_filas)
+
+    # Guardar por muestra y archivo
+    for (muestra, archivo) in claves_renderizadas:
+        df_filtrado = editada[(editada["Muestra"] == muestra) & (editada["Archivo"] == archivo)]
+        columnas_guardar = ["X min", "X max", "Área", "Grupo funcional", "Observaciones"]
+        filas_guardar = df_filtrado[columnas_guardar].to_dict(orient="records")
+        doc_ref = db.collection("tablas_ftir_calculos").document(muestra).collection("archivos").document(archivo)
+        doc_ref.set({"filas": filas_guardar})
+
+    # Sombrear en gráfico si aplica
+    if sombrear:
+        for _, row in editada.iterrows():
+            try:
+                x0 = float(row["X min"])
+                x1 = float(row["X max"])
+                st.session_state.setdefault("fig_extra_shapes", []).append({
+                    "type": "rect",
+                    "xref": "x",
+                    "yref": "paper",
+                    "x0": x0,
+                    "x1": x1,
+                    "y0": 0,
+                    "y1": 1,
+                    "fillcolor": "rgba(0, 100, 250, 0.1)",
+                    "line": {"width": 0}
+                })
+            except:
+                continue
+
+
+def render_tabla_bibliografia_ftir(db):
+    import streamlit as st
+    import pandas as pd
+
+    st.subheader("Tabla bibliográfica FTIR")
+    delinear = st.checkbox("Delinear Tabla bibliográfica", value=False, key="delinear_biblio_ftir")
+
+    ruta = "tablas_ftir_bibliografia"
+    doc_ref = db.document(ruta)
+    doc = doc_ref.get()
+
+    if doc.exists:
+        filas = doc.to_dict().get("filas", [])
+        df_biblio = pd.DataFrame(filas)
+    else:
+        df_biblio = pd.DataFrame([{
+            "Grupo funcional": "",
+            "X pico [cm⁻¹]": 0.0,
+            "X min": 0.0,
+            "X max": 0.0,
+            "Comentarios": ""
+        }])
+
+    editada = st.data_editor(
+        df_biblio,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="tabla_biblio_ftir"
+    )
+
+    # Guardar en firebase
+    if st.button("Guardar bibliografía FTIR", key="guardar_biblio_ftir"):
+        doc_ref.set({"filas": editada.to_dict(orient="records")})
+        st.success("Bibliografía guardada correctamente.")
+
+    if delinear:
+        import plotly.graph_objects as go
+        st.session_state["fig_extra_shapes"] = []
+        for _, row in editada.iterrows():
+            try:
+                x0 = float(row["X min"])
+                x1 = float(row["X max"])
+                st.session_state["fig_extra_shapes"].append({
+                    "type": "rect",
+                    "xref": "x",
+                    "yref": "paper",
+                    "x0": x0,
+                    "x1": x1,
+                    "y0": 0,
+                    "y1": 1,
+                    "fillcolor": "rgba(255, 0, 0, 0.1)",
+                    "line": {"width": 0}
+                })
+            except:
+                continue
+
+    return editada if delinear else pd.DataFrame([])
+
+
+def render_comparacion_espectros_ftir(db, muestras):
+    import plotly.graph_objects as go
+    from io import BytesIO
+    import base64
+    import pandas as pd
+    import numpy as np
+    from scipy.signal import savgol_filter
+    from streamlit import session_state as st_session
+    from tabla_bibliografia_ftir import render_tabla_bibliografia_ftir
+
+    st.subheader("Comparación de espectros FTIR")
+    tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
+    espectros_dict = {}
+
+    for m in muestras:
+        nombre = m["nombre"]
+        for e in obtener_espectros_para_muestra(db, nombre):
+            tipo = e.get("tipo", "")
+            if tipo in tipos_validos and not e.get("es_imagen", False):
+                archivo = e.get("nombre_archivo", "Sin nombre")
+                clave = (nombre, archivo)
+                espectros_dict[clave] = {
+                    "contenido": e.get("contenido"),
+                    "tipo": tipo,
+                    "archivo": archivo,
+                    "muestra": nombre
+                }
+
+    muestras_disponibles = sorted(set(k[0] for k in espectros_dict.keys()))
+    muestra_sel = st.selectbox("Seleccionar muestra", muestras_disponibles, key="muestra_ftir")
+    archivos_disp = [k[1] for k in espectros_dict.keys() if k[0] == muestra_sel]
+    archivos_sel = st.multiselect("Seleccionar espectros de esa muestra", archivos_disp, key="archivos_ftir")
+
+    datos_plotly = []
+    for archivo in archivos_sel:
+        clave = (muestra_sel, archivo)
+        e = espectros_dict[clave]
+        contenido = BytesIO(base64.b64decode(e["contenido"]))
+        ext = archivo.split(".")[-1].lower()
+        try:
+            if ext == "xlsx":
+                df = pd.read_excel(contenido, header=None)
+            else:
+                for sep in [",", ";", "\t", " "]:
+                    contenido.seek(0)
+                    try:
+                        df = pd.read_csv(contenido, sep=sep, header=None)
+                        if df.shape[1] >= 2:
+                            break
+                    except:
+                        continue
+                else:
+                    df = None
+            if df is not None and df.shape[1] >= 2:
+                df = df.iloc[:, :2]
+                df.columns = ["x", "y"]
+                df = df.apply(pd.to_numeric, errors="coerce").dropna()
+                datos_plotly.append((e["muestra"], e["tipo"], e["archivo"], df))
+        except Exception as ex:
+            st.warning(f"Error al cargar {archivo}: {ex}")
+
+    if not datos_plotly:
+        st.info("Seleccioná espectros válidos para graficar.")
+        return
+
+    # --- Controles de preprocesamiento ---
+    st.markdown("### Preprocesamiento y visualización")
+
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    aplicar_suavizado = col1.checkbox("Suavizado SG", value=False, key="suavizado_ftir")
+    normalizar = col2.checkbox("Normalizar", value=False, key="normalizar_ftir")
+    mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")
+    restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
+    ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
+    offset_vertical = col6.checkbox("Superposición vertical", value=False, key="offset_y_ftir")
+
+    todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
+    todos_y = np.concatenate([df["y"].values for _, _, _, df in datos_plotly])
+    colx1, colx2, coly1, coly2 = st.columns(4)
+    x_min = colx1.number_input("X min", value=float(np.min(todos_x)))
+    x_max = colx2.number_input("X max", value=float(np.max(todos_x)))
+    y_min = coly1.number_input("Y min", value=float(np.min(todos_y)))
+    y_max = coly2.number_input("Y max", value=float(np.max(todos_y)))
+
+    ajustes_y = {}
+    if ajuste_y_manual:
+        st.markdown("#### Ajuste Y individual por espectro")
+        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
+            clave = f"{muestra} – {tipo} – {archivo}"
+            ajustes_y[clave] = st.number_input(f"{clave}", step=0.1, value=0.0, key=f"ajuste_y_{clave}")
+    else:
+        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
+            clave = f"{muestra} – {tipo} – {archivo}"
+            ajustes_y[clave] = 0.0
+
+    x_ref, y_ref = None, None
+    if restar_espectro:
+        claves_validas = [f"{m} – {t} – {a}" for m, t, a, _ in datos_plotly]
+        espectro_ref = st.selectbox("Seleccionar espectro a restar", claves_validas, key="ref_ftir")
+        ajuste_y_ref = st.number_input("Ajuste Y referencia", value=0.0, step=0.1, key="ajuste_ref_ftir")
+
+        for m, t, a, df in datos_plotly:
+            if espectro_ref == f"{m} – {t} – {a}":
+                df_ref = df.copy()
+                x_ref = df_ref["x"].values
+                y_ref = df_ref["y"].values + ajuste_y_ref
+                break
+
+    # --- Renderizar tabla bibliográfica y aplicar shapes ---
+    render_tabla_bibliografia_ftir(db)
+
+    # --- Gráfico combinado ---
     fig = go.Figure()
-    offset = 0
-
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
         if df_filtrado.empty:
@@ -38,22 +297,31 @@ def render_grafico_combinado_ftir(datos_plotly, aplicar_suavizado=False, normali
         y = df_filtrado["y"].values
 
         if aplicar_suavizado and len(y) >= 7:
-            from scipy.signal import savgol_filter
             y = savgol_filter(y, window_length=7, polyorder=2)
-
         if normalizar and np.max(np.abs(y)) != 0:
             y = y / np.max(np.abs(y))
-
         if offset_vertical:
-            y = y + i * 0.2  # Espaciado entre espectros
+            y = y + i * 0.2
+        y = y + ajustes_y.get(f"{muestra} – {tipo} – {archivo}", 0.0)
 
-        label = f"{muestra} – {tipo} – {archivo}"
+        if restar_espectro and x_ref is not None and y_ref is not None:
+            from numpy import interp
+            mascara_valida = (x >= np.min(x_ref)) & (x <= np.max(x_ref))
+            x = x[mascara_valida]
+            y = y[mascara_valida]
+            y_interp = interp(x, x_ref, y_ref)
+            y = y - y_interp
+
         fig.add_trace(go.Scatter(
             x=x, y=y,
             mode="lines",
-            name=label,
+            name=f"{muestra} – {tipo} – {archivo}",
             hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"
         ))
+
+    # --- Aplicar sombreado de bibliografía si existe ---
+    if "fig_extra_shapes" in st.session_state:
+        fig.update_layout(shapes=st.session_state["fig_extra_shapes"])
 
     fig.update_layout(
         xaxis_title="Número de onda [cm⁻¹]",
@@ -61,11 +329,22 @@ def render_grafico_combinado_ftir(datos_plotly, aplicar_suavizado=False, normali
         margin=dict(l=10, r=10, t=30, b=10),
         height=500,
         xaxis=dict(range=[x_min, x_max]),
-        yaxis=dict(range=[y_min, y_max]),
-        legend_title="Espectros FTIR"
+        yaxis=dict(range=[y_min, y_max])
     )
-
     st.plotly_chart(fig, use_container_width=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 #    st.title("Análisis FTIR")
@@ -144,7 +423,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             use_container_width=True
         )
 
-    # --- Seccion 1.5 - Calculadora manual de Índice OH  ---
+    # --- Seccion 2 - Calculadora manual de Índice OH  ---
     datos_oh = pd.DataFrame([
         {"Tipo": "FTIR-Acetato [3548 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
         {"Tipo": "FTIR-Cloroformo A [3611 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
@@ -186,388 +465,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     #    st.markdown(" ")  # Espacio para alinear verticalmente
         st.dataframe(pd.DataFrame(resultados), use_container_width=True, hide_index=True)  # 👈 Oculta índice
 
+    # --- Sección 3: Comparación FTIR (Plotly) ---
+    render_comparacion_espectros_ftir(db, muestras)
 
 
-    # --- Sección 2: Comparación de espectros ---
-    st.subheader("Comparación de espectros FTIR")
-    # Filtrar espectros FTIR válidos
-    tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
-    espectros_dict = {}
-
-    for m in muestras:
-        nombre = m["nombre"]
-        for e in obtener_espectros_para_muestra(db, nombre):
-            tipo = e.get("tipo", "")
-            if tipo in tipos_validos and not e.get("es_imagen", False):
-                archivo = e.get("nombre_archivo", "Sin nombre")
-                clave = (nombre, archivo)
-                espectros_dict[clave] = {
-                    "contenido": e.get("contenido"),
-                    "tipo": tipo,
-                    "archivo": archivo,
-                    "muestra": nombre
-                }
-
-    # --- Mostrar selector por muestra y archivo ---
-    muestras_disponibles = sorted(set(k[0] for k in espectros_dict.keys()))
-    muestra_sel = st.selectbox("Seleccionar muestra", muestras_disponibles, key="muestra_ftir")
-    archivos_disp = [k[1] for k in espectros_dict.keys() if k[0] == muestra_sel]
-    archivos_sel = st.multiselect("Seleccionar espectros de esa muestra", archivos_disp, key="archivos_ftir")
-
-    # --- Preparar datos seleccionados ---
-    datos_plotly = []
-    for archivo in archivos_sel:
-        clave = (muestra_sel, archivo)
-        e = espectros_dict[clave]
-        contenido = BytesIO(base64.b64decode(e["contenido"]))
-        ext = archivo.split(".")[-1].lower()
-        try:
-            if ext == "xlsx":
-                df = pd.read_excel(contenido, header=None)
-            else:
-                for sep in [",", ";", "\t", " "]:
-                    contenido.seek(0)
-                    try:
-                        df = pd.read_csv(contenido, sep=sep, header=None)
-                        if df.shape[1] >= 2:
-                            break
-                    except:
-                        continue
-                else:
-                    df = None
-            if df is not None and df.shape[1] >= 2:
-                df = df.iloc[:, :2]
-                df.columns = ["x", "y"]
-                df = df.apply(pd.to_numeric, errors="coerce").dropna()
-                datos_plotly.append((e["muestra"], e["tipo"], e["archivo"], df))
-        except Exception as ex:
-            st.warning(f"Error al cargar {archivo}: {ex}")
-
-    # --- Mostrar gráfico combinado con Plotly ---
-    seleccionados = pd.DataFrame()
-    if datos_plotly:
-        seleccionados = pd.DataFrame([
-            {
-                "muestra": m,
-                "tipo": t,
-                "archivo": a,
-                "contenido": espectros_dict[(m, a)]["contenido"]
-            }
-            for m, a, t, df in [(m, a, t, df) for m, t, a, df in datos_plotly]
-        ])
-        st.subheader("Gráfico combinado")
-        fig = go.Figure()
-        for muestra, tipo, archivo, df in datos_plotly:
-            fig.add_trace(go.Scatter(x=df["x"], y=df["y"],
-                mode="lines",
-                name=f"{muestra} – {tipo} – {archivo}",
-                hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"
-            ))
-
-        fig.update_layout(
-            xaxis_title="Número de onda [cm⁻¹]",
-            yaxis_title="Absorbancia",
-            margin=dict(l=10, r=10, t=30, b=10),
-            height=450
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        datos = datos_plotly
-    else:
-        st.info("Seleccioná espectros válidos para graficar.")
-
-    # --- Fila de controles preprocesamiento estilo hoja 6 ---
-    st.markdown("### Preprocesamiento y opciones de visualización")
-
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    aplicar_suavizado = col1.checkbox("Suavizado SG", value=False, key="suavizado_ftir")
-    normalizar = col2.checkbox("Normalizar", value=False, key="normalizar_ftir")
-    mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")
-    restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
-    ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
-    offset_vertical = col6.checkbox("Superposición vertical", value=False, key="offset_y_ftir")
-
-    st.markdown("### Rango de visualización")
-    if datos_plotly:
-        todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
-        todos_y = np.concatenate([df["y"].values for _, _, _, df in datos_plotly])
-        colx1, colx2, coly1, coly2 = st.columns(4)
-        x_min = colx1.number_input("X min", value=float(np.min(todos_x)))
-        x_max = colx2.number_input("X max", value=float(np.max(todos_x)))
-        y_min = coly1.number_input("Y min", value=float(np.min(todos_y)))
-        y_max = coly2.number_input("Y max", value=float(np.max(todos_y)))
-    else:
-        x_min, x_max, y_min, y_max = None, None, None, None
-
-    # Restar espectro
-    x_ref, y_ref = None, None
-    if restar_espectro:
-        claves_validas = [f"{m} – {t} – {a}" for m, t, a, _ in datos_plotly]
-        espectro_ref = st.selectbox("Seleccionar espectro a restar", claves_validas, key="ref_ftir")
-        ajuste_y_ref = st.number_input("Ajuste Y referencia", value=0.0, step=0.1, key="ajuste_ref_ftir")
-
-        for m, t, a, df in datos_plotly:
-            if espectro_ref == f"{m} – {t} – {a}":
-                df_ref = df.copy()
-                x_ref = df_ref["x"].values
-                y_ref = df_ref["y"].values + ajuste_y_ref
-                break
-
-    render_grafico_combinado_ftir(
-        datos_plotly,
-        aplicar_suavizado=aplicar_suavizado,
-        normalizar=normalizar,
-        restar_espectro=restar_espectro,
-        ajustes_y=ajustes_y,
-        offset_vertical=offset_vertical,
-        x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max,
-        x_ref=x_ref, y_ref=y_ref
-    )
-
-
-
-    ajustes_y = {}
-    if ajuste_y_manual:
-        st.markdown("#### Ajuste Y individual por espectro")
-        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
-            clave = f"{muestra} – {tipo} – {archivo}"
-            ajustes_y[clave] = st.number_input(f"{clave}", step=0.1, value=0.0, key=f"ajuste_y_{clave}")
-    else:
-        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
-            clave = f"{muestra} – {tipo} – {archivo}"
-            ajustes_y[clave] = 0.0
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # --- Ajuste manual de eje Y ---
-    ajustar_y = st.checkbox("Ajuste manual de eje y", value=False)
-    ajustes_y = {}
-
-    if ajustar_y:
- #       st.markdown("#### Ajustes verticales por espectro")
-        for _, row in seleccionados.iterrows():
-            clave = f"{row['muestra']} – {row['tipo']} – {row['archivo']}"
-            ajustes_y[clave] = st.number_input(f"Ajuste Y para {clave}", value=0.0, step=0.1)
-    else:
-        for _, row in seleccionados.iterrows():
-            clave = f"{row['muestra']} – {row['tipo']} – {row['archivo']}"
-            ajustes_y[clave] = 0.0
-
-
-    # --- Checkbox y selección para restar espectro ---
-    restar_espectro = st.checkbox("Restar espectro", value=False)
-    ajuste_y_ref = 0.0
-    espectro_para_restar = None
-
-    if restar_espectro:
-        espectros_referencia = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1).tolist()
-        seleccion_resta = st.selectbox("Seleccionar espectro a restar", espectros_referencia, index=0)
-        ajuste_y_ref = st.number_input("Ajuste Y para espectro de referencia", value=0.0, step=0.1)
-
-        espectro_para_restar = df_espectros[df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1) == seleccion_resta]
-        if not espectro_para_restar.empty:
-            row_ref = espectro_para_restar.iloc[0]
-            try:
-                contenido_ref = BytesIO(base64.b64decode(row_ref["contenido"]))
-                ext_ref = row_ref["archivo"].split(".")[-1].lower()
-                if ext_ref == "xlsx":
-                    df_ref = pd.read_excel(contenido_ref, header=None)
-                else:
-                    for sep in [",", ";", "\t", " "]:
-                        contenido_ref.seek(0)
-                        try:
-                            df_ref = pd.read_csv(contenido_ref, sep=sep)
-                            if df_ref.shape[1] >= 2:
-                                break
-                        except:
-                            continue
-                    else:
-                        df_ref = None
-                if df_ref is not None:
-                    df_ref = df_ref.iloc[:, :2]  # Asegura solo 2 columnas
-                    df_ref.columns = ["x", "y"]
-                    df_ref = df_ref.astype(str)
-                    df_ref = df_ref.apply(pd.to_numeric, errors="coerce")
-                    df_ref = df_ref.dropna().astype(float)
-                    x_ref = df_ref.iloc[:, 0].values
-                    y_ref = df_ref.iloc[:, 1].values + ajuste_y_ref  # Aplica el ajuste de Y
-            except:
-                x_ref, y_ref = None, None
-        else:
-            x_ref, y_ref = None, None
-    else:
-        x_ref, y_ref = None, None
-
-
-    mostrar_picos = st.checkbox("Mostrar picos detectados automáticamente", value=False)
-
-    if mostrar_picos:
-        col1, col2 = st.columns(2)
-        altura_min = col1.number_input("Altura mínima", value=0.0, step=0.01)
-        distancia_min = col2.number_input("Distancia mínima entre picos", value=70, step=1)
-
-    datos = []
-    for _, row in seleccionados.iterrows():
-        try:
-            contenido = BytesIO(base64.b64decode(row["contenido"]))
-            ext = row["archivo"].split(".")[-1].lower()
-            if ext == "xlsx":
-                df = pd.read_excel(contenido, header=None)
-            else:
-                for sep in [",", ";", "\t", " "]:
-                    contenido.seek(0)
-                    try:
-                        df = pd.read_csv(contenido, sep=sep)
-                        if df.shape[1] >= 2:
-                            break
-                    except:
-                        continue
-                else:
-                    continue
-            df = df.iloc[:, :2]  # Asegura solo 2 columnas
-            df.columns = ["x", "y"]
-            df = df.astype(str)  # Limpia espacios
-            df = df.apply(pd.to_numeric, errors="coerce")  # Convierte a numérico
-            df = df.dropna().reset_index(drop=True)  
-            try:
-                df["x"] = df["x"].astype(float)
-                df["y"] = df["y"].astype(float)
-            except Exception as e:
-                st.error(f"❌ Error al convertir muestra {row['muestra']} – {row['archivo']}: {e}")
-                st.stop()
-
-            datos.append((row["muestra"], row["tipo"], row["archivo"], df))
-
-        except:
-            continue
-
-    if not datos:
-        return
-
-    all_x = np.concatenate([df.iloc[:, 0].values for _, _, _, df in datos])
-    
-     # --- Rango de visualización (todo en una fila) ---
-    col_x1, col_x2, col_y1, col_y2 = st.columns(4)
-    x_min = col_x1.number_input("X min", value=float(np.min(all_x)))
-    x_max = col_x2.number_input("X max", value=float(np.max(all_x)))
-    y_min = col_y1.number_input("Y min", value=float(np.min([df.iloc[:, 1].min() for _, _, _, df in datos])))
-    y_max = col_y2.number_input("Y max", value=float(np.max([df.iloc[:, 1].max() for _, _, _, df in datos])))
-    st.session_state["x_min"] = x_min
-    st.session_state["x_max"] = x_max
-
-    fig, ax = plt.subplots()
-    resumen = pd.DataFrame()
-    fwhm_rows = []
-
-    # Crear casillas horizontales por muestra para mostrar/ocultar etiquetas de picos
-    mostrar_etiquetas = {}
-    if mostrar_picos:
-#        st.markdown("### Mostrar etiquetas de picos por espectro:")
-        claves = [(f"{m} – {t} – {a}", m) for m, t, a, _ in datos]  # (clave interna, nombre corto)
-        columnas = st.columns(len(claves))
-        for i, (clave, nombre_corto) in enumerate(claves):
-            with columnas[i]:
-                mostrar_etiquetas[clave] = st.checkbox(nombre_corto, value=True, key=f"etiqueta_{clave}")
-
-    preprocesados = {}
-
-    for muestra, tipo, archivo, df in datos:
-        df_filtrado = df[(df.iloc[:, 0] >= x_min) & (df.iloc[:, 0] <= x_max)].copy()
-        if df_filtrado.empty:
-            continue
-        # Ordenar espectro a graficar
-        x = df_filtrado.iloc[:, 0].values
-        y = df_filtrado.iloc[:, 1].values
-        orden = np.argsort(x)
-        x = x[orden]
-        y = y[orden]
-
-        # Ajuste de eje Y 
-        clave = f"{muestra} – {tipo} – {archivo}"
-        y = y + ajustes_y.get(clave, 0.0)
-
-        # Restar espectro
-        if restar_espectro and x_ref is not None and y_ref is not None:
-            from numpy import interp
-            mascara_valida = (x >= np.min(x_ref)) & (x <= np.max(x_ref))
-            x = x[mascara_valida]
-            y = y[mascara_valida]
-            y_interp = interp(x, x_ref, y_ref)
-            y = y - y_interp
-
-        render_grafico_combinado_ftir(
-            datos_plotly,
-            aplicar_suavizado=aplicar_suavizado,
-            normalizar=normalizar,
-            restar_espectro=restar_espectro,
-            ajustes_y=ajustes_y,
-            offset_vertical=offset_vertical,
-            x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max,
-            x_ref=x_ref, y_ref=y_ref
-        )
-
-
-
-
-
-
-
-
-        # Convertir a Series para el resto del procesamiento
-        x = pd.Series(x)
-        y = pd.Series(y)
-
-
-        if aplicar_suavizado and len(y) >= 5:
-            window = 7 if len(y) % 2 else 7
-            y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
-        if normalizar and np.max(np.abs(y)) != 0:
-            y = y / np.max(np.abs(y))
-
-        preprocesados[clave] = pd.DataFrame({"x": x, "y": y})
-
-        label = f"{muestra} – {tipo}"
-        ax.plot(x, y, label=label)
-        x = x.astype(float)
-        resumen[f"{label} (X)"] = x
-        y = y.astype(float)
-        resumen[f"{label} (Y)"] = y
-
-        if mostrar_picos:
-            try:
-                peaks, props = find_peaks(y, height=altura_min, distance=distancia_min)
-                widths, width_heights, left_ips, right_ips = peak_widths(y, peaks, rel_height=0.5)
-                clave = f"{muestra} – {tipo} – {archivo}"
-                if not mostrar_etiquetas.get(clave, True):
-                    continue
-                for i, peak in enumerate(peaks):
-                    x_fwhm_left = np.interp(left_ips[i], np.arange(len(x)), x)
-                    x_fwhm_right = np.interp(right_ips[i], np.arange(len(x)), x)
-                    ancho = abs(x_fwhm_right - x_fwhm_left)
-                    etiqueta = f"{x.iloc[peak]:.0f} ({ancho:.0f}) cm⁻¹ ⇒ {y.iloc[peak]:.4f}"
-                    ax.plot(x.iloc[peak], y.iloc[peak], "x", color="black")
-                    ax.text(x.iloc[peak], y.iloc[peak], "   " + etiqueta, fontsize=6, ha="left", va="bottom", rotation=90)
-                    fwhm_rows.append({
-                        "Muestra": muestra,
-                        "Tipo": tipo,
-                        "Archivo": archivo,
-                        "X pico [cm⁻¹]": round(x.iloc[peak], 2),
-                        "Y pico": round(y.iloc[peak], 4),
-                        "Ancho FWHM [cm⁻¹]": round(ancho, 2)
-                    })
-            except:
-                continue
-     
-        # --- Comparación de similitud ---
+    # --- Comparación de similitud ---
     comparar_similitud = st.checkbox("Activar comparación de similitud", value=False)
     if comparar_similitud:
         col_sim1, col_sim2, col_sim3, col_sim4 = st.columns([1.2, 1.2, 1.2, 2.4])
@@ -576,48 +478,19 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         sombrear = col_sim3.checkbox("Sombrear", value=False)
         modo_similitud = col_sim4.selectbox("Modo de comparación", ["Correlación Pearson", "Comparación de integrales"], label_visibility="collapsed")
 
-        if sombrear:
-            ax.axvspan(x_comp_min, x_comp_max, color='gray', alpha=0.2, label="Rango comparado")
-
- 
-    ax.axhline(0, color="black", linestyle="--", linewidth=.6)
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_min, y_max)
-    ax.set_xlabel("Número de onda [cm⁻¹]")
-    ax.set_ylabel("Absorbancia")
-    ax.legend()
-    st.pyplot(fig)
-    
-
-    # --- Matriz de similitud ---
-    if comparar_similitud and x_comp_min is not None and x_comp_max is not None:
-        st.subheader("Matriz de similitud entre espectros")
         vectores = {}
-        for muestra, tipo, archivo, df in datos:
-            df_filt = df[(df.iloc[:, 0] >= x_comp_min) & (df.iloc[:, 0] <= x_comp_max)].copy()
+        for muestra, tipo, archivo, df in datos_plotly:
+            df_filt = df[(df["x"] >= x_comp_min) & (df["x"] <= x_comp_max)].copy()
             if df_filt.empty:
                 continue
-            x = df_filt.iloc[:, 0].reset_index(drop=True)
-            y = df_filt.iloc[:, 1].reset_index(drop=True)
+            x = df_filt["x"].values
+            y = df_filt["y"].values + ajustes_y.get(f"{muestra} – {tipo} – {archivo}", 0.0)
 
-            # 👇 APLICAR AJUSTE MANUAL DE Y
-            clave = f"{muestra} – {tipo} – {archivo}"
-            ajuste_y = ajustes_y.get(clave, 0.0)
-            y = y + ajuste_y
-
-            if aplicar_suavizado and len(y) >= 5:
-                window = 7 if len(y) % 2 else 7
-                y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
+            if aplicar_suavizado and len(y) >= 7:
+                y = savgol_filter(y, window_length=7, polyorder=2)
             if normalizar and np.max(np.abs(y)) != 0:
                 y = y / np.max(np.abs(y))
 
-            vectores[f"{muestra} – {tipo}"] = (x, y)
-
-            if aplicar_suavizado and len(y) >= 5:
-                window = 7 if len(y) % 2 else 7
-                y = pd.Series(savgol_filter(y, window_length=window, polyorder=2)).reset_index(drop=True)
-            if normalizar and np.max(np.abs(y)) != 0:
-                y = y / np.max(np.abs(y))
             vectores[f"{muestra} – {tipo}"] = (x, y)
 
         nombres = list(vectores.keys())
@@ -630,28 +503,29 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 yi_interp = np.interp(x_comun, xi, yi)
                 yj_interp = np.interp(x_comun, xj, yj)
 
-                if len(yi_interp) == 0 or len(yj_interp) == 0 or np.isnan(yi_interp).any() or np.isnan(yj_interp).any():
-                    simil = 0
+                if modo_similitud == "Correlación Pearson":
+                    simil = np.corrcoef(yi_interp, yj_interp)[0, 1] * 100 if np.std(yi_interp) and np.std(yj_interp) else 0
                 else:
-                    if modo_similitud == "Correlación Pearson":
-                        if np.std(yi_interp) == 0 or np.std(yj_interp) == 0:
-                            simil = 0
-                        else:
-                            simil = np.corrcoef(yi_interp, yj_interp)[0, 1] * 100
-                    else:  # Comparación de integrales
-                        area_i = np.trapz(yi_interp, x_comun)
-                        area_j = np.trapz(yj_interp, x_comun)
-                        if area_i == 0 and area_j == 0:
-                            simil = 100
-                        elif area_i == 0 or area_j == 0:
-                            simil = 0
-                        else:
-                            simil = (1 - abs(area_i - area_j) / max(abs(area_i), abs(area_j))) * 100
+                    area_i = np.trapz(yi_interp, x_comun)
+                    area_j = np.trapz(yj_interp, x_comun)
+                    if area_i == 0 and area_j == 0:
+                        simil = 100
+                    elif area_i == 0 or area_j == 0:
+                        simil = 0
+                    else:
+                        simil = (1 - abs(area_i - area_j) / max(abs(area_i), abs(area_j))) * 100
 
                 matriz[i, j] = simil
 
         df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
-
+        st.subheader("Matriz de similitud entre espectros")
+        st.dataframe(
+            df_similitud.style
+                .format(lambda x: f"{x:.2f} %")
+                .background_gradient(cmap="RdYlGn")
+                .set_properties(**{"text-align": "center"}),
+            use_container_width=True
+        )
        
         # Mostrar la tabla con el gradiente visual (usando los valores originales)
         st.dataframe(

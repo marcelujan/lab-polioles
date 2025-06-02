@@ -8,7 +8,6 @@ from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
 from scipy.optimize import curve_fit
 import plotly.graph_objects as go
-from numpy import interp
 
 
 def obtener_ids_espectros(nombre):
@@ -307,7 +306,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
             mascara_valida = (x >= np.min(x_ref)) & (x <= np.max(x_ref))
             x = x[mascara_valida]
             y = y[mascara_valida]
-            y_interp = interp(x, x_ref, y_ref)
+            y_interp = np.interp(x, x_ref, y_ref)
             y = y - y_interp
 
         fig.add_trace(go.Scatter(

@@ -840,14 +840,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         exportar_figura_plotly_png(fig, nombre_base="FTIR")
 
 
-# 3. Índice OH espectroscópico (siempre visible al final)
-st.subheader("Índice OH espectroscópico")
-df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
-if not df_oh.empty:
-    st.dataframe(df_oh, use_container_width=True)
+    # 3. Índice OH espectroscópico (siempre visible al final)
+    st.subheader("Índice OH espectroscópico")
+    df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
+    if not df_oh.empty:
+        st.dataframe(df_oh, use_container_width=True)
 
-calculadora_indice_oh_manual()
+    calculadora_indice_oh_manual()
 
-# Sector flotante final
-mostrar_sector_flotante(db, key_suffix="tab5")
+    # Sector flotante final
+    mostrar_sector_flotante(db, key_suffix="tab5")
 

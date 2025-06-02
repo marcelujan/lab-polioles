@@ -351,7 +351,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         yaxis_title="Absorbancia",
         margin=dict(l=10, r=10, t=30, b=10),
         height=500,
-        xaxis=dict(range=[controles["x_max"], controles["x_min"]]),  # eje invertido
+        xaxis=dict(range=[x_max, x_min]),
         yaxis=dict(range=[controles["y_min"], controles["y_max"]] if not controles["normalizar"] else None),
         legend=dict(
             orientation="h",
@@ -372,7 +372,7 @@ def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
 
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         clave = f"{muestra} – {tipo} – {archivo}"
-        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)]
+        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
         if df_filtrado.empty:
             continue
         x = df_filtrado["x"].values
@@ -401,7 +401,7 @@ def exportar_resultados_ftir(preprocesados, resumen=None, fwhm_rows=None, x_min=
             resumen.to_excel(writer, index=False, sheet_name="Resumen")
         for clave, df in preprocesados.items():
             if x_min is not None and x_max is not None:
-                df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)]
+                df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
             else:
                 df_filtrado = df
             nombre_hoja = clave.replace(" – ", "_")[:31]

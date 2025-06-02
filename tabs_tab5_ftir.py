@@ -761,7 +761,28 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         st.stop()
 
 
-    # 1. Calcular índice OH espectroscópico ---
+    # 1. Gráfica FTIR (internamente llama todo)
+    datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max = render_comparacion_espectros_ftir(db, muestras)
+ 
+    if not datos_plotly:
+        return  # Evita errores si no se seleccionaron espectros
+
+    # 2. Deconvolución FTIR (opcional)
+    if st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir"):
+        render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max)
+
+
+    if st.checkbox("Mostrar opciones de exportación", value=False):
+        exportar_resultados_ftir(
+            preprocesados=preprocesados,
+            resumen=None,  # o df_resumen si lo tuvieras
+            fwhm_rows=None,  # o fwhm_data si lo calculás
+            x_min=x_min, x_max=x_max
+        )
+        exportar_figura_plotly_png(fig, nombre_base="FTIR")
+
+
+    # 3. Calcular índice OH espectroscópico ---
     st.subheader("Índice OH espectroscópico")
     espectros_info = []
     for m in muestras:
@@ -828,28 +849,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
 
-    # 2. Calculadora manual de índice OH
+    # 4. Calculadora manual de índice OH
     calculadora_indice_oh_manual()
-
-    # 3. Gráfica FTIR (internamente llama todo)
-    datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max = render_comparacion_espectros_ftir(db, muestras)
- 
-    if not datos_plotly:
-        return  # Evita errores si no se seleccionaron espectros
-
-    # 4. Deconvolución FTIR (opcional)
-    if st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir"):
-        render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max)
-
-
-    if st.checkbox("Mostrar opciones de exportación", value=False):
-        exportar_resultados_ftir(
-            preprocesados=preprocesados,
-            resumen=None,  # o df_resumen si lo tuvieras
-            fwhm_rows=None,  # o fwhm_data si lo calculás
-            x_min=x_min, x_max=x_max
-        )
-        exportar_figura_plotly_png(fig, nombre_base="FTIR")
 
     # Sector flotante final
     mostrar_sector_flotante(db, key_suffix="tab5")

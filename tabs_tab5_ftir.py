@@ -8,7 +8,7 @@ from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
 from scipy.optimize import curve_fit
 import plotly.graph_objects as go
-
+from numpy import interp
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]

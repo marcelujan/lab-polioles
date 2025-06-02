@@ -437,7 +437,7 @@ def render_controles_preprocesamiento(datos_plotly):
     mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")  # No usado acá, solo flag
     restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
     ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
-    offset_vertical = col6.checkbox("Superposición vertical", value=False, key="offset_y_ftir")
+    mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
 
     # Rango XY automático
     todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
@@ -747,7 +747,6 @@ def render_comparacion_espectros_ftir(db, muestras):
     mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")
     restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
     ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
-    offset_vertical = col6.checkbox("Superposición vertical", value=False, key="offset_y_ftir")
 
     todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
     todos_y = np.concatenate([df["y"].values for _, _, _, df in datos_plotly])
@@ -800,13 +799,11 @@ def render_comparacion_espectros_ftir(db, muestras):
 
     preprocesados = generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar, offset_vertical, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max)
 
-    # ───────────── Superposición vertical ─────────────
-    if st.checkbox("Superposición vertical (gráfico separado)", key="superposicion_ftir"):
-        separacion = st.slider("Separación entre espectros", 0.0, 1.0, 0.3, 0.05)
-
+    if mostrar_grafico_vertical:
         fig_vertical = go.Figure()
+        desplazamiento = (y_max - y_min) * 0.1
         for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
-            clave = f"{muestra} – {tipo} – {archivo}"
+            y_offset = desplazamiento * i
             df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
             x = df_filtrado["x"].values
             y = df_filtrado["y"].values.astype(float)
@@ -815,19 +812,19 @@ def render_comparacion_espectros_ftir(db, muestras):
                 y = savgol_filter(y, window_length=7, polyorder=2)
             if normalizar and np.max(np.abs(y)) != 0:
                 y = y / np.max(np.abs(y))
-            y = y + i * separacion
+            y = y + y_offset
 
             fig_vertical.add_trace(go.Scatter(
-                x=x, y=y, mode="lines", name=archivo,
+                x=x, y=y, mode="lines", name=f"{muestra} – {tipo} – {archivo}",
                 hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"
             ))
 
         fig_vertical.update_layout(
-            title="Superposición vertical (FTIR)",
+            title="📊 Superposición vertical de espectros (FTIR)",
             xaxis_title="Número de onda [cm⁻¹]",
-            yaxis_title="Absorbancia (desplazada)",
-            height=500,
+            yaxis_title="Absorbancia desplazada",
             xaxis=dict(range=[x_max, x_min]),  # eje invertido
+            height=500,
             legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
         )
         st.plotly_chart(fig_vertical, use_container_width=True)

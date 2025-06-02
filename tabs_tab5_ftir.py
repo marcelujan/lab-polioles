@@ -840,71 +840,71 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         exportar_figura_plotly_png(fig, nombre_base="FTIR")
 
 
-    # 3. Calcular índice OH espectroscópico ---
-    st.subheader("Índice OH espectroscópico")
-    espectros_info = []
-    for m in muestras:
-        for e in obtener_espectros_para_muestra(db, m["nombre"]):
-            tipo = e.get("tipo", "")
-            if tipo not in ["FTIR-Acetato", "FTIR-Cloroformo"]:
-                continue
-            contenido = e.get("contenido")
-            es_imagen = e.get("es_imagen", False)
-            valor_y_extraido = None
-            if contenido and not es_imagen:
-                try:
-                    extension = e.get("nombre_archivo", "").split(".")[-1].lower()
-                    binario = BytesIO(base64.b64decode(contenido))
-                    if extension == "xlsx":
-                        df = pd.read_excel(binario, header=None)
+# 3. Calcular índice OH espectroscópico ---
+st.subheader("Índice OH espectroscópico")
+espectros_info = []
+for m in muestras:
+    for e in obtener_espectros_para_muestra(db, m["nombre"]):
+        tipo = e.get("tipo", "")
+        if tipo not in ["FTIR-Acetato", "FTIR-Cloroformo"]:
+            continue
+        contenido = e.get("contenido")
+        es_imagen = e.get("es_imagen", False)
+        valor_y_extraido = None
+        if contenido and not es_imagen:
+            try:
+                extension = e.get("nombre_archivo", "").split(".")[-1].lower()
+                binario = BytesIO(base64.b64decode(contenido))
+                if extension == "xlsx":
+                    df = pd.read_excel(binario, header=None)
+                else:
+                    for sep in [",", ";", "\t", " "]:
+                        binario.seek(0)
+                        try:
+                            df = pd.read_csv(binario, sep=sep, header=None)
+                            if df.shape[1] >= 2:
+                                break
+                        except:
+                            continue
                     else:
-                        for sep in [",", ";", "\t", " "]:
-                            binario.seek(0)
-                            try:
-                                df = pd.read_csv(binario, sep=sep, header=None)
-                                if df.shape[1] >= 2:
-                                    break
-                            except:
-                                continue
-                        else:
-                            df = None
-                    if df is not None and df.shape[1] >= 2:
-                        df = df.dropna()
-                        x_val = pd.to_numeric(df.iloc[:, 0], errors='coerce')
-                        y_val = pd.to_numeric(df.iloc[:, 1], errors='coerce')
-                        df_limpio = pd.DataFrame({"X": x_val, "Y": y_val}).dropna()
-                        objetivo_x = 3548 if tipo == "FTIR-Acetato" else 3611
-                        idx = (df_limpio["X"] - objetivo_x).abs().idxmin()
-                        valor_y_extraido = df_limpio.loc[idx, "Y"]
-                except:
-                    valor_y_extraido = None
+                        df = None
+                if df is not None and df.shape[1] >= 2:
+                    df = df.dropna()
+                    x_val = pd.to_numeric(df.iloc[:, 0], errors='coerce')
+                    y_val = pd.to_numeric(df.iloc[:, 1], errors='coerce')
+                    df_limpio = pd.DataFrame({"X": x_val, "Y": y_val}).dropna()
+                    objetivo_x = 3548 if tipo == "FTIR-Acetato" else 3611
+                    idx = (df_limpio["X"] - objetivo_x).abs().idxmin()
+                    valor_y_extraido = df_limpio.loc[idx, "Y"]
+            except:
+                valor_y_extraido = None
 
-            espectros_info.append({
-                "Muestra": m["nombre"],
-                "Tipo": tipo,
-                "Fecha": e.get("fecha", ""),
-                "Señal": valor_y_extraido,
-                "Señal manual 3548": e.get("senal_3548"),
-                "Señal manual 3611": e.get("senal_3611"),
-                "Peso muestra [g]": e.get("peso_muestra")
-            })
+        espectros_info.append({
+            "Muestra": m["nombre"],
+            "Tipo": tipo,
+            "Fecha": e.get("fecha", ""),
+            "Señal": valor_y_extraido,
+            "Señal manual 3548": e.get("senal_3548"),
+            "Señal manual 3611": e.get("senal_3611"),
+            "Peso muestra [g]": e.get("peso_muestra")
+        })
 
-    df_oh = pd.DataFrame(espectros_info)
-    if not df_oh.empty:
-        df_oh["Señal solvente"] = df_oh.apply(lambda row: row["Señal manual 3548"] if row["Tipo"] == "FTIR-Acetato" else row["Señal manual 3611"], axis=1)
+df_oh = pd.DataFrame(espectros_info)
+if not df_oh.empty:
+    df_oh["Señal solvente"] = df_oh.apply(lambda row: row["Señal manual 3548"] if row["Tipo"] == "FTIR-Acetato" else row["Señal manual 3611"], axis=1)
 
-        def calcular_indice(row):
-            peso = row["Peso muestra [g]"]
-            y_graf = row["Señal"]
-            y_ref = row["Señal solvente"]
-            if not all([peso, y_graf, y_ref]) or peso == 0:
-                return None
-            k = 52.5253 if row["Tipo"] == "FTIR-Acetato" else 66.7324
-            return round(((y_graf - y_ref) * k) / peso, 2)
+    def calcular_indice(row):
+        peso = row["Peso muestra [g]"]
+        y_graf = row["Señal"]
+        y_ref = row["Señal solvente"]
+        if not all([peso, y_graf, y_ref]) or peso == 0:
+            return None
+        k = 52.5253 if row["Tipo"] == "FTIR-Acetato" else 66.7324
+        return round(((y_graf - y_ref) * k) / peso, 2)
 
-        df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
-        df_oh["Índice OH"] = pd.to_numeric(df_oh["Índice OH"], errors="coerce")
-        st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
+    df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
+    df_oh["Índice OH"] = pd.to_numeric(df_oh["Índice OH"], errors="coerce")
+    st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
 
 st.subheader("Índice OH espectroscópico")

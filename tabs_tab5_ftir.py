@@ -829,25 +829,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 exportar_figura_plotly_png(fig, nombre_base="FTIR")
 
 
-    # 1. Gráfica FTIR (internamente llama todo)
-    datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max = render_comparacion_espectros_ftir(db, muestras)
- 
-    if not datos_plotly:
-        return  # Evita errores si no se seleccionaron espectros
 
-
-    # 2. Deconvolución FTIR (opcional)
-    if st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir"):
-        render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max)
-
-    if st.checkbox("Mostrar opciones de exportación", value=False):
-        exportar_resultados_ftir(
-            preprocesados=preprocesados,
-            resumen=None,  # o df_resumen si lo tuvieras
-            fwhm_rows=None,  # o fwhm_data si lo calculás
-            x_min=x_min, x_max=x_max
-        )
-        exportar_figura_plotly_png(fig, nombre_base="FTIR")
 
     # 3. Índice OH espectroscópico (siempre visible al final)
     st.subheader("Índice OH espectroscópico")

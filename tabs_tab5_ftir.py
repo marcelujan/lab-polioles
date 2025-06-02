@@ -285,7 +285,8 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
 
 def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normalizar,
                                    offset_vertical, ajustes_y, restar_espectro,
-                                   x_ref, y_ref, x_min, x_max, y_min, y_max):
+                                   x_ref, y_ref, x_min, x_max, y_min, y_max,
+                                   mostrar_picos=False):
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         clave = f"{muestra} – {tipo} – {archivo}"
         df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
@@ -315,6 +316,24 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
             name=clave,
             hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"
         ))
+
+    if mostrar_picos:
+        from scipy.signal import find_peaks
+        try:
+            peaks, _ = find_peaks(y, height=0.05, distance=5)
+            for p in peaks:
+                fig.add_trace(go.Scatter(
+                    x=[x[p]],
+                    y=[y[p]],
+                    mode="markers+text",
+                    marker=dict(color="black", size=6),
+                    text=[f"{x[p]:.2f}"],
+                    textposition="top center",
+                    showlegend=False
+                ))
+        except Exception as e:
+            st.warning(f"⚠️ Error al detectar picos en {clave}: {e}")
+
 
     if "fig_extra_shapes" in st.session_state:
         fig.update_layout(shapes=st.session_state["fig_extra_shapes"])
@@ -754,7 +773,12 @@ def render_comparacion_espectros_ftir(db, muestras):
     render_tabla_bibliografia_ftir(db)
 
     fig = go.Figure()
-    render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normalizar, offset_vertical, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max, y_min, y_max)
+    render_grafico_combinado_ftir(
+        fig, datos_plotly, aplicar_suavizado, normalizar,
+        offset_vertical, ajustes_y, restar_espectro,
+        x_ref, y_ref, x_min, x_max, y_min, y_max,
+        mostrar_picos
+    )
     preprocesados = generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar, offset_vertical, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max)
 
     return datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max

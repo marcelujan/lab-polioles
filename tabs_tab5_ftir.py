@@ -313,10 +313,11 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         if x_ref is not None and y_ref is not None:
             try:
                 y_interp = np.interp(x, x_ref, y_ref, left=np.nan, right=np.nan)
-                y_data = y_data - y_interp
-                mask_validos = ~np.isnan(y_data)
+                mask_validos = ~np.isnan(y_interp)
                 x = x[mask_validos]
                 y_data = y_data[mask_validos]
+                y_interp = y_interp[mask_validos]
+                y_data = y_data - y_interp
             except Exception as e:
                 st.warning(f"Error en interpolación: {e}")
 

@@ -352,7 +352,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         margin=dict(l=10, r=10, t=30, b=10),
         height=500,
         xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(range=[controles["y_min"], controles["y_max"]] if not controles["normalizar"] else None),
+        yaxis=dict(range=[y_min, y_max] if not normalizar else None),
         legend=dict(
             orientation="h",
             yanchor="bottom",

@@ -165,6 +165,15 @@ def render_tabla_bibliografia_ftir(db):
 
     return editada if delinear else pd.DataFrame([])
 
+
+
+
+
+
+
+
+
+
 def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
     st.subheader("🔍 Deconvolución FTIR")
     if not preprocesados:
@@ -174,15 +183,15 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
     if not st.checkbox("Activar deconvolución", key="activar_deconv"):
         return
 
+    # Selección de espectros
     col1, col2, col3, col4 = st.columns(4)
-    checkboxes = {}
     claves_disponibles = list(preprocesados.keys())
-
+    checkboxes = {}
     for i, clave in enumerate(claves_disponibles):
         with [col1, col2, col3, col4][i % 4]:
             checkboxes[clave] = st.checkbox(clave, value=False, key=f"deconv_{clave}")
 
-    # Inicializar acumulador
+    # Inicializar acumulador si no existe
     if "resultados_totales" not in st.session_state:
         st.session_state["resultados_totales"] = {}
 
@@ -195,16 +204,25 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
             if df is None or df.empty:
                 continue
 
-            x = df["x"].values
-            y = df["y"].values
+            x = df["x"].values.astype(float)
+            y = df["y"].values.astype(float)
+
+            # Limitar al rango de usuario
+            mask = (x >= x_min) & (x <= x_max)
+            x = x[mask]
+            y = y[mask]
+            if len(x) < 10:
+                st.warning(f"⚠️ Muy pocos puntos para {clave} en el rango definido.")
+                continue
 
             def multi_gaussian(x, *params):
-                y_fit = np.zeros_like(x)
+                y_fit = np.zeros_like(x, dtype=float)
                 for i in range(0, len(params), 3):
                     amp, cen, wid = params[i:i+3]
                     y_fit += amp * np.exp(-(x - cen)**2 / (2 * wid**2))
                 return y_fit
 
+            # Parámetros iniciales y ajuste
             n_gauss = st.slider(f"Nº de gaussianas para {clave}", 1, 10, 3, key=f"gauss_{clave}")
             p0 = []
             for i in range(n_gauss):
@@ -213,43 +231,53 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
             popt, _ = curve_fit(multi_gaussian, x, y, p0=p0, maxfev=10000)
             y_fit = multi_gaussian(x, *popt)
 
-            fig, ax = plt.subplots()
-            ax.plot(x, y, label="Original", color="black")
-            ax.plot(x, y_fit, "--", label="Ajuste", color="orange")
+            # Plot con Plotly
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name="Original", line=dict(color="black")))
+            fig.add_trace(go.Scatter(x=x, y=y_fit, mode="lines", name="Ajuste", line=dict(dash="dash", color="orange")))
 
             resultados = []
-            colores = plt.cm.get_cmap("tab10")
             for i in range(n_gauss):
                 amp, cen, wid = popt[3*i:3*i+3]
                 gauss = amp * np.exp(-(x - cen)**2 / (2 * wid**2))
                 area = amp * wid * np.sqrt(2*np.pi)
-                ax.plot(x, gauss, ":", label=f"Pico {i+1}", color=colores(i))
+                fwhm = 2.355 * abs(wid)
+                fig.add_trace(go.Scatter(
+                    x=x, y=gauss, mode="lines", name=f"Pico {i+1}", line=dict(dash="dot")
+                ))
                 resultados.append({
                     "Pico": i+1,
                     "Centro (cm⁻¹)": round(cen, 2),
                     "Amplitud": round(amp, 2),
                     "Anchura σ": round(wid, 2),
+                    "FWHM": round(fwhm, 2),
                     "Área": round(area, 2)
                 })
 
-            ax.set_xlim(x_min, x_max)
-            ax.set_ylim(y_min, y_max)
-            ax.set_xlabel("Número de onda [cm⁻¹]")
-            ax.set_ylabel("Absorbancia")
-            ax.legend()
-            st.pyplot(fig)
+            fig.update_layout(
+                title=f"Deconvolución – {clave}",
+                xaxis_title="Número de onda [cm⁻¹]",
+                yaxis_title="Absorbancia",
+                height=500,
+                xaxis=dict(range=[x_max, x_min]),
+                yaxis=dict(range=[y_min, y_max]),
+                legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
-            rmse = np.sqrt(np.mean((y - y_fit) ** 2))
+            # Métricas de ajuste
+            rmse = np.sqrt(np.mean((y - y_fit)**2))
             ss_res = np.sum((y - y_fit) ** 2)
             ss_tot = np.sum((y - np.mean(y)) ** 2)
             r2 = 1 - (ss_res / ss_tot)
-            st.markdown(f"""**{clave}**  
-**RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}""")
+            st.markdown(f"**{clave}**  **RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}")
 
+            # Mostrar y guardar resultados
             df_result = pd.DataFrame(resultados)
             st.session_state["resultados_totales"][clave] = df_result
             st.dataframe(df_result, use_container_width=True)
 
+            # Botón de descarga individual
             buf_excel = BytesIO()
             with pd.ExcelWriter(buf_excel, engine="xlsxwriter") as writer:
                 df_result.to_excel(writer, index=False, sheet_name="Deconvolucion")
@@ -280,6 +308,18 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
                            file_name="FTIR_Deconvoluciones.xlsx",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            key="dl_total_deconv")
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

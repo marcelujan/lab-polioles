@@ -223,6 +223,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             height=450
         )
         st.plotly_chart(fig, use_container_width=True)
+        datos = datos_plotly
     else:
         st.info("Seleccioná espectros válidos para graficar.")
 

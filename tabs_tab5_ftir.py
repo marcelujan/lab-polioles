@@ -334,6 +334,112 @@ def render_comparacion_espectros_ftir(db, muestras):
     st.plotly_chart(fig, use_container_width=True)
 
 
+import streamlit as st
+import pandas as pd
+import numpy as np
+from io import BytesIO
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+
+def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
+    st.subheader("🔍 Deconvolución FTIR")
+    if not preprocesados:
+        st.info("No hay espectros preprocesados para deconvolución.")
+        return
+
+    if not st.checkbox("Activar deconvolución", key="activar_deconv"):
+        return
+
+    col1, col2, col3, col4 = st.columns(4)
+    checkboxes = {}
+    claves_disponibles = list(preprocesados.keys())
+
+    for i, clave in enumerate(claves_disponibles):
+        with [col1, col2, col3, col4][i % 4]:
+            checkboxes[clave] = st.checkbox(clave, value=False, key=f"deconv_{clave}")
+
+    for clave in claves_disponibles:
+        if not checkboxes.get(clave):
+            continue
+
+        try:
+            df = preprocesados.get(clave)
+            if df is None or df.empty:
+                continue
+
+            x = df["x"].values
+            y = df["y"].values
+
+            def multi_gaussian(x, *params):
+                y_fit = np.zeros_like(x)
+                for i in range(0, len(params), 3):
+                    amp, cen, wid = params[i:i+3]
+                    y_fit += amp * np.exp(-(x - cen)**2 / (2 * wid**2))
+                return y_fit
+
+            n_gauss = st.slider(f"Nº de gaussianas para {clave}", 1, 10, 3, key=f"gauss_{clave}")
+            p0 = []
+            for i in range(n_gauss):
+                p0 += [y.max() / n_gauss, x.min() + i * (np.ptp(x) / n_gauss), 10]
+
+            popt, _ = curve_fit(multi_gaussian, x, y, p0=p0, maxfev=10000)
+            y_fit = multi_gaussian(x, *popt)
+
+            fig, ax = plt.subplots()
+            ax.plot(x, y, label="Original", color="black")
+            ax.plot(x, y_fit, "--", label="Ajuste", color="orange")
+
+            resultados = []
+            colores = plt.cm.get_cmap("tab10")
+            for i in range(n_gauss):
+                amp, cen, wid = popt[3*i:3*i+3]
+                gauss = amp * np.exp(-(x - cen)**2 / (2 * wid**2))
+                area = amp * wid * np.sqrt(2*np.pi)
+                ax.plot(x, gauss, ":", label=f"Pico {i+1}", color=colores(i))
+                resultados.append({
+                    "Pico": i+1,
+                    "Centro (cm⁻¹)": round(cen, 2),
+                    "Amplitud": round(amp, 2),
+                    "Anchura σ": round(wid, 2),
+                    "Área": round(area, 2)
+                })
+
+            ax.set_xlim(x_min, x_max)
+            ax.set_ylim(y_min, y_max)
+            ax.set_xlabel("Número de onda [cm⁻¹]")
+            ax.set_ylabel("Absorbancia")
+            ax.legend()
+            st.pyplot(fig)
+
+            rmse = np.sqrt(np.mean((y - y_fit) ** 2))
+            ss_res = np.sum((y - y_fit) ** 2)
+            ss_tot = np.sum((y - np.mean(y)) ** 2)
+            r2 = 1 - (ss_res / ss_tot)
+            st.markdown(f"""**{clave}**  
+**RMSE:** {rmse:.4f} &nbsp;&nbsp;&nbsp;&nbsp; **R²:** {r2:.4f}""")
+
+            df_result = pd.DataFrame(resultados)
+            st.dataframe(df_result, use_container_width=True)
+
+            buf_excel = BytesIO()
+            with pd.ExcelWriter(buf_excel, engine="xlsxwriter") as writer:
+                df_result.to_excel(writer, index=False, sheet_name="Deconvolucion")
+            buf_excel.seek(0)
+            st.download_button("📅 Descargar parámetros", data=buf_excel.getvalue(),
+                               file_name=f"deconv_{clave.replace(' – ', '_')}.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                               key=f"dl_{clave}")
+
+        except Exception as e:
+            if "Optimal parameters not found" in str(e):
+                st.warning(f"""
+⚠️ No se pudo ajustar **{clave}** porque el optimizador no encontró parámetros adecuados.  
+👉 Sugerencia: probá ajustar el rango X o el número de gaussianas.
+""")
+            else:
+                st.warning(f"❌ Error al ajustar {clave}: {e}")
+
 
 
 

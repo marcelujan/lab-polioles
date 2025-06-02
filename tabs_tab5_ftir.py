@@ -198,6 +198,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     # --- Mostrar gráfico combinado con Plotly ---
     if datos_plotly:
+        seleccionados = pd.DataFrame([
+            {
+                "muestra": m,
+                "tipo": t,
+                "archivo": a,
+                "contenido": espectros_dict[(m, a)]["contenido"]
+            }
+            for m, a, t, df in [(m, a, t, df) for m, t, a, df in datos_plotly]
+        ])
         st.subheader("Gráfico combinado")
         fig = go.Figure()
         for muestra, tipo, archivo, df in datos_plotly:

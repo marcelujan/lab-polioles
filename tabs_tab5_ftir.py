@@ -809,12 +809,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     opciones_muestras = sorted([m["nombre"] for m in cargar_muestras(db)])
     muestras_sel = st.multiselect("Seleccionar muestras", opciones_muestras)
 
-    st.subheader("Índice OH espectroscópico")
-    df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
-    if not df_oh.empty:
-        st.dataframe(df_oh, use_container_width=True)
-
-    calculadora_indice_oh_manual()
 
 
     if not muestras_sel:
@@ -913,5 +907,12 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
 
-    # Sector flotante final
-    mostrar_sector_flotante(db, key_suffix="tab5")
+st.subheader("Índice OH espectroscópico")
+df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
+if not df_oh.empty:
+    st.dataframe(df_oh, use_container_width=True)
+
+calculadora_indice_oh_manual()
+
+# Sector flotante final
+mostrar_sector_flotante(db, key_suffix="tab5")

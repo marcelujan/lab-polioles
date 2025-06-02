@@ -828,11 +828,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 )
                 exportar_figura_plotly_png(fig, nombre_base="FTIR")
 
-    muestras = [m for m in cargar_muestras(db) if m["nombre"] in muestras_sel]
-    if not muestras:
-        st.info("No hay muestras cargadas.")
-        st.stop()
-
 
     # 1. Gráfica FTIR (internamente llama todo)
     datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max = render_comparacion_espectros_ftir(db, muestras)

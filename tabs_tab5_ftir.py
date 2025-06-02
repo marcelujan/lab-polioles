@@ -816,7 +816,12 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
  
     if not datos_plotly:
         return  # Evita errores si no se seleccionaron espectros
-    
+
+    # 4. Deconvolución FTIR (opcional)
+    if st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir"):
+        render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max)
+
+
     if st.checkbox("Mostrar opciones de exportación", value=False):
         exportar_resultados_ftir(
             preprocesados=preprocesados,

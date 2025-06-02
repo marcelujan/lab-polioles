@@ -808,6 +808,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     st.session_state["current_tab"] = "Análisis FTIR"
     opciones_muestras = sorted([m["nombre"] for m in cargar_muestras(db)])
     muestras_sel = st.multiselect("Seleccionar muestras", opciones_muestras)
+
+    st.subheader("Índice OH espectroscópico")
+    df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
+    if not df_oh.empty:
+        st.dataframe(df_oh, use_container_width=True)
+
+    calculadora_indice_oh_manual()
+
+
     if not muestras_sel:
         st.stop()
     muestras = [m for m in cargar_muestras(db) if m["nombre"] in muestras_sel]
@@ -903,9 +912,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         df_oh["Índice OH"] = pd.to_numeric(df_oh["Índice OH"], errors="coerce")
         st.dataframe(df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]], use_container_width=True)
 
-
-    # 4. Calculadora manual de índice OH
-    calculadora_indice_oh_manual()
 
     # Sector flotante final
     mostrar_sector_flotante(db, key_suffix="tab5")

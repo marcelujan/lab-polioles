@@ -7,7 +7,7 @@ from io import BytesIO
 from datetime import datetime
 from scipy.signal import savgol_filter, find_peaks, peak_widths
 from scipy.optimize import curve_fit
-import plotly.graph_objects as go
+
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
@@ -143,79 +143,24 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     # --- Sección 2: Comparación de espectros ---
     st.subheader("Comparación de espectros FTIR")
-    # Filtrar espectros FTIR válidos
-    tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
-    espectros_dict = {}
-
+    espectros = []
     for m in muestras:
-        nombre = m["nombre"]
-        for e in obtener_espectros_para_muestra(db, nombre):
-            tipo = e.get("tipo", "")
-            if tipo in tipos_validos and not e.get("es_imagen", False):
-                archivo = e.get("nombre_archivo", "Sin nombre")
-                clave = (nombre, archivo)
-                espectros_dict[clave] = {
-                    "contenido": e.get("contenido"),
-                    "tipo": tipo,
-                    "archivo": archivo,
-                    "muestra": nombre
-                }
+        for e in obtener_espectros_para_muestra(db, m["nombre"]):
+            if e.get("tipo", "").startswith("FTIR") and not e.get("es_imagen", False):
+                espectros.append({
+                    "muestra": m["nombre"],
+                    "tipo": e.get("tipo", ""),
+                    "archivo": e.get("nombre_archivo", ""),
+                    "contenido": e.get("contenido")
+                })
 
-    # --- Mostrar selector por muestra y archivo ---
-    muestras_disponibles = sorted(set(k[0] for k in espectros_dict.keys()))
-    muestra_sel = st.selectbox("Seleccionar muestra", muestras_disponibles, key="muestra_ftir")
-    archivos_disp = [k[1] for k in espectros_dict.keys() if k[0] == muestra_sel]
-    archivos_sel = st.multiselect("Seleccionar espectros de esa muestra", archivos_disp, key="archivos_ftir")
+    df_espectros = pd.DataFrame(espectros)
+    opciones = df_espectros.apply(lambda row: f"{row['muestra']} – {row['tipo']} – {row['archivo']}", axis=1)
+    seleccion = st.multiselect("Seleccionar espectros para comparar", opciones, default=[])
+    seleccionados = df_espectros[opciones.isin(seleccion)]
 
-    # --- Preparar datos seleccionados ---
-    datos_plotly = []
-    for archivo in archivos_sel:
-        clave = (muestra_sel, archivo)
-        e = espectros_dict[clave]
-        contenido = BytesIO(base64.b64decode(e["contenido"]))
-        ext = archivo.split(".")[-1].lower()
-        try:
-            if ext == "xlsx":
-                df = pd.read_excel(contenido, header=None)
-            else:
-                for sep in [",", ";", "\t", " "]:
-                    contenido.seek(0)
-                    try:
-                        df = pd.read_csv(contenido, sep=sep, header=None)
-                        if df.shape[1] >= 2:
-                            break
-                    except:
-                        continue
-                else:
-                    df = None
-            if df is not None and df.shape[1] >= 2:
-                df = df.iloc[:, :2]
-                df.columns = ["x", "y"]
-                df = df.apply(pd.to_numeric, errors="coerce").dropna()
-                datos_plotly.append((e["muestra"], e["tipo"], e["archivo"], df))
-        except Exception as ex:
-            st.warning(f"Error al cargar {archivo}: {ex}")
-
-    # --- Mostrar gráfico combinado con Plotly ---
-    if datos_plotly:
-        st.subheader("Gráfico combinado")
-        fig = go.Figure()
-        for muestra, tipo, archivo, df in datos_plotly:
-            fig.add_trace(go.Scatter(x=df["x"], y=df["y"],
-                mode="lines",
-                name=f"{muestra} – {tipo} – {archivo}",
-                hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"
-            ))
-
-        fig.update_layout(
-            xaxis_title="Número de onda [cm⁻¹]",
-            yaxis_title="Absorbancia",
-            margin=dict(l=10, r=10, t=30, b=10),
-            height=450
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Seleccioná espectros válidos para graficar.")
+    if seleccionados.empty:
+        return
 
     aplicar_suavizado = st.checkbox("Aplicar suavizado (Savitzky-Golay)", value=False)
     normalizar = st.checkbox("Normalizar intensidad", value=False)

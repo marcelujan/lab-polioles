@@ -311,17 +311,15 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         y_data = y.copy()  # y ya tiene suavizado, normalizado, offset, etc.
 
         if x_ref is not None and y_ref is not None:
-            x_min_ref = np.min(x_ref)
-            x_max_ref = np.max(x_ref)
-            mascara_valida = (x >= x_min_ref) & (x <= x_max_ref)
-            x = x[mascara_valida]
-            y_data = y_data[mascara_valida]
-
             try:
-                y_interp = np.interp(x, x_ref, y_ref)
+                y_interp = np.interp(x, x_ref, y_ref, left=np.nan, right=np.nan)
                 y_data = y_data - y_interp
+                mask_validos = ~np.isnan(y_data)
+                x = x[mask_validos]
+                y_data = y_data[mask_validos]
             except Exception as e:
                 st.warning(f"Error en interpolación: {e}")
+
 
         if i == 0:
             st.write("📈 y_data original:", y_data[:5])

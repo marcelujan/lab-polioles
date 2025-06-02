@@ -298,8 +298,6 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
             y = savgol_filter(y, window_length=7, polyorder=2)
         if normalizar and np.max(np.abs(y)) != 0:
             y = y / np.max(np.abs(y))
-        if offset_vertical:
-            y = y + i * 0.2
         y = y + ajustes_y.get(clave, 0.0)
 
         # x e y ya están filtrados, suavizados, normalizados, ajustados, etc.
@@ -368,7 +366,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
     st.plotly_chart(fig, use_container_width=True)
 
 def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
-                                offset_vertical, ajustes_y, restar_espectro,
+                                ajustes_y, restar_espectro,
                                 x_ref, y_ref, x_min, x_max):
     preprocesados = {}
 
@@ -384,8 +382,6 @@ def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
             y = savgol_filter(y, window_length=7, polyorder=2)
         if normalizar and np.max(np.abs(y)) != 0:
             y = y / np.max(np.abs(y))
-        if offset_vertical:
-            y = y + i * 0.2
         y = y + ajustes_y.get(clave, 0.0)
 
         if restar_espectro and x_ref is not None and y_ref is not None:
@@ -479,7 +475,6 @@ def render_controles_preprocesamiento(datos_plotly):
         "mostrar_picos": mostrar_picos,
         "restar": restar_espectro,
         "ajuste_y_manual": ajuste_y_manual,
-        "offset_vertical": offset_vertical,
         "ajustes_y": ajustes_y,
         "x_ref": x_ref,
         "y_ref": y_ref,
@@ -797,7 +792,7 @@ def render_comparacion_espectros_ftir(db, muestras):
         mostrar_picos, altura_min, distancia_min
     )
 
-    preprocesados = generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar, offset_vertical, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max)
+    preprocesados = generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar, ajustes_y, restar_espectro, x_ref, y_ref, x_min, x_max)
 
     if mostrar_grafico_vertical:
         fig_vertical = go.Figure()

@@ -20,6 +20,53 @@ def obtener_espectros_para_muestra(db, nombre):
         st.session_state[clave] = [doc.to_dict() for doc in docs]
     return st.session_state[clave]
 
+def render_grafico_combinado_ftir(datos_plotly, aplicar_suavizado=False, normalizar=False,
+                                   restar_espectro=False, ajustes_y=None,
+                                   offset_vertical=False, x_min=None, x_max=None,
+                                   y_min=None, y_max=None,
+                                   x_ref=None, y_ref=None):
+
+    
+    fig = go.Figure()
+    offset = 0
+
+    for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
+        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
+        if df_filtrado.empty:
+            continue
+        x = df_filtrado["x"].values
+        y = df_filtrado["y"].values
+
+        if aplicar_suavizado and len(y) >= 7:
+            from scipy.signal import savgol_filter
+            y = savgol_filter(y, window_length=7, polyorder=2)
+
+        if normalizar and np.max(np.abs(y)) != 0:
+            y = y / np.max(np.abs(y))
+
+        if offset_vertical:
+            y = y + i * 0.2  # Espaciado entre espectros
+
+        label = f"{muestra} – {tipo} – {archivo}"
+        fig.add_trace(go.Scatter(
+            x=x, y=y,
+            mode="lines",
+            name=label,
+            hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"
+        ))
+
+    fig.update_layout(
+        xaxis_title="Número de onda [cm⁻¹]",
+        yaxis_title="Absorbancia",
+        margin=dict(l=10, r=10, t=30, b=10),
+        height=500,
+        xaxis=dict(range=[x_min, x_max]),
+        yaxis=dict(range=[y_min, y_max]),
+        legend_title="Espectros FTIR"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 #    st.title("Análisis FTIR")
     st.session_state["current_tab"] = "Análisis FTIR"
@@ -228,8 +275,76 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     else:
         st.info("Seleccioná espectros válidos para graficar.")
 
-    aplicar_suavizado = st.checkbox("Aplicar suavizado (Savitzky-Golay)", value=False)
-    normalizar = st.checkbox("Normalizar intensidad", value=False)
+    # --- Fila de controles preprocesamiento estilo hoja 6 ---
+    st.markdown("### Preprocesamiento y opciones de visualización")
+
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    aplicar_suavizado = col1.checkbox("Suavizado SG", value=False, key="suavizado_ftir")
+    normalizar = col2.checkbox("Normalizar", value=False, key="normalizar_ftir")
+    mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")
+    restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
+    ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
+    offset_vertical = col6.checkbox("Superposición vertical", value=False, key="offset_y_ftir")
+
+    st.markdown("### Rango de visualización")
+    if datos_plotly:
+        todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
+        todos_y = np.concatenate([df["y"].values for _, _, _, df in datos_plotly])
+        colx1, colx2, coly1, coly2 = st.columns(4)
+        x_min = colx1.number_input("X min", value=float(np.min(todos_x)))
+        x_max = colx2.number_input("X max", value=float(np.max(todos_x)))
+        y_min = coly1.number_input("Y min", value=float(np.min(todos_y)))
+        y_max = coly2.number_input("Y max", value=float(np.max(todos_y)))
+    else:
+        x_min, x_max, y_min, y_max = None, None, None, None
+
+    # Restar espectro
+    x_ref, y_ref = None, None
+    if restar_espectro:
+        claves_validas = [f"{m} – {t} – {a}" for m, t, a, _ in datos_plotly]
+        espectro_ref = st.selectbox("Seleccionar espectro a restar", claves_validas, key="ref_ftir")
+        ajuste_y_ref = st.number_input("Ajuste Y referencia", value=0.0, step=0.1, key="ajuste_ref_ftir")
+
+        for m, t, a, df in datos_plotly:
+            if espectro_ref == f"{m} – {t} – {a}":
+                df_ref = df.copy()
+                x_ref = df_ref["x"].values
+                y_ref = df_ref["y"].values + ajuste_y_ref
+                break
+
+    render_grafico_combinado_ftir(
+        datos_plotly,
+        aplicar_suavizado=aplicar_suavizado,
+        normalizar=normalizar,
+        restar_espectro=restar_espectro,
+        ajuste_y_manual=ajuste_y_manual,
+        offset_vertical=offset_vertical,
+        x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max
+    )
+
+
+    ajustes_y = {}
+    if ajuste_y_manual:
+        st.markdown("#### Ajuste Y individual por espectro")
+        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
+            clave = f"{muestra} – {tipo} – {archivo}"
+            ajustes_y[clave] = st.number_input(f"{clave}", step=0.1, value=0.0, key=f"ajuste_y_{clave}")
+    else:
+        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
+            clave = f"{muestra} – {tipo} – {archivo}"
+            ajustes_y[clave] = 0.0
+
+
+
+
+
+
+
+
+
+
+
+
 
     # --- Ajuste manual de eje Y ---
     ajustar_y = st.checkbox("Ajuste manual de eje y", value=False)
@@ -374,30 +489,35 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         x = x[orden]
         y = y[orden]
 
-        # Aplicar ajuste de eje Y personalizado
+        # Ajuste de eje Y 
         clave = f"{muestra} – {tipo} – {archivo}"
-        ajuste_y = ajustes_y.get(clave, 0.0)
-        y = y + ajuste_y
+        y = y + ajustes_y.get(clave, 0.0)
 
-        # Interpolar y restar si corresponde
+        # Restar espectro
         if restar_espectro and x_ref is not None and y_ref is not None:
-            try:
-                # Asegurar que x_ref esté ordenado
-                x_ref_ord, y_ref_ord = zip(*sorted(zip(x_ref, y_ref)))
-                x_ref_arr = np.array(x_ref_ord).astype(float)
-                y_ref_arr = np.array(y_ref_ord).astype(float) + ajuste_y_ref
+            from numpy import interp
+            mascara_valida = (x >= np.min(x_ref)) & (x <= np.max(x_ref))
+            x = x[mascara_valida]
+            y = y[mascara_valida]
+            y_interp = interp(x, x_ref, y_ref)
+            y = y - y_interp
 
-                # Filtrar x para que esté dentro del dominio de x_ref
-                mascara_valida = (x >= x_ref_arr.min()) & (x <= x_ref_arr.max())
-                x = x[mascara_valida]
-                y = y[mascara_valida]
+        render_grafico_combinado_ftir(
+            datos_plotly,
+            aplicar_suavizado=aplicar_suavizado,
+            normalizar=normalizar,
+            restar_espectro=restar_espectro,
+            ajustes_y=ajustes_y,
+            offset_vertical=offset_vertical,
+            x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max,
+            x_ref=x_ref, y_ref=y_ref
+        )
 
-                # Interpolar y restar
-                y_interp_ref = np.interp(x, x_ref_arr, y_ref_arr)
-                y = y - y_interp_ref
 
-            except Exception as e:
-                st.warning(f"No se pudo restar el espectro de referencia para {row['muestra']}. Error: {e}")
+
+
+
+
 
 
         # Convertir a Series para el resto del procesamiento

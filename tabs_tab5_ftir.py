@@ -114,7 +114,7 @@ def render_tabla_bibliografia_ftir(db):
     st.subheader("Tabla bibliográfica FTIR")
     delinear = st.checkbox("Delinear Tabla bibliográfica", value=False, key="delinear_biblio_ftir")
 
-    ruta = "tablas_ftir_bibliografia"
+    ruta = "tablas_ftir_bibliografia/default"
     doc_ref = db.document(ruta)
     doc = doc_ref.get()
 

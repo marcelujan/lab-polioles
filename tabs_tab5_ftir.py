@@ -107,8 +107,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=False, sombrear=False):
                 doc_ref = db.collection("tablas_ftir_local").document(muestra).collection("archivos").document(archivo)
                 doc_ref.set({"filas": filas_guardar})
 
-        st.dataframe(editada, use_container_width=True)
-
         if sombrear:
             st.session_state["fig_extra_shapes"] = st.session_state.get("fig_extra_shapes", [])
             for _, row in editada.iterrows():

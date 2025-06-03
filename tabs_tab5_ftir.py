@@ -179,44 +179,53 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         st.success("Bibliografía guardada correctamente.")
 
     if delinear:
-        st.session_state["fig_extra_shapes"] = []
-        st.session_state["fig_extra_annotations"] = []
+        # Limpia solo lo anterior del tipo bibliografía
+        st.session_state["fig_extra_shapes"] = [
+            s for s in st.session_state.get("fig_extra_shapes", []) if s.get("source") != "biblio_ftir"
+        ]
+        st.session_state["fig_extra_annotations"] = [
+            a for a in st.session_state.get("fig_extra_annotations", []) if a.get("source") != "biblio_ftir"
+        ]
 
         for _, row in editada.iterrows():
             try:
-                dpico = float(row["δ pico"])
-                grupo = str(row.get("Grupo funcional", "")).strip()
+                x0 = float(row["X min"])
+                x1 = float(row["X max"])
+                x_centro = (x0 + x1) / 2
+                texto = str(row["Grupo funcional"])[:20]  # etiqueta breve
 
-                # Línea negra punteada (termina antes de la etiqueta)
+                # Línea punteada negra (hasta 95%)
                 st.session_state["fig_extra_shapes"].append({
                     "type": "line",
                     "xref": "x",
                     "yref": "paper",
-                    "x0": dpico,
-                    "x1": dpico,
+                    "x0": x_centro,
+                    "x1": x_centro,
                     "y0": 0,
-                    "y1": 0.8,
+                    "y1": 0.95,
                     "line": {
                         "color": "black",
+                        "dash": "dot",
                         "width": 1,
-                        "dash": "dot"
-                    }
+                    },
+                    "source": "biblio_ftir"
                 })
 
-                # Etiqueta vertical rotada, arriba de la línea
+                # Etiqueta vertical
                 st.session_state["fig_extra_annotations"].append({
-                    "x": dpico,
-                    "y": 0.85,
                     "xref": "x",
                     "yref": "paper",
-                    "text": grupo,
-                    "textangle": -90,
+                    "x": x_centro,
+                    "y": 0.97,
+                    "text": texto,
                     "showarrow": False,
                     "font": {"color": "black", "size": 10},
-                    "align": "center"
+                    "textangle": -90,
+                    "source": "biblio_ftir"
                 })
             except:
                 continue
+
 
     return editada if delinear else pd.DataFrame([])
 

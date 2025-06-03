@@ -1114,7 +1114,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max = render_comparacion_espectros_ftir(db, muestras)
 
         # --- Gráficos individuales FTIR ---
-        mostrar_individuales = st.checkbox("📊 Mostrar gráficos individuales FTIR", key="mostrar_individuales_ftir")
+        mostrar_individuales = st.checkbox("Gráficos individuales FTIR", key="mostrar_individuales_ftir")
         if datos_plotly and mostrar_individuales:
             render_graficos_individuales_ftir(
                 preprocesados=preprocesados,

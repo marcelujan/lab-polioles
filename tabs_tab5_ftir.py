@@ -939,6 +939,13 @@ def render_comparacion_espectros_ftir(db, muestras):
     with col2:
         sombrear_similitud = st.checkbox("Sombrear Similitud FTIR", key="sombrear_tabla_similitud_ftir")
 
+    preprocesados = generar_preprocesados_ftir(
+        datos_plotly, controles["suavizado"], controles["normalizar"],
+        controles["ajustes_y"], controles["restar"],
+        controles["x_ref"], controles["y_ref"],
+        controles["x_min"], controles["x_max"]
+    )
+
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
     render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
     render_tabla_similitud_ftir(db, preprocesados, mostrar=mostrar_similitud, sombrear=sombrear_similitud)
@@ -956,12 +963,6 @@ def render_comparacion_espectros_ftir(db, muestras):
         altura_min, distancia_min
     )
     
-    preprocesados = generar_preprocesados_ftir(
-        datos_plotly, controles["suavizado"], controles["normalizar"],
-        controles["ajustes_y"], controles["restar"],
-        controles["x_ref"], controles["y_ref"],
-        controles["x_min"], controles["x_max"]
-    )
 
     if controles["mostrar_grafico_vertical"]:
         offset_vertical = st.slider(

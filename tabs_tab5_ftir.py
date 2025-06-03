@@ -475,10 +475,7 @@ def render_controles_preprocesamiento(datos_plotly):
     ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
     mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
 
-    if mostrar_grafico_vertical:
-        offset_vertical = st.slider("Separación vertical entre espectros", min_value=0.0, max_value=5.0, value=1.0, step=0.1)
-    else:
-        offset_vertical = 0.0  # o None, si querés no aplicar desplazamiento
+
 
     # Rango XY automático
     todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
@@ -824,10 +821,13 @@ def render_comparacion_espectros_ftir(db, muestras):
     )
 
     if controles["mostrar_grafico_vertical"]:
+        offset_vertical = st.slider(
+            "Separación vertical entre espectros", min_value=0.0, max_value=5.0, value=1.0, step=0.1
+        )
+
         fig_vertical = go.Figure()
-        desplazamiento = controles["offset_vertical"]
         for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
-            y_offset = desplazamiento * i
+            y_offset = offset_vertical * i
             df_filtrado = df[(df["x"] >= controles["x_min"]) & (df["x"] <= controles["x_max"])].copy()
             x = df_filtrado["x"].values
             y = df_filtrado["y"].values.astype(float)

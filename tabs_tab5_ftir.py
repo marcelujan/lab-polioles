@@ -179,12 +179,15 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         st.success("Bibliografía guardada correctamente.")
 
     if delinear:
-        st.session_state["fig_extra_shapes"] = st.session_state.get("fig_extra_shapes", [])
+        st.session_state["fig_extra_shapes"] = []
+        st.session_state["fig_extra_annotations"] = []
+
         for _, row in editada.iterrows():
             try:
-       #         x0 = float(row["X min"])
-        #        x1 = float(row["X max"])
                 dpico = float(row["δ pico"])
+                grupo = str(row.get("Grupo funcional", "")).strip()
+
+                # Línea vertical negra punteada
                 st.session_state["fig_extra_shapes"].append({
                     "type": "line",
                     "xref": "x",
@@ -194,10 +197,22 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "y0": 0,
                     "y1": 1,
                     "line": {
-                        "color": "red",
+                        "color": "black",
                         "width": 1,
                         "dash": "dot"
                     }
+                })
+
+                # Etiqueta del grupo funcional arriba
+                st.session_state["fig_extra_annotations"].append({
+                    "x": dpico,
+                    "y": 1.02,
+                    "xref": "x",
+                    "yref": "paper",
+                    "text": grupo,
+                    "showarrow": False,
+                    "font": {"color": "black", "size": 10},
+                    "align": "center"
                 })
             except:
                 continue
@@ -452,7 +467,10 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
 
 
     if "fig_extra_shapes" in st.session_state:
-        fig.update_layout(shapes=st.session_state["fig_extra_shapes"])
+        fig.update_layout(
+            shapes=st.session_state.get("fig_extra_shapes", []),
+            annotations=st.session_state.get("fig_extra_annotations", [])
+            )   
 
     fig.update_layout(
         xaxis_title="Número de onda [cm⁻¹]",

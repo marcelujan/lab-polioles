@@ -212,6 +212,9 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                 })
             except:
                 continue
+        st.write("🔧 Shapes:", st.session_state.get("shapes_biblio_ftir"))
+        st.write("🔧 Annotations:", st.session_state.get("annots_biblio_ftir"))
+
     else:
         st.session_state["shapes_biblio_ftir"] = []
         st.session_state["annots_biblio_ftir"] = []

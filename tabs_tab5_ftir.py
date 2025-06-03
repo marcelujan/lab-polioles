@@ -116,15 +116,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
                 doc_ref.set({"filas": filas_guardar})
             st.success("Todas las áreas fueron recalculadas y guardadas correctamente.")
 
-        st.markdown("---")
-        st.markdown("##### 📤 Exportar tabla combinada")
-        buffer = BytesIO()
-        editada.to_excel(buffer, index=False, sheet_name="Calculos_FTIR")
-        buffer.seek(0)
-        nombre_archivo = f"FTIR_Calculos_Combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx"
-        st.download_button("📥 Exportar a Excel", data=buffer.getvalue(),
-                           file_name=nombre_archivo,
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         # Sombreado (si se desea)
         if sombrear:

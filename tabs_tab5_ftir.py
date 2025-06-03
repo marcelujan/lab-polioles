@@ -141,8 +141,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
             st.session_state["shapes_calculos_ftir"] = []
 
 
-
-
 def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
     if not mostrar:
         return pd.DataFrame([])
@@ -212,9 +210,6 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "font": {"color": "black", "size": 10},
                     "textangle": -90
                 })
-
-                st.session_state["shapes_biblio_ftir"].append({...})
-                st.session_state["annots_biblio_ftir"].append({...})
             except:
                 continue
     else:
@@ -391,16 +386,21 @@ def render_tabla_similitud_ftir(db, datos_plotly, mostrar=False, sombrear=False)
 
     # Si algún día querés sombrear regiones por similitud, ejemplo básico:
     if sombrear:
-        st.session_state["fig_extra_shapes"] = []
+        st.markdown("**🛠 Umbral de similitud para sombreado**")
+        umbral_similitud = st.slider("Similitud mínima (%)", min_value=0, max_value=100, value=90, step=1, key="umbral_similitud_ftir")
+        x_sombra_min = st.number_input("X min del sombreado", value=1000.0, step=1.0, key="x_sombra_min_similitud")
+        x_sombra_max = st.number_input("X max del sombreado", value=1100.0, step=1.0, key="x_sombra_max_similitud")
+
+        st.session_state["shapes_similitud_ftir"] = []
         for _, row in editada.iterrows():
             try:
-                if float(row["Similitud [%]"]) > 90:
-                    st.session_state["fig_extra_shapes"].append({
+                if float(row["Similitud [%]"]) >= umbral_similitud:
+                    st.session_state["shapes_similitud_ftir"].append({
                         "type": "rect",
                         "xref": "x",
                         "yref": "paper",
-                        "x0": 1000,  # ejemplo de rango espectral
-                        "x1": 1100,
+                        "x0": min(x_sombra_min, x_sombra_max),
+                        "x1": max(x_sombra_min, x_sombra_max),
                         "y0": 0,
                         "y1": 1,
                         "fillcolor": "rgba(0, 200, 0, 0.1)",
@@ -408,6 +408,10 @@ def render_tabla_similitud_ftir(db, datos_plotly, mostrar=False, sombrear=False)
                     })
             except:
                 continue
+    else:
+        st.session_state["shapes_similitud_ftir"] = []
+
+
 
 
 def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normalizar,

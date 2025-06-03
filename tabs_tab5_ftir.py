@@ -168,7 +168,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=False, delinear=False):
         key=key_editor,
         num_rows="dynamic",
         column_config={
-            "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES_RMN),
+            "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES),
             "Área": st.column_config.NumberColumn("Área", disabled=True, format="%.2f"),
             "Muestra": st.column_config.TextColumn("Muestra", disabled=True),
             "Archivo": st.column_config.TextColumn("Archivo", disabled=True),

@@ -183,17 +183,20 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         st.warning("Entrando a delinear")
         st.session_state["shapes_biblio_ftir"] = []
         st.session_state["annots_biblio_ftir"] = []
+
         st.write("🔍 DataFrame bibliográfico para delinear:")
         st.dataframe(editada)
-        for _, row in editada.iterrows():
-            for i, row in editada.iterrows():
-                 st.write(f"➡️ Fila {i}:", row)
+
+        for i, row in editada.iterrows():
+            st.write(f"➡️ Fila {i}:", row)
+
             try:
                 x0 = float(row["X min"])
                 x1 = float(row["X max"])
                 x_centro = (x0 + x1) / 2
                 texto = str(row["Grupo funcional"])[:20]  # etiqueta breve
 
+                # Agregar línea punteada negra
                 st.session_state["shapes_biblio_ftir"].append({
                     "type": "line",
                     "xref": "x",
@@ -205,6 +208,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "line": {"color": "black", "width": 1, "dash": "dot"}
                 })
 
+                # Agregar anotación vertical rotada
                 st.session_state["annots_biblio_ftir"].append({
                     "xref": "x",
                     "yref": "paper",
@@ -215,16 +219,21 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "font": {"color": "black", "size": 10},
                     "textangle": -90
                 })
-            except:
+
+            except Exception as e:
+                st.warning(f"⚠️ Fila {i} omitida: {e}")
                 continue
-        st.write("🔧 Shapes:", st.session_state.get("shapes_biblio_ftir"))
-        st.write("🔧 Annotations:", st.session_state.get("annots_biblio_ftir"))
+
+        # Mostrar los resultados generados
+        st.write("🔧 Shapes generados:", st.session_state.get("shapes_biblio_ftir"))
+        st.write("🔧 Annotations generadas:", st.session_state.get("annots_biblio_ftir"))
 
     else:
         st.session_state["shapes_biblio_ftir"] = []
         st.session_state["annots_biblio_ftir"] = []
 
     return editada if delinear else pd.DataFrame([])
+
 
 
 
@@ -904,15 +913,15 @@ def render_comparacion_espectros_ftir(db, muestras):
     with col1:
         mostrar_calculos = st.checkbox("📊 Tabla de Cálculos FTIR", key="mostrar_tabla_calculos_ftir")
     with col2:
-        sombrear_calculos = st.checkbox("🟦 Sombrear Cálculos FTIR", key="sombrear_tabla_calculos_ftir")
+        sombrear_calculos = st.checkbox("Sombrear Cálculos FTIR", key="sombrear_tabla_calculos_ftir")
     with col1:
         mostrar_biblio = st.checkbox("📚 Tabla Bibliográfica FTIR", key="mostrar_tabla_biblio_ftir")
     with col2:
-        delinear_biblio = st.checkbox("🔴 Delinear Bibliografía FTIR", key="delinear_tabla_biblio_ftir")
+        delinear_biblio = st.checkbox("Delinear Bibliografía FTIR", key="delinear_tabla_biblio_ftir")
     with col1:
         mostrar_similitud = st.checkbox("🔍 Tabla de Similitud FTIR", key="mostrar_tabla_similitud_ftir")
     with col2:
-        sombrear_similitud = st.checkbox("🟨 Sombrear Similitud FTIR", key="sombrear_tabla_similitud_ftir")
+        sombrear_similitud = st.checkbox("Sombrear Similitud FTIR", key="sombrear_tabla_similitud_ftir")
 
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
     render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)

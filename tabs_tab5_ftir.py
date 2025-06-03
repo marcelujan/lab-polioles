@@ -107,10 +107,8 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=False, sombrear=False):
                 doc_ref = db.collection("tablas_ftir_local").document(muestra).collection("archivos").document(archivo)
                 doc_ref.set({"filas": filas_guardar})
 
-        # Mostrar tabla final (ya editada o recalculada)
         st.dataframe(editada, use_container_width=True)
 
-        # Opcional: sombreado gráfico
         if sombrear:
             st.session_state["fig_extra_shapes"] = st.session_state.get("fig_extra_shapes", [])
             for _, row in editada.iterrows():
@@ -130,6 +128,17 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=False, sombrear=False):
                     })
                 except:
                     continue
+
+        # ✅ Botón de exportación a Excel
+        buffer = BytesIO()
+        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+            editada.to_excel(writer, index=False, sheet_name="Calculos_FTIR")
+        buffer.seek(0)
+        nombre_archivo = f"FTIR_Calculos_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx"
+        st.download_button("📥 Exportar tabla a Excel", data=buffer.getvalue(),
+                           file_name=nombre_archivo,
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
 
 
 def render_tabla_bibliografia_ftir(db, mostrar=False, delinear=False):

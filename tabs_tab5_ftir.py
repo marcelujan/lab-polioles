@@ -91,7 +91,8 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=False, sombrear=False):
                     archivo = row["Archivo"]
                     df = next((df for m, t, a, df in datos_plotly if m == muestra and a == archivo), None)
                     if df is not None:
-                        df_filt = df[(df["x"] >= x0) & (df["x"] <= x1)]
+                        df_filt = df[(df["x"] >= min(x0, x1)) & (df["x"] <= max(x0, x1))].copy()
+                        df_filt = df_filt.sort_values("x")  # ✅ Asegura orden creciente en X
                         area = np.trapz(df_filt["y"], df_filt["x"])
                         row["Área"] = round(area, 6)
                 except:

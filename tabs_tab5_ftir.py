@@ -163,7 +163,8 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
     columnas = ["Grupo funcional", "X pico [cm⁻¹]", "X min", "X max", "Comentarios"]
     df_biblio = pd.DataFrame(filas) if filas else pd.DataFrame([dict.fromkeys(columnas, "")])
 
-    key_editor = f"tabla_calculos_ftir_local_{'sombreado' if sombrear else 'limpio'}"
+    key_editor = f"tabla_calculos_ftir_local_{'sombreado' if delinear else 'limpio'}"
+
 
     editada = st.data_editor(
         df_biblio,

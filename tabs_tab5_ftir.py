@@ -540,6 +540,74 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
 
     st.plotly_chart(fig, use_container_width=True)
 
+
+def render_graficos_individuales_ftir(preprocesados, x_min, x_max, y_min, y_max,
+                                      aplicar_suavizado, normalizar, ajustes_y, restar_espectro,
+                                      mostrar_picos, altura_min, distancia_min):
+
+    for clave, df in preprocesados.items():
+        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)]
+        if df_filtrado.empty:
+            continue
+        x = df_filtrado["x"].values
+        y = df_filtrado["y"].values
+
+        if aplicar_suavizado and len(y) >= 7:
+            y = savgol_filter(y, window_length=7, polyorder=2)
+        if normalizar and np.max(np.abs(y)) != 0:
+            y = y / np.max(np.abs(y))
+        y = y + ajustes_y.get(clave, 0.0)
+
+        if restar_espectro and st.session_state.get("y_ref_interp") is not None:
+            y_ref_interp = np.interp(x, st.session_state["x_ref_interp"], st.session_state["y_ref_interp"], left=np.nan, right=np.nan)
+            mask_validos = ~np.isnan(y_ref_interp)
+            x = x[mask_validos]
+            y = y[mask_validos] - y_ref_interp[mask_validos]
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name=clave))
+
+        # Picos si corresponde
+        if mostrar_picos:
+            from scipy.signal import find_peaks
+            peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
+            for p in peaks:
+                fig.add_trace(go.Scatter(
+                    x=[x[p]],
+                    y=[y[p]],
+                    mode="markers+text",
+                    marker=dict(color="black", size=6),
+                    text=[f"{x[p]:.2f}"],
+                    textposition="top center",
+                    showlegend=False
+                ))
+
+        # Aplicar sombreado/delineado si están en session_state
+        shapes = []
+        annotations = []
+        for k in ["shapes_calculos_ftir", "shapes_similitud_ftir", "shapes_biblio_ftir"]:
+            shapes.extend(st.session_state.get(k, []))
+        for k in ["annots_biblio_ftir"]:
+            annotations.extend(st.session_state.get(k, []))
+
+        fig.update_layout(
+            title=clave,
+            xaxis_title="Número de onda [cm⁻¹]",
+            yaxis_title="Absorbancia",
+            shapes=shapes,
+            annotations=annotations,
+            xaxis=dict(range=[x_max, x_min]),
+            yaxis=dict(range=[y_min, y_max] if not normalizar else None),
+            height=500,
+            margin=dict(l=10, r=10, t=30, b=10),
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+
+
+
+
 def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
                                 ajustes_y, restar_espectro,
                                 x_ref, y_ref, x_min, x_max):
@@ -1045,6 +1113,25 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         # 1. Gráfica FTIR (internamente llama todo)
         datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max = render_comparacion_espectros_ftir(db, muestras)
 
+        # --- Gráficos individuales FTIR ---
+        mostrar_individuales = st.checkbox("📊 Mostrar gráficos individuales FTIR", key="mostrar_individuales_ftir")
+        if datos_plotly and mostrar_individuales:
+            render_graficos_individuales_ftir(
+                preprocesados=preprocesados,
+                x_min=x_min,
+                x_max=x_max,
+                y_min=y_min,
+                y_max=y_max,
+                aplicar_suavizado=st.session_state.get("activar_suavizado", False),
+                normalizar=st.session_state.get("activar_normalizar", False),
+                ajustes_y=st.session_state.get("ajustes_y", {}),
+                restar_espectro=st.session_state.get("activar_resta", False),
+                mostrar_picos=st.session_state.get("mostrar_picos", False),
+                altura_min=st.session_state.get("altura_min", 0.02),
+                distancia_min=st.session_state.get("distancia_min", 50),
+            )
+
+        # --- Deconvolución FTIR ---
         activar_deconv = st.checkbox("Deconvolución de espectros FTIR", value=False, key="activar_deconv_ftir")
         if datos_plotly and activar_deconv:
             render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar_deconv)
@@ -1057,6 +1144,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     x_min=x_min, x_max=x_max
                 )
                 exportar_figura_plotly_png(fig, nombre_base="FTIR")
+
 
 
     # 3. Índice OH espectroscópico (siempre visible al final)

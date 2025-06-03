@@ -73,7 +73,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
     key_editor = f"tabla_calculos_ftir_{'sombreado' if sombrear else 'normal'}"
 
     with st.container():
-        st.markdown("**🧮 Tabla de Cálculos FTIR**")
+        st.markdown("**📊 Tabla de Cálculos FTIR**")
         editada = st.data_editor(
             df_tabla,
             num_rows="dynamic",
@@ -144,7 +144,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
     if not mostrar:
         return pd.DataFrame([])
 
-    st.markdown("#### 📚 Tabla bibliográfica FTIR")
+    st.markdown("**📚 Tabla bibliográfica FTIR**")
 
     ruta = "tablas_ftir_bibliografia/default"
     doc_ref = db.document(ruta)
@@ -352,7 +352,7 @@ def render_tabla_similitud_ftir(db, datos_plotly, mostrar=False, sombrear=False)
     if not mostrar:
         return
 
-    st.markdown("#### 🔍 Tabla de similitud espectral FTIR")
+    st.markdown("**🔍 Tabla de similitud espectral FTIR**")
 
     # Placeholder de ejemplo
     columnas = ["Muestra 1", "Muestra 2", "Similitud [%]", "Comentarios"]

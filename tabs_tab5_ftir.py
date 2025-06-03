@@ -180,16 +180,10 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         st.success("Bibliografía guardada correctamente.")
 
     if delinear:
-        st.warning("Entrando a delinear")
         st.session_state["shapes_biblio_ftir"] = []
         st.session_state["annots_biblio_ftir"] = []
 
-        st.write("🔍 DataFrame bibliográfico para delinear:")
-        st.dataframe(editada)
-
-        for i, row in editada.iterrows():
-            st.write(f"➡️ Fila {i}:", row)
-
+        for _, row in editada.iterrows():
             try:
                 x0 = float(row["δ pico"])
                 texto = str(row["Grupo funcional"])[:20]
@@ -218,13 +212,8 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "textangle": -90
                 })
 
-            except Exception as e:
-                st.warning(f"⚠️ Fila {i} omitida: {e}")
+            except:
                 continue
-
-        st.write("🔧 Shapes generados:", st.session_state.get("shapes_biblio_ftir"))
-        st.write("🔧 Annotations generadas:", st.session_state.get("annots_biblio_ftir"))
-
     else:
         st.session_state["shapes_biblio_ftir"] = []
         st.session_state["annots_biblio_ftir"] = []

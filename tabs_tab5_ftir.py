@@ -182,8 +182,9 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         st.session_state["fig_extra_shapes"] = st.session_state.get("fig_extra_shapes", [])
         for _, row in editada.iterrows():
             try:
-                x0 = float(row["X min"])
-                x1 = float(row["X max"])
+       #         x0 = float(row["X min"])
+        #        x1 = float(row["X max"])
+                dpico = float(row["δ pico"])
                 st.session_state["fig_extra_shapes"].append({
                     "type": "line",
                     "xref": "x",

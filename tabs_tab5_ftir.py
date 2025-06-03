@@ -12,10 +12,13 @@ from numpy import interp
 from collections import defaultdict
 from scipy.signal import find_peaks
 
+
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "Vecino a alfa-carbonilo", "Alfa-epóxido", "CH2", "CH3"]
+
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
+
 
 def obtener_espectros_para_muestra(db, nombre):
     clave = f"_espectros_cache_{nombre}"
@@ -137,7 +140,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
         st.session_state["shapes_calculos_ftir"] = []
 
 
-
 def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
     st.session_state["shapes_biblio_ftir"] = []
     st.session_state["annots_biblio_ftir"] = []
@@ -206,16 +208,6 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                 continue
 
     return editada if mostrar else pd.DataFrame([])
-
-
-
-
-
-
-
-
-
-
 
 
 def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar_deconv):
@@ -349,11 +341,7 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar
                            key="dl_total_deconv")
 
 
-
-
 def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_comparacion, sombrear_similitud):
-
-    
     # --- Sombreado opcional en el gráfico ---
     if sombrear_similitud:
         st.session_state["shapes_similitud_ftir"] = [{
@@ -442,13 +430,6 @@ def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_compara
     )
 
 
-
-
-
-
-
-
-
 def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normalizar,
                                     ajustes_y, restar_espectro,
                                     x_ref, y_ref, x_min, x_max, y_min, y_max,
@@ -533,8 +514,6 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
             x=0.5
         )
     )
-
-
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -601,9 +580,6 @@ def render_graficos_individuales_ftir(preprocesados, x_min, x_max, y_min, y_max,
         st.plotly_chart(fig, use_container_width=True)
 
 
-
-
-
 def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
                                 ajustes_y, restar_espectro,
                                 x_ref, y_ref, x_min, x_max):
@@ -630,8 +606,8 @@ def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
 
         df_pre = pd.DataFrame({"x": x, "y": y})
         preprocesados[clave] = df_pre
-
     return preprocesados
+
 
 def exportar_resultados_ftir(preprocesados, resumen=None, fwhm_rows=None, x_min=None, x_max=None):
     buffer_excel = BytesIO()
@@ -655,6 +631,7 @@ def exportar_resultados_ftir(preprocesados, resumen=None, fwhm_rows=None, x_min=
                        file_name=nombre_base,
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
+
 def exportar_figura_plotly_png(fig, nombre_base="FTIR"):
     buffer_img = BytesIO()
     fig.write_image(buffer_img, format="png", width=1200, height=600, scale=3)
@@ -662,6 +639,7 @@ def exportar_figura_plotly_png(fig, nombre_base="FTIR"):
     nombre_archivo = f"{nombre_base}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
     st.download_button("📷 Descargar PNG", data=buffer_img.getvalue(),
                        file_name=nombre_archivo, mime="image/png")
+
 
 def render_controles_preprocesamiento(datos_plotly):
 #    st.markdown("### Preprocesamiento y visualización")
@@ -715,7 +693,6 @@ def render_controles_preprocesamiento(datos_plotly):
 
                 y_ref = y_ref + ajuste_y_ref
                 break
-
     return {
         "suavizado": aplicar_suavizado,
         "normalizar": normalizar,
@@ -798,6 +775,7 @@ def seleccionar_espectros_validos(db, muestras):
 
     return datos_plotly
 
+
 def calcular_indice_oh_auto(db, muestras):
     espectros_info = []
 
@@ -872,6 +850,7 @@ def calcular_indice_oh_auto(db, muestras):
 
     return df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]]
 
+
 def calculadora_indice_oh_manual():
     st.subheader("Calculadora manual de Índice OH")
 
@@ -913,8 +892,10 @@ def calculadora_indice_oh_manual():
     with col2:
         st.dataframe(pd.DataFrame(resultados), use_container_width=True, hide_index=True)
 
+
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
+
 
 def obtener_espectros_para_muestra(db, nombre):
     clave = f"_espectros_cache_{nombre}"
@@ -923,6 +904,7 @@ def obtener_espectros_para_muestra(db, nombre):
         docs = ref.stream()
         st.session_state[clave] = [doc.to_dict() for doc in docs]
     return st.session_state[clave]
+
 
 def render_comparacion_espectros_ftir(db, muestras):
 #    st.subheader("Comparación de espectros FTIR")
@@ -976,13 +958,9 @@ def render_comparacion_espectros_ftir(db, muestras):
                 datos_plotly.append((e["muestra"], e["tipo"], e["archivo"], df))
         except Exception as ex:
             st.warning(f"Error al cargar {archivo}: {ex}")
-
     if not datos_plotly:
         st.info("Seleccioná espectros válidos para graficar.")
         return [], None, {}, None, None, None, None, None, None
-
-
-#    st.markdown("### Preprocesamiento y visualización")
 
     controles = render_controles_preprocesamiento(datos_plotly)
 
@@ -1044,7 +1022,6 @@ def render_comparacion_espectros_ftir(db, muestras):
         altura_min, distancia_min
     )
     
-
     if controles["mostrar_grafico_vertical"]:
         offset_vertical = st.slider(
             "Separación vertical entre espectros", min_value=0.0, max_value=5.0, value=1.0, step=0.1
@@ -1086,16 +1063,6 @@ def render_comparacion_espectros_ftir(db, muestras):
         controles["x_min"], controles["x_max"],
         controles["y_min"], controles["y_max"]
         )
-
-
-
-
-
-
-
-
-
-
 
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
@@ -1154,4 +1121,3 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     # Sector flotante final
     mostrar_sector_flotante(db, key_suffix="tab5")
-

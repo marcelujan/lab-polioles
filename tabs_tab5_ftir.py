@@ -1045,7 +1045,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         # 1. Gráfica FTIR (internamente llama todo)
         datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max = render_comparacion_espectros_ftir(db, muestras)
 
-        activar_deconv = st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir")
+        activar_deconv = st.checkbox("Deconvolución de espectros FTIR", value=False, key="activar_deconv_ftir")
         if datos_plotly and activar_deconv:
             render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar_deconv)
 

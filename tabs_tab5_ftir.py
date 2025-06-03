@@ -382,7 +382,7 @@ def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_compara
     vectores = {}
 
     for clave, df in preprocesados.items():
-        muestra = clave.split(" – ")[0].strip()
+        muestra = clave  # mantener clave completa, asegura unicidad
         df_filt = df[(df["x"] >= min(x_min, x_max)) & (df["x"] <= max(x_min, x_max))].copy()
         if not df_filt.empty:
             vectores[muestra] = (df_filt["x"].values, df_filt["y"].values)
@@ -943,7 +943,6 @@ def render_comparacion_espectros_ftir(db, muestras):
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
     render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
  
-    #   render_tabla_similitud_ftir(db, preprocesados, mostrar=mostrar_similitud, sombrear=sombrear_similitud)
     if mostrar_similitud:
         col1, col2, col3, col4 = st.columns([1.2, 1.2, 1.2, 1.2])
         x_min = col1.number_input("X min", value=1000.0, step=1.0, key="simil_xmin")

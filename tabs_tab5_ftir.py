@@ -187,7 +187,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                 dpico = float(row["δ pico"])
                 grupo = str(row.get("Grupo funcional", "")).strip()
 
-                # Línea vertical negra punteada
+                # Línea negra punteada (termina antes de la etiqueta)
                 st.session_state["fig_extra_shapes"].append({
                     "type": "line",
                     "xref": "x",
@@ -195,7 +195,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "x0": dpico,
                     "x1": dpico,
                     "y0": 0,
-                    "y1": 1,
+                    "y1": 0.95,
                     "line": {
                         "color": "black",
                         "width": 1,
@@ -203,13 +203,14 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     }
                 })
 
-                # Etiqueta del grupo funcional arriba
+                # Etiqueta vertical rotada, arriba de la línea
                 st.session_state["fig_extra_annotations"].append({
                     "x": dpico,
-                    "y": 1.02,
+                    "y": 0.96,
                     "xref": "x",
                     "yref": "paper",
                     "text": grupo,
+                    "textangle": -90,
                     "showarrow": False,
                     "font": {"color": "black", "size": 10},
                     "align": "center"

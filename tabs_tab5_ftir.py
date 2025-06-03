@@ -33,6 +33,23 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
     if not datos_plotly:
         return
 
+    filas_totales = []
+    claves_guardado = []
+
+    for muestra, tipo, archivo, df in datos_plotly:
+        clave = f"{muestra}__{archivo}"
+        doc_ref = db.collection("tablas_ftir").document(clave)
+        doc = doc_ref.get()
+        filas = doc.to_dict().get("filas", []) if doc.exists else []
+
+        for fila in filas:
+            fila["Muestra"] = muestra
+            fila["Archivo"] = archivo
+        filas_totales.extend(filas)
+        claves_guardado.append((muestra, archivo, df))
+
+    columnas = ["Muestra", "Grupo funcional", "D pico", "X min", "X max", "Área", "Observaciones", "Archivo"]
+
     if not filas_totales:
         st.info("No hay datos previos. Podés agregar una nueva fila manualmente.")
         opciones_muestras = list(set([m for m, _, _, _ in datos_plotly]))
@@ -54,34 +71,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
             "Archivo": archivo_nuevo
         }]
 
-    filas_totales = []
-    claves_guardado = []
-
-    for muestra, tipo, archivo, df in datos_plotly:
-        clave = f"{muestra}__{archivo}"
-        doc_ref = db.collection("tablas_ftir").document(clave)
-        doc = doc_ref.get()
-        filas = doc.to_dict().get("filas", []) if doc.exists else []
-
-        for fila in filas:
-            fila["Muestra"] = muestra
-            fila["Archivo"] = archivo
-        filas_totales.extend(filas)
-        claves_guardado.append((muestra, archivo, df))
-
-    columnas = ["Muestra", "Grupo funcional", "D pico", "X min", "X max", "Área", "Observaciones", "Archivo"]
-    if not filas_totales:
-        filas_totales = [{
-            "Muestra": m,
-            "Grupo funcional": "",
-            "D pico": None,
-            "X min": None,
-            "X max": None,
-            "Área": None,
-            "Observaciones": "",
-            "Archivo": a
-        } for m, _, a, _ in datos_plotly]
-
     df_tabla = pd.DataFrame(filas_totales, columns=columnas)
     df_tabla["Observaciones"] = df_tabla["Observaciones"].astype(str)
     df_tabla["Muestra"] = df_tabla["Muestra"].astype(str)
@@ -89,7 +78,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
     for col in ["D pico", "X min", "X max", "Área"]:
         df_tabla[col] = pd.to_numeric(df_tabla[col], errors="coerce")
 
-    # Mostrar editor solo si corresponde
     if mostrar:
         st.markdown("**📊 Tabla de Cálculos FTIR**")
         key_editor = f"tabla_calculos_ftir_{'sombreado' if sombrear else 'normal'}"
@@ -140,9 +128,8 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
 
             st.success("Todas las áreas fueron recalculadas y guardadas correctamente.")
     else:
-        editada = df_tabla  # usar igual para sombrear
+        editada = df_tabla
 
-    # Sombrear si corresponde (incluso si no se mostró la tabla)
     if sombrear:
         st.session_state["shapes_calculos_ftir"] = []
         for _, row in editada.iterrows():

@@ -136,7 +136,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
                         "y1": 1,
                         "fillcolor": "rgba(0, 0, 255, 0.1)",  # azul transparente
                         "line": {"width": 0},
-                        "source": "calculos_ftir"
                     })
                 except:
                     continue

@@ -77,7 +77,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
             column_order=columnas,
             use_container_width=True,
             column_config={
-                "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES_RMN),
+                "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES),
                 "D pico": st.column_config.NumberColumn("δ pico [cm⁻¹]", format="%.2f"),
                 "X min": st.column_config.NumberColumn("X min", format="%.2f"),
                 "X max": st.column_config.NumberColumn("X max", format="%.2f"),

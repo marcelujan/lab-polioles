@@ -69,7 +69,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
     key_editor = f"tabla_calculos_ftir_{'sombreado' if sombrear else 'normal'}"
 
     with st.container():
-        st.markdown("### 📊 Tabla de Cálculos FTIR (combinada)")
+        st.markdown("**🧮 Tabla de Cálculos FTIR**")
         editada = st.data_editor(
             df_tabla,
             num_rows="dynamic",

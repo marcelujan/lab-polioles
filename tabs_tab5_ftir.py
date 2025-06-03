@@ -356,11 +356,11 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            key="dl_total_deconv")
 
-def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_comparacion, sombrear):
+def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_comparacion, sombrear_similitud):
     from collections import defaultdict
     
     # --- Sombreado opcional en el gráfico ---
-    if sombrear:
+    if sombrear_similitud:
         st.session_state["shapes_similitud_ftir"] = [{
             "type": "rect",
             "xref": "x",
@@ -952,10 +952,17 @@ def render_comparacion_espectros_ftir(db, muestras):
         col1, col2, col3, col4 = st.columns([1.2, 1.2, 1.2, 1.2])
         x_min = col1.number_input("X min", value=1000.0, step=1.0, key="simil_xmin")
         x_max = col2.number_input("X max", value=1100.0, step=1.0, key="simil_xmax")
-        sombrear = col3.checkbox("Sombrear", value=False, key="simil_sombrear")
         tipo = col4.selectbox("Modo", ["Pearson (correlación)", "Área integrada (RMSE relativo)"], label_visibility="collapsed")
 
-        render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo, sombrear)
+        render_tabla_similitud_ftir_matriz(
+            preprocesados=preprocesados,
+            x_min=x_min,
+            x_max=x_max,
+            tipo_comparacion=tipo,
+            sombrear_similitud=sombrear_similitud
+        )
+
+
 
 
     fig = go.Figure()

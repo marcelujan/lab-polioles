@@ -191,10 +191,8 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
             st.write(f"➡️ Fila {i}:", row)
 
             try:
-                x0 = float(row["X min"])
-                x1 = float(row["X max"])
-                x_centro = (x0 + x1) / 2
-                texto = str(row["Grupo funcional"])[:20]  # etiqueta breve
+                x0 = float(row["δ pico"])
+                texto = str(row["Grupo funcional"])[:20]
 
                 # Agregar línea punteada negra
                 st.session_state["shapes_biblio_ftir"].append({

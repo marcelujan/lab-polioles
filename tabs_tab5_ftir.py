@@ -203,16 +203,11 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "type": "line",
                     "xref": "x",
                     "yref": "paper",
-                    "x0": x_centro,
-                    "x1": x_centro,
+                    "x0": x0,
+                    "x1": x0,
                     "y0": 0,
-                    "y1": 0.95,
-                    "line": {
-                        "color": "black",
-                        "dash": "dot",
-                        "width": 1,
-                    },
-                    "source": "biblio_ftir"
+                    "y1": 0.9,  # un poco más corto para no tapar etiqueta
+                    "line": {"color": "black", "width": 1, "dash": "dot"}
                 })
 
                 # Etiqueta vertical

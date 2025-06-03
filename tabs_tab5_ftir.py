@@ -10,6 +10,13 @@ from scipy.optimize import curve_fit
 import plotly.graph_objects as go
 from numpy import interp
 
+
+GRUPOS_FUNCIONALES_RMN = [
+    "CH", "CH₂", "CH₃", "OH", "C=O", "C=C", "C–O", "Amina",
+    "Nitrilo", "Aldehído", "Ácido", "Éster", "Otro"
+]
+
+
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
 
@@ -28,22 +35,39 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=False, sombrear=False):
 
     st.markdown("#### 📊 Tabla de Cálculos FTIR")
 
-    filas = []
+    filas_totales = []
+    claves_renderizadas = []
+
+    # Cargar desde Firebase
     for muestra, tipo, archivo, df in datos_plotly:
-        filas.append({
-            "Muestra": muestra,
+        clave = f"{muestra}/{archivo}"
+        claves_renderizadas.append((muestra, archivo))
+        doc_ref = db.collection("tablas_ftir_local").document(muestra).collection("archivos").document(archivo)
+        doc = doc_ref.get()
+        filas = doc.to_dict().get("filas", []) if doc.exists else []
+
+        # Asegurar columnas necesarias
+        for fila in filas:
+            fila["Muestra"] = muestra
+            fila["Archivo"] = archivo
+        filas_totales.extend(filas)
+
+    # Columnas esperadas
+    columnas = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "Observaciones", "Archivo"]
+
+    if not filas_totales:
+        filas_totales = [{
+            "Muestra": m,
             "Grupo funcional": "",
             "δ pico": None,
             "X min": None,
             "X max": None,
             "Área": None,
             "Observaciones": "",
-            "Archivo": archivo
-        })
+            "Archivo": a
+        } for m, _, a, _ in datos_plotly]
 
-    df_tabla = pd.DataFrame(filas)
-
-    columnas = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "Observaciones", "Archivo"]
+    df_tabla = pd.DataFrame(filas_totales, columns=columnas)
 
     editada = st.data_editor(
         df_tabla,
@@ -59,25 +83,38 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=False, sombrear=False):
         }
     )
 
-    # Recalcular áreas automáticamente (sin botón)
-    for i, row in editada.iterrows():
-        try:
-            x0 = float(row["X min"])
-            x1 = float(row["X max"])
-            muestra = row["Muestra"]
-            archivo = row["Archivo"]
-            df = next((df for m, t, a, df in datos_plotly if m == muestra and a == archivo), None)
-            if df is not None:
-                df_filt = df[(df["x"] >= x0) & (df["x"] <= x1)]
-                area = np.trapz(df_filt["y"], df_filt["x"])
-                editada.at[i, "Área"] = round(area, 6)
-        except:
-            continue
+    # Botón para recalcular y guardar
+    if st.button("Recalcular áreas FTIR", key="recalc_area_ftir_local"):
+        nuevas_filas = []
+        for _, row in editada.iterrows():
+            try:
+                x0 = float(row["X min"])
+                x1 = float(row["X max"])
+                muestra = row["Muestra"]
+                archivo = row["Archivo"]
+                df = next((df for m, t, a, df in datos_plotly if m == muestra and a == archivo), None)
+                if df is not None:
+                    df_filt = df[(df["x"] >= x0) & (df["x"] <= x1)]
+                    area = np.trapz(df_filt["y"], df_filt["x"])
+                    row["Área"] = round(area, 6)
+            except:
+                pass
+            nuevas_filas.append(row)
 
-    # Mostrar tabla final con área recalculada
+        editada = pd.DataFrame(nuevas_filas)
+
+        # Guardar por muestra/archivo
+        for (muestra, archivo) in claves_renderizadas:
+            df_filtrado = editada[(editada["Muestra"] == muestra) & (editada["Archivo"] == archivo)]
+            columnas_guardar = ["Grupo funcional", "δ pico", "X min", "X max", "Área", "Observaciones"]
+            filas_guardar = df_filtrado[columnas_guardar].to_dict(orient="records")
+            doc_ref = db.collection("tablas_ftir_local").document(muestra).collection("archivos").document(archivo)
+            doc_ref.set({"filas": filas_guardar})
+
+    # Mostrar tabla final (ya editada o recalculada)
     st.dataframe(editada, use_container_width=True)
 
-    # Agregar sombreado en gráfico si corresponde
+    # Opcional: sombrear sobre gráfico
     if sombrear:
         st.session_state["fig_extra_shapes"] = st.session_state.get("fig_extra_shapes", [])
         for _, row in editada.iterrows():

@@ -883,7 +883,7 @@ def render_comparacion_espectros_ftir(db, muestras):
     st.session_state["fig_extra_shapes"] = []
 
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
-    render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio, delinear=delinear_biblio)
+    render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
     render_tabla_similitud_ftir(db, datos_plotly, mostrar=mostrar_similitud, sombrear=sombrear_similitud)
 
     fig = go.Figure()

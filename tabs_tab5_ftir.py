@@ -130,9 +130,14 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
             for muestra, archivo, _ in claves_guardado:
                 df_guardar = editada[(editada["Muestra"] == muestra) & (editada["Archivo"] == archivo)]
                 columnas_guardar = ["Grupo funcional", "D pico", "X min", "X max", "Área", "Observaciones"]
-                filas_guardar = df_guardar[columnas_guardar].to_dict(orient="records")
+                filas_guardar = df_guardar[columnas_guardar].dropna(subset=["X min", "X max"]).to_dict(orient="records")
+
                 doc_ref = db.collection("tablas_ftir").document(f"{muestra}__{archivo}")
                 doc_ref.set({"filas": filas_guardar})
+
+                if not filas_guardar:
+                    st.warning(f"⚠️ No se guardaron filas para **{muestra} – {archivo}** (faltan X min o X max).")
+
             st.success("Todas las áreas fueron recalculadas y guardadas correctamente.")
     else:
         editada = df_tabla  # usar igual para sombrear

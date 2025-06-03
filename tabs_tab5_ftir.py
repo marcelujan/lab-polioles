@@ -377,7 +377,6 @@ def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_compara
 
     # --- Comparación ---
     st.markdown("**🔍 Matriz de similitud entre espectros**")
-    vectores = {}
 
     nombre_repetidos = defaultdict(int)
     vectores = {}
@@ -392,7 +391,16 @@ def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_compara
         df_filt = df[(df["x"] >= min(x_min, x_max)) & (df["x"] <= max(x_min, x_max))].copy()
         if not df_filt.empty:
             vectores[nombre_final] = (df_filt["x"].values, df_filt["y"].values)
-    nombres = sorted(vectores.keys())
+
+    etiquetas = list(vectores.keys())
+    muestra_ref = st.selectbox("🔹 Muestra de referencia", etiquetas, index=0, key="simil_ref")
+
+    # Reordenar con muestra de referencia al inicio
+    nombres = etiquetas.copy()
+    if muestra_ref in nombres:
+        nombres.remove(muestra_ref)
+        nombres = [muestra_ref] + nombres
+
     matriz = np.zeros((len(nombres), len(nombres)))
 
     for i in range(len(nombres)):
@@ -429,7 +437,7 @@ def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_compara
 
     df_similitud = pd.DataFrame(matriz, index=nombres, columns=nombres)
 
-    # Mostrar tabla con formato visual tipo heatmap
+    # --- Mostrar tabla como heatmap ---
     st.dataframe(
         df_similitud.style
             .format(lambda x: f"{x:.2f} %")

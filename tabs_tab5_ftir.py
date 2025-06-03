@@ -30,7 +30,7 @@ def obtener_espectros_para_muestra(db, nombre):
 
 
 def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
-    if not mostrar or not datos_plotly:
+    if not datos_plotly:
         return
 
     filas_totales = []
@@ -61,8 +61,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
             "Archivo": a
         } for m, _, a, _ in datos_plotly]
 
-
-
     df_tabla = pd.DataFrame(filas_totales, columns=columnas)
     df_tabla["Observaciones"] = df_tabla["Observaciones"].astype(str)
     df_tabla["Muestra"] = df_tabla["Muestra"].astype(str)
@@ -70,10 +68,10 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
     for col in ["D pico", "X min", "X max", "Área"]:
         df_tabla[col] = pd.to_numeric(df_tabla[col], errors="coerce")
 
-    key_editor = f"tabla_calculos_ftir_{'sombreado' if sombrear else 'normal'}"
-
-    with st.container():
+    # Mostrar editor solo si corresponde
+    if mostrar:
         st.markdown("**📊 Tabla de Cálculos FTIR**")
+        key_editor = f"tabla_calculos_ftir_{'sombreado' if sombrear else 'normal'}"
         editada = st.data_editor(
             df_tabla,
             num_rows="dynamic",
@@ -99,7 +97,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
                     x1 = float(row["X max"])
                     muestra = row["Muestra"]
                     archivo = row["Archivo"]
-                    df = next((df for m, a, df in [(m, a, df) for m, a, df in claves_guardado] if m == muestra and a == archivo), None)
+                    df = next((df for m, a, df in claves_guardado if m == muestra and a == archivo), None)
                     if df is not None:
                         df_filt = df[(df["x"] >= min(x0, x1)) & (df["x"] <= max(x0, x1))].copy()
                         df_filt = df_filt.sort_values("x")
@@ -115,30 +113,32 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
                 doc_ref = db.collection("tablas_ftir").document(f"{muestra}__{archivo}")
                 doc_ref.set({"filas": filas_guardar})
             st.success("Todas las áreas fueron recalculadas y guardadas correctamente.")
+    else:
+        editada = df_tabla  # usar igual para sombrear
 
+    # Sombrear si corresponde (incluso si no se mostró la tabla)
+    if sombrear:
+        st.session_state["shapes_calculos_ftir"] = []
+        for _, row in editada.iterrows():
+            try:
+                x0 = float(row["X min"])
+                x1 = float(row["X max"])
+                st.session_state["shapes_calculos_ftir"].append({
+                    "type": "rect",
+                    "xref": "x",
+                    "yref": "paper",
+                    "x0": min(x0, x1),
+                    "x1": max(x0, x1),
+                    "y0": 0,
+                    "y1": 1,
+                    "fillcolor": "rgba(0, 0, 255, 0.1)",
+                    "line": {"width": 0}
+                })
+            except:
+                continue
+    else:
+        st.session_state["shapes_calculos_ftir"] = []
 
-        # Sombreado (si se desea)
-        if sombrear:
-            st.session_state["shapes_calculos_ftir"] = []
-            for _, row in editada.iterrows():
-                try:
-                    x0 = float(row["X min"])
-                    x1 = float(row["X max"])
-                    st.session_state["shapes_calculos_ftir"].append({
-                        "type": "rect",
-                        "xref": "x",
-                        "yref": "paper",
-                        "x0": min(x0, x1),
-                        "x1": max(x0, x1),
-                        "y0": 0,
-                        "y1": 1,
-                        "fillcolor": "rgba(0, 0, 255, 0.1)",
-                        "line": {"width": 0}
-                    })
-                except:
-                    continue
-        else:
-            st.session_state["shapes_calculos_ftir"] = []
 
 
 def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):

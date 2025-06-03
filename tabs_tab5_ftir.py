@@ -206,7 +206,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                 # Etiqueta vertical rotada, arriba de la línea
                 st.session_state["fig_extra_annotations"].append({
                     "x": dpico,
-                    "y": 0.8,
+                    "y": 0.85,
                     "xref": "x",
                     "yref": "paper",
                     "text": grupo,

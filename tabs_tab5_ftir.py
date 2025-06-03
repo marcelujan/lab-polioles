@@ -149,7 +149,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
 
 
 
-def render_tabla_bibliografia_ftir(db, mostrar=False, delinear=False):
+def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False, sombrear=False):
     if not mostrar:
         return pd.DataFrame([])
 

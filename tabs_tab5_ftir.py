@@ -151,7 +151,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
     doc = doc_ref.get()
     filas = doc.to_dict().get("filas", []) if doc.exists else []
 
-    columnas = ["Grupo funcional", "X pico [cm⁻¹]", "X min", "X max", "Comentarios"]
+    columnas = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
     df_biblio = pd.DataFrame(filas) if filas else pd.DataFrame([dict.fromkeys(columnas, "")])
 
     key_editor = f"tabla_calculos_ftir_local_{'sombreado' if delinear else 'limpio'}"
@@ -164,11 +164,13 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         key=key_editor,
         num_rows="dynamic",
         column_config={
-            "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-            "X min": st.column_config.NumberColumn(format="%.2f"),
-            "δ pico": st.column_config.NumberColumn(format="%.2f"),
-            "X max": st.column_config.NumberColumn(format="%.2f"),
-        },
+            "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES),
+            "X min": st.column_config.NumberColumn("X min", format="%.2f"),
+            "δ pico": st.column_config.NumberColumn("δ pico", format="%.2f"),
+            "X max": st.column_config.NumberColumn("X max", format="%.2f"),
+            "Tipo de muestra": st.column_config.TextColumn("Tipo de muestra"),
+            "Observaciones": st.column_config.TextColumn("Observaciones"),
+        }
     )
 
 
@@ -183,15 +185,18 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                 x0 = float(row["X min"])
                 x1 = float(row["X max"])
                 st.session_state["fig_extra_shapes"].append({
-                    "type": "rect",
+                    "type": "line",
                     "xref": "x",
                     "yref": "paper",
-                    "x0": x0,
-                    "x1": x1,
+                    "x0": dpico,
+                    "x1": dpico,
                     "y0": 0,
                     "y1": 1,
-                    "fillcolor": "rgba(255, 0, 0, 0.1)",
-                    "line": {"width": 0}
+                    "line": {
+                        "color": "red",
+                        "width": 1,
+                        "dash": "dot"
+                    }
                 })
             except:
                 continue

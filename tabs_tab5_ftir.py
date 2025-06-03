@@ -127,17 +127,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=False, sombrear=False):
                 except:
                     continue
 
-        # ✅ Botón de exportación a Excel
-        buffer = BytesIO()
-        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-            editada.to_excel(writer, index=False, sheet_name="Calculos_FTIR")
-        buffer.seek(0)
-        nombre_archivo = f"FTIR_Calculos_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx"
-        st.download_button("📥 Exportar tabla a Excel", data=buffer.getvalue(),
-                           file_name=nombre_archivo,
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-
 
 def render_tabla_bibliografia_ftir(db, mostrar=False, delinear=False):
     if not mostrar:

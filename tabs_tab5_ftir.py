@@ -120,7 +120,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
         # Sombreado (si se desea)
         if sombrear:
             st.session_state["fig_extra_shapes"] = [
-                s for s in st.session_state.get("fig_extra_shapes", []) if s.get("source") != "calculos_ftir"
+                s for s in st.session_state.get("fig_extra_shapes", []) if s.get("_source") != "calculos_ftir"
             ]
             for _, row in editada.iterrows():
                 try:
@@ -184,11 +184,12 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
     if delinear:
         # Limpia solo lo anterior del tipo bibliografía
         st.session_state["fig_extra_shapes"] = [
-            s for s in st.session_state.get("fig_extra_shapes", []) if s.get("source") != "biblio_ftir"
+            s for s in st.session_state.get("fig_extra_shapes", []) if s.get("_source") != "biblio_ftir"
         ]
         st.session_state["fig_extra_annotations"] = [
-            a for a in st.session_state.get("fig_extra_annotations", []) if a.get("source") != "biblio_ftir"
+            a for a in st.session_state.get("fig_extra_annotations", []) if a.get("_source") != "biblio_ftir"
         ]
+
 
         for _, row in editada.iterrows():
             try:
@@ -904,10 +905,10 @@ def render_comparacion_espectros_ftir(db, muestras):
    
     # Limpiar sombreado previo
     st.session_state["fig_extra_shapes"] = [
-        s for s in st.session_state.get("fig_extra_shapes", []) if s.get("source") != "biblio_ftir"
+        s for s in st.session_state.get("fig_extra_shapes", []) if s.get("_source") != "biblio_ftir"
     ]
     st.session_state["fig_extra_annotations"] = [
-        a for a in st.session_state.get("fig_extra_annotations", []) if a.get("source") != "biblio_ftir"
+        a for a in st.session_state.get("fig_extra_annotations", []) if a.get("_source") != "biblio_ftir"
     ]
 
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)

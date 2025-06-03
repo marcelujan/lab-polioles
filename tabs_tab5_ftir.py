@@ -356,6 +356,7 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            key="dl_total_deconv")
 
+
 def render_tabla_similitud_ftir(db, preprocesados, mostrar=False, sombrear=False):
     if not mostrar or not preprocesados:
         st.session_state["shapes_similitud_ftir"] = []
@@ -363,10 +364,18 @@ def render_tabla_similitud_ftir(db, preprocesados, mostrar=False, sombrear=False
 
     st.markdown("**🔍 Tabla de similitud espectral FTIR**")
 
+    # Selección del tipo de comparación
+    tipo_comparacion = st.selectbox("Tipo de comparación", ["Pearson (correlación)", "Área integrada (RMSE relativo)"], key="tipo_similitud_ftir")
+
+    # Rango espectral a comparar (también usado para sombreado)
+    colx1, colx2 = st.columns(2)
+    x0 = colx1.number_input("X min del análisis", value=1000.0, step=1.0, key="x_sombra_min_similitud")
+    x1 = colx2.number_input("X max del análisis", value=1100.0, step=1.0, key="x_sombra_max_similitud")
+
     nombres = list(preprocesados.keys())
     resultados = []
 
-    # Intentar cargar comentarios previos si existen
+    # Cargar comentarios previos si existen
     ruta_doc = "tablas_ftir_similitud/default"
     doc_ref = db.document(ruta_doc)
     doc = doc_ref.get()
@@ -376,52 +385,64 @@ def render_tabla_similitud_ftir(db, preprocesados, mostrar=False, sombrear=False
             key = (row["Muestra 1"], row["Muestra 2"])
             comentarios_previos[key] = row.get("Comentarios", "")
 
-    # Calcular similitud entre espectros preprocesados
     for i in range(len(nombres)):
         for j in range(i + 1, len(nombres)):
             n1, n2 = nombres[i], nombres[j]
             df1, df2 = preprocesados[n1], preprocesados[n2]
 
-            x_comun = np.linspace(
-                max(df1["x"].min(), df2["x"].min()),
-                min(df1["x"].max(), df2["x"].max()),
-                num=1000
-            )
-            try:
-                y1 = np.interp(x_comun, df1["x"], df1["y"])
-                y2 = np.interp(x_comun, df2["x"], df2["y"])
-                similitud = np.corrcoef(y1, y2)[0, 1] * 100
-            except:
-                similitud = np.nan
+            # Recorte de datos
+            df1_filt = df1[(df1["x"] >= min(x0, x1)) & (df1["x"] <= max(x0, x1))].copy()
+            df2_filt = df2[(df2["x"] >= min(x0, x1)) & (df2["x"] <= max(x0, x1))].copy()
+            if df1_filt.empty or df2_filt.empty:
+                similitud = None
+            else:
+                x_common = np.linspace(
+                    max(df1_filt["x"].min(), df2_filt["x"].min()),
+                    min(df1_filt["x"].max(), df2_filt["x"].max()),
+                    num=500
+                )
+                try:
+                    y1 = np.interp(x_common, df1_filt["x"], df1_filt["y"])
+                    y2 = np.interp(x_common, df2_filt["x"], df2_filt["y"])
 
-            comentarios = comentarios_previos.get((n1, n2), "")
+                    if tipo_comparacion.startswith("Pearson"):
+                        r = np.corrcoef(y1, y2)[0, 1]
+                        similitud = round(r * 100, 2)
+                    else:  # Área integrada
+                        rmse = np.sqrt(np.mean((y1 - y2) ** 2))
+                        rango = max(np.max(y1), np.max(y2)) - min(np.min(y1), np.min(y2))
+                        similitud = round(100 * (1 - rmse / rango), 2) if rango != 0 else 0.0
+                except:
+                    similitud = None
+
+            key = (n1, n2)
+            comentarios = comentarios_previos.get(key, "")
             resultados.append({
-                "Muestra 1": n1,
-                "Muestra 2": n2,
-                "Similitud [%]": round(similitud, 2) if not np.isnan(similitud) else None,
+                "Muestra 1": n1.split(" – ")[0],
+                "Muestra 2": n2.split(" – ")[0],
+                "Similitud [%]": similitud,
                 "Comentarios": comentarios
             })
 
-    df_similitud = pd.DataFrame(resultados)
+    df_result = pd.DataFrame(resultados)
 
+    # Tabla editable
     editada = st.data_editor(
-        df_similitud,
+        df_result,
         column_order=["Muestra 1", "Muestra 2", "Similitud [%]", "Comentarios"],
         use_container_width=True,
         key="tabla_similitud_ftir"
     )
 
+    # Guardar en Firebase
     if st.button("💾 Guardar tabla de similitud", key="guardar_similitud_ftir"):
-        filas = editada.to_dict(orient="records")
-        db.document(ruta_doc).set({"filas": filas})
+        db.document(ruta_doc).set({"filas": editada.to_dict(orient="records")})
         st.success("Tabla de similitud guardada correctamente.")
 
-    # Sombrear si corresponde
+    # Sombreado opcional
     if sombrear:
         st.session_state["shapes_similitud_ftir"] = []
         umbral_sim = st.slider("Umbral mínimo de similitud [%]", 0, 100, 90, 1, key="umbral_similitud_ftir")
-        x0 = st.number_input("X min del sombreado", value=1000.0, step=1.0, key="x_sombra_min_similitud")
-        x1 = st.number_input("X max del sombreado", value=1100.0, step=1.0, key="x_sombra_max_similitud")
 
         for _, row in editada.iterrows():
             try:
@@ -441,6 +462,7 @@ def render_tabla_similitud_ftir(db, preprocesados, mostrar=False, sombrear=False
                 continue
     else:
         st.session_state["shapes_similitud_ftir"] = []
+
 
 
 

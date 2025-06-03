@@ -183,7 +183,11 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         st.warning("Entrando a delinear")
         st.session_state["shapes_biblio_ftir"] = []
         st.session_state["annots_biblio_ftir"] = []
+        st.write("🔍 DataFrame bibliográfico para delinear:")
+        st.dataframe(editada)
         for _, row in editada.iterrows():
+            for i, row in editada.iterrows():
+                 st.write(f"➡️ Fila {i}:", row)
             try:
                 x0 = float(row["X min"])
                 x1 = float(row["X max"])

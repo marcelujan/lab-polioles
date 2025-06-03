@@ -22,13 +22,11 @@ def obtener_espectros_para_muestra(db, nombre):
     return st.session_state[clave]
 
 
-def render_tabla_calculos_ftir(db, datos_plotly):
-    mostrar = st.checkbox("Mostrar Tabla de cálculos FTIR", value=False, key="mostrar_tabla_calculos_ftir")
+def render_tabla_calculos_ftir(db, datos_plotly, mostrar=False, sombrear=False):
     if not mostrar:
         return
 
-    st.subheader("Tabla de cálculos FTIR")
-    sombrear = st.checkbox("Sombrear Tabla de cálculos", value=False, key="sombrear_tabla_calculos_ftir")
+    st.markdown("#### 📊 Tabla de cálculos FTIR")
 
     filas_totales = []
     claves_renderizadas = []
@@ -38,10 +36,7 @@ def render_tabla_calculos_ftir(db, datos_plotly):
         claves_renderizadas.append((muestra, archivo))
         doc_ref = db.collection("tablas_ftir_calculos").document(muestra).collection("archivos").document(archivo)
         doc = doc_ref.get()
-        if doc.exists:
-            filas = doc.to_dict().get("filas", [])
-        else:
-            filas = []
+        filas = doc.to_dict().get("filas", []) if doc.exists else []
 
         for fila in filas:
             fila["Muestra"] = muestra
@@ -49,11 +44,8 @@ def render_tabla_calculos_ftir(db, datos_plotly):
             fila["Archivo"] = archivo
         filas_totales.extend(filas)
 
-    df_tabla = pd.DataFrame(filas_totales)
     columnas = ["Muestra", "Tipo", "Archivo", "X min", "X max", "Área", "Grupo funcional", "Observaciones"]
-
-    if df_tabla.empty:
-        df_tabla = pd.DataFrame(columns=columnas)
+    df_tabla = pd.DataFrame(filas_totales) if filas_totales else pd.DataFrame(columns=columnas)
 
     editada = st.data_editor(
         df_tabla,
@@ -63,7 +55,6 @@ def render_tabla_calculos_ftir(db, datos_plotly):
         num_rows="dynamic"
     )
 
-    # Botón para calcular área
     if st.button("Recalcular áreas FTIR", key="recalc_area_ftir"):
         nuevas_filas = []
         for _, row in editada.iterrows():
@@ -82,7 +73,6 @@ def render_tabla_calculos_ftir(db, datos_plotly):
             nuevas_filas.append(row)
         editada = pd.DataFrame(nuevas_filas)
 
-    # Guardar por muestra y archivo
     for (muestra, archivo) in claves_renderizadas:
         df_filtrado = editada[(editada["Muestra"] == muestra) & (editada["Archivo"] == archivo)]
         columnas_guardar = ["X min", "X max", "Área", "Grupo funcional", "Observaciones"]
@@ -90,7 +80,6 @@ def render_tabla_calculos_ftir(db, datos_plotly):
         doc_ref = db.collection("tablas_ftir_calculos").document(muestra).collection("archivos").document(archivo)
         doc_ref.set({"filas": filas_guardar})
 
-    # Sombrear en gráfico si aplica
     if sombrear:
         for _, row in editada.iterrows():
             try:
@@ -111,25 +100,20 @@ def render_tabla_calculos_ftir(db, datos_plotly):
                 continue
 
 
-def render_tabla_bibliografia_ftir(db):
-    st.subheader("Tabla bibliográfica FTIR")
-    delinear = st.checkbox("Delinear Tabla bibliográfica", value=False, key="delinear_biblio_ftir")
+
+def render_tabla_bibliografia_ftir(db, mostrar=False, delinear=False):
+    if not mostrar:
+        return pd.DataFrame([])
+
+    st.markdown("#### 📚 Tabla bibliográfica FTIR")
 
     ruta = "tablas_ftir_bibliografia/default"
     doc_ref = db.document(ruta)
     doc = doc_ref.get()
+    filas = doc.to_dict().get("filas", []) if doc.exists else []
 
-    if doc.exists:
-        filas = doc.to_dict().get("filas", [])
-        df_biblio = pd.DataFrame(filas)
-    else:
-        df_biblio = pd.DataFrame([{
-            "Grupo funcional": "",
-            "X pico [cm⁻¹]": 0.0,
-            "X min": 0.0,
-            "X max": 0.0,
-            "Comentarios": ""
-        }])
+    columnas = ["Grupo funcional", "X pico [cm⁻¹]", "X min", "X max", "Comentarios"]
+    df_biblio = pd.DataFrame(filas) if filas else pd.DataFrame([dict.fromkeys(columnas, "")])
 
     editada = st.data_editor(
         df_biblio,
@@ -138,13 +122,12 @@ def render_tabla_bibliografia_ftir(db):
         key="tabla_biblio_ftir"
     )
 
-    # Guardar en firebase
     if st.button("Guardar bibliografía FTIR", key="guardar_biblio_ftir"):
         doc_ref.set({"filas": editada.to_dict(orient="records")})
         st.success("Bibliografía guardada correctamente.")
 
     if delinear:
-        st.session_state["fig_extra_shapes"] = []
+        st.session_state["fig_extra_shapes"] = st.session_state.get("fig_extra_shapes", [])
         for _, row in editada.iterrows():
             try:
                 x0 = float(row["X min"])
@@ -164,6 +147,7 @@ def render_tabla_bibliografia_ftir(db):
                 continue
 
     return editada if delinear else pd.DataFrame([])
+
 
 
 
@@ -309,18 +293,46 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            key="dl_total_deconv")
 
+def render_tabla_similitud_ftir(db, datos_plotly, mostrar=False, sombrear=False):
+    if not mostrar:
+        return
 
+    st.markdown("#### 🔍 Tabla de similitud espectral FTIR")
 
+    # Placeholder de ejemplo
+    columnas = ["Muestra 1", "Muestra 2", "Similitud [%]", "Comentarios"]
+    datos_ejemplo = [
+        {"Muestra 1": "A", "Muestra 2": "B", "Similitud [%]": 92.3, "Comentarios": ""},
+        {"Muestra 1": "A", "Muestra 2": "C", "Similitud [%]": 87.1, "Comentarios": ""},
+    ]
+    df_similitud = pd.DataFrame(datos_ejemplo)
 
+    editada = st.data_editor(
+        df_similitud,
+        column_order=columnas,
+        use_container_width=True,
+        key="tabla_similitud_ftir"
+    )
 
-
-
-
-
-
-
-
-
+    # Si algún día querés sombrear regiones por similitud, ejemplo básico:
+    if sombrear:
+        st.session_state["fig_extra_shapes"] = st.session_state.get("fig_extra_shapes", [])
+        for _, row in editada.iterrows():
+            try:
+                if float(row["Similitud [%]"]) > 90:
+                    st.session_state["fig_extra_shapes"].append({
+                        "type": "rect",
+                        "xref": "x",
+                        "yref": "paper",
+                        "x0": 1000,  # ejemplo de rango espectral
+                        "x1": 1100,
+                        "y0": 0,
+                        "y1": 1,
+                        "fillcolor": "rgba(0, 200, 0, 0.1)",
+                        "line": {"width": 0}
+                    })
+            except:
+                continue
 
 
 def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normalizar,
@@ -849,6 +861,27 @@ def render_comparacion_espectros_ftir(db, muestras):
         )
         st.plotly_chart(fig_vertical, use_container_width=True)
 
+    col1, col2 = st.columns(2)
+
+    with col1:
+        mostrar_calculos = st.checkbox("📊 Tabla de Cálculos FTIR", key="mostrar_tabla_calculos_ftir")
+    with col2:
+        sombrear_calculos = st.checkbox("🟦 Sombrear Cálculos FTIR", key="sombrear_tabla_calculos_ftir")
+
+    with col1:
+        mostrar_biblio = st.checkbox("📚 Tabla Bibliográfica FTIR", key="mostrar_tabla_biblio_ftir")
+    with col2:
+        delinear_biblio = st.checkbox("🔴 Delinear Bibliografía FTIR", key="delinear_tabla_biblio_ftir")
+
+    with col1:
+        mostrar_similitud = st.checkbox("🔍 Tabla de Similitud FTIR", key="mostrar_tabla_similitud_ftir")
+    with col2:
+        sombrear_similitud = st.checkbox("🟨 Sombrear Similitud FTIR", key="sombrear_tabla_similitud_ftir")
+
+    render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
+    render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
+    render_tabla_similitud_ftir(db, datos_plotly, mostrar=mostrar_similitud, sombrear=sombrear_similitud)
+
     return (
         datos_plotly,
         fig,
@@ -857,6 +890,16 @@ def render_comparacion_espectros_ftir(db, muestras):
         controles["x_min"], controles["x_max"],
         controles["y_min"], controles["y_max"]
         )
+
+
+
+
+
+
+
+
+
+
 
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):

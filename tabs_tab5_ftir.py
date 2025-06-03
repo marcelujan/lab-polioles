@@ -807,7 +807,23 @@ def render_comparacion_espectros_ftir(db, muestras):
         altura_min = colp1.number_input("Altura mínima para detección de picos", value=0.02, step=0.01)
         distancia_min = colp2.number_input("Distancia mínima entre picos", value=20, step=1)
 
-    render_tabla_bibliografia_ftir(db)
+    col1, col2 = st.columns(2)
+    with col1:
+        mostrar_calculos = st.checkbox("📊 Tabla de Cálculos FTIR", key="mostrar_tabla_calculos_ftir")
+    with col2:
+        sombrear_calculos = st.checkbox("🟦 Sombrear Cálculos FTIR", key="sombrear_tabla_calculos_ftir")
+    with col1:
+        mostrar_biblio = st.checkbox("📚 Tabla Bibliográfica FTIR", key="mostrar_tabla_biblio_ftir")
+    with col2:
+        delinear_biblio = st.checkbox("🔴 Delinear Bibliografía FTIR", key="delinear_tabla_biblio_ftir")
+    with col1:
+        mostrar_similitud = st.checkbox("🔍 Tabla de Similitud FTIR", key="mostrar_tabla_similitud_ftir")
+    with col2:
+        sombrear_similitud = st.checkbox("🟨 Sombrear Similitud FTIR", key="sombrear_tabla_similitud_ftir")
+
+    render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
+    render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
+    render_tabla_similitud_ftir(db, datos_plotly, mostrar=mostrar_similitud, sombrear=sombrear_similitud)
 
     fig = go.Figure()
     render_grafico_combinado_ftir(
@@ -860,27 +876,6 @@ def render_comparacion_espectros_ftir(db, muestras):
             legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
         )
         st.plotly_chart(fig_vertical, use_container_width=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        mostrar_calculos = st.checkbox("📊 Tabla de Cálculos FTIR", key="mostrar_tabla_calculos_ftir")
-    with col2:
-        sombrear_calculos = st.checkbox("🟦 Sombrear Cálculos FTIR", key="sombrear_tabla_calculos_ftir")
-
-    with col1:
-        mostrar_biblio = st.checkbox("📚 Tabla Bibliográfica FTIR", key="mostrar_tabla_biblio_ftir")
-    with col2:
-        delinear_biblio = st.checkbox("🔴 Delinear Bibliografía FTIR", key="delinear_tabla_biblio_ftir")
-
-    with col1:
-        mostrar_similitud = st.checkbox("🔍 Tabla de Similitud FTIR", key="mostrar_tabla_similitud_ftir")
-    with col2:
-        sombrear_similitud = st.checkbox("🟨 Sombrear Similitud FTIR", key="sombrear_tabla_similitud_ftir")
-
-    render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
-    render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
-    render_tabla_similitud_ftir(db, datos_plotly, mostrar=mostrar_similitud, sombrear=sombrear_similitud)
 
     return (
         datos_plotly,

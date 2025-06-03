@@ -74,13 +74,13 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=False, sombrear=False):
                 num_rows="dynamic",
                 column_config={
                     "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES_RMN),
-                    "Área": st.column_config.NumberColumn("Área", disabled=True, format="%.2f"),
+                    "Área": st.column_config.NumberColumn("🔴Área", disabled=True, format="%.2f"),
                     "Muestra": st.column_config.TextColumn("Muestra", disabled=True),
                     "Archivo": st.column_config.TextColumn("Archivo", disabled=True),
                 }
             )
 
-            if st.button("Recalcular áreas FTIR", key="recalc_area_ftir_local"):
+            if st.button("🔴 Recalcular 'Área'", key="recalc_area_ftir_local"):
                 nuevas_filas = []
                 for _, row in editada.iterrows():
                     try:

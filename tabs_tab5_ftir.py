@@ -823,6 +823,9 @@ def render_comparacion_espectros_ftir(db, muestras):
         mostrar_similitud = st.checkbox("🔍 Tabla de Similitud FTIR", key="mostrar_tabla_similitud_ftir")
     with col2:
         sombrear_similitud = st.checkbox("🟨 Sombrear Similitud FTIR", key="sombrear_tabla_similitud_ftir")
+   
+    # Limpiar sombreado previo
+    st.session_state["fig_extra_shapes"] = []
 
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
     render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)

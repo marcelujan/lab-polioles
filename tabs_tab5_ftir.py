@@ -351,6 +351,9 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            key="dl_total_deconv")
 
+
+
+
 def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_comparacion, sombrear_similitud):
     from collections import defaultdict
     
@@ -1036,16 +1039,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     st.session_state["current_tab"] = "Análisis FTIR"
     opciones_muestras = sorted([m["nombre"] for m in cargar_muestras(db)])
     muestras_sel = st.multiselect("Seleccionar muestras", opciones_muestras)
-
     muestras = [m for m in cargar_muestras(db) if m["nombre"] in muestras_sel]
 
     if muestras_sel and muestras:
         # 1. Gráfica FTIR (internamente llama todo)
         datos_plotly, fig, preprocesados, x_ref, y_ref, x_min, x_max, y_min, y_max = render_comparacion_espectros_ftir(db, muestras)
 
-        if datos_plotly:
-            if st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir"):
-                render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar_deconv)
+        activar_deconv = st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir")
+        if datos_plotly and activar_deconv:
+            render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar_deconv)
 
             if st.checkbox("Mostrar opciones de exportación", value=False):
                 exportar_resultados_ftir(

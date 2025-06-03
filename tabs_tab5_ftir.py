@@ -194,7 +194,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                 x0 = float(row["δ pico"])
                 texto = str(row["Grupo funcional"])[:20]
 
-                # Agregar línea punteada negra
+                # Línea vertical punteada en δ pico
                 st.session_state["shapes_biblio_ftir"].append({
                     "type": "line",
                     "xref": "x",
@@ -206,11 +206,11 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "line": {"color": "black", "width": 1, "dash": "dot"}
                 })
 
-                # Agregar anotación vertical rotada
+                # Anotación vertical
                 st.session_state["annots_biblio_ftir"].append({
                     "xref": "x",
                     "yref": "paper",
-                    "x": x_centro,
+                    "x": x0,
                     "y": 0.97,
                     "text": texto,
                     "showarrow": False,
@@ -222,13 +222,13 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                 st.warning(f"⚠️ Fila {i} omitida: {e}")
                 continue
 
-        # Mostrar los resultados generados
         st.write("🔧 Shapes generados:", st.session_state.get("shapes_biblio_ftir"))
         st.write("🔧 Annotations generadas:", st.session_state.get("annots_biblio_ftir"))
 
     else:
         st.session_state["shapes_biblio_ftir"] = []
         st.session_state["annots_biblio_ftir"] = []
+
 
     return editada if delinear else pd.DataFrame([])
 

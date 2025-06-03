@@ -473,6 +473,7 @@ def render_controles_preprocesamiento(datos_plotly):
     mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")
     restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
     ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
+    mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
 
     # Rango XY automático
     todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])

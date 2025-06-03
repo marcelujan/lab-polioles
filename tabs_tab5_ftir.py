@@ -9,13 +9,10 @@ from scipy.signal import savgol_filter, find_peaks, peak_widths
 from scipy.optimize import curve_fit
 import plotly.graph_objects as go
 from numpy import interp
+from collections import defaultdict
+from scipy.signal import find_peaks
 
-
-GRUPOS_FUNCIONALES = [
-    "CH", "CH₂", "CH₃", "OH", "C=O", "C=C", "C–O", "Amina",
-    "Nitrilo", "Aldehído", "Ácido", "Éster", "Otro"
-]
-
+GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "Vecino a alfa-carbonilo", "Alfa-epóxido", "CH2", "CH3"]
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
@@ -355,7 +352,7 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar
 
 
 def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_comparacion, sombrear_similitud):
-    from collections import defaultdict
+
     
     # --- Sombreado opcional en el gráfico ---
     if sombrear_similitud:
@@ -494,7 +491,7 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         fig.add_trace(go.Scatter(x=x, y=y_data, mode="lines", name=archivo, hovertemplate="x=%{x}<br>y=%{y}<extra></extra>"))
 
     if mostrar_picos:
-        from scipy.signal import find_peaks
+
         try:
             peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
             for p in peaks:
@@ -569,7 +566,6 @@ def render_graficos_individuales_ftir(preprocesados, x_min, x_max, y_min, y_max,
 
         # Picos si corresponde
         if mostrar_picos:
-            from scipy.signal import find_peaks
             peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
             for p in peaks:
                 fig.add_trace(go.Scatter(

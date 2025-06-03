@@ -195,7 +195,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "x0": dpico,
                     "x1": dpico,
                     "y0": 0,
-                    "y1": 0.9,
+                    "y1": 0.8,
                     "line": {
                         "color": "black",
                         "width": 1,

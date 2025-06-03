@@ -357,10 +357,8 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
                            key="dl_total_deconv")
 
 def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_comparacion, sombrear):
-    import numpy as np
-    import pandas as pd
-    import streamlit as st
-
+    from collections import defaultdict
+    
     # --- Sombreado opcional en el gráfico ---
     if sombrear:
         st.session_state["shapes_similitud_ftir"] = [{
@@ -381,12 +379,19 @@ def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_compara
     st.subheader("🔍 Matriz de similitud entre espectros")
     vectores = {}
 
+    nombre_repetidos = defaultdict(int)
+    vectores = {}
+    etiquetas_map = {}
+
     for clave, df in preprocesados.items():
-        muestra = clave  # mantener clave completa, asegura unicidad
+        nombre_base = clave.split(" – ")[0].strip()
+        nombre_repetidos[nombre_base] += 1
+        nombre_final = f"{nombre_base} #{nombre_repetidos[nombre_base]}"
+        etiquetas_map[clave] = nombre_final
+
         df_filt = df[(df["x"] >= min(x_min, x_max)) & (df["x"] <= max(x_min, x_max))].copy()
         if not df_filt.empty:
-            vectores[muestra] = (df_filt["x"].values, df_filt["y"].values)
-
+            vectores[nombre_final] = (df_filt["x"].values, df_filt["y"].values)
     nombres = sorted(vectores.keys())
     matriz = np.zeros((len(nombres), len(nombres)))
 

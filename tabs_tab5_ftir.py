@@ -221,13 +221,8 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
 
 
 
-def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
-    st.subheader("🔍 Deconvolución FTIR")
-    if not preprocesados:
-        st.info("No hay espectros preprocesados para deconvolución.")
-        return
-
-    if not st.checkbox("Activar deconvolución", key="activar_deconv"):
+def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar_deconv):
+    if not activar_deconv or not preprocesados:
         return
 
     # Selección de espectros
@@ -1050,7 +1045,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
         if datos_plotly:
             if st.checkbox("Mostrar deconvolución", value=False, key="activar_deconv_ftir"):
-                render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max)
+                render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar_deconv)
 
             if st.checkbox("Mostrar opciones de exportación", value=False):
                 exportar_resultados_ftir(

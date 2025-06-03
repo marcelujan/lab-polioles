@@ -166,17 +166,17 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
     key_editor = f"tabla_calculos_ftir_local_{'sombreado' if sombrear else 'limpio'}"
 
     editada = st.data_editor(
-        df_tabla,
+        df_biblio,
         column_order=columnas,
         use_container_width=True,
         key=key_editor,
         num_rows="dynamic",
         column_config={
-            "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES),
-            "Área": st.column_config.NumberColumn("Área", disabled=True, format="%.2f"),
-            "Muestra": st.column_config.TextColumn("Muestra", disabled=True),
-            "Archivo": st.column_config.TextColumn("Archivo", disabled=True),
-        }
+            "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+            "X min": st.column_config.NumberColumn(format="%.2f"),
+            "δ pico": st.column_config.NumberColumn(format="%.2f"),
+            "X max": st.column_config.NumberColumn(format="%.2f"),
+        },
     )
 
 

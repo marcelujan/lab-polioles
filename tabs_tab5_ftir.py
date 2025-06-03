@@ -90,7 +90,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
             }
         )
 
-        if st.button("🔴 Recalcular áreas FTIR", key="recalc_area_ftir_global"):
+        if st.button("🔴Recalcular áreas FTIR", key="recalc_area_ftir_global"):
             for i, row in editada.iterrows():
                 try:
                     x0 = float(row["X min"])
@@ -356,44 +356,82 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max):
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                            key="dl_total_deconv")
 
-def render_tabla_similitud_ftir(db, datos_plotly, mostrar=False, sombrear=False):
-    if not mostrar:
+def render_tabla_similitud_ftir(db, preprocesados, mostrar=False, sombrear=False):
+    if not mostrar or not preprocesados:
+        st.session_state["shapes_similitud_ftir"] = []
         return
 
     st.markdown("**🔍 Tabla de similitud espectral FTIR**")
 
-    # Placeholder de ejemplo
-    columnas = ["Muestra 1", "Muestra 2", "Similitud [%]", "Comentarios"]
-    datos_ejemplo = [
-        {"Muestra 1": "A", "Muestra 2": "B", "Similitud [%]": 92.3, "Comentarios": ""},
-        {"Muestra 1": "A", "Muestra 2": "C", "Similitud [%]": 87.1, "Comentarios": ""},
-    ]
-    df_similitud = pd.DataFrame(datos_ejemplo)
+    nombres = list(preprocesados.keys())
+    resultados = []
+
+    # Intentar cargar comentarios previos si existen
+    ruta_doc = "tablas_ftir_similitud/default"
+    doc_ref = db.document(ruta_doc)
+    doc = doc_ref.get()
+    comentarios_previos = {}
+    if doc.exists:
+        for row in doc.to_dict().get("filas", []):
+            key = (row["Muestra 1"], row["Muestra 2"])
+            comentarios_previos[key] = row.get("Comentarios", "")
+
+    # Calcular similitud entre espectros preprocesados
+    for i in range(len(nombres)):
+        for j in range(i + 1, len(nombres)):
+            n1, n2 = nombres[i], nombres[j]
+            df1, df2 = preprocesados[n1], preprocesados[n2]
+
+            x_comun = np.linspace(
+                max(df1["x"].min(), df2["x"].min()),
+                min(df1["x"].max(), df2["x"].max()),
+                num=1000
+            )
+            try:
+                y1 = np.interp(x_comun, df1["x"], df1["y"])
+                y2 = np.interp(x_comun, df2["x"], df2["y"])
+                similitud = np.corrcoef(y1, y2)[0, 1] * 100
+            except:
+                similitud = np.nan
+
+            comentarios = comentarios_previos.get((n1, n2), "")
+            resultados.append({
+                "Muestra 1": n1,
+                "Muestra 2": n2,
+                "Similitud [%]": round(similitud, 2) if not np.isnan(similitud) else None,
+                "Comentarios": comentarios
+            })
+
+    df_similitud = pd.DataFrame(resultados)
 
     editada = st.data_editor(
         df_similitud,
-        column_order=columnas,
+        column_order=["Muestra 1", "Muestra 2", "Similitud [%]", "Comentarios"],
         use_container_width=True,
         key="tabla_similitud_ftir"
     )
 
-    # Si algún día querés sombrear regiones por similitud, ejemplo básico:
-    if sombrear:
-        st.markdown("**🛠 Umbral de similitud para sombreado**")
-        umbral_similitud = st.slider("Similitud mínima (%)", min_value=0, max_value=100, value=90, step=1, key="umbral_similitud_ftir")
-        x_sombra_min = st.number_input("X min del sombreado", value=1000.0, step=1.0, key="x_sombra_min_similitud")
-        x_sombra_max = st.number_input("X max del sombreado", value=1100.0, step=1.0, key="x_sombra_max_similitud")
+    if st.button("💾 Guardar tabla de similitud", key="guardar_similitud_ftir"):
+        filas = editada.to_dict(orient="records")
+        db.document(ruta_doc).set({"filas": filas})
+        st.success("Tabla de similitud guardada correctamente.")
 
+    # Sombrear si corresponde
+    if sombrear:
         st.session_state["shapes_similitud_ftir"] = []
+        umbral_sim = st.slider("Umbral mínimo de similitud [%]", 0, 100, 90, 1, key="umbral_similitud_ftir")
+        x0 = st.number_input("X min del sombreado", value=1000.0, step=1.0, key="x_sombra_min_similitud")
+        x1 = st.number_input("X max del sombreado", value=1100.0, step=1.0, key="x_sombra_max_similitud")
+
         for _, row in editada.iterrows():
             try:
-                if float(row["Similitud [%]"]) >= umbral_similitud:
+                if float(row["Similitud [%]"]) >= umbral_sim:
                     st.session_state["shapes_similitud_ftir"].append({
                         "type": "rect",
                         "xref": "x",
                         "yref": "paper",
-                        "x0": min(x_sombra_min, x_sombra_max),
-                        "x1": max(x_sombra_min, x_sombra_max),
+                        "x0": min(x0, x1),
+                        "x1": max(x0, x1),
                         "y0": 0,
                         "y1": 1,
                         "fillcolor": "rgba(0, 200, 0, 0.1)",
@@ -403,6 +441,8 @@ def render_tabla_similitud_ftir(db, datos_plotly, mostrar=False, sombrear=False)
                 continue
     else:
         st.session_state["shapes_similitud_ftir"] = []
+
+
 
 
 
@@ -901,7 +941,8 @@ def render_comparacion_espectros_ftir(db, muestras):
 
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
     render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
-    render_tabla_similitud_ftir(db, datos_plotly, mostrar=mostrar_similitud, sombrear=sombrear_similitud)
+    render_tabla_similitud_ftir(db, preprocesados, mostrar=mostrar_similitud, sombrear=sombrear_similitud)
+
 
     fig = go.Figure()
     render_grafico_combinado_ftir(

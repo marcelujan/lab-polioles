@@ -210,14 +210,14 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "x0": x0,
                     "x1": x0,
                     "y0": 0,
-                    "y1": 0.8,
+                    "y1": 0.6,
                     "line": {"color": "black", "width": 1, "dash": "dot"}
                 })
                 st.session_state["annots_biblio_ftir"].append({
                     "xref": "x",
                     "yref": "paper",
                     "x": x0,
-                    "y": 0.85,
+                    "y": 0.65,
                     "text": texto,
                     "showarrow": False,
                     "font": {"color": "black", "size": 10},

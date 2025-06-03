@@ -33,65 +33,115 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
     if not mostrar or not datos_plotly:
         return
 
+    filas_totales = []
+    claves_guardado = []
+
     for muestra, tipo, archivo, df in datos_plotly:
         clave = f"{muestra}__{archivo}"
         doc_ref = db.collection("tablas_ftir").document(clave)
         doc = doc_ref.get()
-        datos = doc.to_dict().get("filas", []) if doc.exists else []
+        filas = doc.to_dict().get("filas", []) if doc.exists else []
 
-        columnas = ["Muestra", "Grupo funcional", "D pico", "X min", "X max", "Área", "Observaciones", "Archivo"]
-        df_tabla = pd.DataFrame(datos).reindex(columns=columnas).fillna("")
-        df_tabla["Observaciones"] = df_tabla["Observaciones"].astype(str)
+        for fila in filas:
+            fila["Muestra"] = muestra
+            fila["Archivo"] = archivo
+        filas_totales.extend(filas)
+        claves_guardado.append((muestra, archivo, df))
 
-        # Asegurar que columnas numéricas estén como float
-        for col in ["D pico", "X min", "X max", "Área"]:
-            df_tabla[col] = pd.to_numeric(df_tabla[col], errors="coerce")
+    columnas = ["Muestra", "Grupo funcional", "D pico", "X min", "X max", "Área", "Observaciones", "Archivo"]
+    if not filas_totales:
+        filas_totales = [{
+            "Muestra": m,
+            "Grupo funcional": "",
+            "D pico": None,
+            "X min": None,
+            "X max": None,
+            "Área": None,
+            "Observaciones": "",
+            "Archivo": a
+        } for m, _, a, _ in datos_plotly]
 
-        # Agregar muestra y archivo por si faltan
-        df_tabla["Muestra"] = muestra
-        df_tabla["Archivo"] = archivo
+    df_tabla = pd.DataFrame(filas_totales, columns=columnas)
+    df_tabla["Observaciones"] = df_tabla["Observaciones"].astype(str)
+    for col in ["D pico", "X min", "X max", "Área"]:
+        df_tabla[col] = pd.to_numeric(df_tabla[col], errors="coerce")
 
-        key_editor = f"tabla_calculos_ftir_{muestra}_{archivo}_{'sombreado' if sombrear else 'normal'}"
+    key_editor = f"tabla_calculos_ftir_{'sombreado' if sombrear else 'normal'}"
 
-        with st.container():
-            st.markdown(f"### 📊 Cálculos FTIR – {muestra} / {archivo}")
-            editada = st.data_editor(
-                df_tabla,
-                num_rows="dynamic",
-                key=key_editor,
-                column_order=columnas,
-                use_container_width=True,
-                column_config={
-                    "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES),
-                    "D pico": st.column_config.NumberColumn("δ pico [cm⁻¹]", format="%.2f"),
-                    "X min": st.column_config.NumberColumn("X min", format="%.2f"),
-                    "X max": st.column_config.NumberColumn("X max", format="%.2f"),
-                    "Área": st.column_config.NumberColumn("🔴Área", disabled=True, format="%.2f"),
-                    "Observaciones": st.column_config.TextColumn("Observaciones"),
-                    "Muestra": st.column_config.TextColumn("Muestra", disabled=True),
-                    "Archivo": st.column_config.TextColumn("Archivo", disabled=True),
-                }
-            )
+    with st.container():
+        st.markdown("### 📊 Tabla de Cálculos FTIR (combinada)")
+        editada = st.data_editor(
+            df_tabla,
+            num_rows="dynamic",
+            key=key_editor,
+            column_order=columnas,
+            use_container_width=True,
+            column_config={
+                "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES_RMN),
+                "D pico": st.column_config.NumberColumn("δ pico [cm⁻¹]", format="%.2f"),
+                "X min": st.column_config.NumberColumn("X min", format="%.2f"),
+                "X max": st.column_config.NumberColumn("X max", format="%.2f"),
+                "Área": st.column_config.NumberColumn("🔴Área", disabled=True, format="%.2f"),
+                "Observaciones": st.column_config.TextColumn("Observaciones"),
+                "Muestra": st.column_config.TextColumn("Muestra", disabled=True),
+                "Archivo": st.column_config.TextColumn("Archivo", disabled=True),
+            }
+        )
 
-            if st.button(f"🔴 Recalcular áreas FTIR – {muestra} / {archivo}", key=f"recalc_{clave}"):
-                for i, row in editada.iterrows():
-                    try:
-                        x0 = float(row["X min"])
-                        x1 = float(row["X max"])
+        if st.button("🔴 Recalcular áreas FTIR", key="recalc_area_ftir_global"):
+            for i, row in editada.iterrows():
+                try:
+                    x0 = float(row["X min"])
+                    x1 = float(row["X max"])
+                    muestra = row["Muestra"]
+                    archivo = row["Archivo"]
+                    df = next((df for m, a, df in [(m, a, df) for m, a, df in claves_guardado] if m == muestra and a == archivo), None)
+                    if df is not None:
                         df_filt = df[(df["x"] >= min(x0, x1)) & (df["x"] <= max(x0, x1))].copy()
                         df_filt = df_filt.sort_values("x")
                         area = np.trapz(df_filt["y"], df_filt["x"])
                         editada.at[i, "Área"] = round(area, 2)
-                    except:
-                        continue
-                doc_ref.set({"filas": editada.to_dict(orient="records")})
-                st.success("Áreas recalculadas y guardadas correctamente.")
+                except:
+                    continue
 
-            if not editada.empty:
-                nombre_archivo = f"FTIR_Calculos_{muestra}_{archivo.replace('.', '_')}.xlsx"
-                buffer = BytesIO()
-                editada.to_excel(buffer, index=False)
-                st.download_button("📥 Exportar a Excel", data=buffer.getvalue(), file_name=nombre_archivo, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            for muestra, archivo, _ in claves_guardado:
+                df_guardar = editada[(editada["Muestra"] == muestra) & (editada["Archivo"] == archivo)]
+                columnas_guardar = ["Grupo funcional", "D pico", "X min", "X max", "Área", "Observaciones"]
+                filas_guardar = df_guardar[columnas_guardar].to_dict(orient="records")
+                doc_ref = db.collection("tablas_ftir").document(f"{muestra}__{archivo}")
+                doc_ref.set({"filas": filas_guardar})
+            st.success("Todas las áreas fueron recalculadas y guardadas correctamente.")
+
+        st.markdown("---")
+        st.markdown("##### 📤 Exportar tabla combinada")
+        buffer = BytesIO()
+        editada.to_excel(buffer, index=False, sheet_name="Calculos_FTIR")
+        buffer.seek(0)
+        nombre_archivo = f"FTIR_Calculos_Combinado_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx"
+        st.download_button("📥 Exportar a Excel", data=buffer.getvalue(),
+                           file_name=nombre_archivo,
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # Sombreado (si se desea)
+        if sombrear:
+            st.session_state["fig_extra_shapes"] = []
+            for _, row in editada.iterrows():
+                try:
+                    x0 = float(row["X min"])
+                    x1 = float(row["X max"])
+                    st.session_state["fig_extra_shapes"].append({
+                        "type": "rect",
+                        "xref": "x",
+                        "yref": "paper",
+                        "x0": x0,
+                        "x1": x1,
+                        "y0": 0,
+                        "y1": 1,
+                        "fillcolor": "rgba(0, 100, 250, 0.1)",
+                        "line": {"width": 0}
+                    })
+                except:
+                    continue
 
 
 

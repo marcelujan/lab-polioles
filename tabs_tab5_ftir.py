@@ -33,6 +33,27 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
     if not datos_plotly:
         return
 
+    if not filas_totales:
+        st.info("No hay datos previos. Podés agregar una nueva fila manualmente.")
+        opciones_muestras = list(set([m for m, _, _, _ in datos_plotly]))
+        opciones_archivos = list(set([a for _, _, a, _ in datos_plotly]))
+        col1, col2 = st.columns(2)
+        with col1:
+            muestra_nueva = st.selectbox("Muestra para nueva fila", opciones_muestras, key="muestra_nueva_ftir")
+        with col2:
+            archivo_nuevo = st.selectbox("Archivo para nueva fila", opciones_archivos, key="archivo_nuevo_ftir")
+
+        filas_totales = [{
+            "Muestra": muestra_nueva,
+            "Grupo funcional": "",
+            "D pico": None,
+            "X min": None,
+            "X max": None,
+            "Área": None,
+            "Observaciones": "",
+            "Archivo": archivo_nuevo
+        }]
+
     filas_totales = []
     claves_guardado = []
 

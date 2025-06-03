@@ -41,6 +41,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
 
         columnas = ["Muestra", "Grupo funcional", "D pico", "X min", "X max", "Área", "Observaciones", "Archivo"]
         df_tabla = pd.DataFrame(datos).reindex(columns=columnas).fillna("")
+        df_tabla["Observaciones"] = df_tabla["Observaciones"].astype(str)
 
         # Asegurar que columnas numéricas estén como float
         for col in ["D pico", "X min", "X max", "Área"]:

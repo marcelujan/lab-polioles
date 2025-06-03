@@ -473,9 +473,6 @@ def render_controles_preprocesamiento(datos_plotly):
     mostrar_picos = col3.checkbox("Detectar picos", value=False, key="picos_ftir")
     restar_espectro = col4.checkbox("Restar espectro", value=False, key="restar_ftir")
     ajuste_y_manual = col5.checkbox("Ajuste manual Y", value=False, key="ajuste_y_ftir")
-    mostrar_grafico_vertical = col6.checkbox("📊 Superposición vertical de espectros", value=False, key="vertical_plot_ftir")
-
-
 
     # Rango XY automático
     todos_x = np.concatenate([df["x"].values for _, _, _, df in datos_plotly])
@@ -533,7 +530,6 @@ def render_controles_preprocesamiento(datos_plotly):
         "y_min": y_min,
         "y_max": y_max,
         "mostrar_grafico_vertical": mostrar_grafico_vertical,
-        "offset_vertical": offset_vertical
     }
 
 
@@ -728,7 +724,6 @@ def obtener_espectros_para_muestra(db, nombre):
         st.session_state[clave] = [doc.to_dict() for doc in docs]
     return st.session_state[clave]
 
-# Nueva versión que retorna todos los valores clave
 def render_comparacion_espectros_ftir(db, muestras):
 #    st.subheader("Comparación de espectros FTIR")
     tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]

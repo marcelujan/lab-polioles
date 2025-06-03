@@ -376,7 +376,7 @@ def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_compara
         st.session_state["shapes_similitud_ftir"] = []
 
     # --- Comparación ---
-    st.subheader("🔍 Matriz de similitud entre espectros")
+    st.markdown("**🔍 Matriz de similitud entre espectros**")
     vectores = {}
 
     nombre_repetidos = defaultdict(int)
@@ -952,7 +952,7 @@ def render_comparacion_espectros_ftir(db, muestras):
         col1, col2, col3, col4 = st.columns([1.2, 1.2, 1.2, 1.2])
         x_min = col1.number_input("X min", value=1000.0, step=1.0, key="simil_xmin")
         x_max = col2.number_input("X max", value=1100.0, step=1.0, key="simil_xmax")
-        tipo = col4.selectbox("Modo", ["Pearson (correlación)", "Área integrada (RMSE relativo)"], label_visibility="collapsed")
+        tipo = col4.selectbox("Modo", ["Pearson (correlación)", "Área integrada (RMSE relativo)"],index=1, label_visibility="collapsed")
 
         render_tabla_similitud_ftir_matriz(
             preprocesados=preprocesados,
@@ -961,9 +961,6 @@ def render_comparacion_espectros_ftir(db, muestras):
             tipo_comparacion=tipo,
             sombrear_similitud=sombrear_similitud
         )
-
-
-
 
     fig = go.Figure()
     render_grafico_combinado_ftir(

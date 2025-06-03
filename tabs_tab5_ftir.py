@@ -202,7 +202,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "x0": x0,
                     "x1": x0,
                     "y0": 0,
-                    "y1": 0.9,
+                    "y1": 0.8,
                     "line": {"color": "black", "width": 1, "dash": "dot"}
                 })
 
@@ -211,7 +211,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "xref": "x",
                     "yref": "paper",
                     "x": x0,
-                    "y": 0.97,
+                    "y": 0.85,
                     "text": texto,
                     "showarrow": False,
                     "font": {"color": "black", "size": 10},

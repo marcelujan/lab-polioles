@@ -119,7 +119,9 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
 
         # Sombreado (si se desea)
         if sombrear:
-            st.session_state["fig_extra_shapes"] = []
+            st.session_state["fig_extra_shapes"] = [
+                s for s in st.session_state.get("fig_extra_shapes", []) if s.get("source") != "calculos_ftir"
+            ]
             for _, row in editada.iterrows():
                 try:
                     x0 = float(row["X min"])
@@ -128,15 +130,17 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
                         "type": "rect",
                         "xref": "x",
                         "yref": "paper",
-                        "x0": x0,
-                        "x1": x1,
+                        "x0": min(x0, x1),
+                        "x1": max(x0, x1),
                         "y0": 0,
                         "y1": 1,
-                        "fillcolor": "rgba(0, 100, 250, 0.1)",
-                        "line": {"width": 0}
+                        "fillcolor": "rgba(0, 0, 255, 0.1)",  # azul transparente
+                        "line": {"width": 0},
+                        "source": "calculos_ftir"
                     })
                 except:
                     continue
+
 
 
 
@@ -906,7 +910,12 @@ def render_comparacion_espectros_ftir(db, muestras):
         sombrear_similitud = st.checkbox("🟨 Sombrear Similitud FTIR", key="sombrear_tabla_similitud_ftir")
    
     # Limpiar sombreado previo
-    st.session_state["fig_extra_shapes"] = []
+    st.session_state["fig_extra_shapes"] = [
+        s for s in st.session_state.get("fig_extra_shapes", []) if s.get("source") != "biblio_ftir"
+    ]
+    st.session_state["fig_extra_annotations"] = [
+        a for a in st.session_state.get("fig_extra_annotations", []) if a.get("source") != "biblio_ftir"
+    ]
 
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
     render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)

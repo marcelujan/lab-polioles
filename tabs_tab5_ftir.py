@@ -220,7 +220,6 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "showarrow": False,
                     "font": {"color": "black", "size": 10},
                     "textangle": -90,
-                    "source": "biblio_ftir"
                 })
             except:
                 continue

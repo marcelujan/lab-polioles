@@ -180,6 +180,7 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         st.success("Bibliografía guardada correctamente.")
 
     if delinear:
+        st.warning("Entrando a delinear")
         st.session_state["shapes_biblio_ftir"] = []
         st.session_state["annots_biblio_ftir"] = []
         for _, row in editada.iterrows():

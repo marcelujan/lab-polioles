@@ -196,7 +196,13 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         for _, row in editada.iterrows():
             try:
                 x0 = float(row["δ pico"])
-                texto = str(row["Grupo funcional"])[:20]
+                grupo = str(row.get("Grupo funcional", "")).strip()
+                obs = str(row.get("Observaciones", "")).strip()
+
+                if obs:
+                    texto = f"{grupo} – {obs[:15]}"  # combinamos ambas, truncando observaciones
+                else:
+                    texto = grupo
                 st.session_state["shapes_biblio_ftir"].append({
                     "type": "line",
                     "xref": "x",

@@ -119,12 +119,12 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
 
         # Sombreado (si se desea)
         if sombrear:
-            st.session_state["fig_extra_shapes"] = []
+            st.session_state["shapes_calculos_ftir"] = []
             for _, row in editada.iterrows():
                 try:
                     x0 = float(row["X min"])
                     x1 = float(row["X max"])
-                    st.session_state["fig_extra_shapes"].append({
+                    st.session_state["shapes_calculos_ftir"].append({
                         "type": "rect",
                         "xref": "x",
                         "yref": "paper",
@@ -132,11 +132,13 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
                         "x1": max(x0, x1),
                         "y0": 0,
                         "y1": 1,
-                        "fillcolor": "rgba(0, 0, 255, 0.1)",  # azul transparente
-                        "line": {"width": 0},
+                        "fillcolor": "rgba(0, 0, 255, 0.1)",
+                        "line": {"width": 0}
                     })
                 except:
                     continue
+        else:
+            st.session_state["shapes_calculos_ftir"] = []
 
 
 
@@ -180,6 +182,8 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
         st.success("Bibliografía guardada correctamente.")
 
     if delinear:
+        st.session_state["shapes_biblio_ftir"] = []
+        st.session_state["annots_biblio_ftir"] = []
         for _, row in editada.iterrows():
             try:
                 x0 = float(row["X min"])
@@ -187,20 +191,18 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                 x_centro = (x0 + x1) / 2
                 texto = str(row["Grupo funcional"])[:20]  # etiqueta breve
 
-                # Línea punteada negra (hasta 95%)
-                st.session_state["fig_extra_shapes"].append({
+                st.session_state["shapes_biblio_ftir"].append({
                     "type": "line",
                     "xref": "x",
                     "yref": "paper",
                     "x0": x0,
                     "x1": x0,
                     "y0": 0,
-                    "y1": 0.9,  # un poco más corto para no tapar etiqueta
+                    "y1": 0.9,
                     "line": {"color": "black", "width": 1, "dash": "dot"}
                 })
 
-                # Etiqueta vertical
-                st.session_state["fig_extra_annotations"].append({
+                st.session_state["annots_biblio_ftir"].append({
                     "xref": "x",
                     "yref": "paper",
                     "x": x_centro,
@@ -208,11 +210,16 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "text": texto,
                     "showarrow": False,
                     "font": {"color": "black", "size": 10},
-                    "textangle": -90,
+                    "textangle": -90
                 })
+
+                st.session_state["shapes_biblio_ftir"].append({...})
+                st.session_state["annots_biblio_ftir"].append({...})
             except:
                 continue
-
+    else:
+        st.session_state["shapes_biblio_ftir"] = []
+        st.session_state["annots_biblio_ftir"] = []
 
     return editada if delinear else pd.DataFrame([])
 
@@ -461,14 +468,17 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
         except Exception as e:
             st.warning(f"⚠️ Error al detectar picos en {clave}: {e}")
 
+    shapes = []
+    annotations = []
 
+    for k in ["shapes_calculos_ftir", "shapes_similitud_ftir", "shapes_biblio_ftir"]:
+        shapes.extend(st.session_state.get(k, []))
 
-    if "fig_extra_shapes" in st.session_state:
-        fig.update_layout(
-            shapes=st.session_state.get("fig_extra_shapes", []),
-            annotations=st.session_state.get("fig_extra_annotations", [])
-            )   
+    for k in ["annots_biblio_ftir"]:
+        annotations.extend(st.session_state.get(k, []))
 
+    fig.update_layout(shapes=shapes, annotations=annotations)
+  
     fig.update_layout(
         xaxis_title="Número de onda [cm⁻¹]",
         yaxis_title="Absorbancia",

@@ -61,8 +61,11 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
             "Archivo": a
         } for m, _, a, _ in datos_plotly]
 
+
     df_tabla = pd.DataFrame(filas_totales, columns=columnas)
     df_tabla["Observaciones"] = df_tabla["Observaciones"].astype(str)
+    df_tabla["Muestra"] = df_tabla["Muestra"].astype(str)
+    df_tabla["Archivo"] = df_tabla["Archivo"].astype(str)
     for col in ["D pico", "X min", "X max", "Área"]:
         df_tabla[col] = pd.to_numeric(df_tabla[col], errors="coerce")
 

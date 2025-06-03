@@ -106,8 +106,8 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
                 "X max": st.column_config.NumberColumn("X max", format="%.2f"),
                 "Área": st.column_config.NumberColumn("🔴Área", disabled=True, format="%.2f"),
                 "Observaciones": st.column_config.TextColumn("Observaciones"),
-                "Muestra": st.column_config.TextColumn("Muestra", disabled=True),
-                "Archivo": st.column_config.TextColumn("Archivo", disabled=True),
+                "Muestra": st.column_config.TextColumn("Muestra"),
+                "Archivo": st.column_config.TextColumn("Archivo"),
             }
         )
 

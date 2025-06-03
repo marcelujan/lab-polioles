@@ -62,6 +62,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
         } for m, _, a, _ in datos_plotly]
 
 
+
     df_tabla = pd.DataFrame(filas_totales, columns=columnas)
     df_tabla["Observaciones"] = df_tabla["Observaciones"].astype(str)
     df_tabla["Muestra"] = df_tabla["Muestra"].astype(str)

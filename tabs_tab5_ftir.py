@@ -142,10 +142,8 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
 
 
 def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
-    if not mostrar:
-        return pd.DataFrame([])
-
-    st.markdown("**📚 Tabla bibliográfica FTIR**")
+    st.session_state["shapes_biblio_ftir"] = []
+    st.session_state["annots_biblio_ftir"] = []
 
     ruta = "tablas_ftir_bibliografia/default"
     doc_ref = db.document(ruta)
@@ -155,40 +153,38 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
     columnas = ["Grupo funcional", "X min", "δ pico", "X max", "Tipo de muestra", "Observaciones"]
     df_biblio = pd.DataFrame(filas) if filas else pd.DataFrame([dict.fromkeys(columnas, "")])
 
-    key_editor = f"tabla_calculos_ftir_local_{'sombreado' if delinear else 'limpio'}"
+    # Solo mostrar editor si el usuario quiere ver la tabla
+    if mostrar:
+        st.markdown("**📚 Tabla bibliográfica FTIR**")
+        key_editor = f"tabla_calculos_ftir_local_{'sombreado' if delinear else 'limpio'}"
+        editada = st.data_editor(
+            df_biblio,
+            column_order=columnas,
+            use_container_width=True,
+            key=key_editor,
+            num_rows="dynamic",
+            column_config={
+                "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES),
+                "X min": st.column_config.NumberColumn("X min", format="%.2f"),
+                "δ pico": st.column_config.NumberColumn("δ pico", format="%.2f"),
+                "X max": st.column_config.NumberColumn("X max", format="%.2f"),
+                "Tipo de muestra": st.column_config.TextColumn("Tipo de muestra"),
+                "Observaciones": st.column_config.TextColumn("Observaciones"),
+            }
+        )
 
+        if st.button("Guardar bibliografía FTIR", key="guardar_biblio_ftir"):
+            doc_ref.set({"filas": editada.to_dict(orient="records")})
+            st.success("Bibliografía guardada correctamente.")
+    else:
+        editada = df_biblio
 
-    editada = st.data_editor(
-        df_biblio,
-        column_order=columnas,
-        use_container_width=True,
-        key=key_editor,
-        num_rows="dynamic",
-        column_config={
-            "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES),
-            "X min": st.column_config.NumberColumn("X min", format="%.2f"),
-            "δ pico": st.column_config.NumberColumn("δ pico", format="%.2f"),
-            "X max": st.column_config.NumberColumn("X max", format="%.2f"),
-            "Tipo de muestra": st.column_config.TextColumn("Tipo de muestra"),
-            "Observaciones": st.column_config.TextColumn("Observaciones"),
-        }
-    )
-
-
-    if st.button("Guardar bibliografía FTIR", key="guardar_biblio_ftir"):
-        doc_ref.set({"filas": editada.to_dict(orient="records")})
-        st.success("Bibliografía guardada correctamente.")
-
+    # Dibujar aunque no se muestre la tabla
     if delinear:
-        st.session_state["shapes_biblio_ftir"] = []
-        st.session_state["annots_biblio_ftir"] = []
-
         for _, row in editada.iterrows():
             try:
                 x0 = float(row["δ pico"])
                 texto = str(row["Grupo funcional"])[:20]
-
-                # Línea vertical punteada en δ pico
                 st.session_state["shapes_biblio_ftir"].append({
                     "type": "line",
                     "xref": "x",
@@ -199,8 +195,6 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "y1": 0.8,
                     "line": {"color": "black", "width": 1, "dash": "dot"}
                 })
-
-                # Anotación vertical
                 st.session_state["annots_biblio_ftir"].append({
                     "xref": "x",
                     "yref": "paper",
@@ -211,15 +205,10 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
                     "font": {"color": "black", "size": 10},
                     "textangle": -90
                 })
-
             except:
                 continue
-    else:
-        st.session_state["shapes_biblio_ftir"] = []
-        st.session_state["annots_biblio_ftir"] = []
 
-
-    return editada if delinear else pd.DataFrame([])
+    return editada if mostrar else pd.DataFrame([])
 
 
 

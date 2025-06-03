@@ -418,10 +418,14 @@ def render_tabla_similitud_ftir(db, preprocesados, mostrar=False, sombrear=False
             key = (n1, n2)
             comentarios = comentarios_previos.get(key, "")
             resultados.append({
-                "Muestra 1": n1.split(" – ")[0],
-                "Muestra 2": n2.split(" – ")[0],
+                "Muestra 1": n1.split(" – ")[0].strip(),
+                "Muestra 2": n2.split(" – ")[0].strip(),
                 "Similitud [%]": similitud,
                 "Comentarios": comentarios
+                st.write(f"Comparando: {n1} vs {n2}")
+                st.write(f"Rango y1: {np.min(y1):.2f} – {np.max(y1):.2f}")
+                st.write(f"Rango y2: {np.min(y2):.2f} – {np.max(y2):.2f}")
+
             })
 
     df_result = pd.DataFrame(resultados)

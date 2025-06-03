@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 from numpy import interp
 
 
-GRUPOS_FUNCIONALES_RMN = [
+GRUPOS_FUNCIONALES = [
     "CH", "CH₂", "CH₃", "OH", "C=O", "C=C", "C–O", "Amina",
     "Nitrilo", "Aldehído", "Ácido", "Éster", "Otro"
 ]

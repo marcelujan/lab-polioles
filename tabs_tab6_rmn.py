@@ -359,6 +359,7 @@ def mostrar_grafico_combinado(
             continue
 
         col_x, col_y = df_esp.columns[:2]
+        x_vals = df_esp[col_x]
         y_data = df_esp[col_y].copy() + ajustes_y.get(archivo_actual, 0.0)
 
         if espectro_resta is not None:
@@ -368,8 +369,6 @@ def mostrar_grafico_combinado(
 
         if normalizar:
             y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
-
-        x_vals = df_esp[col_x]
 
         if mostrar_picos and altura_min is not None and distancia_min is not None:
             try:

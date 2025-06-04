@@ -310,7 +310,9 @@ def mostrar_grafico_combinado(
     aplicar_sombra_senales,
     aplicar_sombra_biblio,
     check_d_por_espectro,
-    check_t2_por_espectro
+    check_t2_por_espectro,
+    altura_min=None,
+    distancia_min=None
 ):
 
     fig = go.Figure()

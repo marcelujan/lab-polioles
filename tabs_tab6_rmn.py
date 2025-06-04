@@ -206,7 +206,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     mostrar_picos = col2.checkbox("Detectar picos", key=f"picos_{key_sufijo}")
     restar_espectro = col3.checkbox("Restar espectro", key=f"resta_{key_sufijo}")
     ajuste_y_manual = col4.checkbox("Ajuste manual Y", key=f"ajuste_y_{key_sufijo}")
-    superposicion_vertical = col5.checkbox("Superposición vertical de espectros", key=f"offset_{key_sufijo}")
+    superposicion_vertical = col5.checkbox("Superposición vertical", key=f"offset_{key_sufijo}")
 
     ajustes_y = {row["archivo"]: st.number_input(f"Y para {row['archivo']}", value=0.0, step=0.1, key=f"ajuste_y_val_{row['archivo']}")
                  for _, row in df.iterrows()} if ajuste_y_manual else {row["archivo"]: 0.0 for _, row in df.iterrows()}
@@ -248,6 +248,19 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             check_d_por_espectro[archivo] = col_d.checkbox(f"D – {archivo}", key=f"chk_d_{archivo}_{key_sufijo}")
             check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
 
+
+    if mostrar_tabla_dt2_chk:
+        mostrar_tabla_dt2(df, tipo, key_sufijo, db)
+
+    if mostrar_tabla_senales_chk:
+        mostrar_tabla_senales(df, tipo, key_sufijo, db)
+
+    if mostrar_tabla_biblio_chk:
+        mostrar_tabla_biblio(tipo, key_sufijo, db)
+
+    if aplicar_sombra_dt2:
+        mostrar_sombreados_dt2(fig, df, tipo, y_max, key_sufijo, check_d_por_espectro, check_t2_por_espectro, db)
+
     fig = mostrar_grafico_combinado(
         df=df,
         tipo=tipo,
@@ -270,20 +283,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         check_t2_por_espectro=check_t2_por_espectro
     )
 
-
-    if aplicar_sombra_dt2:
-        mostrar_sombreados_dt2(fig, df, tipo, y_max, key_sufijo, check_d_por_espectro, check_t2_por_espectro, db)
-
     st.plotly_chart(fig, use_container_width=True)
-
-    if mostrar_tabla_dt2_chk:
-        mostrar_tabla_dt2(df, tipo, key_sufijo, db)
-
-    if mostrar_tabla_senales_chk:
-        mostrar_tabla_senales(df, tipo, key_sufijo, db)
-
-    if mostrar_tabla_biblio_chk:
-        mostrar_tabla_biblio(tipo, key_sufijo, db)
 
     if superposicion_vertical:
         mostrar_grafico_stacked(df, tipo, key_sufijo, normalizar, x_min, x_max, y_min, y_max)

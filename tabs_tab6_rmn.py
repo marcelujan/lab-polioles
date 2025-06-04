@@ -225,7 +225,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         y_max = 1.0  # Valor fijo para normalizado
     else:
         y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
-        y_max = coly2.number_input("Y máximo", value=80.0 if tipo == "RMN 1H" else 1.5, key=f"y_max_{key_sufijo}")
+        y_max = coly2.number_input("Y máximo", value=100.0 if tipo == "RMN 1H" else 2, key=f"y_max_{key_sufijo}")
 
     if mostrar_picos:
         colp1, colp2 = st.columns(2)

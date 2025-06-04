@@ -827,7 +827,7 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
                             partes.append(f"{grupo}")
                         if valor:
                             partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
-                        etiqueta = etiqueta[:20] + ("…" if len(etiqueta) > 20 else "")
+                        etiqueta = " = ".join(partes) if len(partes) == 2 else " ".join(partes)
 
                         fig_indiv.add_annotation(
                             x=(x1 + x2) / 2,

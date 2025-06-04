@@ -6,9 +6,41 @@ import plotly.graph_objects as go
 from io import BytesIO
 import base64
 import os
+from functools import lru_cache
 
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "Vecino a alfa-carbonilo", "Alfa-epóxido", "CH2", "CH3"]
+
+# --- Cacheo de espectros por archivo base64 ---
+session_cache = {}
+
+def decodificar_csv_o_excel(contenido_base64, archivo):
+    clave_cache = f"{archivo}__{hash(contenido_base64)}"
+    if clave_cache in session_cache:
+        return session_cache[clave_cache]
+    try:
+        contenido = BytesIO(base64.b64decode(contenido_base64))
+        ext = os.path.splitext(archivo)[1].lower()
+        if ext == ".xlsx":
+            df = pd.read_excel(contenido)
+        else:
+            for sep in [",", ";", "\t", " "]:
+                contenido.seek(0)
+                try:
+                    df = pd.read_csv(contenido, sep=sep)
+                    if df.shape[1] >= 2:
+                        break
+                except:
+                    continue
+            else:
+                return None
+        df.columns = ["x", "y"]
+        df = df.dropna()
+        session_cache[clave_cache] = df
+        return df
+    except Exception as e:
+        st.warning(f"Error al decodificar {archivo}: {e}")
+    return None
 
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # --- Cargar muestras y espectros ---
@@ -65,24 +97,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.markdown("## 🧪 RMN Imágenes")
         render_imagenes(imagenes_sel)
 
-
-
-
-
-
-
 def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:
         st.info(f"No hay espectros disponibles para {tipo}.")
         return
 
-    # --- Pre-decodificación para evitar múltiples lecturas ---
-    df_decodificados = {}
-    for _, row in df.iterrows():
-        archivo = row["archivo"]
-        df_decodificados[archivo] = decodificar_csv_o_excel(row["contenido"], archivo)
-
-    # --- Controles ---
+    # --- Filtros estilo FTIR ---
     col1, col2, col3, col4 = st.columns(4)
     normalizar = col1.checkbox("Normalizar intensidad", key=f"norm_{key_sufijo}")
     mostrar_picos = col2.checkbox("Mostrar picos detectados", key=f"picos_{key_sufijo}")
@@ -100,179 +120,63 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             ajustes_y[row["archivo"]] = 0.0
 
     seleccion_resta = None
-    espectro_resta = None
     if restar_espectro:
         opciones_restar = [f"{row['muestra']} – {row['archivo']}" for _, row in df.iterrows()]
         seleccion_resta = st.selectbox("Seleccionar espectro a restar:", opciones_restar, key=f"sel_resta_{key_sufijo}")
-        if seleccion_resta:
-            archivo_resta = seleccion_resta.split(" – ")[-1]
-            espectro_resta = df_decodificados.get(archivo_resta)
-            if espectro_resta is not None:
-                espectro_resta.columns = ["x", "y"]
-                espectro_resta.dropna(inplace=True)
 
-    # --- Rango XY ---
+    superposicion_vertical = st.checkbox("📊 Superposición vertical de espectros", key=f"offset_{key_sufijo}")
+
+    # --- Rango de visualización ---
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
     x_max = colx2.number_input("X máximo", value=9.0 if tipo == "RMN 1H" else 200.0, key=f"x_max_{key_sufijo}")
     y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
     y_max = coly2.number_input("Y máximo", value=80.0 if tipo == "RMN 1H" else 1.5, key=f"y_max_{key_sufijo}")
 
-    altura_min, distancia_min = 0.05, 5
+    # --- Decodificar espectro de fondo si aplica ---
+    espectro_resta = None
+    if restar_espectro and seleccion_resta:
+        id_resta = seleccion_resta.split(" – ")[-1].strip()
+        fila_resta = df[df["archivo"] == id_resta].iloc[0] if id_resta in set(df["archivo"]) else None
+        if fila_resta is not None:
+            try:
+                espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
+                if espectro_resta is not None:
+                    espectro_resta.columns = ["x", "y"]
+                    espectro_resta.dropna(inplace=True)
+            except:
+                espectro_resta = None
+                espectro_resta.columns = ["x", "y"]
+                espectro_resta.dropna(inplace=True)
+
+    # --- Parámetros de picos ---
     if mostrar_picos:
         colp1, colp2 = st.columns(2)
         altura_min = colp1.number_input("Altura mínima", value=0.05, step=0.01, key=f"altura_min_{key_sufijo}")
         distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key=f"distancia_min_{key_sufijo}")
 
-    render_rmn_grafico_combinado(df, df_decodificados, ajustes_y, espectro_resta, normalizar, mostrar_picos, altura_min, distancia_min, x_min, x_max, y_min, y_max)
-    render_rmn_tablas(df, tipo, key_sufijo, db)
+    # --- Sección reorganizada: Checkboxes de tablas y sombreado ---
+    col_tabla, col_sombra = st.columns(2)
 
-def render_rmn_grafico_combinado(df, df_decodificados, ajustes_y, espectro_resta, normalizar, mostrar_picos, altura_min, distancia_min, x_min, x_max, y_min, y_max):
-    import plotly.graph_objects as go
-    from scipy.signal import find_peaks
+    with col_tabla:
+        nombre_tabla_dt2 = f"🧮 Tabla de Cálculos D/T2 (FAMAF) {tipo}"
+        mostrar_tabla_dt2 = st.checkbox(nombre_tabla_dt2, value=False, key=f"mostrar_dt2_{key_sufijo}")
 
-    fig = go.Figure()
-    for _, row in df.iterrows():
-        archivo = row["archivo"]
-        df_esp = df_decodificados.get(archivo)
-        if df_esp is None:
-            continue
-        x = df_esp.iloc[:, 0]
-        y = df_esp.iloc[:, 1].copy()
-        y = y + ajustes_y.get(archivo, 0.0)
+        nombre_tabla_senales = f"📈 Tabla de Cálculos {tipo}"
+        mostrar_tabla_senales = st.checkbox(nombre_tabla_senales, value=False, key=f"mostrar_senales_{key_sufijo}")
 
-        if espectro_resta is not None:
-            y -= np.interp(x, espectro_resta["x"], espectro_resta["y"])
-        if normalizar and y.max() != 0:
-            y = y / y.max()
+        nombre_tabla_biblio = f"📚 Tabla Bibliográfica {tipo[-3:]}"  # 1H o 13C
+        mostrar_tabla_biblio = st.checkbox(nombre_tabla_biblio, value=False, key=f"mostrar_biblio_{tipo.lower()}_{key_sufijo}")
 
-        fig.add_trace(go.Scatter(x=x, y=y, mode='lines', name=archivo))
+    with col_sombra:
+        nombre_sombra_dt2 = f"Sombrear Tabla de Cálculos D/T2 (FAMAF) {tipo}"
+        aplicar_sombra_dt2 = st.checkbox(nombre_sombra_dt2, value=False, key=f"sombra_dt2_{key_sufijo}")
 
-        if mostrar_picos:
-            try:
-                peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
-                for p in peaks:
-                    fig.add_trace(go.Scatter(
-                        x=[x.iloc[p]],
-                        y=[y.iloc[p]],
-                        mode="markers+text",
-                        marker=dict(color="black", size=6),
-                        text=[f"{x.iloc[p]:.2f}"],
-                        textposition="top center",
-                        showlegend=False
-                    ))
-            except:
-                st.warning(f"⚠️ No se pudieron detectar picos en {archivo}.")
+        nombre_sombra_senales = f"Sombrear Tabla de Cálculos {tipo}"
+        aplicar_sombra_senales = st.checkbox(nombre_sombra_senales, value=False, key=f"sombra_senales_{key_sufijo}")
 
-    fig.update_layout(
-        xaxis_title="[ppm]",
-        yaxis_title="Intensidad",
-        xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(range=[y_min, y_max] if not normalizar and y_min is not None and y_max is not None else None),
-        template="simple_white",
-        height=500,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-def render_rmn_tablas(df, tipo, key_sufijo, db):
-    import pandas as pd
-    from io import BytesIO
-
-    col1, col2 = st.columns(2)
-    mostrar_tabla_dt2 = col1.checkbox(f"🧮 Mostrar tabla D/T2 {tipo}", key=f"tabla_dt2_{key_sufijo}")
-    mostrar_tabla_senales = col2.checkbox(f"📈 Mostrar tabla de señales {tipo}", key=f"tabla_senales_{key_sufijo}")
-
-    if not (mostrar_tabla_dt2 or mostrar_tabla_senales):
-        return
-
-    is_rmn13c = tipo == "RMN 13C"
-    key_tipo = "rmn13c" if is_rmn13c else "rmn1h"
-    label_export = "C" if is_rmn13c else "H"
-    campo_has = "Cas" if is_rmn13c else "Has"
-    campo_h = "C" if is_rmn13c else "H"
-
-    if mostrar_tabla_dt2:
-        columnas_dt2 = ["Muestra", "Archivo", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2"]
-        filas = []
-        for _, row in df.iterrows():
-            muestra = row["muestra"]
-            archivo = row["archivo"]
-            doc = db.collection("muestras").document(muestra).collection("dt2").document(key_tipo)
-            doc_data = doc.get().to_dict()
-            if doc_data and "filas" in doc_data:
-                filas.extend([f for f in doc_data["filas"] if f.get("Archivo") == archivo])
-
-        df_dt2 = pd.DataFrame(filas)
-        for col in columnas_dt2:
-            if col not in df_dt2.columns:
-                df_dt2[col] = None
-        df_dt2 = df_dt2[columnas_dt2]
-
-        st.markdown(f"#### 🧮 Tabla D/T2 editable ({tipo})")
-        editada = st.data_editor(df_dt2, num_rows="dynamic", use_container_width=True, key=f"edit_dt2_{key_sufijo}")
-        colg1, colg2 = st.columns(2)
-        with colg1:
-            if st.button("💾 Guardar tabla D/T2", key=f"btn_guardar_dt2_{key_sufijo}"):
-                editadas_validas = [row for _, row in editada.iterrows() if row["X min"] not in [None, ""] and row["X max"] not in [None, ""]]
-                if not editadas_validas:
-                    st.warning("⚠️ No se guardó ninguna fila. Verificá que 'X min' y 'X max' estén completos.")
-                else:
-                    doc_out = db.collection("muestras").document(df_dt2["Muestra"].iloc[0]).collection("dt2").document(key_tipo)
-                    doc_out.set({"filas": editada.to_dict(orient="records")})
-                    st.success("✅ Tabla D/T2 guardada correctamente")
-        with colg2:
-            buffer = BytesIO()
-            editada.to_excel(buffer, index=False)
-            buffer.seek(0)
-            st.download_button("📥 Exportar tabla D/T2", data=buffer.getvalue(), file_name=f"tabla_dt2_{key_tipo}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-    if mostrar_tabla_senales:
-        columnas_senales = ["Muestra", "Archivo", "Grupo funcional", "δ pico", "X min", "X max", "Área", campo_has, "Área as", campo_h]
-        doc_senales = db.collection("tablas_integrales").document(key_tipo)
-        doc_data = doc_senales.get().to_dict() or {}
-        filas = doc_data.get("filas", [])
-
-        archivos_activos = set((row["muestra"], row["archivo"]) for _, row in df.iterrows())
-        filas_filtradas = [f for f in filas if (f.get("Muestra"), f.get("Archivo")) in archivos_activos]
-
-        df_senales = pd.DataFrame(filas_filtradas)
-        for col in columnas_senales:
-            if col not in df_senales.columns:
-                df_senales[col] = None
-        df_senales = df_senales[columnas_senales]
-
-        st.markdown(f"#### 📈 Tabla de señales editable ({tipo})")
-        editada = st.data_editor(df_senales, num_rows="dynamic", use_container_width=True, key=f"edit_senales_{key_sufijo}")
-        colg1, colg2 = st.columns(2)
-        with colg1:
-            if st.button("💾 Guardar tabla de señales", key=f"btn_guardar_senales_{key_sufijo}"):
-                editadas_validas = [row for _, row in editada.iterrows() if row["X min"] not in [None, ""] and row["X max"] not in [None, ""]]
-                if not editadas_validas:
-                    st.warning("⚠️ No se guardó ninguna fila. Verificá que 'X min' y 'X max' estén completos.")
-                else:
-                    doc_senales.set({"filas": editada.to_dict(orient="records")})
-                    st.success("✅ Tabla de señales guardada correctamente")
-        with colg2:
-            buffer = BytesIO()
-            editada.to_excel(buffer, index=False)
-            buffer.seek(0)
-            st.download_button("📥 Exportar tabla de señales", data=buffer.getvalue(), file_name=f"tabla_senales_{key_tipo}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        nombre_sombra_biblio = f"Delinear Tabla Bibliográfica {tipo[-3:]}"
+        aplicar_sombra_biblio = st.checkbox(nombre_sombra_biblio, value=False, key=f"sombra_biblio_{key_sufijo}")
 
     # --- Tabla de Cálculo D/T2 ---
     if mostrar_tabla_dt2:
@@ -687,6 +591,208 @@ def render_rmn_tablas(df, tipo, key_sufijo, db):
             check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
 
 
+# --- Trazado ---
+    fig = go.Figure()
+    for _, row in df.iterrows():
+        archivo_actual = row["archivo"]
+        muestra_actual = row["muestra"]
+        df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
+        if df_esp is not None:
+            col_x, col_y = df_esp.columns[:2]
+            y_data = df_esp[col_y].copy()
+            y_data = y_data + ajustes_y.get(row["archivo"], 0.0)
+            if espectro_resta is not None:
+                df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
+                espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
+                y_data = df_esp["y"] - espectro_resta_interp
+            if normalizar:
+                y_data = y_data + ajustes_y.get(row["archivo"], 0.0)
+            if normalizar:
+                y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
+            x_vals = df_esp["x"] if "x" in df_esp.columns else df_esp[col_x]
+            fig.add_trace(go.Scatter(
+                x=x_vals,
+                y=y_data,
+                mode='lines',
+                name=row["archivo"]
+            ))
+
+        # Sombreado por Cálculo de señales
+        if aplicar_sombra_senales:
+            tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+            doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
+            if doc_senales.get().exists:
+                filas_senales = doc_senales.get().to_dict().get("filas", [])
+                for f in filas_senales:
+                    if f.get("Archivo") != archivo_actual:
+                        continue
+
+                    x1 = f.get("X min")
+                    x2 = f.get("X max")
+                    grupo = f.get("Grupo funcional")
+                    valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
+
+                    if x1 is None or x2 is None:
+                        continue
+
+                    fig.add_vrect(
+                        x0=min(x1, x2),
+                        x1=max(x1, x2),
+                        fillcolor="rgba(0,255,0,0.3)",
+                        layer="below",
+                        line_width=0
+                    )
+
+                    fig.add_vline(x=x1, line=dict(color="black", width=1), layer="above")
+                    fig.add_vline(x=x2, line=dict(color="black", width=1), layer="above")
+
+                    if grupo not in [None, ""] or valor not in [None, ""]:
+                        partes = []
+                        if grupo not in [None, ""]:
+                            partes.append(f"{grupo}")
+                        if valor not in [None, ""]:
+                            partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
+                        etiqueta = " = ".join(partes) if len(partes) == 2 else " ".join(partes)
+
+                        fig.add_annotation(
+                            x=(x1 + x2) / 2,
+                            y=y_max * 0.98,
+                            text=etiqueta,
+                            showarrow=False,
+                            font=dict(size=10, color="black"),
+                            textangle=270,
+                            xanchor="center",
+                            yanchor="top"
+                        )
+
+
+            # Detección de picos
+            if mostrar_picos:
+                from scipy.signal import find_peaks
+                try:
+                    peaks, _ = find_peaks(y_data, height=altura_min, distance=distancia_min)
+                    for p in peaks:
+                        fig.add_trace(go.Scatter(
+                            x=[x_vals.iloc[p]],
+                            y=[y_data.iloc[p]],
+                            mode="markers+text",
+                            marker=dict(color="black", size=6),
+                            text=[f"{x_vals.iloc[p]:.2f}"],
+                            textposition="top center",
+                            showlegend=False
+                        ))
+                except:
+                    st.warning(f"⚠️ No se pudieron detectar picos en {row['archivo']}.")
+
+        # Aplicar sombreado por bibliografía si está activo
+    if aplicar_sombra_biblio:
+        doc_biblio = db.collection("configuracion_global").document(
+            "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+        )
+        if doc_biblio.get().exists:
+            filas_biblio = doc_biblio.get().to_dict().get("filas", [])
+            if y_max is None:
+                y_max = 1.05 * max([trace.y.max() for trace in fig.data if hasattr(trace, "y")])
+
+            for f in filas_biblio:
+                delta = f.get("δ pico")
+                grupo = f.get("Grupo funcional")
+
+                if delta is not None:
+                    # Línea vertical negra punteada visible en todo el alto
+                    fig.add_shape(
+                        type="line",
+                        x0=delta, x1=delta,
+                        y0=0,
+                        y1=y_max,
+                        line=dict(color="black", dash="dot", width=1),
+                        layer="above"
+                    )
+
+                    # Etiqueta más alta, sin tocar la curva
+                    texto = grupo if grupo not in [None, ""] else f"δ = {delta:.2f}"
+                    fig.add_annotation(
+                        x=delta,
+                        y=y_max * 0.95,
+                        text=texto,
+                        showarrow=False,
+                        textangle=270,
+                        font=dict(size=10, color="black"),
+                        xanchor="center",
+                        yanchor="top"
+                    )
+
+
+
+    fig.update_layout(
+        xaxis_title="[ppm]",
+        yaxis_title="Intensidad",
+        xaxis=dict(range=[x_max, x_min]),
+        yaxis=dict(range=[y_min, y_max] if not normalizar and y_min is not None and y_max is not None else None),
+        template="simple_white",
+        height=500,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
+    )
+
+
+    # Sombreado D/T2 en gráfico combinado
+    if aplicar_sombra_dt2:
+        for _, row in df.iterrows():
+            muestra_actual = row["muestra"]
+            archivo_actual = row["archivo"]
+            doc_dt2 = db.collection("muestras").document(muestra_actual).collection("dt2").document(tipo.lower())
+            if doc_dt2.get().exists:
+                filas_dt2 = doc_dt2.get().to_dict().get("filas", [])
+                for f in filas_dt2:
+                    if f.get("Archivo") != archivo_actual:
+                        continue
+
+                    x1 = f.get("X min")
+                    x2 = f.get("X max")
+                    d_val = f.get("D")
+                    t2_val = f.get("T2")
+
+                    tiene_d = d_val not in [None, ""]
+                    tiene_t2 = t2_val not in [None, ""]
+
+                    mostrar_d = check_d_por_espectro.get(archivo_actual) and tiene_d
+                    mostrar_t2 = check_t2_por_espectro.get(archivo_actual) and tiene_t2
+
+                    if not (mostrar_d or mostrar_t2) or x1 is None or x2 is None:
+                        continue
+
+                    # Texto centrado con valores
+                    partes = []
+                    if mostrar_d:
+                        partes.append(f"D = {float(d_val):.2e}")
+                    if mostrar_t2:
+                        partes.append(f"T2 = {float(t2_val):.3f}")
+                    etiqueta = "   ".join(partes)
+
+                    color = "rgba(128,128,255,0.3)" if mostrar_d and mostrar_t2 else (
+                        "rgba(255,0,0,0.3)" if mostrar_d else "rgba(0,0,255,0.3)"
+                    )
+
+                    fig.add_vrect(
+                        x0=min(x1, x2),
+                        x1=max(x1, x2),
+                        fillcolor=color,
+                        line_width=0
+                    )
+
+                    fig.add_annotation(
+                        x=(x1 + x2) / 2,
+                        y=y_max * 0.98,  # o un valor más ajustado si lo querés más bajo
+                        text=etiqueta,
+                        showarrow=False,
+                        font=dict(size=10, color="black"),
+                        textangle=270,
+                        xanchor="center",
+                        yanchor="top"
+                    )
+
+
+    st.plotly_chart(fig, use_container_width=True)
 
     # --- Gráfico con desplazamiento vertical estilo stacked ---
     if superposicion_vertical:

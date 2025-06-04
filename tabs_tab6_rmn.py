@@ -252,21 +252,24 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         df=df,
         tipo=tipo,
         key_sufijo=key_sufijo,
+        db=db,
         normalizar=normalizar,
         mostrar_picos=mostrar_picos,
         restar_espectro=restar_espectro,
         seleccion_resta=seleccion_resta,
         ajustes_y=ajustes_y,
+        superposicion_vertical=superposicion_vertical, 
         x_min=x_min,
         x_max=x_max,
         y_min=y_min,
         y_max=y_max,
-        altura_min=altura_min,
-        distancia_min=distancia_min,
+        aplicar_sombra_dt2=aplicar_sombra_dt2,
         aplicar_sombra_senales=aplicar_sombra_senales,
         aplicar_sombra_biblio=aplicar_sombra_biblio,
-        db=db
+        check_d_por_espectro=check_d_por_espectro,
+        check_t2_por_espectro=check_t2_por_espectro
     )
+
 
     if aplicar_sombra_dt2:
         mostrar_sombreados_dt2(fig, df, tipo, y_max, key_sufijo, check_d_por_espectro, check_t2_por_espectro, db)

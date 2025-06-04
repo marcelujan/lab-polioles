@@ -290,7 +290,16 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
     mostrar_indiv = st.checkbox("Gráficos individuales", key=f"chk_indiv_{key_sufijo}")
     if mostrar_indiv:
-        mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min, ajustes_y, aplicar_sombra_dt2, aplicar_sombra_senales, aplicar_sombra_biblio, db)
+        mostrar_graficos_individuales(
+            df, tipo, key_sufijo,
+            normalizar, y_max, y_min,
+            x_max, x_min,
+            ajustes_y,
+            aplicar_sombra_dt2,
+            aplicar_sombra_senales,
+            aplicar_sombra_biblio,
+            db
+        )
 
 
 
@@ -627,7 +636,7 @@ def mostrar_grafico_stacked(df, tipo, key_sufijo, normalizar, x_min, x_max, y_mi
     st.plotly_chart(fig_offset, use_container_width=True)
 
 
-def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min, ajustes_y, aplicar_sombra_dt2, aplicar_sombra_senales, aplicar_sombra_biblio, db):
+def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min, x_max, x_min, ajustes_y, aplicar_sombra_dt2, aplicar_sombra_senales, aplicar_sombra_biblio, db):
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
         muestra_actual = row["muestra"]

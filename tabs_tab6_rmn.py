@@ -695,32 +695,36 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             check_d_por_espectro[archivo] = col_d.checkbox(f"D – {archivo}", key=f"chk_d_{archivo}_{key_sufijo}")
             check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
 
-
-# --- Trazado ---
+    # --- Trazado ---
     fig = go.Figure()
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
         muestra_actual = row["muestra"]
-        df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
-        if df_esp is not None:
-            col_x, col_y = df_esp.columns[:2]
-            y_data = df_esp[col_y].copy()
-            y_data = y_data + ajustes_y.get(row["archivo"], 0.0)
-            if espectro_resta is not None:
-                df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
-                espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
-                y_data = df_esp["y"] - espectro_resta_interp
-            if normalizar:
-                y_data = y_data + ajustes_y.get(row["archivo"], 0.0)
-            if normalizar:
-                y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
-            x_vals = df_esp["x"] if "x" in df_esp.columns else df_esp[col_x]
-            fig.add_trace(go.Scatter(
-                x=x_vals,
-                y=y_data,
-                mode='lines',
-                name=row["archivo"]
-            ))
+
+        # ✅ Usar espectros cacheados (decodificación optimizada)
+        df_esp = decodificar_csv_o_excel(row.get("contenido"), archivo_actual)
+        if df_esp is None:
+            continue
+
+        col_x, col_y = df_esp.columns[:2]
+        y_data = df_esp[col_y].copy() + ajustes_y.get(archivo_actual, 0.0)
+
+        if espectro_resta is not None:
+            df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
+            espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
+            y_data = df_esp["y"] - espectro_resta_interp
+
+        if normalizar:
+            y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
+
+        x_vals = df_esp["x"] if "x" in df_esp.columns else df_esp[col_x]
+        fig.add_trace(go.Scatter(
+            x=x_vals,
+            y=y_data,
+            mode='lines',
+            name=archivo_actual
+        ))
+
 
         # Sombreado por Cálculo de señales
         if aplicar_sombra_senales:
@@ -914,9 +918,11 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         step_offset = offset_manual
 
         for i, (_, row) in enumerate(df.iterrows()):
-            df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
+            archivo_actual = row["archivo"]
+            df_esp = decodificar_csv_o_excel(row.get("contenido"), archivo_actual)
             if df_esp is None:
                 continue
+
             col_x, col_y = df_esp.columns[:2]
             y_data = df_esp[col_y].copy()
             if normalizar:
@@ -927,7 +933,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                 x=df_esp[col_x],
                 y=y_data + offset,
                 mode='lines',
-                name=row["archivo"]
+                name=archivo_actual
             ))
 
         fig_offset.update_layout(
@@ -953,7 +959,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         for _, row in df.iterrows():
             archivo_actual = row["archivo"]
             muestra_actual = row["muestra"]
-            df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
+
+            df_esp = decodificar_csv_o_excel(row.get("contenido"), archivo_actual)
             if df_esp is None:
                 continue
 

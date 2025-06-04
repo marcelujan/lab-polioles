@@ -827,17 +827,17 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
                             partes.append(f"{grupo}")
                         if valor:
                             partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
-                        etiqueta = " = ".join(partes) if len(partes) == 2 else " ".join(partes)
+                        etiqueta = etiqueta[:20] + ("…" if len(etiqueta) > 20 else "")
 
                         fig_indiv.add_annotation(
                             x=(x1 + x2) / 2,
-                            y=y_max * 0.8,
+                            y=y_max * 0.82,
                             text=etiqueta[:20],
                             showarrow=False,
                             font=dict(size=10, color="black"),
                             textangle=270,
                             xanchor="center",
-                            yanchor="top"
+                            yanchor="bottom"
                         )
 
         if aplicar_sombra_biblio:

@@ -361,17 +361,16 @@ def mostrar_grafico_combinado(
             continue
 
         col_x, col_y = df_esp.columns[:2]
-        x_vals = df_esp[col_x]
-        y_data = df_esp[col_y].copy() + ajustes_y.get(archivo_actual, 0.0)
+        df_aux = df_esp[[col_x, col_y]].rename(columns={col_x: "x", col_y: "y"}).dropna()
+        x_vals = df_aux["x"]
+        y_actual = df_aux["y"] + ajustes_y.get(archivo_actual, 0.0)
 
-        if espectro_resta is not None and archivo_actual != id_resta:
-            df_aux = df_esp[[col_x, col_y]].rename(columns={col_x: "x", col_y: "y"}).dropna()
-            espectro_resta_interp = np.interp(df_aux["x"], espectro_resta["x"], espectro_resta["y"])
+        if espectro_resta is not None:
+            espectro_resta_interp = np.interp(x_vals, espectro_resta["x"], espectro_resta["y"])
             y_resta_ajustada = espectro_resta_interp + ajustes_y.get(id_resta, 0.0)
-            y_data = df_aux["y"] - y_resta_ajustada
-            x_vals = df_aux["x"]
+            y_data = y_actual - y_resta_ajustada
         else:
-            x_vals = df_esp[col_x]
+            y_data = y_actual
 
         if normalizar:
             y_data = y_data / y_data.max() if y_data.max() != 0 else y_data

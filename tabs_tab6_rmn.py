@@ -310,7 +310,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         )
 
 
-
 def mostrar_grafico_combinado(
     df,
     tipo,
@@ -351,6 +350,11 @@ def mostrar_grafico_combinado(
             except:
                 espectro_resta = None
 
+    # --- Precargar tabla de señales desde Firebase ---
+    tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+    doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
+    filas_senales = doc_senales.get().to_dict().get("filas", []) if doc_senales.get().exists else []
+
     # --- Agregar trazas ---
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
@@ -390,6 +394,39 @@ def mostrar_grafico_combinado(
                     ))
             except Exception as e:
                 st.warning(f"⚠️ Error detectando picos en {archivo_actual}: {e}")
+
+        # --- Añadir sombreado desde tabla de señales (si corresponde) ---
+        if aplicar_sombra_senales:
+            for f in filas_senales:
+                if f.get("Archivo") != archivo_actual:
+                    continue
+                x1 = f.get("X min")
+                x2 = f.get("X max")
+                grupo = f.get("Grupo funcional")
+                obs = f.get("Observaciones")
+                if x1 is None or x2 is None:
+                    continue
+
+                fig.add_vrect(
+                    x0=min(x1, x2),
+                    x1=max(x1, x2),
+                    fillcolor="rgba(0,255,0,0.3)",
+                    line_width=0
+                )
+
+                etiqueta = " | ".join([x for x in [grupo, obs] if x])
+                if etiqueta:
+                    fig.add_annotation(
+                        x=(x1 + x2) / 2,
+                        y=y_max * 0.98,
+                        text=etiqueta,
+                        showarrow=False,
+                        font=dict(size=10, color="black"),
+                        textangle=270,
+                        xanchor="center",
+                        yanchor="top"
+                    )
+
         fig.add_trace(go.Scatter(x=x_vals, y=y_data, mode='lines', name=archivo_actual))
 
     fig.update_layout(
@@ -403,6 +440,7 @@ def mostrar_grafico_combinado(
     )
 
     return fig
+
 
 
 def mostrar_tabla_dt2(df, tipo, key_sufijo, db):

@@ -733,8 +733,17 @@ def mostrar_grafico_stacked(df, tipo, key_sufijo, normalizar, x_min, x_max, y_mi
     )
     st.plotly_chart(fig_offset, use_container_width=True)
 
-
-def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min, x_max, x_min, ajustes_y, aplicar_sombra_dt2, aplicar_sombra_senales, aplicar_sombra_biblio, db):
+def mostrar_graficos_individuales(
+    df, tipo, key_sufijo,
+    normalizar, y_max, y_min, x_max, x_min,
+    ajustes_y,
+    aplicar_sombra_dt2,
+    aplicar_sombra_senales,
+    aplicar_sombra_biblio,
+    db,
+    check_d_por_espectro=None,
+    check_t2_por_espectro=None
+):
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
         muestra_actual = row["muestra"]
@@ -752,7 +761,8 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
         fig_indiv = go.Figure()
         fig_indiv.add_trace(go.Scatter(x=x_vals, y=y_data, mode='lines', name=archivo_actual))
 
-        if aplicar_sombra_dt2:
+        # --- Sombreado D/T2 ---
+        if aplicar_sombra_dt2 and check_d_por_espectro and check_t2_por_espectro:
             doc_dt2 = db.collection("muestras").document(muestra_actual).collection("dt2").document(tipo.lower())
             if doc_dt2.get().exists:
                 filas_dt2 = doc_dt2.get().to_dict().get("filas", [])
@@ -760,60 +770,51 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
                     if f.get("Archivo") != archivo_actual:
                         continue
 
-                    x1 = f.get("X min")
-                    x2 = f.get("X max")
-                    d_val = f.get("D")
-                    t2_val = f.get("T2")
+                    x1, x2 = f.get("X min"), f.get("X max")
+                    d_val, t2_val = f.get("D"), f.get("T2")
+                    if x1 is None or x2 is None:
+                        continue
 
-                    tiene_d = d_val not in [None, ""]
-                    tiene_t2 = t2_val not in [None, ""]
-
-                    if not (tiene_d or tiene_t2) or x1 is None or x2 is None:
+                    mostrar_d = check_d_por_espectro.get(archivo_actual, False) and d_val not in [None, ""]
+                    mostrar_t2 = check_t2_por_espectro.get(archivo_actual, False) and t2_val not in [None, ""]
+                    if not (mostrar_d or mostrar_t2):
                         continue
 
                     partes = []
-                    if tiene_d:
+                    if mostrar_d:
                         partes.append(f"D = {float(d_val):.2e}")
-                    if tiene_t2:
+                    if mostrar_t2:
                         partes.append(f"T2 = {float(t2_val):.3f}")
-                    etiqueta = "   ".join(partes)
+                    etiqueta = "   ".join(partes)[:20] + ("…" if len("   ".join(partes)) > 20 else "")
 
-                    color = "rgba(128,128,255,0.3)" if tiene_d and tiene_t2 else (
-                        "rgba(255,0,0,0.3)" if tiene_d else "rgba(0,0,255,0.3)")
+                    color = "rgba(128,128,255,0.3)" if mostrar_d and mostrar_t2 else (
+                        "rgba(255,0,0,0.3)" if mostrar_d else "rgba(0,0,255,0.3)")
 
-                    fig_indiv.add_vrect(
-                        x0=min(x1, x2),
-                        x1=max(x1, x2),
-                        fillcolor=color,
-                        line_width=0
-                    )
-
+                    fig_indiv.add_vrect(x0=min(x1, x2), x1=max(x1, x2), fillcolor=color, line_width=0)
                     fig_indiv.add_vline(x=x1, line=dict(color="black", width=1))
                     fig_indiv.add_vline(x=x2, line=dict(color="black", width=1))
-
                     fig_indiv.add_annotation(
                         x=(x1 + x2) / 2,
-                        y=y_max * 0.8,
-                        text=etiqueta[:20],
+                        y=y_max * 0.82,
+                        text=etiqueta,
                         showarrow=False,
-                        font=dict(size=10, color="black"),
+                        font=dict(size=10),
                         textangle=270,
                         xanchor="center",
-                        yanchor="top"
+                        yanchor="bottom"
                     )
 
+        # --- Sombreado desde tabla de señales ---
         if aplicar_sombra_senales:
-            tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
-            doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
+            tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+            doc_senales = db.collection("tablas_integrales").document(tipo_doc)
             if doc_senales.get().exists:
                 filas_senales = doc_senales.get().to_dict().get("filas", [])
                 for f in filas_senales:
                     if f.get("Archivo") != archivo_actual:
                         continue
-                    x1 = f.get("X min")
-                    x2 = f.get("X max")
-                    grupo = f.get("Grupo funcional")
-                    valor = f.get("H") if tipo == "RMN 1H" else f.get("C")
+                    x1, x2 = f.get("X min"), f.get("X max")
+                    grupo, valor = f.get("Grupo funcional", ""), f.get("H") if tipo == "RMN 1H" else f.get("C")
                     if x1 is None or x2 is None:
                         continue
 
@@ -821,28 +822,28 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
                     fig_indiv.add_vline(x=x1, line=dict(color="black", width=1))
                     fig_indiv.add_vline(x=x2, line=dict(color="black", width=1))
 
-                    if grupo not in [None, ""] or valor not in [None, ""]:
-                        partes = []
-                        if grupo:
-                            partes.append(f"{grupo}")
-                        if valor:
-                            partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
-                        etiqueta = " = ".join(partes) if len(partes) == 2 else " ".join(partes)
+                    partes = []
+                    if grupo:
+                        partes.append(grupo)
+                    if valor:
+                        partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
+                    etiqueta = " = ".join(partes)[:20] + ("…" if len(" = ".join(partes)) > 20 else "")
 
-                        fig_indiv.add_annotation(
-                            x=(x1 + x2) / 2,
-                            y=y_max * 0.82,
-                            text=etiqueta[:20],
-                            showarrow=False,
-                            font=dict(size=10, color="black"),
-                            textangle=270,
-                            xanchor="center",
-                            yanchor="bottom"
-                        )
+                    fig_indiv.add_annotation(
+                        x=(x1 + x2) / 2,
+                        y=y_max * 0.82,
+                        text=etiqueta,
+                        showarrow=False,
+                        font=dict(size=10),
+                        textangle=270,
+                        xanchor="center",
+                        yanchor="bottom"
+                    )
 
+        # --- Delineado bibliografía ---
         if aplicar_sombra_biblio:
-            doc_biblio = db.collection("configuracion_global").document(
-                "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c")
+            doc_id = "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+            doc_biblio = db.collection("configuracion_global").document(doc_id)
             if doc_biblio.get().exists:
                 filas_biblio = doc_biblio.get().to_dict().get("filas", [])
                 for f in filas_biblio:
@@ -851,37 +852,31 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
                     obs = f.get("Observaciones", "")
                     if delta is None:
                         continue
-                    etiqueta = grupo
-                    if obs:
-                        etiqueta += f" – {obs}"
-                    fig_indiv.add_shape(
-                        type="line",
-                        x0=delta, x1=delta,
-                        y0=0, y1=y_max * 0.8,
-                        line=dict(color="black", dash="dot", width=1)
-                    )
+                    etiqueta = f"{grupo} – {obs}".strip()[:20] + ("…" if len(f"{grupo} – {obs}".strip()) > 20 else "")
+                    fig_indiv.add_shape(type="line", x0=delta, x1=delta, y0=0, y1=y_max * 0.8,
+                                        line=dict(color="black", dash="dot", width=1))
                     fig_indiv.add_annotation(
                         x=delta,
-                        y=y_max * 0.8,
-                        text=etiqueta[:20],
+                        y=y_max * 0.82,
+                        text=etiqueta,
                         showarrow=False,
                         textangle=270,
-                        font=dict(size=10, color="black"),
+                        font=dict(size=10),
                         xanchor="center",
-                        yanchor="bottom" 
+                        yanchor="bottom"
                     )
 
         fig_indiv.update_layout(
-            title=f"{archivo_actual}",
+            title=archivo_actual,
             xaxis_title="[ppm]",
             yaxis_title="Intensidad",
             xaxis=dict(range=[x_max, x_min]),
-            yaxis=dict(range=[y_min, y_max] if y_min is not None and y_max is not None else None),
+            yaxis=dict(range=[y_min, y_max]),
             height=500,
             template="simple_white"
         )
-
         st.plotly_chart(fig_indiv, use_container_width=True)
+
 
 
 def mostrar_sombreados_dt2(fig, df, tipo, y_max, key_sufijo, check_d_por_espectro, check_t2_por_espectro, db):

@@ -256,7 +256,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         mostrar_picos=mostrar_picos,
         restar_espectro=restar_espectro,
         seleccion_resta=seleccion_resta,
-        ajuste_y_manual=ajuste_y_manual,
         ajustes_y=ajustes_y,
         x_min=x_min,
         x_max=x_max,

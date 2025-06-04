@@ -367,7 +367,7 @@ def mostrar_grafico_combinado(
         legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    return fig
 
 
 def mostrar_tabla_dt2(df, tipo, key_sufijo, db):

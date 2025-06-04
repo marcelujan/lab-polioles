@@ -219,8 +219,13 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
     x_max = colx2.number_input("X máximo", value=9.0 if tipo == "RMN 1H" else 200.0, key=f"x_max_{key_sufijo}")
-    y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
-    y_max = coly2.number_input("Y máximo", value=80.0 if tipo == "RMN 1H" else 1.5, key=f"y_max_{key_sufijo}")
+
+    if normalizar:
+        y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
+        y_max = 1.0  # Valor fijo para normalizado
+    else:
+        y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
+        y_max = coly2.number_input("Y máximo", value=80.0 if tipo == "RMN 1H" else 1.5, key=f"y_max_{key_sufijo}")
 
     if mostrar_picos:
         colp1, colp2 = st.columns(2)

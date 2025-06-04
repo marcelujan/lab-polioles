@@ -65,24 +65,12 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.markdown("## 🧪 RMN Imágenes")
         render_imagenes(imagenes_sel)
 
-
-
-
-
-
-
 def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:
         st.info(f"No hay espectros disponibles para {tipo}.")
         return
 
-    # --- Pre-decodificación para evitar múltiples lecturas ---
-    df_decodificados = {}
-    for _, row in df.iterrows():
-        archivo = row["archivo"]
-        df_decodificados[archivo] = decodificar_csv_o_excel(row["contenido"], archivo)
-
-    # --- Controles ---
+    # --- Filtros estilo FTIR ---
     col1, col2, col3, col4 = st.columns(4)
     normalizar = col1.checkbox("Normalizar intensidad", key=f"norm_{key_sufijo}")
     mostrar_picos = col2.checkbox("Mostrar picos detectados", key=f"picos_{key_sufijo}")
@@ -100,182 +88,18 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             ajustes_y[row["archivo"]] = 0.0
 
     seleccion_resta = None
-    espectro_resta = None
     if restar_espectro:
         opciones_restar = [f"{row['muestra']} – {row['archivo']}" for _, row in df.iterrows()]
         seleccion_resta = st.selectbox("Seleccionar espectro a restar:", opciones_restar, key=f"sel_resta_{key_sufijo}")
-        if seleccion_resta:
-            archivo_resta = seleccion_resta.split(" – ")[-1]
-            espectro_resta = df_decodificados.get(archivo_resta)
-            if espectro_resta is not None:
-                espectro_resta.columns = ["x", "y"]
-                espectro_resta.dropna(inplace=True)
 
-    # --- Rango XY ---
+    superposicion_vertical = st.checkbox("📊 Superposición vertical de espectros", key=f"offset_{key_sufijo}")
+
+    # --- Rango de visualización ---
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
     x_max = colx2.number_input("X máximo", value=9.0 if tipo == "RMN 1H" else 200.0, key=f"x_max_{key_sufijo}")
     y_min = coly1.number_input("Y mínimo", value=0.0, key=f"y_min_{key_sufijo}")
     y_max = coly2.number_input("Y máximo", value=80.0 if tipo == "RMN 1H" else 1.5, key=f"y_max_{key_sufijo}")
-
-    altura_min, distancia_min = 0.05, 5
-    if mostrar_picos:
-        colp1, colp2 = st.columns(2)
-        altura_min = colp1.number_input("Altura mínima", value=0.05, step=0.01, key=f"altura_min_{key_sufijo}")
-        distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key=f"distancia_min_{key_sufijo}")
-
-    render_rmn_grafico_combinado(df, df_decodificados, ajustes_y, espectro_resta, normalizar, mostrar_picos, altura_min, distancia_min, x_min, x_max, y_min, y_max)
-    render_rmn_tablas(df, tipo, key_sufijo, db)
-
-def render_rmn_grafico_combinado(df, df_decodificados, ajustes_y, espectro_resta, normalizar, mostrar_picos, altura_min, distancia_min, x_min, x_max, y_min, y_max):
-    import plotly.graph_objects as go
-    from scipy.signal import find_peaks
-
-    fig = go.Figure()
-    for _, row in df.iterrows():
-        archivo = row["archivo"]
-        df_esp = df_decodificados.get(archivo)
-        if df_esp is None:
-            continue
-        x = df_esp.iloc[:, 0]
-        y = df_esp.iloc[:, 1].copy()
-        y = y + ajustes_y.get(archivo, 0.0)
-
-        if espectro_resta is not None:
-            y -= np.interp(x, espectro_resta["x"], espectro_resta["y"])
-        if normalizar and y.max() != 0:
-            y = y / y.max()
-
-        fig.add_trace(go.Scatter(x=x, y=y, mode='lines', name=archivo))
-
-        if mostrar_picos:
-            try:
-                peaks, _ = find_peaks(y, height=altura_min, distance=distancia_min)
-                for p in peaks:
-                    fig.add_trace(go.Scatter(
-                        x=[x.iloc[p]],
-                        y=[y.iloc[p]],
-                        mode="markers+text",
-                        marker=dict(color="black", size=6),
-                        text=[f"{x.iloc[p]:.2f}"],
-                        textposition="top center",
-                        showlegend=False
-                    ))
-            except:
-                st.warning(f"⚠️ No se pudieron detectar picos en {archivo}.")
-
-    fig.update_layout(
-        xaxis_title="[ppm]",
-        yaxis_title="Intensidad",
-        xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(range=[y_min, y_max] if not normalizar and y_min is not None and y_max is not None else None),
-        template="simple_white",
-        height=500,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-def render_rmn_tablas(df, tipo, key_sufijo, db):
-    import pandas as pd
-    from io import BytesIO
-
-    col1, col2 = st.columns(2)
-    mostrar_tabla_dt2 = col1.checkbox(f"🧮 Mostrar tabla D/T2 {tipo}", key=f"tabla_dt2_{key_sufijo}")
-    mostrar_tabla_senales = col2.checkbox(f"📈 Mostrar tabla de señales {tipo}", key=f"tabla_senales_{key_sufijo}")
-
-    if not (mostrar_tabla_dt2 or mostrar_tabla_senales):
-        return
-
-    is_rmn13c = tipo == "RMN 13C"
-    key_tipo = "rmn13c" if is_rmn13c else "rmn1h"
-    label_export = "C" if is_rmn13c else "H"
-    campo_has = "Cas" if is_rmn13c else "Has"
-    campo_h = "C" if is_rmn13c else "H"
-
-    if mostrar_tabla_dt2:
-        columnas_dt2 = ["Muestra", "Archivo", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2"]
-        filas = []
-        for _, row in df.iterrows():
-            muestra = row["muestra"]
-            archivo = row["archivo"]
-            doc = db.collection("muestras").document(muestra).collection("dt2").document(key_tipo)
-            doc_data = doc.get().to_dict()
-            if doc_data and "filas" in doc_data:
-                filas.extend([f for f in doc_data["filas"] if f.get("Archivo") == archivo])
-
-        df_dt2 = pd.DataFrame(filas)
-        for col in columnas_dt2:
-            if col not in df_dt2.columns:
-                df_dt2[col] = None
-        df_dt2 = df_dt2[columnas_dt2]
-
-        st.markdown(f"#### 🧮 Tabla D/T2 editable ({tipo})")
-        editada = st.data_editor(df_dt2, num_rows="dynamic", use_container_width=True, key=f"edit_dt2_{key_sufijo}")
-        colg1, colg2 = st.columns(2)
-        with colg1:
-            if st.button("💾 Guardar tabla D/T2", key=f"btn_guardar_dt2_{key_sufijo}"):
-                editadas_validas = [row for _, row in editada.iterrows() if row["X min"] not in [None, ""] and row["X max"] not in [None, ""]]
-                if not editadas_validas:
-                    st.warning("⚠️ No se guardó ninguna fila. Verificá que 'X min' y 'X max' estén completos.")
-                else:
-                    doc_out = db.collection("muestras").document(df_dt2["Muestra"].iloc[0]).collection("dt2").document(key_tipo)
-                    doc_out.set({"filas": editada.to_dict(orient="records")})
-                    st.success("✅ Tabla D/T2 guardada correctamente")
-        with colg2:
-            buffer = BytesIO()
-            editada.to_excel(buffer, index=False)
-            buffer.seek(0)
-            st.download_button("📥 Exportar tabla D/T2", data=buffer.getvalue(), file_name=f"tabla_dt2_{key_tipo}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-    if mostrar_tabla_senales:
-        columnas_senales = ["Muestra", "Archivo", "Grupo funcional", "δ pico", "X min", "X max", "Área", campo_has, "Área as", campo_h]
-        doc_senales = db.collection("tablas_integrales").document(key_tipo)
-        doc_data = doc_senales.get().to_dict() or {}
-        filas = doc_data.get("filas", [])
-
-        archivos_activos = set((row["muestra"], row["archivo"]) for _, row in df.iterrows())
-        filas_filtradas = [f for f in filas if (f.get("Muestra"), f.get("Archivo")) in archivos_activos]
-
-        df_senales = pd.DataFrame(filas_filtradas)
-        for col in columnas_senales:
-            if col not in df_senales.columns:
-                df_senales[col] = None
-        df_senales = df_senales[columnas_senales]
-
-        st.markdown(f"#### 📈 Tabla de señales editable ({tipo})")
-        editada = st.data_editor(df_senales, num_rows="dynamic", use_container_width=True, key=f"edit_senales_{key_sufijo}")
-        colg1, colg2 = st.columns(2)
-        with colg1:
-            if st.button("💾 Guardar tabla de señales", key=f"btn_guardar_senales_{key_sufijo}"):
-                editadas_validas = [row for _, row in editada.iterrows() if row["X min"] not in [None, ""] and row["X max"] not in [None, ""]]
-                if not editadas_validas:
-                    st.warning("⚠️ No se guardó ninguna fila. Verificá que 'X min' y 'X max' estén completos.")
-                else:
-                    doc_senales.set({"filas": editada.to_dict(orient="records")})
-                    st.success("✅ Tabla de señales guardada correctamente")
-        with colg2:
-            buffer = BytesIO()
-            editada.to_excel(buffer, index=False)
-            buffer.seek(0)
-            st.download_button("📥 Exportar tabla de señales", data=buffer.getvalue(), file_name=f"tabla_senales_{key_tipo}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     # --- Decodificar espectro de fondo si aplica ---
     espectro_resta = None

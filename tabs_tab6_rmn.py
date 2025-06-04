@@ -369,6 +369,8 @@ def mostrar_grafico_combinado(
         if normalizar:
             y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
 
+        x_vals = df_esp[col_x]
+
         if mostrar_picos and altura_min is not None and distancia_min is not None:
             try:
                 peaks, _ = find_peaks(y_data, height=altura_min, distance=distancia_min)
@@ -384,8 +386,6 @@ def mostrar_grafico_combinado(
                     ))
             except Exception as e:
                 st.warning(f"⚠️ Error detectando picos en {archivo_actual}: {e}")
-
-        x_vals = df_esp[col_x]
         fig.add_trace(go.Scatter(x=x_vals, y=y_data, mode='lines', name=archivo_actual))
 
     fig.update_layout(

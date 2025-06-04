@@ -9,6 +9,7 @@ import os
 from functools import lru_cache
 import math
 from PIL import Image
+from scipy.signal import find_peaks
 
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "Vecino a alfa-carbonilo", "Alfa-epóxido", "CH2", "CH3"]
@@ -367,6 +368,22 @@ def mostrar_grafico_combinado(
 
         if normalizar:
             y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
+
+        if mostrar_picos and altura_min is not None and distancia_min is not None:
+            try:
+                peaks, _ = find_peaks(y_data, height=altura_min, distance=distancia_min)
+                for p in peaks:
+                    fig.add_trace(go.Scatter(
+                        x=[x_vals.iloc[p]],
+                        y=[y_data.iloc[p]],
+                        mode="markers+text",
+                        marker=dict(color="black", size=6),
+                        text=[f"{x_vals.iloc[p]:.2f}"],
+                        textposition="top center",
+                        showlegend=False
+                    ))
+            except Exception as e:
+                st.warning(f"⚠️ Error detectando picos en {archivo_actual}: {e}")
 
         x_vals = df_esp[col_x]
         fig.add_trace(go.Scatter(x=x_vals, y=y_data, mode='lines', name=archivo_actual))

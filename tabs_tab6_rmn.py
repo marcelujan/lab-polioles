@@ -365,9 +365,13 @@ def mostrar_grafico_combinado(
         y_data = df_esp[col_y].copy() + ajustes_y.get(archivo_actual, 0.0)
 
         if espectro_resta is not None:
-            df_esp = df_esp.rename(columns={col_x: "x", col_y: "y"}).dropna()
-            espectro_resta_interp = np.interp(df_esp["x"], espectro_resta["x"], espectro_resta["y"])
-            y_data = df_esp["y"] - espectro_resta_interp
+            df_aux = df_esp[[col_x, col_y]].rename(columns={col_x: "x", col_y: "y"}).dropna()
+            espectro_resta_interp = np.interp(df_aux["x"], espectro_resta["x"], espectro_resta["y"])
+            y_resta_ajustada = espectro_resta_interp + ajustes_y.get(id_resta, 0.0)
+            y_data = df_aux["y"] - y_resta_ajustada
+            x_vals = df_aux["x"]  # asegurás que x_vals sea el mismo eje usado
+        else:
+            x_vals = df_esp[col_x]
 
         if normalizar:
             y_data = y_data / y_data.max() if y_data.max() != 0 else y_data

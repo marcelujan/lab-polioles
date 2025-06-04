@@ -407,24 +407,27 @@ def mostrar_grafico_combinado(
                     obs = f.get("Observaciones", "")
                     if delta is None:
                         continue
-                    fig.add_vline(
-                        x=delta,
-                        line=dict(color="black", dash="dot", width=1),
-                        opacity=0.6
+                    fig.add_shape(
+                        type="line",
+                        x0=delta, x1=delta,
+                        y0=0, y1=y_max * 0.8,
+                        line=dict(color="black", dash="dot", width=1)
                     )
-                    etiqueta = grupo
-                    if obs:
-                        etiqueta += f" – {obs}"
+
+                    etiqueta_completa = " | ".join([x for x in [grupo, obs] if x]).strip()
+                    etiqueta_truncada = etiqueta_completa[:20] + ("…" if len(etiqueta_completa) > 20 else "")
+
                     fig.add_annotation(
                         x=delta,
-                        y=y_max * 0.95,
-                        text=etiqueta.strip(),
+                        y=y_max * 0.8,
+                        text=etiqueta_truncada,
                         showarrow=False,
                         textangle=270,
                         font=dict(size=10, color="black"),
                         xanchor="center",
                         yanchor="top"
                     )
+
 
         # --- Añadir sombreado desde tabla de señales (si corresponde) ---
         if aplicar_sombra_senales:

@@ -274,54 +274,6 @@ def render_rmn_tablas(df, tipo, key_sufijo, db):
 
 
 
-
-
-
-    # --- Decodificar espectro de fondo si aplica ---
-    espectro_resta = None
-    if restar_espectro and seleccion_resta:
-        id_resta = seleccion_resta.split(" – ")[-1].strip()
-        fila_resta = df[df["archivo"] == id_resta].iloc[0] if id_resta in set(df["archivo"]) else None
-        if fila_resta is not None:
-            try:
-                espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
-                if espectro_resta is not None:
-                    espectro_resta.columns = ["x", "y"]
-                    espectro_resta.dropna(inplace=True)
-            except:
-                espectro_resta = None
-                espectro_resta.columns = ["x", "y"]
-                espectro_resta.dropna(inplace=True)
-
-    # --- Parámetros de picos ---
-    if mostrar_picos:
-        colp1, colp2 = st.columns(2)
-        altura_min = colp1.number_input("Altura mínima", value=0.05, step=0.01, key=f"altura_min_{key_sufijo}")
-        distancia_min = colp2.number_input("Distancia mínima entre picos", value=5, step=1, key=f"distancia_min_{key_sufijo}")
-
-    # --- Sección reorganizada: Checkboxes de tablas y sombreado ---
-    col_tabla, col_sombra = st.columns(2)
-
-    with col_tabla:
-        nombre_tabla_dt2 = f"🧮 Tabla de Cálculos D/T2 (FAMAF) {tipo}"
-        mostrar_tabla_dt2 = st.checkbox(nombre_tabla_dt2, value=False, key=f"mostrar_dt2_{key_sufijo}")
-
-        nombre_tabla_senales = f"📈 Tabla de Cálculos {tipo}"
-        mostrar_tabla_senales = st.checkbox(nombre_tabla_senales, value=False, key=f"mostrar_senales_{key_sufijo}")
-
-        nombre_tabla_biblio = f"📚 Tabla Bibliográfica {tipo[-3:]}"  # 1H o 13C
-        mostrar_tabla_biblio = st.checkbox(nombre_tabla_biblio, value=False, key=f"mostrar_biblio_{tipo.lower()}_{key_sufijo}")
-
-    with col_sombra:
-        nombre_sombra_dt2 = f"Sombrear Tabla de Cálculos D/T2 (FAMAF) {tipo}"
-        aplicar_sombra_dt2 = st.checkbox(nombre_sombra_dt2, value=False, key=f"sombra_dt2_{key_sufijo}")
-
-        nombre_sombra_senales = f"Sombrear Tabla de Cálculos {tipo}"
-        aplicar_sombra_senales = st.checkbox(nombre_sombra_senales, value=False, key=f"sombra_senales_{key_sufijo}")
-
-        nombre_sombra_biblio = f"Delinear Tabla Bibliográfica {tipo[-3:]}"
-        aplicar_sombra_biblio = st.checkbox(nombre_sombra_biblio, value=False, key=f"sombra_biblio_{key_sufijo}")
-
     # --- Tabla de Cálculo D/T2 ---
     if mostrar_tabla_dt2:
         if tipo == "RMN 1H":

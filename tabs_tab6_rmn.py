@@ -790,8 +790,8 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
 
                     fig_indiv.add_annotation(
                         x=(x1 + x2) / 2,
-                        y=y_max * 0.98,
-                        text=etiqueta,
+                        y=y_max * 0.8,
+                        text=etiqueta[:20],
                         showarrow=False,
                         font=dict(size=10, color="black"),
                         textangle=270,
@@ -828,8 +828,8 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
 
                         fig_indiv.add_annotation(
                             x=(x1 + x2) / 2,
-                            y=y_max * 0.98,
-                            text=etiqueta,
+                            y=y_max * 0.8,
+                            text=etiqueta[:20],
                             showarrow=False,
                             font=dict(size=10, color="black"),
                             textangle=270,
@@ -844,25 +844,29 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
                 filas_biblio = doc_biblio.get().to_dict().get("filas", [])
                 for f in filas_biblio:
                     delta = f.get("δ pico")
-                    grupo = f.get("Grupo funcional")
-                    if delta is not None:
-                        fig_indiv.add_shape(
-                            type="line",
-                            x0=delta, x1=delta,
-                            y0=0, y1=y_max,
-                            line=dict(color="black", dash="dot", width=1)
-                        )
-                        texto = grupo if grupo else f"δ = {delta:.2f}"
-                        fig_indiv.add_annotation(
-                            x=delta,
-                            y=y_max * 0.95,
-                            text=texto,
-                            showarrow=False,
-                            textangle=270,
-                            font=dict(size=10, color="black"),
-                            xanchor="center",
-                            yanchor="top"
-                        )
+                    grupo = f.get("Grupo funcional", "")
+                    obs = f.get("Observaciones", "")
+                    if delta is None:
+                        continue
+                    etiqueta = grupo
+                    if obs:
+                        etiqueta += f" – {obs}"
+                    fig_indiv.add_shape(
+                        type="line",
+                        x0=delta, x1=delta,
+                        y0=0, y1=y_max * 0.8,
+                        line=dict(color="black", dash="dot", width=1)
+                    )
+                    fig_indiv.add_annotation(
+                        x=delta,
+                        y=y_max * 0.8,
+                        text=etiqueta[:20],
+                        showarrow=False,
+                        textangle=270,
+                        font=dict(size=10, color="black"),
+                        xanchor="center",
+                        yanchor="top"
+                    )
 
         fig_indiv.update_layout(
             title=f"{archivo_actual}",

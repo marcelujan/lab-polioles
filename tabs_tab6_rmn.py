@@ -458,7 +458,7 @@ def mostrar_grafico_combinado(
                         font=dict(size=10, color="black"),
                         textangle=270,
                         xanchor="center",
-                        yanchor="bottom" 
+                        yanchor="top" 
                     )
 
         fig.add_trace(go.Scatter(x=x_vals, y=y_data, mode='lines', name=archivo_actual))

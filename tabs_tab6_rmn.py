@@ -42,10 +42,33 @@ def decodificar_csv_o_excel(contenido_base64, archivo):
         st.warning(f"Error al decodificar {archivo}: {e}")
     return None
 
-# --- Firebase helpers: precarga de espectros por muestra ---
-def precargar_espectros_por_muestra(db, muestra):
-    docs = db.collection("muestras").document(muestra).collection("espectros").stream()
-    return {e.get("nombre_archivo"): e.to_dict() for e in (doc.to_dict() for doc in docs) if e.get("nombre_archivo")}
+# --- Firebase helpers: precarga completa de espectros RMN por muestra ---
+def precargar_espectros_rmn(db, muestras):
+    espectros_total = []
+    for m in muestras:
+        nombre = m["nombre"]
+        docs = db.collection("muestras").document(nombre).collection("espectros").stream()
+        for i, doc in enumerate(docs):
+            e = doc.to_dict()
+            tipo = (e.get("tipo") or "").upper()
+            if "RMN" in tipo:
+                espectros_total.append({
+                    "muestra": nombre,
+                    "tipo": tipo,
+                    "archivo": e.get("nombre_archivo", "sin nombre"),
+                    "contenido": e.get("contenido"),
+                    "mascaras": e.get("mascaras", []),
+                    "id": f"{nombre}__{i}"
+                })
+    return pd.DataFrame(espectros_total)
+
+
+
+
+
+
+
+
 
 # --- Firebase helpers: precarga de documentos tipo tabla_integral o dt2 ---
 def precargar_tabla_global(db, nombre_tabla):
@@ -137,11 +160,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
 
 
-
-
-
-
-
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # --- Cargar muestras y espectros ---
     muestras = cargar_muestras(db)
@@ -149,24 +167,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.warning("No hay muestras disponibles.")
         st.stop()
 
-    espectros = []
-    for m in muestras:
-        nombre = m["nombre"]
-        docs = db.collection("muestras").document(nombre).collection("espectros").stream()
-        for i, doc in enumerate(docs):
-            e = doc.to_dict()
-            tipo = (e.get("tipo") or "").upper()
-            if "RMN" in tipo:
-                espectros.append({
-                    "muestra": nombre,
-                    "tipo": tipo,
-                    "archivo": e.get("nombre_archivo", "sin nombre"),
-                    "contenido": e.get("contenido"),
-                    "mascaras": e.get("mascaras", []),
-                    "id": f"{nombre}__{i}"
-                })
-
-    df_total = pd.DataFrame(espectros)
+    df_total = precargar_espectros_rmn(db, muestras)
     if df_total.empty:
         st.warning("No hay espectros RMN disponibles.")
         st.stop()
@@ -196,6 +197,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if not imagenes_sel.empty:
         st.markdown("## 🧪 RMN Imágenes")
         render_imagenes(imagenes_sel)
+
+
+
+
 
 def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:

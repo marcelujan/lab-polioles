@@ -42,6 +42,106 @@ def decodificar_csv_o_excel(contenido_base64, archivo):
         st.warning(f"Error al decodificar {archivo}: {e}")
     return None
 
+# --- Firebase helpers: precarga de espectros por muestra ---
+def precargar_espectros_por_muestra(db, muestra):
+    docs = db.collection("muestras").document(muestra).collection("espectros").stream()
+    return {e.get("nombre_archivo"): e.to_dict() for e in (doc.to_dict() for doc in docs) if e.get("nombre_archivo")}
+
+# --- Firebase helpers: precarga de documentos tipo tabla_integral o dt2 ---
+def precargar_tabla_global(db, nombre_tabla):
+    doc = db.collection("tablas_integrales").document(nombre_tabla).get()
+    return doc.to_dict() if doc.exists else {}
+
+def precargar_dt2_muestra(db, muestra, tipo):
+    doc = db.collection("muestras").document(muestra).collection("dt2").document(tipo)
+    data = doc.get().to_dict()
+    return data.get("filas", []) if data else []
+
+# --- Cálculo de integrales: usar espectros precargados ---
+def obtener_df_esp_precargado(db, espectros_dict, muestra, archivo):
+    espectro = espectros_dict.get(archivo)
+    if not espectro:
+        espectros_dict.update(precargar_espectros_por_muestra(db, muestra))
+        espectro = espectros_dict.get(archivo)
+    if not espectro:
+        return None
+    return decodificar_csv_o_excel(espectro.get("contenido"), archivo)
+
+# --- Optimización aplicada a recálculo de D/T2 y señales ---
+def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino="dt2"):
+    espectros_cache = {}
+    campo_h = "H" if tipo == "RMN 1H" else "C"
+    campo_has = "Has" if tipo == "RMN 1H" else "Cas"
+
+    for i, row in df_edicion.iterrows():
+        try:
+            muestra = row.get("Muestra")
+            archivo = row.get("Archivo")
+            if not muestra or not archivo:
+                continue
+
+            x_min = float(row.get("X min")) if row.get("X min") not in [None, ""] else None
+            x_max = float(row.get("X max")) if row.get("X max") not in [None, ""] else None
+            xas_min = float(row.get("Xas min")) if row.get("Xas min") not in [None, ""] else None
+            xas_max = float(row.get("Xas max")) if row.get("Xas max") not in [None, ""] else None
+            has_or_cas = float(row.get(campo_has)) if row.get(campo_has) not in [None, ""] else None
+
+            df_esp = obtener_df_esp_precargado(db, espectros_cache.setdefault(muestra, {}), muestra, archivo)
+            if df_esp is None:
+                continue
+
+            df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
+            area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
+            df_edicion.at[i, "Área"] = round(area, 2) if area else None
+
+            if xas_min is not None and xas_max is not None:
+                df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
+                area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
+                df_edicion.at[i, "Área as"] = round(area_as, 2) if area_as else None
+
+                if area and area_as and has_or_cas and area_as != 0:
+                    resultado = (area * has_or_cas) / area_as
+                    df_edicion.at[i, campo_h] = round(resultado, 2)
+
+        except Exception as e:
+            st.warning(f"⚠️ Error en fila {i}: {e}")
+
+    # Guardar en Firebase (conservar combinaciones no actualizadas)
+    filas_actualizadas_raw = df_edicion.to_dict(orient="records")
+    combinaciones_actualizadas = {(f.get("Muestra"), f.get("Archivo")) for f in filas_actualizadas_raw if f.get("Muestra") and f.get("Archivo")}
+
+    if tabla_destino == "dt2":
+        doc_destino = lambda m: db.collection("muestras").document(m).collection("dt2").document(tipo.lower())
+    else:
+        doc_ref = db.collection("tablas_integrales").document(nombre_tabla)
+        doc_data = doc_ref.get().to_dict()
+        filas_previas = doc_data.get("filas", []) if doc_data else []
+        filas_conservadas = [f for f in filas_previas if (f.get("Muestra"), f.get("Archivo")) not in combinaciones_actualizadas]
+        filas_finales = filas_conservadas + filas_actualizadas_raw
+        doc_ref.set({"filas": filas_finales})
+        return
+
+    for muestra in df_edicion["Muestra"].unique():
+        filas_m = [f for f in filas_actualizadas_raw if f.get("Muestra") == muestra]
+        doc_out = doc_destino(muestra)
+        doc_data = doc_out.get().to_dict()
+        filas_previas = doc_data.get("filas", []) if doc_data else []
+        archivos_actualizados = set(f["Archivo"] for f in filas_m if f.get("Archivo"))
+        filas_conservadas = [f for f in filas_previas if f.get("Archivo") not in archivos_actualizados]
+        filas_finales = filas_conservadas + filas_m
+        doc_out.set({"filas": filas_finales})
+
+    st.success("✅ Datos recalculados y guardados correctamente.")
+    st.rerun()
+    
+
+
+
+
+
+
+
+
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # --- Cargar muestras y espectros ---
     muestras = cargar_muestras(db)

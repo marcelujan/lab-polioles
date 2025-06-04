@@ -395,6 +395,37 @@ def mostrar_grafico_combinado(
             except Exception as e:
                 st.warning(f"⚠️ Error detectando picos en {archivo_actual}: {e}")
 
+        # --- Delinear señales bibliográficas si corresponde ---
+        if aplicar_sombra_biblio:
+            doc_id_biblio = "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+            doc_biblio = db.collection("configuracion_global").document(doc_id_biblio).get()
+            if doc_biblio.exists:
+                filas_biblio = doc_biblio.to_dict().get("filas", [])
+                for f in filas_biblio:
+                    delta = f.get("δ pico")
+                    grupo = f.get("Grupo funcional", "")
+                    obs = f.get("Observaciones", "")
+                    if delta is None:
+                        continue
+                    fig.add_vline(
+                        x=delta,
+                        line=dict(color="black", dash="dot", width=1),
+                        opacity=0.6
+                    )
+                    etiqueta = grupo
+                    if obs:
+                        etiqueta += f" – {obs}"
+                    fig.add_annotation(
+                        x=delta,
+                        y=y_max * 0.95,
+                        text=etiqueta.strip(),
+                        showarrow=False,
+                        textangle=270,
+                        font=dict(size=10, color="black"),
+                        xanchor="center",
+                        yanchor="top"
+                    )
+
         # --- Añadir sombreado desde tabla de señales (si corresponde) ---
         if aplicar_sombra_senales:
             for f in filas_senales:

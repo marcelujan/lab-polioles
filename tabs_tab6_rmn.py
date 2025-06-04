@@ -425,7 +425,7 @@ def mostrar_grafico_combinado(
                         textangle=270,
                         font=dict(size=10, color="black"),
                         xanchor="center",
-                        yanchor="top"
+                        yanchor="bottom" 
                     )
 
 
@@ -458,7 +458,7 @@ def mostrar_grafico_combinado(
                         font=dict(size=10, color="black"),
                         textangle=270,
                         xanchor="center",
-                        yanchor="top"
+                        yanchor="bottom" 
                     )
 
         fig.add_trace(go.Scatter(x=x_vals, y=y_data, mode='lines', name=archivo_actual))
@@ -868,7 +868,7 @@ def mostrar_graficos_individuales(df, tipo, key_sufijo, normalizar, y_max, y_min
                         textangle=270,
                         font=dict(size=10, color="black"),
                         xanchor="center",
-                        yanchor="top"
+                        yanchor="bottom" 
                     )
 
         fig_indiv.update_layout(

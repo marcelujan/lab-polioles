@@ -68,7 +68,7 @@ def precargar_espectros_rmn(db, muestras):
 
 
 def mostrar_correccion_viscosidad_individual(df):
-    st.markdown("### 🔧 Corrección por viscosidad entre muestras")
+    st.markdown("**Desplazamiento espectral por viscosidad**")
     correcciones = {}
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
@@ -330,7 +330,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
     # Ajuste global a bibliografía
     if activar_biblio:
-        st.markdown("### 📘 Ajuste global a bibliografía (aplica a todos los espectros)")
+        st.markdown("**Desplazamiento espectral por bibliografía**")
         col1, col2 = st.columns(2)
         with col1:
             p1_bib = st.number_input("Pico 1 bibliografía", value=7.26, key=f"pico1_bib_global_{key_sufijo}")

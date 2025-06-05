@@ -67,7 +67,7 @@ def precargar_espectros_rmn(db, muestras):
 
 
 def mostrar_correccion_viscosidad(df):
-    aplicar = st.checkbox("🔧 Corrección por viscosidad (alinear eje δ)")
+    aplicar = st.checkbox("Corrección por viscosidad")
     if not aplicar:
         return {}
 

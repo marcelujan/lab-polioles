@@ -88,12 +88,10 @@ def mostrar_correccion_viscosidad(df):
         pico2 = df_esp[(df_esp["x"] >= 0.60) & (df_esp["x"] <= 0.80)]
         p2 = pico2["x"][pico2["y"] == pico2["y"].max()].values[0] if not pico2.empty else 0.70
 
-        col1, col2, col3 = st.columns([3, 2, 2])
+        col1, col2 = st.columns([2, 2])
         with col1:
-            st.markdown(f"*{archivo_actual}*")
-        with col2:
             p1_manual = st.number_input(f"Pico 1 ({archivo_actual})", value=float(p1), key=f"pico1_{archivo_actual}")
-        with col3:
+        with col2:
             p2_manual = st.number_input(f"Pico 2 ({archivo_actual})", value=float(p2), key=f"pico2_{archivo_actual}")
 
         try:

@@ -825,7 +825,10 @@ def generar_elementos_rmn(
     y_max,
     aplicar_sombra_senales=False,
     aplicar_sombra_biblio=False,
-    mostrar_picos=False
+    mostrar_picos=False,
+    filas_dt2=None,
+    check_d_por_espectro=None,
+    check_t2_por_espectro=None
 ):
     from scipy.signal import find_peaks
     import plotly.graph_objects as go
@@ -923,6 +926,57 @@ def generar_elementos_rmn(
                 yanchor="bottom"
             ))
 
+    # --- Sombreado D/T2 ---
+    if filas_dt2 and (check_d_por_espectro or check_t2_por_espectro):
+        for f in filas_dt2:
+            if f.get("Archivo") != archivo_actual:
+                continue
+
+            x1 = f.get("X min")
+            x2 = f.get("X max")
+            d_val = f.get("D")
+            t2_val = f.get("T2")
+
+            tiene_d = d_val not in [None, ""]
+            tiene_t2 = t2_val not in [None, ""]
+
+            mostrar_d = check_d_por_espectro.get(archivo_actual) and tiene_d if check_d_por_espectro else tiene_d
+            mostrar_t2 = check_t2_por_espectro.get(archivo_actual) and tiene_t2 if check_t2_por_espectro else tiene_t2
+
+            if not (mostrar_d or mostrar_t2) or x1 is None or x2 is None:
+                continue
+
+            partes = []
+            if mostrar_d:
+                partes.append(f"D = {float(d_val):.2e}")
+            if mostrar_t2:
+                partes.append(f"T2 = {float(t2_val):.3f}")
+            etiqueta = "   ".join(partes)
+
+            color = "rgba(128,128,255,0.3)" if mostrar_d and mostrar_t2 else (
+                "rgba(255,0,0,0.3)" if mostrar_d else "rgba(0,0,255,0.3)")
+
+            elementos.append(go.layout.Shape(
+                type="rect",
+                x0=min(x1, x2),
+                x1=max(x1, x2),
+                y0=0, y1=1,
+                xref="x", yref="paper",
+                fillcolor=color,
+                line_width=0
+            ))
+
+            elementos.append(go.layout.Annotation(
+                x=(x1 + x2) / 2,
+                y=y_max * 0.98,
+                text=etiqueta,
+                showarrow=False,
+                font=dict(size=10, color="black"),
+                textangle=270,
+                xanchor="center",
+                yanchor="top"
+            ))
+
     return elementos
 
 def mostrar_graficos_individuales(
@@ -939,6 +993,7 @@ def mostrar_graficos_individuales(
     a_bib=1.0,
     b_bib=0.0
 ):
+
     # Precargar tablas
     tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
     filas_senales = db.collection("tablas_integrales").document(tipo_doc).get().to_dict().get("filas", [])
@@ -948,6 +1003,10 @@ def mostrar_graficos_individuales(
 
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
+    
+        # precargar filas_dt2:
+        doc_dt2 = db.collection("muestras").document(row["muestra"]).collection("dt2").document(tipo.lower()).get()
+        filas_dt2 = doc_dt2.to_dict().get("filas", []) if doc_dt2.exists else []
 
         fig = go.Figure()
         elementos = generar_elementos_rmn(
@@ -967,7 +1026,10 @@ def mostrar_graficos_individuales(
             y_max=y_max,
             aplicar_sombra_senales=aplicar_sombra_senales,
             aplicar_sombra_biblio=aplicar_sombra_biblio,
-            mostrar_picos=False
+            mostrar_picos=False,
+            filas_dt2=filas_dt2,
+            check_d_por_espectro=check_d_por_espectro,
+            check_t2_por_espectro=check_t2_por_espectro
         )
         for el in elementos:
             if isinstance(el, go.Scatter):

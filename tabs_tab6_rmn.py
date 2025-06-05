@@ -759,7 +759,26 @@ def mostrar_tabla_biblio(tipo, key_sufijo, db):
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-def mostrar_grafico_stacked(df, tipo, key_sufijo, normalizar, x_min, x_max, y_min, y_max):
+        
+def mostrar_grafico_stacked(
+    df, tipo, key_sufijo,
+    normalizar, x_min, x_max, y_min, y_max,
+    ajustes_y,
+    aplicar_sombra_dt2,
+    aplicar_sombra_senales,
+    aplicar_sombra_biblio,
+    db,
+    check_d_por_espectro=None,
+    check_t2_por_espectro=None,
+    correcciones_viscosidad={},
+    a_bib=1.0,
+    b_bib=0.0,
+    mostrar_picos=False,
+    restar_espectro=False,
+    seleccion_resta=None,
+    altura_min=None,
+    distancia_min=None
+):
     offset_auto = round((y_max - y_min) / (len(df) + 1), 2) if (y_max is not None and y_min is not None and y_max > y_min) else 1.0
     offset_manual = st.slider(
         "Separación entre espectros (offset)",
@@ -769,44 +788,75 @@ def mostrar_grafico_stacked(df, tipo, key_sufijo, normalizar, x_min, x_max, y_mi
         step=0.1,
         key=f"offset_val_{key_sufijo}"
     )
+
+    tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+    filas_senales = db.collection("tablas_integrales").document(tipo_doc).get().to_dict().get("filas", [])
+    filas_biblio = db.collection("configuracion_global").document(
+        "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+    ).get().to_dict().get("filas", [])
+
+    espectro_resta = None
+    id_resta = None
+    if restar_espectro and seleccion_resta:
+        id_resta = seleccion_resta.split(" – ")[-1].strip()
+        fila_resta = df[df["archivo"] == id_resta].iloc[0] if id_resta in set(df["archivo"]) else None
+        if fila_resta is not None:
+            espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
+
     fig_offset = go.Figure()
-    step_offset = offset_manual
 
     for i, (_, row) in enumerate(df.iterrows()):
         archivo_actual = row["archivo"]
-        df_esp = decodificar_csv_o_excel(row.get("contenido"), archivo_actual)
-        if df_esp is None:
-            continue
+        muestra_actual = row["muestra"]
 
-        col_x, col_y = df_esp.columns[:2]
-        y_data = df_esp[col_y].copy()
-        if normalizar:
-            y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
+        doc_dt2 = db.collection("muestras").document(muestra_actual).collection("dt2").document(tipo.lower()).get()
+        filas_dt2 = doc_dt2.to_dict().get("filas", []) if doc_dt2.exists else []
 
-        offset = step_offset * i
-        fig_offset.add_trace(go.Scatter(
-            x=df_esp[col_x],
-            y=y_data + offset,
-            mode='lines',
-            name=archivo_actual
-        ))
+        elementos = generar_elementos_rmn(
+            row=row,
+            ajustes_y=ajustes_y,
+            normalizar=normalizar,
+            espectro_resta=espectro_resta,
+            id_resta=id_resta,
+            altura_min=altura_min,
+            distancia_min=distancia_min,
+            correcciones_viscosidad=correcciones_viscosidad,
+            a_bib=a_bib,
+            b_bib=b_bib,
+            filas_senales=filas_senales,
+            filas_biblio=filas_biblio,
+            tipo=tipo,
+            y_max=y_max,
+            aplicar_sombra_senales=aplicar_sombra_senales,
+            aplicar_sombra_biblio=aplicar_sombra_biblio,
+            mostrar_picos=mostrar_picos,
+            filas_dt2=filas_dt2,
+            check_d_por_espectro=check_d_por_espectro,
+            check_t2_por_espectro=check_t2_por_espectro
+        )
+        offset = offset_manual * i
+        for el in elementos:
+            if isinstance(el, go.Scatter):
+                el.y = [v + offset for v in el.y]
+                fig_offset.add_trace(el)
+            elif isinstance(el, go.layout.Shape):
+                fig_offset.add_shape(el)
+            elif isinstance(el, go.layout.Annotation):
+                fig_offset.add_annotation(el)
 
     fig_offset.update_layout(
         xaxis_title="[ppm]",
         yaxis_title="Offset + Intensidad",
         xaxis=dict(range=[x_max, x_min]),
+        yaxis=dict(range=[y_min, y_max]),
         height=500,
         showlegend=True,
         template="simple_white",
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.3,
-            xanchor="center",
-            x=0.5
-        )
+        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
     )
     st.plotly_chart(fig_offset, use_container_width=True)
+
+
 
 def generar_elementos_rmn(
     row,
@@ -979,6 +1029,7 @@ def generar_elementos_rmn(
 
     return elementos
 
+
 def mostrar_graficos_individuales(
     df, tipo, key_sufijo,
     normalizar, y_max, y_min, x_max, x_min,
@@ -991,21 +1042,33 @@ def mostrar_graficos_individuales(
     check_t2_por_espectro=None,
     correcciones_viscosidad={},
     a_bib=1.0,
-    b_bib=0.0
+    b_bib=0.0,
+    mostrar_picos=False,
+    restar_espectro=False,
+    seleccion_resta=None,
+    altura_min=None,
+    distancia_min=None
 ):
 
-    # Precargar tablas
     tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
     filas_senales = db.collection("tablas_integrales").document(tipo_doc).get().to_dict().get("filas", [])
     filas_biblio = db.collection("configuracion_global").document(
         "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
     ).get().to_dict().get("filas", [])
 
+    espectro_resta = None
+    id_resta = None
+    if restar_espectro and seleccion_resta:
+        id_resta = seleccion_resta.split(" – ")[-1].strip()
+        fila_resta = df[df["archivo"] == id_resta].iloc[0] if id_resta in set(df["archivo"]) else None
+        if fila_resta is not None:
+            espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
+
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
-    
-        # precargar filas_dt2:
-        doc_dt2 = db.collection("muestras").document(row["muestra"]).collection("dt2").document(tipo.lower()).get()
+        muestra_actual = row["muestra"]
+
+        doc_dt2 = db.collection("muestras").document(muestra_actual).collection("dt2").document(tipo.lower()).get()
         filas_dt2 = doc_dt2.to_dict().get("filas", []) if doc_dt2.exists else []
 
         fig = go.Figure()
@@ -1013,10 +1076,10 @@ def mostrar_graficos_individuales(
             row=row,
             ajustes_y=ajustes_y,
             normalizar=normalizar,
-            espectro_resta=None,
-            id_resta=None,
-            altura_min=None,
-            distancia_min=None,
+            espectro_resta=espectro_resta,
+            id_resta=id_resta,
+            altura_min=altura_min,
+            distancia_min=distancia_min,
             correcciones_viscosidad=correcciones_viscosidad,
             a_bib=a_bib,
             b_bib=b_bib,
@@ -1026,7 +1089,7 @@ def mostrar_graficos_individuales(
             y_max=y_max,
             aplicar_sombra_senales=aplicar_sombra_senales,
             aplicar_sombra_biblio=aplicar_sombra_biblio,
-            mostrar_picos=False,
+            mostrar_picos=mostrar_picos,
             filas_dt2=filas_dt2,
             check_d_por_espectro=check_d_por_espectro,
             check_t2_por_espectro=check_t2_por_espectro

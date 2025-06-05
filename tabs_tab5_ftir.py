@@ -622,6 +622,10 @@ def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
         y = y + ajustes_y.get(clave, 0.0)
 
         if restar_espectro and x_ref is not None and y_ref is not None:
+            idx_ref = np.argsort(x_ref)
+            x_ref_sorted = x_ref[idx_ref]
+            y_ref_sorted = y_ref[idx_ref] 
+                      
             y_interp = np.interp(x, x_ref, y_ref)
             y = y - y_interp
 

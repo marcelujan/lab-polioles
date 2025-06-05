@@ -67,11 +67,9 @@ def precargar_espectros_rmn(db, muestras):
 
 
 def mostrar_correccion_viscosidad(df):
-    aplicar = st.checkbox("Corrección por viscosidad")
-    if not aplicar:
-        return {}
+    aplicar_viscosidad = st.checkbox("Corrección por viscosidad")
+    aplicar_biblio = st.checkbox("Ajustar a bibliografía")
 
-    st.markdown("**Desplazamiento espectral por viscosidad**")
     correcciones = {}
 
     for _, row in df.iterrows():
@@ -80,26 +78,53 @@ def mostrar_correccion_viscosidad(df):
         if df_esp is None or df_esp.empty:
             continue
 
-        # Autodetectar pico 1 (solvente) ~7.26 ppm
-        pico1 = df_esp[(df_esp["x"] >= 7.20) & (df_esp["x"] <= 7.32)]
-        p1 = pico1["x"][pico1["y"] == pico1["y"].max()].values[0] if not pico1.empty else 7.26
+        # Defaults
+        p1_manual = 7.26
+        p2_manual = 0.70
+        a = 1.0
+        b = 0.0
 
-        # Autodetectar pico 2 (CH3) ~0.6–0.8 ppm
-        pico2 = df_esp[(df_esp["x"] >= 0.60) & (df_esp["x"] <= 0.80)]
-        p2 = pico2["x"][pico2["y"] == pico2["y"].max()].values[0] if not pico2.empty else 0.70
+        # --- Corrección por viscosidad ---
+        if aplicar_viscosidad:
+            pico1 = df_esp[(df_esp["x"] >= 7.20) & (df_esp["x"] <= 7.32)]
+            p1 = pico1["x"][pico1["y"] == pico1["y"].max()].values[0] if not pico1.empty else 7.26
 
-        col1, col2 = st.columns([2, 2])
-        with col1:
-            p1_manual = st.number_input(f"Pico 1 ({archivo_actual})", value=float(p1), key=f"pico1_{archivo_actual}")
-        with col2:
-            p2_manual = st.number_input(f"Pico 2 ({archivo_actual})", value=float(p2), key=f"pico2_{archivo_actual}")
+            pico2 = df_esp[(df_esp["x"] >= 0.60) & (df_esp["x"] <= 0.80)]
+            p2 = pico2["x"][pico2["y"] == pico2["y"].max()].values[0] if not pico2.empty else 0.70
 
-        try:
-            a = (7.26 - 0.70) / (p1_manual - p2_manual)
-            b = 7.26 - a * p1_manual
-            correcciones[archivo_actual] = (a, b)
-        except ZeroDivisionError:
-            correcciones[archivo_actual] = (1.0, 0.0)
+            col1, col2 = st.columns(2)
+            with col1:
+                p1_manual = st.number_input(f"Pico 1 ({archivo_actual})", value=float(p1), key=f"pico1_{archivo_actual}")
+            with col2:
+                p2_manual = st.number_input(f"Pico 2 ({archivo_actual})", value=float(p2), key=f"pico2_{archivo_actual}")
+
+            try:
+                a = (7.26 - 0.70) / (p1_manual - p2_manual)
+                b = 7.26 - a * p1_manual
+            except ZeroDivisionError:
+                a, b = 1.0, 0.0
+
+        # --- Ajuste a bibliografía ---
+        if aplicar_biblio:
+            col3, col4 = st.columns(2)
+            with col3:
+                p1_bib = st.number_input(f"Pico 1 biblio ({archivo_actual})", value=7.26, key=f"pico1_bib_{archivo_actual}")
+            with col4:
+                p2_bib = st.number_input(f"Pico 2 biblio ({archivo_actual})", value=0.88, key=f"pico2_bib_{archivo_actual}")
+
+            try:
+                a2 = (p2_bib - p1_bib) / (p2_manual - p1_manual)
+                b2 = p1_bib - a2 * p1_manual
+            except ZeroDivisionError:
+                a2, b2 = 1.0, 0.0
+
+            # Composición de transformaciones
+            a_final = a * a2
+            b_final = a * b2 + b
+        else:
+            a_final, b_final = a, b
+
+        correcciones[archivo_actual] = (a_final, b_final)
 
     return correcciones
 

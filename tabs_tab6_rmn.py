@@ -352,7 +352,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         a_bib, b_bib = 1.0, 0.0
 
     correcciones_viscosidad = mostrar_correccion_viscosidad_individual(df) if activar_viscosidad else {}
-    a_bib, b_bib = correcciones_biblio.get("__global__", (1.0, 0.0))
 
     seleccion_resta = None
     if restar_espectro:

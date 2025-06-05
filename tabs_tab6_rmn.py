@@ -71,7 +71,7 @@ def mostrar_correccion_viscosidad(df):
     if not aplicar:
         return {}
 
-    st.markdown("**Desplazamiento espectral por viscosidad*")
+    st.markdown("**Desplazamiento espectral por viscosidad**")
     correcciones = {}
 
     for _, row in df.iterrows():

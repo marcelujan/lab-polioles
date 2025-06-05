@@ -325,8 +325,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
                  for _, row in df.iterrows()} if ajuste_y_manual else {row["archivo"]: 0.0 for _, row in df.iterrows()}
 
     colv, colb = st.columns(2)
-    activar_viscosidad = colv.checkbox("🔧 Corrección por viscosidad", key=f"chk_visc_{key_sufijo}")
-    activar_biblio = colb.checkbox("📘 Ajuste a bibliografía", key=f"chk_biblio_{key_sufijo}")
+    activar_viscosidad = colv.checkbox("Corregir por viscosidad", key=f"chk_visc_{key_sufijo}")
+    activar_biblio = colb.checkbox("Ajustar a bibliografía", key=f"chk_biblio_{key_sufijo}")
 
     # Ajuste global a bibliografía
     if activar_biblio:

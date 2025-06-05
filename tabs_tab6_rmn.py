@@ -451,8 +451,12 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             aplicar_sombra_dt2,
             aplicar_sombra_senales,
             aplicar_sombra_biblio,
-            db
+            db,
+            correcciones_viscosidad=correcciones_viscosidad,
+            a_bib=a_bib,
+            b_bib=b_bib
         )
+
 
 
 def mostrar_grafico_combinado(

@@ -71,7 +71,7 @@ def mostrar_correccion_viscosidad(df):
     if not aplicar:
         return {}
 
-    st.markdown("#### Ajuste manual de desplazamiento espectral por muestra")
+    st.markdown("**Ajuste manual de desplazamiento espectral por muestra**")
     correcciones = {}
 
     for _, row in df.iterrows():
@@ -90,7 +90,7 @@ def mostrar_correccion_viscosidad(df):
 
         col1, col2, col3 = st.columns([3, 2, 2])
         with col1:
-            st.markdown(f"📁 **{archivo_actual}**")
+            st.markdown(f"*{archivo_actual}*")
         with col2:
             p1_manual = st.number_input(f"Pico 1 ({archivo_actual})", value=float(p1), key=f"pico1_{archivo_actual}")
         with col3:
@@ -277,7 +277,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if mostrar_picos:
         colp1, colp2 = st.columns(2)
         altura_min = colp1.number_input("Altura mínima", value=0.00, step=0.01, key=f"altura_min_{key_sufijo}")
-        distancia_min = colp2.number_input("Distancia mínima entre picos", value=500, step=1, key=f"distancia_min_{key_sufijo}")
+        distancia_min = colp2.number_input("Distancia mínima entre picos", value=400, step=1, key=f"distancia_min_{key_sufijo}")
     else:
         altura_min = distancia_min = None
 

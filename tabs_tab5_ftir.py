@@ -1012,6 +1012,15 @@ def render_comparacion_espectros_ftir(db, muestras):
         controles["x_min"], controles["x_max"]
     )
 
+    st.markdown("### ✅ Validación previa a deconvolución (preprocesados con resta)")
+    if controles["restar"]:
+        for clave, df_proc in preprocesados.items():
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=df_proc["x"], y=df_proc["y"], mode="lines", name="Preprocesado restado"))
+            fig.update_layout(title=f"Espectro procesado: {clave}", xaxis_title="cm⁻¹", yaxis_title="Absorbancia")
+            st.plotly_chart(fig, use_container_width=True)
+
+
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
     render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
  

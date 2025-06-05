@@ -245,10 +245,13 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar
     if "resultados_totales" not in st.session_state:
         st.session_state["resultados_totales"] = {}
 
+    ref_nombre = st.session_state.get("espectro_ref_nombre", "")
+
     for clave in claves_disponibles:
         if not checkboxes.get(clave):
             continue
-
+        if clave == ref_nombre:
+            continue  # ⛔ no deconvolucionar el espectro restado
         try:
             df = preprocesados.get(clave)
             if df is None or df.empty:
@@ -697,6 +700,7 @@ def render_controles_preprocesamiento(datos_plotly):
     if restar_espectro:
         claves_validas = [f"{m} – {t} – {a}" for m, t, a, _ in datos_plotly]
         espectro_ref = st.selectbox("Seleccionar espectro a restar", claves_validas, key="ref_ftir")
+        st.session_state["espectro_ref_nombre"] = espectro_ref 
         ajuste_y_ref = st.number_input("Ajuste Y referencia", value=0.0, step=0.1, key="ajuste_ref_ftir")
 
         for m, t, a, df in datos_plotly:
@@ -1014,11 +1018,16 @@ def render_comparacion_espectros_ftir(db, muestras):
 
     st.markdown("### ✅ Validación previa a deconvolución (preprocesados con resta)")
     if controles["restar"]:
+        ref_nombre = st.session_state.get("espectro_ref_nombre", "")
+        st.markdown("### ✅ Validación: espectros luego de restar referencia")
         for clave, df_proc in preprocesados.items():
+            if clave == ref_nombre:
+                continue  # ⛔ omitimos el espectro usado como referencia
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=df_proc["x"], y=df_proc["y"], mode="lines", name="Preprocesado restado"))
-            fig.update_layout(title=f"Espectro procesado: {clave}", xaxis_title="cm⁻¹", yaxis_title="Absorbancia")
+            fig.add_trace(go.Scatter(x=df_proc["x"], y=df_proc["y"], mode="lines", name="Restado"))
+            fig.update_layout(title=f"{clave}", xaxis_title="Número de onda [cm⁻¹]", yaxis_title="Absorbancia")
             st.plotly_chart(fig, use_container_width=True)
+
 
 
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)

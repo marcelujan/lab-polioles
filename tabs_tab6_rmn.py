@@ -328,6 +328,29 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     activar_viscosidad = colv.checkbox("🔧 Corrección por viscosidad", key=f"chk_visc_{key_sufijo}")
     activar_biblio = colb.checkbox("📘 Ajuste a bibliografía", key=f"chk_biblio_{key_sufijo}")
 
+    # Ajuste global a bibliografía
+    if activar_biblio:
+        st.markdown("### 📘 Ajuste global a bibliografía (aplica a todos los espectros)")
+        col1, col2 = st.columns(2)
+        with col1:
+            p1_bib = st.number_input("Pico 1 bibliografía", value=7.26, key=f"pico1_bib_global_{key_sufijo}")
+        with col2:
+            p2_bib = st.number_input("Pico 2 bibliografía", value=0.88, key=f"pico2_bib_global_{key_sufijo}")
+
+        col3, col4 = st.columns(2)
+        with col3:
+            p1_medido = st.number_input("Pico 1 medido", value=7.26, key=f"pico1_medido_global_{key_sufijo}")
+        with col4:
+            p2_medido = st.number_input("Pico 2 medido", value=0.70, key=f"pico2_medido_global_{key_sufijo}")
+
+        try:
+            a_bib = (p2_bib - p1_bib) / (p2_medido - p1_medido)
+            b_bib = p1_bib - a_bib * p1_medido
+        except ZeroDivisionError:
+            a_bib, b_bib = 1.0, 0.0
+    else:
+        a_bib, b_bib = 1.0, 0.0
+
     correcciones_viscosidad = mostrar_correccion_viscosidad_individual(df) if activar_viscosidad else {}
     a_bib, b_bib = correcciones_biblio.get("__global__", (1.0, 0.0))
 
@@ -456,7 +479,7 @@ def mostrar_grafico_combinado(
     altura_min=None,
     distancia_min=None,
     correcciones_viscosidad=None,
-    correcciones_biblio=None
+    a_bib=1.0, b_bib=0.0
 ):
 
     fig = go.Figure()

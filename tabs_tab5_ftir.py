@@ -1016,17 +1016,25 @@ def render_comparacion_espectros_ftir(db, muestras):
         controles["x_min"], controles["x_max"]
     )
 
-    st.markdown("### ✅ Validación previa a deconvolución (preprocesados con resta)")
+
+
     if controles["restar"]:
-        ref_nombre = st.session_state.get("espectro_ref_nombre", "")
-        st.markdown("### ✅ Validación: espectros luego de restar referencia")
-        for clave, df_proc in preprocesados.items():
-            if clave == ref_nombre:
-                continue  # ⛔ omitimos el espectro usado como referencia
+        st.markdown("### 🔍 Comparación: original vs restado")
+        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
+            clave = f"{muestra} – {tipo} – {archivo}"
+            if clave == st.session_state.get("espectro_ref_nombre", ""):
+                continue
+
+            df_proc = preprocesados.get(clave)
+            if df_proc is None:
+                continue
+
             fig = go.Figure()
+            fig.add_trace(go.Scatter(x=df["x"], y=df["y"], mode="lines", name="Original"))
             fig.add_trace(go.Scatter(x=df_proc["x"], y=df_proc["y"], mode="lines", name="Restado"))
-            fig.update_layout(title=f"{clave}", xaxis_title="Número de onda [cm⁻¹]", yaxis_title="Absorbancia")
+            fig.update_layout(title=clave, xaxis_title="cm⁻¹", yaxis_title="Absorbancia")
             st.plotly_chart(fig, use_container_width=True)
+
 
 
 

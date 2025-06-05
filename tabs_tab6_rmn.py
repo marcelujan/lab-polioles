@@ -66,6 +66,46 @@ def precargar_espectros_rmn(db, muestras):
     return pd.DataFrame(espectros_total)
 
 
+def mostrar_correccion_viscosidad(df):
+    aplicar = st.checkbox("🔧 Corrección por viscosidad (alinear eje δ)")
+    if not aplicar:
+        return {}
+
+    st.markdown("#### Ajuste manual de desplazamiento espectral por muestra")
+    correcciones = {}
+
+    for _, row in df.iterrows():
+        archivo_actual = row["archivo"]
+        df_esp = decodificar_csv_o_excel(row["contenido"], archivo_actual)
+        if df_esp is None or df_esp.empty:
+            continue
+
+        # Autodetectar pico 1 (solvente) ~7.26 ppm
+        pico1 = df_esp[(df_esp["x"] >= 7.20) & (df_esp["x"] <= 7.32)]
+        p1 = pico1["x"][pico1["y"] == pico1["y"].max()].values[0] if not pico1.empty else 7.26
+
+        # Autodetectar pico 2 (CH3) ~0.6–0.8 ppm
+        pico2 = df_esp[(df_esp["x"] >= 0.60) & (df_esp["x"] <= 0.80)]
+        p2 = pico2["x"][pico2["y"] == pico2["y"].max()].values[0] if not pico2.empty else 0.70
+
+        col1, col2, col3 = st.columns([3, 2, 2])
+        with col1:
+            st.markdown(f"📁 **{archivo_actual}**")
+        with col2:
+            p1_manual = st.number_input(f"Pico 1 ({archivo_actual})", value=float(p1), key=f"pico1_{archivo_actual}")
+        with col3:
+            p2_manual = st.number_input(f"Pico 2 ({archivo_actual})", value=float(p2), key=f"pico2_{archivo_actual}")
+
+        try:
+            a = (7.26 - 0.70) / (p1_manual - p2_manual)
+            b = 7.26 - a * p1_manual
+            correcciones[archivo_actual] = (a, b)
+        except ZeroDivisionError:
+            correcciones[archivo_actual] = (1.0, 0.0)
+
+    return correcciones
+
+
 
 # --- Firebase helpers: precarga de documentos tipo tabla_integral o dt2 ---
 def precargar_tabla_global(db, nombre_tabla):
@@ -212,6 +252,12 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     ajustes_y = {row["archivo"]: st.number_input(f"Y para {row['archivo']}", value=0.0, step=0.1, key=f"ajuste_y_val_{row['archivo']}")
                  for _, row in df.iterrows()} if ajuste_y_manual else {row["archivo"]: 0.0 for _, row in df.iterrows()}
 
+    # --- Corrección por viscosidad: solo para RMN 1H
+    if tipo == "RMN 1H":
+        correcciones_viscosidad = mostrar_correccion_viscosidad(df)
+    else:
+        correcciones_viscosidad = {}
+
     seleccion_resta = None
     if restar_espectro:
         opciones_restar = [f"{row['muestra']} – {row['archivo']}" for _, row in df.iterrows()]
@@ -285,7 +331,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         check_d_por_espectro=check_d_por_espectro,
         check_t2_por_espectro=check_t2_por_espectro,
         altura_min=altura_min,
-        distancia_min=distancia_min
+        distancia_min=distancia_min,
+        correcciones_viscosidad=correcciones_viscosidad
     )
 
     if aplicar_sombra_dt2:
@@ -331,7 +378,8 @@ def mostrar_grafico_combinado(
     check_d_por_espectro,
     check_t2_por_espectro,
     altura_min=None,
-    distancia_min=None
+    distancia_min=None,
+    correcciones_viscosidad=None
 ):
 
     fig = go.Figure()
@@ -367,6 +415,9 @@ def mostrar_grafico_combinado(
         col_x, col_y = df_esp.columns[:2]
         df_aux = df_esp[[col_x, col_y]].rename(columns={col_x: "x", col_y: "y"}).dropna()
         x_vals = df_aux["x"]
+        if correcciones_viscosidad.get(archivo_actual):
+            a, b = correcciones_viscosidad[archivo_actual]
+            x_vals = a * x_vals + b
         y_actual = df_aux["y"] + ajustes_y.get(archivo_actual, 0.0)
 
         if espectro_resta is not None:
@@ -489,6 +540,10 @@ def mostrar_tabla_dt2(df, tipo, key_sufijo, db):
     for _, row in df.iterrows():
         muestra = row["muestra"]
         archivo = row["archivo"]
+        df_esp = decodificar_csv_o_excel(row["contenido"], archivo)
+        if df_esp is None or df_esp.empty:
+            continue
+
         doc = db.collection("muestras").document(muestra).collection("dt2").document(tipo.lower())
         data = doc.get().to_dict()
         if data and "filas" in data:

@@ -126,7 +126,7 @@ def mostrar_ajuste_bibliografia_individual(df):
 
     return correcciones
 def mostrar_correccion_viscosidad_individual(df):
-    st.markdown("**Desplazamiento espectral por bibliografía**")
+    st.markdown("**Desplazamiento espectral por viscosidad**")
     correcciones = {}
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]

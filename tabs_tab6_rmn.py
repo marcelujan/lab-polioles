@@ -71,7 +71,7 @@ def mostrar_correccion_viscosidad(df):
     if not aplicar:
         return {}
 
-    st.markdown("**Ajuste manual de desplazamiento espectral por muestra**")
+    st.markdown("**Desplazamiento espectral por viscosidad*")
     correcciones = {}
 
     for _, row in df.iterrows():
@@ -261,6 +261,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         opciones_restar = [f"{row['muestra']} – {row['archivo']}" for _, row in df.iterrows()]
         seleccion_resta = st.selectbox("Seleccionar espectro a restar:", opciones_restar, key=f"sel_resta_{key_sufijo}")
 
+    st.markdown("**Rango del grafico**")
     colx1, colx2, coly1, coly2 = st.columns(4)
     x_min = colx1.number_input("X mínimo", value=0.0, key=f"x_min_{key_sufijo}")
     x_max = colx2.number_input("X máximo", value=9.0 if tipo == "RMN 1H" else 200.0, key=f"x_max_{key_sufijo}")

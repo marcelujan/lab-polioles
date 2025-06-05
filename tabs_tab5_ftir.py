@@ -1021,27 +1021,6 @@ def render_comparacion_espectros_ftir(db, muestras):
     )
 
 
-
-    if controles["restar"]:
-        st.markdown("### 🔍 Comparación: original vs restado")
-        for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
-            clave = f"{muestra} – {tipo} – {archivo}"
-            if clave == st.session_state.get("espectro_ref_nombre", ""):
-                continue
-
-            df_proc = preprocesados.get(clave)
-            if df_proc is None:
-                continue
-
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=df["x"], y=df["y"], mode="lines", name="Original"))
-            fig.add_trace(go.Scatter(x=df_proc["x"], y=df_proc["y"], mode="lines", name="Restado"))
-            fig.update_layout(title=clave, xaxis_title="cm⁻¹", yaxis_title="Absorbancia")
-            st.plotly_chart(fig, use_container_width=True)
-
-
-
-
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
     render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
  

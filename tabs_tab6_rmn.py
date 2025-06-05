@@ -468,19 +468,30 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     mostrar_indiv = st.checkbox("Gráficos individuales", key=f"chk_indiv_{key_sufijo}")
     if mostrar_indiv:
         mostrar_graficos_individuales(
-            df, tipo, key_sufijo,
-            normalizar, y_max, y_min,
-            x_max, x_min,
-            ajustes_y,
-            aplicar_sombra_dt2,
-            aplicar_sombra_senales,
-            aplicar_sombra_biblio,
-            db,
+            df=df,
+            tipo=tipo,
+            key_sufijo=key_sufijo,
+            normalizar=normalizar,
+            y_max=y_max,
+            y_min=y_min,
+            x_max=x_max,
+            x_min=x_min,
+            ajustes_y=ajustes_y,
+            aplicar_sombra_dt2=aplicar_sombra_dt2,
+            aplicar_sombra_senales=aplicar_sombra_senales,
+            aplicar_sombra_biblio=aplicar_sombra_biblio,
+            db=db,
+            check_d_por_espectro=check_d_por_espectro,
+            check_t2_por_espectro=check_t2_por_espectro,
             correcciones_viscosidad=correcciones_viscosidad,
             a_bib=a_bib,
-            b_bib=b_bib
+            b_bib=b_bib,
+            mostrar_picos=mostrar_picos,
+            restar_espectro=restar_espectro,
+            seleccion_resta=seleccion_resta,
+            altura_min=altura_min,
+            distancia_min=distancia_min
         )
-
 
 
 def mostrar_grafico_combinado(

@@ -1134,7 +1134,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         # --- Deconvolución FTIR ---
         activar_deconv = st.checkbox("Deconvolución de espectros FTIR", value=False, key="activar_deconv_ftir")
         if datos_plotly and activar_deconv:
-            render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar_deconv)
+            render_deconvolucion_ftir(
+                preprocesados=preprocesados,  # DEBE SER este, con resta aplicada
+                x_min=x_min,
+                x_max=x_max,
+                y_min=y_min,
+                y_max=y_max,
+                activar_deconv=True
+            )
 
             if st.checkbox("Mostrar opciones de exportación", value=False):
                 exportar_resultados_ftir(

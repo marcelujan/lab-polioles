@@ -439,7 +439,31 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     st.plotly_chart(fig, use_container_width=True)
 
     if superposicion_vertical:
-        mostrar_grafico_stacked(df, tipo, key_sufijo, normalizar, x_min, x_max, y_min, y_max)
+        mostrar_grafico_stacked(
+            df=df,
+            tipo=tipo,
+            key_sufijo=key_sufijo,
+            normalizar=normalizar,
+            x_min=x_min,
+            x_max=x_max,
+            y_min=y_min,
+            y_max=y_max,
+            ajustes_y=ajustes_y,
+            aplicar_sombra_dt2=aplicar_sombra_dt2,
+            aplicar_sombra_senales=aplicar_sombra_senales,
+            aplicar_sombra_biblio=aplicar_sombra_biblio,
+            db=db,
+            check_d_por_espectro=check_d_por_espectro,
+            check_t2_por_espectro=check_t2_por_espectro,
+            correcciones_viscosidad=correcciones_viscosidad,
+            a_bib=a_bib,
+            b_bib=b_bib,
+            mostrar_picos=mostrar_picos,
+            restar_espectro=restar_espectro,
+            seleccion_resta=seleccion_resta,
+            altura_min=altura_min,
+            distancia_min=distancia_min
+        )
 
     mostrar_indiv = st.checkbox("Gráficos individuales", key=f"chk_indiv_{key_sufijo}")
     if mostrar_indiv:

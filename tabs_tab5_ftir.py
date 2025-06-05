@@ -626,7 +626,7 @@ def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
             x_ref_sorted = x_ref[idx_ref]
             y_ref_sorted = y_ref[idx_ref] 
                       
-            y_interp = np.interp(x, x_ref, y_ref)
+            y_interp = np.interp(x, x_ref_sorted, y_ref_sorted)
             y = y - y_interp
 
 

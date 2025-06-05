@@ -328,6 +328,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     activar_viscosidad = colv.checkbox("Corregir por viscosidad", key=f"chk_visc_{key_sufijo}")
     activar_biblio = colb.checkbox("Ajustar a bibliografía", key=f"chk_biblio_{key_sufijo}")
 
+    correcciones_viscosidad = mostrar_correccion_viscosidad_individual(df) if activar_viscosidad else {}
+
     # Ajuste global a bibliografía
     if activar_biblio:
         st.markdown("**Desplazamiento espectral por bibliografía**")
@@ -350,8 +352,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             a_bib, b_bib = 1.0, 0.0
     else:
         a_bib, b_bib = 1.0, 0.0
-
-    correcciones_viscosidad = mostrar_correccion_viscosidad_individual(df) if activar_viscosidad else {}
 
     seleccion_resta = None
     if restar_espectro:

@@ -66,68 +66,65 @@ def precargar_espectros_rmn(db, muestras):
     return pd.DataFrame(espectros_total)
 
 
-def mostrar_correccion_viscosidad(df):
-    aplicar_viscosidad = st.checkbox("Corrección por viscosidad")
-    aplicar_biblio = st.checkbox("Ajustar a bibliografía")
 
+def mostrar_correccion_viscosidad_individual(df):
+    st.markdown("### 🔧 Corrección por viscosidad entre muestras")
     correcciones = {}
-
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
         df_esp = decodificar_csv_o_excel(row["contenido"], archivo_actual)
         if df_esp is None or df_esp.empty:
             continue
 
-        # Defaults
-        p1_manual = 7.26
-        p2_manual = 0.70
-        a = 1.0
-        b = 0.0
+        pico1 = df_esp[(df_esp["x"] >= 7.20) & (df_esp["x"] <= 7.32)]
+        p1 = pico1["x"][pico1["y"] == pico1["y"].max()].values[0] if not pico1.empty else 7.26
 
-        # --- Corrección por viscosidad ---
-        if aplicar_viscosidad:
-            pico1 = df_esp[(df_esp["x"] >= 7.20) & (df_esp["x"] <= 7.32)]
-            p1 = pico1["x"][pico1["y"] == pico1["y"].max()].values[0] if not pico1.empty else 7.26
+        pico2 = df_esp[(df_esp["x"] >= 0.60) & (df_esp["x"] <= 0.80)]
+        p2 = pico2["x"][pico2["y"] == pico2["y"].max()].values[0] if not pico2.empty else 0.70
 
-            pico2 = df_esp[(df_esp["x"] >= 0.60) & (df_esp["x"] <= 0.80)]
-            p2 = pico2["x"][pico2["y"] == pico2["y"].max()].values[0] if not pico2.empty else 0.70
+        col1, col2 = st.columns(2)
+        with col1:
+            p1_manual = st.number_input(f"Pico 1 ({archivo_actual})", value=float(p1), key=f"pico1_visc_{archivo_actual}")
+        with col2:
+            p2_manual = st.number_input(f"Pico 2 ({archivo_actual})", value=float(p2), key=f"pico2_visc_{archivo_actual}")
 
-            col1, col2 = st.columns(2)
-            with col1:
-                p1_manual = st.number_input(f"Pico 1 ({archivo_actual})", value=float(p1), key=f"pico1_{archivo_actual}")
-            with col2:
-                p2_manual = st.number_input(f"Pico 2 ({archivo_actual})", value=float(p2), key=f"pico2_{archivo_actual}")
+        try:
+            a = (7.26 - 0.70) / (p1_manual - p2_manual)
+            b = 7.26 - a * p1_manual
+        except ZeroDivisionError:
+            a, b = 1.0, 0.0
 
-            try:
-                a = (7.26 - 0.70) / (p1_manual - p2_manual)
-                b = 7.26 - a * p1_manual
-            except ZeroDivisionError:
-                a, b = 1.0, 0.0
-
-        # --- Ajuste a bibliografía ---
-        if aplicar_biblio:
-            col3, col4 = st.columns(2)
-            with col3:
-                p1_bib = st.number_input(f"Pico 1 biblio ({archivo_actual})", value=7.26, key=f"pico1_bib_{archivo_actual}")
-            with col4:
-                p2_bib = st.number_input(f"Pico 2 biblio ({archivo_actual})", value=0.88, key=f"pico2_bib_{archivo_actual}")
-
-            try:
-                a2 = (p2_bib - p1_bib) / (p2_manual - p1_manual)
-                b2 = p1_bib - a2 * p1_manual
-            except ZeroDivisionError:
-                a2, b2 = 1.0, 0.0
-
-            # Composición de transformaciones
-            a_final = a * a2
-            b_final = a * b2 + b
-        else:
-            a_final, b_final = a, b
-
-        correcciones[archivo_actual] = (a_final, b_final)
+        correcciones[archivo_actual] = (a, b)
 
     return correcciones
 
+def mostrar_ajuste_bibliografia_individual(df):
+    st.markdown("### 📘 Ajuste global a bibliografía")
+    correcciones = {}
+    for _, row in df.iterrows():
+        archivo_actual = row["archivo"]
+
+        col1, col2 = st.columns(2)
+        with col1:
+            p1_bib = st.number_input(f"Pico 1 biblio ({archivo_actual})", value=7.26, key=f"pico1_bib_{archivo_actual}")
+        with col2:
+            p2_bib = st.number_input(f"Pico 2 biblio ({archivo_actual})", value=0.88, key=f"pico2_bib_{archivo_actual}")
+
+        col3, col4 = st.columns(2)
+        with col3:
+            p1_medido = st.number_input(f"Pico 1 medido ({archivo_actual})", value=7.26, key=f"pico1_meas_bib_{archivo_actual}")
+        with col4:
+            p2_medido = st.number_input(f"Pico 2 medido ({archivo_actual})", value=0.70, key=f"pico2_meas_bib_{archivo_actual}")
+
+        try:
+            a = (p2_bib - p1_bib) / (p2_medido - p1_medido)
+            b = p1_bib - a * p1_medido
+        except ZeroDivisionError:
+            a, b = 1.0, 0.0
+
+        correcciones[archivo_actual] = (a, b)
+
+    return correcciones
 
 
 # --- Firebase helpers: precarga de documentos tipo tabla_integral o dt2 ---
@@ -275,11 +272,12 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     ajustes_y = {row["archivo"]: st.number_input(f"Y para {row['archivo']}", value=0.0, step=0.1, key=f"ajuste_y_val_{row['archivo']}")
                  for _, row in df.iterrows()} if ajuste_y_manual else {row["archivo"]: 0.0 for _, row in df.iterrows()}
 
-    # --- Corrección por viscosidad: solo para RMN 1H
-    if tipo == "RMN 1H":
-        correcciones_viscosidad = mostrar_correccion_viscosidad(df)
-    else:
-        correcciones_viscosidad = {}
+    colv, colb = st.columns(2)
+    activar_viscosidad = colv.checkbox("🔧 Corrección por viscosidad", key=f"chk_visc_{key_sufijo}")
+    activar_biblio = colb.checkbox("📘 Ajuste a bibliografía", key=f"chk_biblio_{key_sufijo}")
+
+    correcciones_viscosidad = mostrar_correccion_viscosidad_individual(df) if activar_viscosidad else {}
+    correcciones_biblio = mostrar_ajuste_bibliografia_individual(df) if activar_biblio else {}
 
     seleccion_resta = None
     if restar_espectro:
@@ -356,7 +354,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         check_t2_por_espectro=check_t2_por_espectro,
         altura_min=altura_min,
         distancia_min=distancia_min,
-        correcciones_viscosidad=correcciones_viscosidad
+        correcciones_viscosidad=correcciones_viscosidad,
+        correcciones_biblio=correcciones_biblio
     )
 
     if aplicar_sombra_dt2:
@@ -403,7 +402,8 @@ def mostrar_grafico_combinado(
     check_t2_por_espectro,
     altura_min=None,
     distancia_min=None,
-    correcciones_viscosidad=None
+    correcciones_viscosidad=None,
+    correcciones_biblio=None
 ):
 
     fig = go.Figure()
@@ -431,6 +431,12 @@ def mostrar_grafico_combinado(
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
         muestra_actual = row["muestra"]
+
+        a_v, b_v = correcciones_viscosidad.get(archivo_actual, (1, 0))
+        a_b, b_b = correcciones_biblio.get(archivo_actual, (1, 0))
+        a_final = a_v * a_b
+        b_final = a_v * b_b + b_v
+        x_vals = a_final * x_vals + b_final
 
         df_esp = decodificar_csv_o_excel(row.get("contenido"), archivo_actual)
         if df_esp is None:

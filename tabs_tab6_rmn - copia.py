@@ -480,56 +480,148 @@ def mostrar_grafico_combinado(
     correcciones_viscosidad=None,
     a_bib=1.0, b_bib=0.0
 ):
-    import plotly.graph_objects as go
 
     fig = go.Figure()
+    espectro_resta = None
 
     # --- Decodificar espectro de fondo si aplica ---
-    espectro_resta = None
-    id_resta = None
     if restar_espectro and seleccion_resta:
         id_resta = seleccion_resta.split(" – ")[-1].strip()
         fila_resta = df[df["archivo"] == id_resta].iloc[0] if id_resta in set(df["archivo"]) else None
         if fila_resta is not None:
-            espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
+            try:
+                espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
+                if espectro_resta is not None:
+                    espectro_resta.columns = ["x", "y"]
+                    espectro_resta.dropna(inplace=True)
+            except:
+                espectro_resta = None
 
-    # --- Precargar tabla de señales y bibliografía ---
+    # --- Precargar tabla de señales desde Firebase ---
     tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
-    doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales).get()
-    filas_senales = doc_senales.to_dict().get("filas", []) if doc_senales.exists else []
+    doc_senales = db.collection("tablas_integrales").document(tipo_doc_senales)
+    filas_senales = doc_senales.get().to_dict().get("filas", []) if doc_senales.get().exists else []
 
-    doc_biblio_id = "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
-    doc_biblio = db.collection("configuracion_global").document(doc_biblio_id).get()
-    filas_biblio = doc_biblio.to_dict().get("filas", []) if doc_biblio.exists else []
-
-    # --- Añadir trazas generadas por función heredada ---
+    # --- Agregar trazas ---
     for _, row in df.iterrows():
-        elementos = generar_elementos_rmn(
-            row=row,
-            ajustes_y=ajustes_y,
-            normalizar=normalizar,
-            espectro_resta=espectro_resta,
-            id_resta=id_resta,
-            altura_min=altura_min,
-            distancia_min=distancia_min,
-            correcciones_viscosidad=correcciones_viscosidad,
-            a_bib=a_bib,
-            b_bib=b_bib,
-            filas_senales=filas_senales,
-            filas_biblio=filas_biblio,
-            tipo=tipo,
-            y_max=y_max,
-            aplicar_sombra_senales=aplicar_sombra_senales,
-            aplicar_sombra_biblio=aplicar_sombra_biblio,
-            mostrar_picos=mostrar_picos
-        )
-        for el in elementos:
-            if isinstance(el, go.Scatter):
-                fig.add_trace(el)
-            elif isinstance(el, go.layout.Shape):
-                fig.add_shape(el)
-            elif isinstance(el, go.layout.Annotation):
-                fig.add_annotation(el)
+        archivo_actual = row["archivo"]
+        muestra_actual = row["muestra"]
+
+        # Obtener coeficientes de corrección por viscosidad (por espectro)
+        a_v, b_v = correcciones_viscosidad.get(archivo_actual, (1.0, 0.0))
+
+        # Aplicar también corrección global por bibliografía (única para todos)
+        a_b, b_b = a_bib, b_bib  # <- estos deben pasarse como parámetros
+
+        # Decodificar espectro original
+        df_esp = decodificar_csv_o_excel(row.get("contenido"), archivo_actual)
+        if df_esp is None or df_esp.empty:
+            continue
+
+        col_x, col_y = df_esp.columns[:2]
+        df_aux = df_esp[[col_x, col_y]].rename(columns={col_x: "x", col_y: "y"}).dropna()
+
+        # Corrección completa al eje x: x' = a_b * (a_v * x + b_v) + b_b
+        x_vals_original = df_aux["x"]
+        x_vals = a_b * (a_v * x_vals_original + b_v) + b_b
+
+        # Corrección vertical
+        y_actual = df_aux["y"] + ajustes_y.get(archivo_actual, 0.0)
+
+        # Resta de espectro si corresponde
+        if espectro_resta is not None:
+            espectro_resta_interp = np.interp(x_vals, espectro_resta["x"], espectro_resta["y"])
+            y_resta_ajustada = espectro_resta_interp + ajustes_y.get(id_resta, 0.0)
+            y_data = y_actual - y_resta_ajustada
+        else:
+            y_data = y_actual
+
+        if normalizar:
+            y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
+
+        if mostrar_picos and altura_min is not None and distancia_min is not None:
+            try:
+                peaks, _ = find_peaks(y_data, height=altura_min, distance=distancia_min)
+                for p in peaks:
+                    fig.add_trace(go.Scatter(
+                        x=[x_vals.iloc[p]],
+                        y=[y_data.iloc[p]],
+                        mode="markers+text",
+                        marker=dict(color="black", size=6),
+                        text=[f"{x_vals.iloc[p]:.2f}"],
+                        textposition="top center",
+                        showlegend=False
+                    ))
+            except Exception as e:
+                st.warning(f"⚠️ Error detectando picos en {archivo_actual}: {e}")
+
+        # --- Delinear señales bibliográficas si corresponde ---
+        if aplicar_sombra_biblio:
+            doc_id_biblio = "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+            doc_biblio = db.collection("configuracion_global").document(doc_id_biblio).get()
+            if doc_biblio.exists:
+                filas_biblio = doc_biblio.to_dict().get("filas", [])
+                for f in filas_biblio:
+                    delta = f.get("δ pico")
+                    grupo = f.get("Grupo funcional", "")
+                    obs = f.get("Observaciones", "")
+                    if delta is None:
+                        continue
+                    fig.add_shape(
+                        type="line",
+                        x0=delta, x1=delta,
+                        y0=0, y1=y_max * 0.8,
+                        line=dict(color="black", dash="dot", width=1)
+                    )
+
+                    etiqueta_completa = " | ".join([x for x in [grupo, obs] if x]).strip()
+                    etiqueta_truncada = etiqueta_completa[:20] + ("…" if len(etiqueta_completa) > 20 else "")
+
+                    fig.add_annotation(
+                        x=delta,
+                        y=y_max * 0.8,
+                        text=etiqueta_truncada,
+                        showarrow=False,
+                        textangle=270,
+                        font=dict(size=10, color="black"),
+                        xanchor="center",
+                        yanchor="bottom" 
+                    )
+
+
+        # --- Añadir sombreado desde tabla de señales (si corresponde) ---
+        if aplicar_sombra_senales:
+            for f in filas_senales:
+                if f.get("Archivo") != archivo_actual:
+                    continue
+                x1 = f.get("X min")
+                x2 = f.get("X max")
+                grupo = f.get("Grupo funcional")
+                obs = f.get("Observaciones")
+                if x1 is None or x2 is None:
+                    continue
+
+                fig.add_vrect(
+                    x0=min(x1, x2),
+                    x1=max(x1, x2),
+                    fillcolor="rgba(0,255,0,0.3)",
+                    line_width=0
+                )
+
+                etiqueta = " | ".join([x for x in [grupo, obs] if x])
+                if etiqueta:
+                    fig.add_annotation(
+                        x=(x1 + x2) / 2,
+                        y=y_max * 0.98,
+                        text=etiqueta,
+                        showarrow=False,
+                        font=dict(size=10, color="black"),
+                        textangle=270,
+                        xanchor="center",
+                        yanchor="top" 
+                    )
+
+        fig.add_trace(go.Scatter(x=x_vals, y=y_data, mode='lines', name=archivo_actual))
 
     fig.update_layout(
         xaxis_title="[ppm]",
@@ -542,6 +634,7 @@ def mostrar_grafico_combinado(
     )
 
     return fig
+
 
 
 def mostrar_tabla_dt2(df, tipo, key_sufijo, db):
@@ -804,123 +897,6 @@ def mostrar_grafico_stacked(df, tipo, key_sufijo, normalizar, x_min, x_max, y_mi
     )
     st.plotly_chart(fig_offset, use_container_width=True)
 
-def generar_elementos_rmn(
-    row,
-    ajustes_y,
-    normalizar,
-    espectro_resta,
-    id_resta,
-    altura_min,
-    distancia_min,
-    correcciones_viscosidad,
-    a_bib,
-    b_bib,
-    filas_senales,
-    filas_biblio,
-    tipo,
-    y_max,
-    aplicar_sombra_senales=False,
-    aplicar_sombra_biblio=False,
-    mostrar_picos=False
-):
-    from scipy.signal import find_peaks
-    import plotly.graph_objects as go
-    import numpy as np
-
-    elementos = []  # lista de go.Scatter, go.Shape, go.Annotation
-
-    archivo_actual = row["archivo"]
-    df_esp = decodificar_csv_o_excel(row.get("contenido"), archivo_actual)
-    if df_esp is None or df_esp.empty:
-        return elementos
-
-    df_aux = df_esp.rename(columns={df_esp.columns[0]: "x", df_esp.columns[1]: "y"}).dropna()
-
-    a_v, b_v = correcciones_viscosidad.get(archivo_actual, (1.0, 0.0))
-    x_vals = a_bib * (a_v * df_aux["x"] + b_v) + b_bib
-    y_vals = df_aux["y"] + ajustes_y.get(archivo_actual, 0.0)
-
-    if espectro_resta is not None:
-        y_resta_interp = np.interp(x_vals, espectro_resta["x"], espectro_resta["y"])
-        y_vals = y_vals - (y_resta_interp + ajustes_y.get(id_resta, 0.0))
-
-    if normalizar:
-        y_vals = y_vals / y_vals.max() if y_vals.max() != 0 else y_vals
-
-    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual))
-
-    # --- Picos ---
-    if mostrar_picos and altura_min is not None and distancia_min is not None:
-        try:
-            peaks, _ = find_peaks(y_vals, height=altura_min, distance=distancia_min)
-            for p in peaks:
-                elementos.append(go.Scatter(
-                    x=[x_vals.iloc[p]],
-                    y=[y_vals.iloc[p]],
-                    mode="markers+text",
-                    marker=dict(color="black", size=6),
-                    text=[f"{x_vals.iloc[p]:.2f}"],
-                    textposition="top center",
-                    showlegend=False
-                ))
-        except:
-            pass
-
-    # --- Sombra señales ---
-    if aplicar_sombra_senales:
-        for f in filas_senales:
-            if f.get("Archivo") != archivo_actual:
-                continue
-            x1, x2 = f.get("X min"), f.get("X max")
-            grupo, obs = f.get("Grupo funcional"), f.get("Observaciones")
-            if x1 is None or x2 is None:
-                continue
-            elementos.append(go.layout.Shape(
-                type="rect",
-                x0=min(x1, x2), x1=max(x1, x2),
-                y0=0, y1=1,
-                xref="x", yref="paper",
-                fillcolor="rgba(0,255,0,0.3)", line_width=0
-            ))
-            etiqueta = " | ".join(filter(None, [grupo, obs]))
-            if etiqueta:
-                elementos.append(go.layout.Annotation(
-                    x=(x1 + x2)/2, y=y_max*0.98,
-                    text=etiqueta[:20] + ("..." if len(etiqueta) > 20 else ""),
-                    showarrow=False,
-                    textangle=270,
-                    font=dict(size=10),
-                    xanchor="center", yanchor="top"
-                ))
-
-    # --- Sombra bibliográfica ---
-    if aplicar_sombra_biblio:
-        for f in filas_biblio:
-            delta = f.get("δ pico")
-            grupo = f.get("Grupo funcional", "")
-            obs = f.get("Observaciones", "")
-            if delta is None:
-                continue
-            etiqueta = " | ".join(filter(None, [grupo, obs]))
-            elementos.append(go.layout.Shape(
-                type="line", x0=delta, x1=delta,
-                y0=0, y1=y_max * 0.8,
-                line=dict(color="black", dash="dot", width=1),
-                xref="x", yref="y"
-            ))
-            elementos.append(go.layout.Annotation(
-                x=delta,
-                y=y_max * 0.8,
-                text=etiqueta[:20] + ("..." if len(etiqueta) > 20 else ""),
-                showarrow=False,
-                textangle=270,
-                font=dict(size=10),
-                xanchor="center",
-                yanchor="bottom"
-            ))
-
-    return elementos
-
 def mostrar_graficos_individuales(
     df, tipo, key_sufijo,
     normalizar, y_max, y_min, x_max, x_min,
@@ -930,50 +906,131 @@ def mostrar_graficos_individuales(
     aplicar_sombra_biblio,
     db,
     check_d_por_espectro=None,
-    check_t2_por_espectro=None,
-    correcciones_viscosidad={},
-    a_bib=1.0,
-    b_bib=0.0
+    check_t2_por_espectro=None
 ):
-    # Precargar tablas
-    tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
-    filas_senales = db.collection("tablas_integrales").document(tipo_doc).get().to_dict().get("filas", [])
-    filas_biblio = db.collection("configuracion_global").document(
-        "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
-    ).get().to_dict().get("filas", [])
-
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
+        muestra_actual = row["muestra"]
 
-        fig = go.Figure()
-        elementos = generar_elementos_rmn(
-            row=row,
-            ajustes_y=ajustes_y,
-            normalizar=normalizar,
-            espectro_resta=None,
-            id_resta=None,
-            altura_min=None,
-            distancia_min=None,
-            correcciones_viscosidad=correcciones_viscosidad,
-            a_bib=a_bib,
-            b_bib=b_bib,
-            filas_senales=filas_senales,
-            filas_biblio=filas_biblio,
-            tipo=tipo,
-            y_max=y_max,
-            aplicar_sombra_senales=aplicar_sombra_senales,
-            aplicar_sombra_biblio=aplicar_sombra_biblio,
-            mostrar_picos=False
-        )
-        for el in elementos:
-            if isinstance(el, go.Scatter):
-                fig.add_trace(el)
-            elif isinstance(el, go.layout.Shape):
-                fig.add_shape(el)
-            elif isinstance(el, go.layout.Annotation):
-                fig.add_annotation(el)
+        df_esp = decodificar_csv_o_excel(row.get("contenido"), archivo_actual)
+        if df_esp is None:
+            continue
 
-        fig.update_layout(
+        col_x, col_y = df_esp.columns[:2]
+        y_data = df_esp[col_y].copy() + ajustes_y.get(archivo_actual, 0.0)
+        if normalizar:
+            y_data = y_data / y_data.max() if y_data.max() != 0 else y_data
+        x_vals = df_esp[col_x]
+
+        fig_indiv = go.Figure()
+        fig_indiv.add_trace(go.Scatter(x=x_vals, y=y_data, mode='lines', name=archivo_actual))
+
+        # --- Sombreado D/T2 ---
+        if aplicar_sombra_dt2 and check_d_por_espectro and check_t2_por_espectro:
+            doc_dt2 = db.collection("muestras").document(muestra_actual).collection("dt2").document(tipo.lower())
+            if doc_dt2.get().exists:
+                filas_dt2 = doc_dt2.get().to_dict().get("filas", [])
+                for f in filas_dt2:
+                    if f.get("Archivo") != archivo_actual:
+                        continue
+
+                    x1, x2 = f.get("X min"), f.get("X max")
+                    d_val, t2_val = f.get("D"), f.get("T2")
+                    if x1 is None or x2 is None:
+                        continue
+
+                    mostrar_d = check_d_por_espectro.get(archivo_actual, False) and d_val not in [None, ""]
+                    mostrar_t2 = check_t2_por_espectro.get(archivo_actual, False) and t2_val not in [None, ""]
+                    if not (mostrar_d or mostrar_t2):
+                        continue
+
+                    partes = []
+                    if mostrar_d:
+                        partes.append(f"D = {float(d_val):.2e}")
+                    if mostrar_t2:
+                        partes.append(f"T2 = {float(t2_val):.3f}")
+                    etiqueta = "   ".join(partes)[:20] + ("…" if len("   ".join(partes)) > 20 else "")
+
+                    color = "rgba(128,128,255,0.3)" if mostrar_d and mostrar_t2 else (
+                        "rgba(255,0,0,0.3)" if mostrar_d else "rgba(0,0,255,0.3)")
+
+                    fig_indiv.add_vrect(x0=min(x1, x2), x1=max(x1, x2), fillcolor=color, line_width=0)
+                    fig_indiv.add_vline(x=x1, line=dict(color="black", width=1))
+                    fig_indiv.add_vline(x=x2, line=dict(color="black", width=1))
+                    fig_indiv.add_annotation(
+                        x=(x1 + x2) / 2,
+                        y=y_max * 0.82,
+                        text=etiqueta,
+                        showarrow=False,
+                        font=dict(size=10),
+                        textangle=270,
+                        xanchor="center",
+                        yanchor="bottom"
+                    )
+
+        # --- Sombreado desde tabla de señales ---
+        if aplicar_sombra_senales:
+            tipo_doc = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
+            doc_senales = db.collection("tablas_integrales").document(tipo_doc)
+            if doc_senales.get().exists:
+                filas_senales = doc_senales.get().to_dict().get("filas", [])
+                for f in filas_senales:
+                    if f.get("Archivo") != archivo_actual:
+                        continue
+                    x1, x2 = f.get("X min"), f.get("X max")
+                    grupo, valor = f.get("Grupo funcional", ""), f.get("H") if tipo == "RMN 1H" else f.get("C")
+                    if x1 is None or x2 is None:
+                        continue
+
+                    fig_indiv.add_vrect(x0=min(x1, x2), x1=max(x1, x2), fillcolor="rgba(0,255,0,0.3)", line_width=0)
+                    fig_indiv.add_vline(x=x1, line=dict(color="black", width=1))
+                    fig_indiv.add_vline(x=x2, line=dict(color="black", width=1))
+
+                    partes = []
+                    if grupo:
+                        partes.append(grupo)
+                    if valor:
+                        partes.append(f"{valor:.2f} {'H' if tipo == 'RMN 1H' else 'C'}")
+                    etiqueta = " = ".join(partes)[:20] + ("…" if len(" = ".join(partes)) > 20 else "")
+
+                    fig_indiv.add_annotation(
+                        x=(x1 + x2) / 2,
+                        y=y_max * 0.82,
+                        text=etiqueta,
+                        showarrow=False,
+                        font=dict(size=10),
+                        textangle=270,
+                        xanchor="center",
+                        yanchor="bottom"
+                    )
+
+        # --- Delineado bibliografía ---
+        if aplicar_sombra_biblio:
+            doc_id = "tabla_editable_rmn1h" if tipo == "RMN 1H" else "tabla_editable_rmn13c"
+            doc_biblio = db.collection("configuracion_global").document(doc_id)
+            if doc_biblio.get().exists:
+                filas_biblio = doc_biblio.get().to_dict().get("filas", [])
+                for f in filas_biblio:
+                    delta = f.get("δ pico")
+                    grupo = f.get("Grupo funcional", "")
+                    obs = f.get("Observaciones", "")
+                    if delta is None:
+                        continue
+                    etiqueta = f"{grupo} – {obs}".strip()[:20] + ("…" if len(f"{grupo} – {obs}".strip()) > 20 else "")
+                    fig_indiv.add_shape(type="line", x0=delta, x1=delta, y0=0, y1=y_max * 0.8,
+                                        line=dict(color="black", dash="dot", width=1))
+                    fig_indiv.add_annotation(
+                        x=delta,
+                        y=y_max * 0.82,
+                        text=etiqueta,
+                        showarrow=False,
+                        textangle=270,
+                        font=dict(size=10),
+                        xanchor="center",
+                        yanchor="bottom"
+                    )
+
+        fig_indiv.update_layout(
             title=archivo_actual,
             xaxis_title="[ppm]",
             yaxis_title="Intensidad",
@@ -982,7 +1039,7 @@ def mostrar_graficos_individuales(
             height=500,
             template="simple_white"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig_indiv, use_container_width=True)
 
 
 

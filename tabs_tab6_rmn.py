@@ -438,6 +438,11 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
     st.plotly_chart(fig, use_container_width=True)
 
+    # Ajustar automáticamente Y_max si hay superposición vertical
+    if superposicion_vertical and not ajuste_y_manual:
+        offset_auto = (y_max - y_min) / (len(df) + 1) if (y_max > y_min and len(df) > 0) else 10.0
+        y_max = offset_auto * (len(df) + 2)  # +2 por margen visual
+
     if superposicion_vertical:
         mostrar_grafico_stacked(
             df=df,

@@ -882,6 +882,10 @@ def mostrar_grafico_stacked(
     altura_base = 500
     height_auto = altura_base + offset_manual * len(df)
 
+    # --- Definir offset inicial ---
+    offset_inicial = 25.0  # valor inicial razonable (ajustable)
+    margen_extra = 1       # margen visual
+
     # --- Calcular altura máxima real de los espectros ---
     altura_maxima_global = 0
     for _, row in df.iterrows():
@@ -890,22 +894,41 @@ def mostrar_grafico_stacked(
             continue
         altura_maxima_global = max(altura_maxima_global, df_esp["y"].max())
 
-    # --- Calcular y_max para eje Y ---
-    # Concepto: y_max = altura base (picos) + offset acumulado
-    margen_extra = 1  # margen visual para que no se corte la última curva
-    y_max = altura_maxima_global + offset_manual * (len(df) + margen_extra)
+    # --- Calcular y_max solo una vez con offset_inicial ---
+    y_max = altura_maxima_global + offset_inicial * (len(df) + margen_extra)
+
+    # --- Calcular height de la figura (para que crezca visualmente con offset actual) ---
+    altura_base_px = 500
+    factor_px_por_offset = 5  # px por unidad de offset → ajustable
+
+    # el height sí se actualiza con offset_manual
+    # por eso height_auto lo calculamos después del slider
+
+    # --- Slider para elegir offset ---
+    offset_manual = st.slider(
+        "Separación entre espectros (offset)",
+        min_value=0.1,
+        max_value=30.0,
+        value=offset_inicial,  # importante: usar offset_inicial aquí
+        step=0.1,
+        key=f"offset_val_{key_sufijo}"
+    )
+
+    # Ahora que el usuario eligió offset_manual → calculamos height_auto
+    height_auto = altura_base_px + offset_manual * len(df) * factor_px_por_offset
 
     # --- Actualizar layout ---
     fig_offset.update_layout(
         xaxis_title="[ppm]",
         yaxis_title="Offset + Intensidad",
         xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(range=[y_min, y_max]),  # y_max ahora adaptado
-        height=height_auto,                # height adaptado
+        yaxis=dict(range=[y_min, y_max]),  # y_max fijo → el offset se ve bien
+        height=height_auto,                # height crece con offset_manual
         showlegend=True,
         template="simple_white",
         legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
     )
+
     st.plotly_chart(fig_offset, use_container_width=True)
 
 

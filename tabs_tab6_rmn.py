@@ -464,7 +464,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             seleccion_resta=seleccion_resta,
             altura_min=altura_min,
             distancia_min=distancia_min,
-            offset_inicial=offset_base
         )
 
     mostrar_indiv = st.checkbox("Gráficos individuales", key=f"chk_indiv_{key_sufijo}")

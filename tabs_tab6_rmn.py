@@ -520,8 +520,6 @@ def mostrar_grafico_combinado(
     correcciones_viscosidad=None,
     a_bib=1.0, b_bib=0.0
 ):
-    import plotly.graph_objects as go
-
     fig = go.Figure()
 
     # --- Decodificar espectro de fondo si aplica ---
@@ -933,9 +931,6 @@ def generar_elementos_rmn(
     check_d_por_espectro=None,
     check_t2_por_espectro=None
 ):
-    from scipy.signal import find_peaks
-    import plotly.graph_objects as go
-    import numpy as np
 
     elementos = []  # lista de go.Scatter, go.Shape, go.Annotation
 

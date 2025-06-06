@@ -440,8 +440,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
     # Ajustar automáticamente Y_max si hay superposición vertical
     if superposicion_vertical and not ajuste_y_manual:
-        offset_auto = (y_max - y_min) / (len(df) + 1) if (y_max > y_min and len(df) > 0) else 10.0
-        y_max = offset_auto + offset_auto * len(df)
+        offset_base = 15.0
+        y_max = offset_base * (len(df) + 1)
 
     if superposicion_vertical:
         mostrar_grafico_stacked(
@@ -824,7 +824,7 @@ def mostrar_grafico_stacked(
         "Separación entre espectros (offset)",
         min_value=0.1,
         max_value=30.0,
-        value=offset_auto,
+        value=offset_base,
         step=0.1,
         key=f"offset_val_{key_sufijo}"
     )
@@ -888,7 +888,7 @@ def mostrar_grafico_stacked(
         xaxis_title="[ppm]",
         yaxis_title="Offset + Intensidad",
         xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(range=[y_min, y_max]),
+        yaxis=dict(autorange=True),
         height=500,
         showlegend=True,
         template="simple_white",

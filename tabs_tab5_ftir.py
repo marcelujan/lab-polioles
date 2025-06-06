@@ -176,9 +176,9 @@ def render_tabla_bibliografia_ftir(db, mostrar=True, delinear=False):
             num_rows="dynamic",
             column_config={
                 "Grupo funcional": st.column_config.SelectboxColumn("Grupo funcional", options=GRUPOS_FUNCIONALES),
-                "X min": st.column_config.NumberColumn("X min", format="%.2f"),
-                "δ pico": st.column_config.NumberColumn("δ pico", format="%.2f"),
-                "X max": st.column_config.NumberColumn("X max", format="%.2f"),
+                "X min": st.column_config.NumberColumn("X min", format="%d"),
+                "δ pico": st.column_config.NumberColumn("δ pico", format="%d"),
+                "X max": st.column_config.NumberColumn("X max", format="%d"),
                 "Tipo de muestra": st.column_config.TextColumn("Tipo de muestra"),
                 "Observaciones": st.column_config.TextColumn("Observaciones"),
             }

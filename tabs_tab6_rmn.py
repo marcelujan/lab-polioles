@@ -467,7 +467,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             restar_espectro=restar_espectro,
             seleccion_resta=seleccion_resta,
             altura_min=altura_min,
-            distancia_min=distancia_min
+            distancia_min=distancia_min,
+            offset_inicial=offset_base
         )
 
     mostrar_indiv = st.checkbox("Gráficos individuales", key=f"chk_indiv_{key_sufijo}")
@@ -817,14 +818,15 @@ def mostrar_grafico_stacked(
     restar_espectro=False,
     seleccion_resta=None,
     altura_min=None,
-    distancia_min=None
+    distancia_min=None,
+    offset_inicial=None 
 ):
     offset_auto = round((y_max - y_min) / (len(df) + 1), 2) if (y_max is not None and y_min is not None and y_max > y_min) else 1.0
     offset_manual = st.slider(
         "Separación entre espectros (offset)",
         min_value=0.1,
         max_value=30.0,
-        value=offset_base,
+        value=offset_inicial if offset_inicial is not None else offset_auto,
         step=0.1,
         key=f"offset_val_{key_sufijo}"
     )

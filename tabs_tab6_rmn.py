@@ -884,6 +884,7 @@ def mostrar_grafico_stacked(
 
     altura_base = 500
     height_auto = altura_base + offset_manual * len(df)
+
     # --- Calcular altura máxima real de los espectros ---
     altura_maxima_global = 0
     for _, row in df.iterrows():
@@ -896,12 +897,6 @@ def mostrar_grafico_stacked(
     # Concepto: y_max = altura base (picos) + offset acumulado
     margen_extra = 1  # margen visual para que no se corte la última curva
     y_max = altura_maxima_global + offset_manual * (len(df) + margen_extra)
-
-    # --- Calcular height de la figura (en px) ---
-    altura_base_px = 500  # la que usabas antes
-    factor_px_por_offset = 5  # px por unidad de offset_manual → podés ajustar (5, 7, 10, etc)
-
-    height_auto = altura_base_px + offset_manual * len(df) * factor_px_por_offset
 
     # --- Actualizar layout ---
     fig_offset.update_layout(

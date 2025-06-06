@@ -877,12 +877,15 @@ def mostrar_grafico_stacked(
             elif isinstance(el, go.layout.Annotation):
                 fig_offset.add_annotation(el)
 
+    altura_base = 500
+    height_auto = altura_base + offset_manual * len(df)
+
     fig_offset.update_layout(
         xaxis_title="[ppm]",
         yaxis_title="Offset + Intensidad",
         xaxis=dict(range=[x_max, x_min]),
         yaxis=dict(range=[y_min, y_max]),
-        height=500,
+        height=height_auto,
         showlegend=True,
         template="simple_white",
         legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)

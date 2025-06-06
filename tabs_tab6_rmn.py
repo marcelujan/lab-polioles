@@ -438,10 +438,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # Ajustar automáticamente Y_max si hay superposición vertical
-    if superposicion_vertical and not ajuste_y_manual:
-        offset_base = 15.0
-        y_max = offset_base * (len(df) + 1)
 
     if superposicion_vertical:
         mostrar_grafico_stacked(
@@ -888,20 +884,37 @@ def mostrar_grafico_stacked(
 
     altura_base = 500
     height_auto = altura_base + offset_manual * len(df)
+    # --- Calcular altura máxima real de los espectros ---
+    altura_maxima_global = 0
+    for _, row in df.iterrows():
+        df_esp = decodificar_csv_o_excel(row["contenido"], row["archivo"])
+        if df_esp is None or df_esp.empty:
+            continue
+        altura_maxima_global = max(altura_maxima_global, df_esp["y"].max())
 
+    # --- Calcular y_max para eje Y ---
+    # Concepto: y_max = altura base (picos) + offset acumulado
+    margen_extra = 1  # margen visual para que no se corte la última curva
+    y_max = altura_maxima_global + offset_manual * (len(df) + margen_extra)
+
+    # --- Calcular height de la figura (en px) ---
+    altura_base_px = 500  # la que usabas antes
+    factor_px_por_offset = 5  # px por unidad de offset_manual → podés ajustar (5, 7, 10, etc)
+
+    height_auto = altura_base_px + offset_manual * len(df) * factor_px_por_offset
+
+    # --- Actualizar layout ---
     fig_offset.update_layout(
         xaxis_title="[ppm]",
         yaxis_title="Offset + Intensidad",
         xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(range=[y_min, y_max]),
-        height=height_auto,
+        yaxis=dict(range=[y_min, y_max]),  # y_max ahora adaptado
+        height=height_auto,                # height adaptado
         showlegend=True,
         template="simple_white",
         legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
     )
-
     st.plotly_chart(fig_offset, use_container_width=True)
-
 
 
 def generar_elementos_rmn(

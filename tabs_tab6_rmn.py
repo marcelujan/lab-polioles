@@ -286,6 +286,9 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
             if is_valid_scalar(x_min) and is_valid_scalar(x_max):
                 st.warning(f"DEBUG fila {i} → PASA is_valid_scalar(x_min, x_max)")
+                
+                st.warning(f"DEBUG fila {i} df_esp['x'].head() = {df_esp['x'].head().tolist()}")
+                st.warning(f"DEBUG fila {i} df_esp['x'].dtype = {df_esp['x'].dtype}")
 
                 df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
                 area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None

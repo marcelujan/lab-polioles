@@ -214,12 +214,19 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     espectros_cache = {}
     campo_h = "H" if tipo == "RMN 1H" else "C"
     campo_has = "Has" if tipo == "RMN 1H" else "Cas"
+    df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]
+    st.warning(f"DEBUG columnas: {df_edicion.columns}")
 
     for i, row in df_edicion.iterrows():
         try:
-            st.warning(f"DEBUG fila {i} → {row_dict}")
+          #  st.warning(f"DEBUG fila {i} → {row_dict}")
+            st.warning(f"DEBUG fila {i} → row={row}")
             # Convertimos la fila a dict para acceder sin riesgo de Series
-            row_dict = row.to_dict()
+            try:
+                row_dict = row.to_dict()
+            except Exception as e:
+                st.warning(f"⚠️ fila {i}: error convirtiendo row a dict → {e} → row={row}")
+                continue
 
             # Evitamos cualquier campo que sea Series o esté vacío
             campos_clave = ["Muestra", "Archivo", "X min", "X max", "Xas min", "Xas max", campo_has]

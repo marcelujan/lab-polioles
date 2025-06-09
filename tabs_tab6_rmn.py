@@ -284,9 +284,13 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 f"x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})"
             )
 
-            if is_valid_scalar(x_min) and is_valid_scalar(x_max):
+            # Evaluar is_valid_scalar por separado y forzar bool
+            x_min_ok = is_valid_scalar(x_min)
+            x_max_ok = is_valid_scalar(x_max)
+
+            if bool(x_min_ok) and bool(x_max_ok):
                 st.warning(f"DEBUG fila {i} → PASA is_valid_scalar(x_min, x_max)")
-                
+
                 st.warning(f"DEBUG fila {i} df_esp['x'].head() = {df_esp['x'].head().tolist()}")
                 st.warning(f"DEBUG fila {i} df_esp['x'].dtype = {df_esp['x'].dtype}")
 
@@ -298,6 +302,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 st.warning(f"DEBUG fila {i} → NO PASA is_valid_scalar(x_min, x_max) → x_min={x_min}, x_max={x_max}")
                 area = None
                 df_edicion.at[i, "Área"] = None
+
 
             # Calcular Área as y H/C
             xas_min_raw = row_dict.get("Xas min")

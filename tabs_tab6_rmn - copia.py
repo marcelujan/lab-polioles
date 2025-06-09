@@ -209,60 +209,8 @@ def obtener_df_esp_precargado(db, espectros_dict, muestra, archivo):
         return None
     return decodificar_csv_o_excel(espectro.get("contenido"), archivo)
 
-# Obtiene el espectro combinado visual con las funciones aplicadas
-def transformar_espectro(
-    row,
-    ajustes_y,
-    normalizar,
-    espectro_resta,
-    id_resta,
-    correcciones_viscosidad,
-    a_bib,
-    b_bib
-):
-    archivo_actual = row["archivo"]
-    df_esp = decodificar_csv_o_excel(row.get("contenido"), archivo_actual)
-    if df_esp is None or df_esp.empty:
-        return None
-
-    df_aux = df_esp.rename(columns={df_esp.columns[0]: "x", df_esp.columns[1]: "y"}).dropna()
-
-    # Corrección por viscosidad
-    a_v, b_v = correcciones_viscosidad.get(archivo_actual, (1.0, 0.0))
-    x_vals = a_bib * (a_v * df_aux["x"] + b_v) + b_bib
-
-    # Ajuste Y manual
-    y_vals = df_aux["y"] + ajustes_y.get(archivo_actual, 0.0)
-
-    # Restar espectro si corresponde
-    if espectro_resta is not None:
-        y_resta_interp = np.interp(x_vals, espectro_resta["x"], espectro_resta["y"])
-        y_vals = y_vals - (y_resta_interp + ajustes_y.get(id_resta, 0.0))
-
-    # Normalización si corresponde
-    if normalizar:
-        y_max_val = y_vals.max()
-        y_vals = y_vals / y_max_val if y_max_val != 0 else y_vals
-
-    df_transformado = pd.DataFrame({"x": x_vals, "y": y_vals})
-
-    return df_transformado
-
 # --- Optimización aplicada a recálculo de D/T2 y señales ---
-def recalcular_areas_y_guardar(
-        df_dt2_edit if tipo == "RMN 1H" else df_senales_edit,
-        tipo=tipo,
-        db=db,
-        nombre_tabla=nombre_tabla,
-        tabla_destino="dt2" if "dt2" in nombre_tabla else "senales",
-        ajustes_y=ajustes_y,
-        normalizar=normalizar,
-        espectro_resta=espectro_resta,
-        id_resta=id_resta,
-        correcciones_viscosidad=correcciones_viscosidad,
-        a_bib=a_bib,
-        b_bib=b_bib
-    ):
+def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino="dt2"):
     espectros_cache = {}
     campo_h = "H" if tipo == "RMN 1H" else "C"
     campo_has = "Has" if tipo == "RMN 1H" else "Cas"
@@ -292,60 +240,44 @@ def recalcular_areas_y_guardar(
             if muestra == "" or archivo == "":
                 continue
 
+            df_esp = obtener_df_esp_precargado(db, espectros_cache.setdefault(muestra, {}), muestra, archivo)
+            if df_esp is None:
+                continue
+
+            # tolerancia para evitar problemas en bordes
+            tolerancia = 1e-6
+
+            # Calcular Área
             try:
-                df_espectros_muestra = precargar_espectros_rmn(db, [{"nombre": muestra}])
-                row_espectro = df_espectros_muestra[df_espectros_muestra["archivo"] == archivo].iloc[0]
+                x_min = float(row_dict.get("X min"))
+                x_max = float(row_dict.get("X max"))
+                df_main = df_esp[(df_esp["x"] >= min(x_min, x_max) - tolerancia) & (df_esp["x"] <= max(x_min, x_max) + tolerancia)]
+                area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
+                df_edicion.at[i, "Área"] = round(area, 2) if (area is not None) else None
 
-                df_transformado = transformar_espectro(
-                    row=row_espectro,
-                    ajustes_y=ajustes_y,
-                    normalizar=normalizar,
-                    espectro_resta=espectro_resta,
-                    id_resta=id_resta,
-                    correcciones_viscosidad=correcciones_viscosidad,
-                    a_bib=a_bib,
-                    b_bib=b_bib
-                )
-                if df_transformado is None:
-                    continue
+            except Exception as e:
+                area = None
+                df_edicion.at[i, "Área"] = None
 
-                tolerancia = 1e-6
+            # Calcular Área as y H/C
+            try:
+                xas_min = float(row_dict.get("Xas min"))
+                xas_max = float(row_dict.get("Xas max"))
+                has_or_cas = float(row_dict.get(campo_has)) if row_dict.get(campo_has) not in [None, ""] else None
+                df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max) - tolerancia) & (df_esp["x"] <= max(xas_min, xas_max) + tolerancia)]
+                area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
+                df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
 
-                # Calcular Área
-                try:
-                    x_min = float(row_dict.get("X min"))
-                    x_max = float(row_dict.get("X max"))
-                    df_main = df_transformado[(df_transformado["x"] >= min(x_min, x_max) - tolerancia) & (df_transformado["x"] <= max(x_min, x_max) + tolerancia)]
-                    area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
-                    df_edicion.at[i, "Área"] = round(area, 2) if area is not None else None
-
-                except Exception as e:
-                    area = None
-                    df_edicion.at[i, "Área"] = None
-
-                # Calcular Área as y H/C
-                try:
-                    xas_min = float(row_dict.get("Xas min"))
-                    xas_max = float(row_dict.get("Xas max"))
-                    has_or_cas = float(row_dict.get(campo_has)) if row_dict.get(campo_has) not in [None, ""] else None
-                    df_as = df_transformado[(df_transformado["x"] >= min(xas_min, xas_max) - tolerancia) & (df_transformado["x"] <= max(xas_min, xas_max) + tolerancia)]
-                    area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
-                    df_edicion.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
-
-                    if area is not None and area_as is not None and has_or_cas is not None and area_as != 0:
-                        resultado = (area * has_or_cas) / area_as
-                        df_edicion.at[i, campo_h] = round(resultado, 2)
-                    else:
-                        df_edicion.at[i, campo_h] = None
-
-                except Exception as e:
-                    st.warning(f"⚠️ Error en fila {i} al calcular Área as y H/C: {e}")
-                    df_edicion.at[i, "Área as"] = None
+                if (area is not None) and (area_as is not None) and (has_or_cas is not None) and (area_as != 0):
+                    resultado = (area * has_or_cas) / area_as
+                    df_edicion.at[i, campo_h] = round(resultado, 2)
+                else:
                     df_edicion.at[i, campo_h] = None
 
             except Exception as e:
-                st.warning(f"⚠️ Error en fila {i}: {e}")
-
+                st.warning(f"⚠️ Error en fila {i} al calcular Área as y H/C: {e}")
+                df_edicion.at[i, "Área as"] = None
+                df_edicion.at[i, campo_h] = None
 
         except Exception as e:
             st.warning(f"⚠️ Error en fila {i}: {e}")
@@ -547,19 +479,10 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
 
 
     if mostrar_tabla_dt2_chk:
-        mostrar_tabla_dt2(df, tipo, key_sufijo, db,
-                  ajustes_y, normalizar,
-                  espectro_resta, id_resta,
-                  correcciones_viscosidad,
-                  a_bib, b_bib)
-
+        mostrar_tabla_dt2(df, tipo, key_sufijo, db)
 
     if mostrar_tabla_senales_chk:
-        mostrar_tabla_senales(df, tipo, key_sufijo, db,
-                          ajustes_y, normalizar,
-                          espectro_resta, id_resta,
-                          correcciones_viscosidad,
-                          a_bib, b_bib)
+        mostrar_tabla_senales(df, tipo, key_sufijo, db)
 
     if mostrar_tabla_biblio_chk:
         mostrar_tabla_biblio(tipo, key_sufijo, db)
@@ -739,11 +662,7 @@ def mostrar_grafico_combinado(
     return fig
 
 
-def mostrar_tabla_dt2(df, tipo, key_sufijo, db,
-                      ajustes_y, normalizar,
-                      espectro_resta, id_resta,
-                      correcciones_viscosidad,
-                      a_bib, b_bib):
+def mostrar_tabla_dt2(df, tipo, key_sufijo, db):
 
     if tipo == "RMN 1H":
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
@@ -821,22 +740,10 @@ def mostrar_tabla_dt2(df, tipo, key_sufijo, db,
 
     if recalcular:
         nombre_tabla = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
-        recalcular_areas_y_guardar(
-            df_dt2_edit, tipo, db, nombre_tabla, tabla_destino="dt2",
-            ajustes_y=ajustes_y,
-            normalizar=normalizar,
-            espectro_resta=espectro_resta,
-            id_resta=id_resta,
-            correcciones_viscosidad=correcciones_viscosidad,
-            a_bib=a_bib,
-            b_bib=b_bib
-        )
+        recalcular_areas_y_guardar(df_dt2_edit, tipo, db, nombre_tabla, tabla_destino="dt2")
 
-def mostrar_tabla_senales(df, tipo, key_sufijo, db,
-                          ajustes_y, normalizar,
-                          espectro_resta, id_resta,
-                          correcciones_viscosidad,
-                          a_bib, b_bib):
+
+def mostrar_tabla_senales(df, tipo, key_sufijo, db):
     if tipo == "RMN 1H":
         columnas_senales = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
                             "Xas min", "Xas max", "Has", "Área as", "H", "🔴H*", "Observaciones", "Archivo"]
@@ -936,21 +843,7 @@ def mostrar_tabla_senales(df, tipo, key_sufijo, db,
 
     if recalcular:
         nombre_tabla = "rmn1h" if tipo == "RMN 1H" else "rmn13c"
-        recalcular_areas_y_guardar(
-            df_senales_edit,
-            tipo=tipo,
-            db=db,
-            nombre_tabla=nombre_tabla,
-            tabla_destino="senales",
-            ajustes_y=ajustes_y,
-            normalizar=normalizar,
-            espectro_resta=espectro_resta,
-            id_resta=id_resta,
-            correcciones_viscosidad=correcciones_viscosidad,
-            a_bib=a_bib,
-            b_bib=b_bib
-        )
-
+        recalcular_areas_y_guardar(df_senales_edit, tipo, db, nombre_tabla, tabla_destino="senales")
 
 
 def mostrar_tabla_biblio(tipo, key_sufijo, db):

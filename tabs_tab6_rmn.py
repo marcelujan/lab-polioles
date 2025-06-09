@@ -191,7 +191,10 @@ def precargar_dt2_muestra(db, muestra, tipo):
 
 # --- Helper para precarga de espectros por muestra (wrapper para obtener_df_esp_precargado) ---
 def precargar_espectros_por_muestra(db, muestra):
+    # usamos precargar_espectros_rmn pero con lista [{"nombre": muestra}]
     df = precargar_espectros_rmn(db, [{"nombre": muestra}])
+    
+    # devolvemos un diccionario indexado por archivo
     return {
         row["archivo"]: row for _, row in df.iterrows()
     }

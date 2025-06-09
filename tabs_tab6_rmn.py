@@ -272,12 +272,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             if not muestra or not archivo:
                 continue
 
-            x_min     = safe_float(safe_scalar(row_dict.get("X min")))
-            x_max     = safe_float(safe_scalar(row_dict.get("X max")))
-            xas_min   = safe_float(safe_scalar(row_dict.get("Xas min")))
-            xas_max   = safe_float(safe_scalar(row_dict.get("Xas max")))
-            has_or_cas = safe_float(safe_scalar(row_dict.get(campo_has)))
-
             df_esp = obtener_df_esp_precargado(db, espectros_cache.setdefault(muestra, {}), muestra, archivo)
             if df_esp is None:
                 continue
@@ -303,49 +297,34 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 area = None
                 df_edicion.at[i, "Área"] = None
 
-
             # Calcular Área as y H/C
-            xas_min_raw = row_dict.get("Xas min")
-            xas_max_raw = row_dict.get("Xas max")
-            xas_min     = safe_float(safe_scalar(xas_min_raw))
-            xas_max     = safe_float(safe_scalar(xas_max_raw))
+            try:
+                xas_min = float(row_dict.get("Xas min"))
+                xas_max = float(row_dict.get("Xas max"))
+                has_or_cas = float(row_dict.get(campo_has)) if row_dict.get(campo_has) not in [None, ""] else None
 
-            # Depuración completa ANTES de is_valid_scalar
-            st.warning(
-                f"DEBUG fila {i} xas_min_raw={xas_min_raw} ({type(xas_min_raw)}), xas_max_raw={xas_max_raw} ({type(xas_max_raw)}), "
-                f"xas_min={xas_min} ({type(xas_min)}), xas_max={xas_max} ({type(xas_max)})"
-            )
-
-            if is_valid_scalar(xas_min) and is_valid_scalar(xas_max):
-                st.warning(f"DEBUG fila {i} → PASA is_valid_scalar(xas_min, xas_max)")
+                st.warning(
+                    f"DEBUG fila {i} xas_min={xas_min} ({type(xas_min)}), xas_max={xas_max} ({type(xas_max)}), has_or_cas={has_or_cas} ({type(has_or_cas)})"
+                )
 
                 df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
                 area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
-                area_as = safe_scalar(area_as)
                 df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
-
-                # También pasar has_or_cas por safe_scalar y safe_float (por si acaso)
-                has_or_cas = safe_float(safe_scalar(has_or_cas))
-                area = safe_float(safe_scalar(area))
-                area_as = safe_float(safe_scalar(area_as))
-
-                # 🔍 Depuración explícita de tipos
-                st.warning(
-                    f"DEBUG fila {i} → area={area} ({type(area)}), area_as={area_as} ({type(area_as)}), has_or_cas={has_or_cas} ({type(has_or_cas)})"
-                )
 
                 if (area is not None) and (area_as is not None) and (has_or_cas is not None) and (area_as != 0):
                     resultado = (area * has_or_cas) / area_as
                     df_edicion.at[i, campo_h] = round(resultado, 2)
                 else:
                     df_edicion.at[i, campo_h] = None
-            else:
-                st.warning(f"DEBUG fila {i} → NO PASA is_valid_scalar(xas_min, xas_max) → xas_min={xas_min}, xas_max={xas_max}")
+
+            except Exception as e:
+                st.warning(f"⚠️ Error en fila {i} al calcular Área as y H/C: {e}")
                 df_edicion.at[i, "Área as"] = None
                 df_edicion.at[i, campo_h] = None
 
         except Exception as e:
             st.warning(f"⚠️ Error en fila {i}: {e}")
+
 
     # Guardar en Firebase (conservar combinaciones no actualizadas)
     filas_actualizadas_raw = df_edicion.to_dict(orient="records")

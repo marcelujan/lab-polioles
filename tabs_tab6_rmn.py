@@ -234,19 +234,20 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
             df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
             area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
-            df_edicion.at[i, "Área"] = round(area, 2) if area else None
+            df_edicion.at[i, "Área"] = round(area, 2) if (area is not None) else None
 
             if xas_min is not None and xas_max is not None:
                 df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
                 area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
-                df_edicion.at[i, "Área as"] = round(area_as, 2) if area_as else None
+                df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
 
-                if area and area_as and has_or_cas and area_as != 0:
+                if (area is not None) and (area_as is not None) and (has_or_cas is not None) and (area_as != 0):
                     resultado = (area * has_or_cas) / area_as
                     df_edicion.at[i, campo_h] = round(resultado, 2)
 
         except Exception as e:
             st.warning(f"⚠️ Error en fila {i}: {e}")
+
 
     # Guardar en Firebase (conservar combinaciones no actualizadas)
     filas_actualizadas_raw = df_edicion.to_dict(orient="records")

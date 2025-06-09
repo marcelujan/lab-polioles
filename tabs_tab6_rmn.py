@@ -275,8 +275,13 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                     f"DEBUG fila {i} xas_min={xas_min} ({type(xas_min)}), xas_max={xas_max} ({type(xas_max)}), has_or_cas={has_or_cas} ({type(has_or_cas)})"
                 )
 
-                df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
-                area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
+                # Si los rangos son idénticos, forzar que Área as sea igual a Área
+                if (xas_min == x_min) and (xas_max == x_max):
+                    area_as = area
+                else:
+                    df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
+                    area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
+
                 df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
 
                 if (area is not None) and (area_as is not None) and (has_or_cas is not None) and (area_as != 0):

@@ -226,7 +226,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     df_edicion[campo_has] = pd.to_numeric(df_edicion[campo_has], errors="coerce")
 
     # Bucle principal
-    st.warning("VERIFICACIÓN: código RMN actualizado 8")
+    st.warning("VERIFICACIÓN: código RMN actualizado 9")
     for i, row in df_edicion.iterrows():
         try:
             row_dict = row.to_dict()
@@ -235,7 +235,11 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             muestra = row_dict.get("Muestra")
             archivo = row_dict.get("Archivo")
 
-            if not muestra or not archivo:
+            # Blindaje
+            muestra = str(muestra).strip() if pd.notna(muestra) else ""
+            archivo = str(archivo).strip() if pd.notna(archivo) else ""
+
+            if muestra == "" or archivo == "":
                 continue
 
             df_esp = obtener_df_esp_precargado(db, espectros_cache.setdefault(muestra, {}), muestra, archivo)

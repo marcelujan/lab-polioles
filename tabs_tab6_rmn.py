@@ -260,8 +260,14 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 continue
 
             # Calcular Área
-            if (x_min is not None) and (x_max is not None):
-                # 🔍 Debug de x_min y x_max antes de usar en min()
+            try:
+                x_min_check = (x_min is not None)
+                x_max_check = (x_max is not None)
+            except Exception as e:
+                st.warning(f"DEBUG fila {i} → ERROR evaluando x_min / x_max: {e}, x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})")
+                continue
+
+            if x_min_check and x_max_check:
                 st.warning(f"DEBUG fila {i} → x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})")
 
                 df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]

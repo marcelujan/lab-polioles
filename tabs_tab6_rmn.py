@@ -218,6 +218,13 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     # Limpieza de nombres de columnas
     df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]
 
+    # Forzar columnas numéricas
+    df_edicion["X min"] = pd.to_numeric(df_edicion["X min"], errors="coerce")
+    df_edicion["X max"] = pd.to_numeric(df_edicion["X max"], errors="coerce")
+    df_edicion["Xas min"] = pd.to_numeric(df_edicion["Xas min"], errors="coerce")
+    df_edicion["Xas max"] = pd.to_numeric(df_edicion["Xas max"], errors="coerce")
+    df_edicion[campo_has] = pd.to_numeric(df_edicion[campo_has], errors="coerce")
+
     # Bucle principal
     st.warning("VERIFICACIÓN: código RMN actualizado2")
     for i, row in df_edicion.iterrows():

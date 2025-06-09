@@ -691,6 +691,15 @@ def mostrar_tabla_dt2(df, tipo, key_sufijo, db):
     df_dt2 = df_dt2.sort_values(by=["Archivo", "X max"])
 
     st.markdown("**🧮 Tabla de Cálculos D/T2 (FAMAF)**")
+
+    # --- Factor H*/C* ---
+    if tipo == "RMN 1H":
+        factor_hc = st.number_input("Factor H*", value=1.00, format="%.2f", step=0.01, key=f"factor_h_dt2_{key_sufijo}")
+        df_dt2["🔴H*"] = df_dt2["H"].apply(lambda h: round(h * factor_hc, 2) if pd.notna(h) else None)
+    else:
+        factor_hc = st.number_input("Factor C*", value=1.00, format="%.2f", step=0.01, key=f"factor_c_dt2_{key_sufijo}")
+        df_dt2["🔴C*"] = df_dt2["C"].apply(lambda c: round(c * factor_hc, 2) if pd.notna(c) else None)
+
     with st.form(f"form_dt2_{key_sufijo}"):
         col_config = {
             "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
@@ -711,9 +720,11 @@ def mostrar_tabla_dt2(df, tipo, key_sufijo, db):
         if tipo == "RMN 1H":
             col_config["Has"] = st.column_config.NumberColumn(format="%.2f")
             col_config["H"] = st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True)
+            col_config["🔴H*"] = st.column_config.NumberColumn(format="%.2f", label="🔴H*", disabled=True)
         else:
             col_config["Cas"] = st.column_config.NumberColumn(format="%.2f")
             col_config["C"] = st.column_config.NumberColumn(format="%.2f", label="🔴C", disabled=True)
+            col_config["🔴C*"] = st.column_config.NumberColumn(format="%.2f", label="🔴C*", disabled=True)
 
         df_dt2_edit = st.data_editor(
             df_dt2,
@@ -784,6 +795,14 @@ def mostrar_tabla_senales(df, tipo, key_sufijo, db):
     df_senales = df_senales[columnas_senales]
     df_senales = df_senales.sort_values(by=["Archivo", "X max"])
 
+    # --- Factor H*/C* ---
+    if tipo == "RMN 1H":
+        factor_hc = st.number_input("Factor H*", value=1.00, format="%.2f", step=0.01, key=f"factor_h_senales_{key_sufijo}")
+        df_senales["🔴H*"] = df_senales["H"].apply(lambda h: round(h * factor_hc, 2) if pd.notna(h) else None)
+    else:
+        factor_hc = st.number_input("Factor C*", value=1.00, format="%.2f", step=0.01, key=f"factor_c_senales_{key_sufijo}")
+        df_senales["🔴C*"] = df_senales["C"].apply(lambda c: round(c * factor_hc, 2) if pd.notna(c) else None)
+
     st.markdown("**📈 Tabla de Cálculos**")
     with st.form(f"form_senales_{key_sufijo}"):
         col_config = {
@@ -804,9 +823,11 @@ def mostrar_tabla_senales(df, tipo, key_sufijo, db):
         if tipo == "RMN 1H":
             col_config["Has"] = st.column_config.NumberColumn(format="%.2f")
             col_config["H"] = st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True)
+            col_config["🔴H*"] = st.column_config.NumberColumn(format="%.2f", label="🔴H*", disabled=True)
         else:
             col_config["Cas"] = st.column_config.NumberColumn(format="%.2f")
             col_config["C"] = st.column_config.NumberColumn(format="%.2f", label="🔴C", disabled=True)
+        col_config["🔴C*"] = st.column_config.NumberColumn(format="%.2f", label="🔴C*", disabled=True)
 
         df_senales_edit = st.data_editor(
             df_senales,

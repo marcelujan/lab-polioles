@@ -272,6 +272,16 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 area_as = safe_scalar(area_as)
                 df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
 
+                # También pasar has_or_cas por safe_scalar y safe_float (en caso de string '4' o Series)
+                has_or_cas = safe_float(safe_scalar(has_or_cas))
+                area = safe_float(safe_scalar(area))
+                area_as = safe_float(safe_scalar(area_as))
+
+                # 🔍 Depuración explícita de tipos
+                st.warning(
+                    f"DEBUG fila {i} → area={area} ({type(area)}), area_as={area_as} ({type(area_as)}), has_or_cas={has_or_cas} ({type(has_or_cas)})"
+                )
+
                 if (area is not None) and (area_as is not None) and (has_or_cas is not None) and (area_as != 0):
                     resultado = (area * has_or_cas) / area_as
                     df_edicion.at[i, campo_h] = round(resultado, 2)
@@ -280,6 +290,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             else:
                 df_edicion.at[i, "Área as"] = None
                 df_edicion.at[i, campo_h] = None
+
 
         except Exception as e:
             st.warning(f"⚠️ Error en fila {i}: {e}")

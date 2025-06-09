@@ -226,7 +226,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     df_edicion[campo_has] = pd.to_numeric(df_edicion[campo_has], errors="coerce")
 
     # Bucle principal
-    st.warning("VERIFICACIÓN: código RMN actualizado 7")
+    st.warning("VERIFICACIÓN: código RMN actualizado 8")
     for i, row in df_edicion.iterrows():
         try:
             row_dict = row.to_dict()
@@ -299,13 +299,13 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
     # Limpieza extra en filas_actualizadas_raw
     for f in filas_actualizadas_raw:
-        f["Muestra"] = str(f.get("Muestra")).strip() if f.get("Muestra") is not None else ""
-        f["Archivo"] = str(f.get("Archivo")).strip() if f.get("Archivo") is not None else ""
+        f["Muestra"] = str(f.get("Muestra")).strip() if pd.notna(f.get("Muestra")) else ""
+        f["Archivo"] = str(f.get("Archivo")).strip() if pd.notna(f.get("Archivo")) else ""
 
     combinaciones_actualizadas = {
         (f.get("Muestra"), f.get("Archivo"))
         for f in filas_actualizadas_raw
-        if (not pd.isna(f.get("Muestra"))) and (not pd.isna(f.get("Archivo"))) and (f.get("Muestra") != "") and (f.get("Archivo") != "")
+        if (not pd.isna(f.get("Muestra"))) and (not pd.isna(f.get("Archivo"))) and (f.get("Muestra") != "")
     }
 
     if tabla_destino == "dt2":

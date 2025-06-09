@@ -222,21 +222,38 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             if not muestra or not archivo:
                 continue
 
-            x_min = float(row.get("X min")) if row.get("X min") not in [None, ""] else None
-            x_max = float(row.get("X max")) if row.get("X max") not in [None, ""] else None
-            xas_min = float(row.get("Xas min")) if row.get("Xas min") not in [None, ""] else None
-            xas_max = float(row.get("Xas max")) if row.get("Xas max") not in [None, ""] else None
-            has_or_cas = float(row.get(campo_has)) if row.get(campo_has) not in [None, ""] else None
+            x_min = row.get("X min")
+            x_max = row.get("X max")
+            xas_min = row.get("Xas min")
+            xas_max = row.get("Xas max")
+            has_or_cas = row.get(campo_has)
+
+            # Intentar convertir a float si corresponde
+            try:
+                x_min = float(x_min) if x_min not in [None, ""] else None
+                x_max = float(x_max) if x_max not in [None, ""] else None
+                xas_min = float(xas_min) if xas_min not in [None, ""] else None
+                xas_max = float(xas_max) if xas_max not in [None, ""] else None
+                has_or_cas = float(has_or_cas) if has_or_cas not in [None, ""] else None
+            except ValueError:
+                # Si alguna conversión falla, la fila es inválida → continuar
+                continue
 
             df_esp = obtener_df_esp_precargado(db, espectros_cache.setdefault(muestra, {}), muestra, archivo)
             if df_esp is None:
                 continue
 
-            df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
-            area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
-            df_edicion.at[i, "Área"] = round(area, 2) if (area is not None) else None
+            # SOLO si x_min y x_max son válidos
+            if (x_min is not None) and (x_max is not None):
+                df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
+                area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
+                df_edicion.at[i, "Área"] = round(area, 2) if (area is not None) else None
+            else:
+                area = None
+                df_edicion.at[i, "Área"] = None
 
-            if xas_min is not None and xas_max is not None:
+            # SOLO si xas_min y xas_max son válidos
+            if (xas_min is not None) and (xas_max is not None):
                 df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
                 area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
                 df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
@@ -244,6 +261,11 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 if (area is not None) and (area_as is not None) and (has_or_cas is not None) and (area_as != 0):
                     resultado = (area * has_or_cas) / area_as
                     df_edicion.at[i, campo_h] = round(resultado, 2)
+                else:
+                    df_edicion.at[i, campo_h] = None
+            else:
+                df_edicion.at[i, "Área as"] = None
+                df_edicion.at[i, campo_h] = None
 
         except Exception as e:
             st.warning(f"⚠️ Error en fila {i}: {e}")

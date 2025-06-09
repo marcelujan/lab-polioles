@@ -236,8 +236,14 @@ def transformar_espectro(
 
     # Restar espectro si corresponde
     if espectro_resta is not None:
-        y_resta_interp = np.interp(x_vals, espectro_resta["x"], espectro_resta["y"])
+        # Aplicar corrección de viscosidad al espectro que se resta (si corresponde)
+        a_v_resta, b_v_resta = correcciones_viscosidad.get(id_resta, (1.0, 0.0))
+        x_resta_corr = a_bib * (a_v_resta * espectro_resta["x"] + b_v_resta) + b_bib
+
+        # Interpolar sobre el eje ya corregido
+        y_resta_interp = np.interp(x_vals, x_resta_corr, espectro_resta["y"])
         y_vals = y_vals - (y_resta_interp + ajustes_y.get(id_resta, 0.0))
+
 
     # Normalización si corresponde
     if normalizar:
@@ -1139,7 +1145,12 @@ def generar_elementos_rmn(
     y_vals = df_aux["y"] + ajustes_y.get(archivo_actual, 0.0)
 
     if espectro_resta is not None:
-        y_resta_interp = np.interp(x_vals, espectro_resta["x"], espectro_resta["y"])
+        # Aplicar corrección de viscosidad al espectro que se resta (si corresponde)
+        a_v_resta, b_v_resta = correcciones_viscosidad.get(id_resta, (1.0, 0.0))
+        x_resta_corr = a_bib * (a_v_resta * espectro_resta["x"] + b_v_resta) + b_bib
+
+        # Interpolar sobre el eje ya corregido
+        y_resta_interp = np.interp(x_vals, x_resta_corr, espectro_resta["y"])
         y_vals = y_vals - (y_resta_interp + ajustes_y.get(id_resta, 0.0))
 
     if normalizar:

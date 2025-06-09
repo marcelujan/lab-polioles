@@ -242,7 +242,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
         else:
             return False
 
-
     # Limpieza de nombres de columnas
     df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]
 
@@ -268,20 +267,43 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 continue
 
             # Calcular Área
+            x_min_raw = row_dict.get("X min")
+            x_max_raw = row_dict.get("X max")
+            x_min     = safe_float(safe_scalar(x_min_raw))
+            x_max     = safe_float(safe_scalar(x_max_raw))
+
+            # Depuración completa ANTES de is_valid_scalar
+            st.warning(
+                f"DEBUG fila {i} x_min_raw={x_min_raw} ({type(x_min_raw)}), x_max_raw={x_max_raw} ({type(x_max_raw)}), "
+                f"x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})"
+            )
+
             if is_valid_scalar(x_min) and is_valid_scalar(x_max):
-                st.warning(f"DEBUG fila {i} → x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})")
+                st.warning(f"DEBUG fila {i} → PASA is_valid_scalar(x_min, x_max)")
 
                 df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
                 area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
                 area = safe_scalar(area)
                 df_edicion.at[i, "Área"] = round(area, 2) if (area is not None) else None
             else:
+                st.warning(f"DEBUG fila {i} → NO PASA is_valid_scalar(x_min, x_max) → x_min={x_min}, x_max={x_max}")
                 area = None
                 df_edicion.at[i, "Área"] = None
 
             # Calcular Área as y H/C
+            xas_min_raw = row_dict.get("Xas min")
+            xas_max_raw = row_dict.get("Xas max")
+            xas_min     = safe_float(safe_scalar(xas_min_raw))
+            xas_max     = safe_float(safe_scalar(xas_max_raw))
+
+            # Depuración completa ANTES de is_valid_scalar
+            st.warning(
+                f"DEBUG fila {i} xas_min_raw={xas_min_raw} ({type(xas_min_raw)}), xas_max_raw={xas_max_raw} ({type(xas_max_raw)}), "
+                f"xas_min={xas_min} ({type(xas_min)}), xas_max={xas_max} ({type(xas_max)})"
+            )
+
             if is_valid_scalar(xas_min) and is_valid_scalar(xas_max):
-                st.warning(f"DEBUG fila {i} → xas_min={xas_min} ({type(xas_min)}), xas_max={xas_max} ({type(xas_max)})")
+                st.warning(f"DEBUG fila {i} → PASA is_valid_scalar(xas_min, xas_max)")
 
                 df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
                 area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
@@ -304,6 +326,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 else:
                     df_edicion.at[i, campo_h] = None
             else:
+                st.warning(f"DEBUG fila {i} → NO PASA is_valid_scalar(xas_min, xas_max) → xas_min={xas_min}, xas_max={xas_max}")
                 df_edicion.at[i, "Área as"] = None
                 df_edicion.at[i, campo_h] = None
 

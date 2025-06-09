@@ -302,7 +302,8 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
         filas_finales = filas_conservadas + filas_actualizadas_raw
         doc_ref.set({"filas": filas_finales})
         return
-
+    
+    st.warning(f"VERIFICACIÓN FINAL: df_edicion['Muestra'].unique() = {df_edicion['Muestra'].unique()}")
     for muestra in df_edicion["Muestra"].unique():
         filas_m = [f for f in filas_actualizadas_raw if f.get("Muestra") == muestra]
         doc_out = doc_destino(muestra)

@@ -273,7 +273,11 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
     # Guardar en Firebase (conservar combinaciones no actualizadas)
     filas_actualizadas_raw = df_edicion.to_dict(orient="records")
-    combinaciones_actualizadas = {(f.get("Muestra"), f.get("Archivo")) for f in filas_actualizadas_raw if f.get("Muestra") and f.get("Archivo")}
+    combinaciones_actualizadas = {
+        (f.get("Muestra"), f.get("Archivo"))
+        for f in filas_actualizadas_raw
+        if (f.get("Muestra") not in [None, "", np.nan]) and (f.get("Archivo") not in [None, "", np.nan])
+    }
 
     if tabla_destino == "dt2":
         doc_destino = lambda m: db.collection("muestras").document(m).collection("dt2").document(tipo.lower())

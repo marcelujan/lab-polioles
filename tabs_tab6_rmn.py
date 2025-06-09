@@ -305,10 +305,31 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
         doc_ref = db.collection("tablas_integrales").document(nombre_tabla)
         doc_data = doc_ref.get().to_dict()
         filas_previas = doc_data.get("filas", []) if doc_data else []
-        filas_conservadas = [f for f in filas_previas if (f.get("Muestra"), f.get("Archivo")) not in combinaciones_actualizadas]
+
+        filas_conservadas = [
+            f for f in filas_previas
+            if (f.get("Muestra"), f.get("Archivo")) not in combinaciones_actualizadas
+        ]
+
+        previas_map = {
+            (f.get("Muestra"), f.get("Archivo"), f.get("X min"), f.get("X max")): f
+            for f in filas_previas
+        }
+
+        campos_a_conservar = ["Grupo funcional", "δ pico", "Observaciones"]
+
+        for f in filas_actualizadas_raw:
+            clave = (f.get("Muestra"), f.get("Archivo"), f.get("X min"), f.get("X max"))
+            previa = previas_map.get(clave)
+            if previa:
+                for campo in campos_a_conservar:
+                    if campo in f:
+                        if f[campo] in [None, ""]:
+                            f[campo] = previa.get(campo, "")
         filas_finales = filas_conservadas + filas_actualizadas_raw
         doc_ref.set({"filas": filas_finales})
         return
+
     
     st.warning(f"VERIFICACIÓN FINAL: df_edicion['Muestra'].unique() = {df_edicion['Muestra'].unique()}")
 

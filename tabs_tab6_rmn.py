@@ -217,6 +217,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
     for i, row in df_edicion.iterrows():
         try:
+            st.warning(f"DEBUG fila {i} → {row_dict}")
             # Convertimos la fila a dict para acceder sin riesgo de Series
             row_dict = row.to_dict()
 
@@ -235,6 +236,8 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             # Convertir a float cuando aplica
             def safe_float(val):
                 try:
+                    if pd.isna(val):
+                        return None
                     return float(val) if val not in [None, ""] else None
                 except Exception:
                     return None

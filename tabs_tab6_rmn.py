@@ -250,19 +250,20 @@ def transformar_espectro(
 
 # --- Optimización aplicada a recálculo de D/T2 y señales ---
 def recalcular_areas_y_guardar(
-        df_dt2_edit if tipo == "RMN 1H" else df_senales_edit,
-        tipo=tipo,
-        db=db,
-        nombre_tabla=nombre_tabla,
-        tabla_destino="dt2" if "dt2" in nombre_tabla else "senales",
-        ajustes_y=ajustes_y,
-        normalizar=normalizar,
-        espectro_resta=espectro_resta,
-        id_resta=id_resta,
-        correcciones_viscosidad=correcciones_viscosidad,
-        a_bib=a_bib,
-        b_bib=b_bib
+        df_edicion,
+        tipo,
+        db,
+        nombre_tabla,
+        tabla_destino="dt2",
+        ajustes_y={},
+        normalizar=False,
+        espectro_resta=None,
+        id_resta=None,
+        correcciones_viscosidad={},
+        a_bib=1.0,
+        b_bib=0.0
     ):
+    
     espectros_cache = {}
     campo_h = "H" if tipo == "RMN 1H" else "C"
     campo_has = "Has" if tipo == "RMN 1H" else "Cas"

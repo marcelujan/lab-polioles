@@ -666,10 +666,10 @@ def mostrar_tabla_dt2(df, tipo, key_sufijo, db):
 
     if tipo == "RMN 1H":
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                        "Xas min", "Xas max", "Has", "Área as", "H", "Observaciones", "Archivo"]
+                        "Xas min", "Xas max", "Has", "Área as", "H", "🔴H", "Observaciones", "Archivo"]
     else:
         columnas_dt2 = ["Muestra", "Grupo funcional", "δ pico", "X min", "X max", "Área", "D", "T2",
-                        "Xas min", "Xas max", "Cas", "Área as", "C", "Observaciones", "Archivo"]
+                        "Xas min", "Xas max", "Cas", "Área as", "C", "🔴C", "Observaciones", "Archivo"]
     filas_guardadas = []
     for _, row in df.iterrows():
         muestra = row["muestra"]

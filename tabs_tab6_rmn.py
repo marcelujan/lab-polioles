@@ -244,6 +244,9 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             if df_esp is None:
                 continue
 
+            # tolerancia para evitar problemas en bordes
+            tolerancia = 1e-6
+
             # Calcular Área
             try:
                 x_min = float(row_dict.get("X min"))
@@ -256,7 +259,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 st.warning(f"DEBUG fila {i} df_esp['x'].head() = {df_esp['x'].head().tolist()}")
                 st.warning(f"DEBUG fila {i} df_esp['x'].dtype = {df_esp['x'].dtype}")
 
-                df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
+                df_main = df_esp[(df_esp["x"] >= min(x_min, x_max) - tolerancia) & (df_esp["x"] <= max(x_min, x_max) + tolerancia)]
                 area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
                 df_edicion.at[i, "Área"] = round(area, 2) if (area is not None) else None
 
@@ -275,11 +278,9 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                     f"DEBUG fila {i} xas_min={xas_min} ({type(xas_min)}), xas_max={xas_max} ({type(xas_max)}), has_or_cas={has_or_cas} ({type(has_or_cas)})"
                 )
 
-                df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
+                df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max) - tolerancia) & (df_esp["x"] <= max(xas_min, xas_max) + tolerancia)]
 
                 # DEBUG extra: comparar puntos de integración
-                df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
-
                 st.warning(f"DEBUG fila {i}: df_main x = {df_main['x'].tolist()}")
                 st.warning(f"DEBUG fila {i}: df_as x = {df_as['x'].tolist()}")
 

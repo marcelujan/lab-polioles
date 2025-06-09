@@ -257,6 +257,9 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
             # Calcular Área
             if (x_min is not None) and (x_max is not None):
+                # 🔍 Debug de x_min y x_max antes de usar en min()
+                st.warning(f"DEBUG fila {i} → x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})")
+
                 df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
                 area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
                 area = safe_scalar(area)
@@ -267,12 +270,15 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
             # Calcular Área as y H/C
             if (xas_min is not None) and (xas_max is not None):
+                # 🔍 Debug de xas_min y xas_max antes de usar en min()
+                st.warning(f"DEBUG fila {i} → xas_min={xas_min} ({type(xas_min)}), xas_max={xas_max} ({type(xas_max)})")
+
                 df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
                 area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
                 area_as = safe_scalar(area_as)
                 df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
 
-                # También pasar has_or_cas por safe_scalar y safe_float (en caso de string '4' o Series)
+                # También pasar has_or_cas por safe_scalar y safe_float (por si acaso)
                 has_or_cas = safe_float(safe_scalar(has_or_cas))
                 area = safe_float(safe_scalar(area))
                 area_as = safe_float(safe_scalar(area_as))
@@ -290,7 +296,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             else:
                 df_edicion.at[i, "Área as"] = None
                 df_edicion.at[i, campo_h] = None
-
 
         except Exception as e:
             st.warning(f"⚠️ Error en fila {i}: {e}")

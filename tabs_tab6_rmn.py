@@ -225,6 +225,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             return None
 
     def safe_scalar(val):
+        st.warning(f"DEBUG safe_scalar val={val} ({type(val)})")
         if isinstance(val, pd.Series):
             val = val.dropna()
             return val.iloc[0] if not val.empty else None
@@ -233,6 +234,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
         if pd.isna(val):
             return None
         return val
+
 
     def is_valid_scalar(val):
         val = safe_scalar(val)

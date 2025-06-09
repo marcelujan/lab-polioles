@@ -214,8 +214,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     espectros_cache = {}
     campo_h = "H" if tipo == "RMN 1H" else "C"
     campo_has = "Has" if tipo == "RMN 1H" else "Cas"
-    df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]
-    st.warning(f"DEBUG columnas: {df_edicion.columns}")
 
     # Helpers seguros
     def safe_float(val):
@@ -233,15 +231,13 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             return None
         return val
 
-    # Limpieza de nombres de columnas (ya lo tenías):
+    # Limpieza de nombres de columnas
     df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]
-    st.warning(f"DEBUG columnas: {df_edicion.columns}")
 
     # Bucle principal
     for i, row in df_edicion.iterrows():
         try:
             row_dict = row.to_dict()
-            st.warning(f"DEBUG fila {i} → {row_dict}")
 
             muestra = row_dict.get("Muestra")
             archivo = row_dict.get("Archivo")
@@ -249,11 +245,11 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             if not muestra or not archivo:
                 continue
 
-            x_min = safe_float(row_dict.get("X min"))
-            x_max = safe_float(row_dict.get("X max"))
-            xas_min = safe_float(row_dict.get("Xas min"))
-            xas_max = safe_float(row_dict.get("Xas max"))
-            has_or_cas = safe_float(row_dict.get(campo_has))
+            x_min     = safe_float(safe_scalar(row_dict.get("X min")))
+            x_max     = safe_float(safe_scalar(row_dict.get("X max")))
+            xas_min   = safe_float(safe_scalar(row_dict.get("Xas min")))
+            xas_max   = safe_float(safe_scalar(row_dict.get("Xas max")))
+            has_or_cas = safe_float(safe_scalar(row_dict.get(campo_has)))
 
             df_esp = obtener_df_esp_precargado(db, espectros_cache.setdefault(muestra, {}), muestra, archivo)
             if df_esp is None:
@@ -276,9 +272,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 area_as = safe_scalar(area_as)
                 df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
 
-                # También pasar has_or_cas por safe_scalar (por si acaso)
-                has_or_cas = safe_scalar(has_or_cas)
-
                 if (area is not None) and (area_as is not None) and (has_or_cas is not None) and (area_as != 0):
                     resultado = (area * has_or_cas) / area_as
                     df_edicion.at[i, campo_h] = round(resultado, 2)
@@ -290,7 +283,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
         except Exception as e:
             st.warning(f"⚠️ Error en fila {i}: {e}")
-
 
     # Guardar en Firebase (conservar combinaciones no actualizadas)
     filas_actualizadas_raw = df_edicion.to_dict(orient="records")
@@ -323,7 +315,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
     st.success("✅ Datos recalculados y guardados correctamente.")
     st.rerun()
-    
 
 
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):

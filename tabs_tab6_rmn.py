@@ -226,7 +226,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     df_edicion[campo_has] = pd.to_numeric(df_edicion[campo_has], errors="coerce")
 
     # Bucle principal
-    st.warning("VERIFICACIÓN: código RMN actualizado 5")
+    st.warning("VERIFICACIÓN: código RMN actualizado 7")
     for i, row in df_edicion.iterrows():
         try:
             row_dict = row.to_dict()
@@ -296,6 +296,12 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
     # Guardar en Firebase (conservar combinaciones no actualizadas)
     filas_actualizadas_raw = df_edicion.to_dict(orient="records")
+
+    # Limpieza extra en filas_actualizadas_raw
+    for f in filas_actualizadas_raw:
+        f["Muestra"] = str(f.get("Muestra")).strip() if f.get("Muestra") is not None else ""
+        f["Archivo"] = str(f.get("Archivo")).strip() if f.get("Archivo") is not None else ""
+
     combinaciones_actualizadas = {
         (f.get("Muestra"), f.get("Archivo"))
         for f in filas_actualizadas_raw

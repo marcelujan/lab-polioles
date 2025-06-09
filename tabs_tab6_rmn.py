@@ -215,49 +215,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     campo_h = "H" if tipo == "RMN 1H" else "C"
     campo_has = "Has" if tipo == "RMN 1H" else "Cas"
 
-    # Helpers seguros
-    def safe_float(val):
-        try:
-            if isinstance(val, pd.Series):
-                val = val.dropna()
-                val = val.iloc[0] if not val.empty else None
-            if isinstance(val, list) or isinstance(val, np.ndarray):
-                val = val[0] if len(val) > 0 else None
-            if pd.isna(val):
-                return None
-            return float(val) if val not in [None, ""] else None
-        except Exception:
-            return None
-
-    def safe_scalar(val):
-        st.warning(f"DEBUG safe_scalar val={val} ({type(val)})")
-        try:
-            if isinstance(val, pd.Series):
-                val = val.dropna()
-                val = val.iloc[0] if not val.empty else None
-            if isinstance(val, list) or isinstance(val, np.ndarray):
-                val = val[0] if len(val) > 0 else None
-            if isinstance(val, str):
-                # si es string con número, intento convertir
-                try:
-                    val = float(val)
-                except:
-                    pass
-            if pd.api.types.is_scalar(val):
-                return val
-            else:
-                return None
-        except Exception:
-            return None
-
-    def is_valid_scalar(val):
-        val = safe_scalar(val)
-        isna_val = pd.isna(val)
-        if isinstance(isna_val, bool):
-            return not isna_val
-        else:
-            return False
-
     # Limpieza de nombres de columnas
     df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]
 

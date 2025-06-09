@@ -218,6 +218,11 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     # Helpers seguros
     def safe_float(val):
         try:
+            if isinstance(val, pd.Series):
+                val = val.dropna()
+                val = val.iloc[0] if not val.empty else None
+            if isinstance(val, list) or isinstance(val, np.ndarray):
+                val = val[0] if len(val) > 0 else None
             if pd.isna(val):
                 return None
             return float(val) if val not in [None, ""] else None
@@ -234,7 +239,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
         if pd.isna(val):
             return None
         return val
-
 
     def is_valid_scalar(val):
         val = safe_scalar(val)

@@ -226,7 +226,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     df_edicion[campo_has] = pd.to_numeric(df_edicion[campo_has], errors="coerce")
 
     # Bucle principal
-    st.warning("VERIFICACIÓN: código RMN actualizado3")
+    st.warning("VERIFICACIÓN: código RMN actualizado 4")
     for i, row in df_edicion.iterrows():
         try:
             row_dict = row.to_dict()
@@ -311,16 +311,22 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
         doc_ref.set({"filas": filas_finales})
         return
     
+    # Limpiar Muestra para evitar Series ambiguos
+    df_edicion["Muestra"] = df_edicion["Muestra"].astype(str).str.strip()
+
     st.warning(f"VERIFICACIÓN FINAL: df_edicion['Muestra'].unique() = {df_edicion['Muestra'].unique()}")
+
     for muestra in df_edicion["Muestra"].unique():
-        filas_m = [f for f in filas_actualizadas_raw if f.get("Muestra") == muestra]
-        doc_out = doc_destino(muestra)
+        muestra_str = str(muestra)  # forzar string por seguridad
+        filas_m = [f for f in filas_actualizadas_raw if str(f.get("Muestra")) == muestra_str]
+        doc_out = doc_destino(muestra_str)
         doc_data = doc_out.get().to_dict()
         filas_previas = doc_data.get("filas", []) if doc_data else []
         archivos_actualizados = set(f["Archivo"] for f in filas_m if f.get("Archivo"))
         filas_conservadas = [f for f in filas_previas if f.get("Archivo") not in archivos_actualizados]
         filas_finales = filas_conservadas + filas_m
         doc_out.set({"filas": filas_finales})
+
 
     st.success("✅ Datos recalculados y guardados correctamente.")
     st.rerun()

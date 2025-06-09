@@ -291,6 +291,8 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
         except Exception as e:
             st.warning(f"⚠️ Error en fila {i}: {e}")
 
+    # Limpiar Muestra para evitar Series ambiguos
+    df_edicion["Muestra"] = df_edicion["Muestra"].astype(str).str.strip()
 
     # Guardar en Firebase (conservar combinaciones no actualizadas)
     filas_actualizadas_raw = df_edicion.to_dict(orient="records")
@@ -311,9 +313,6 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
         doc_ref.set({"filas": filas_finales})
         return
     
-    # Limpiar Muestra para evitar Series ambiguos
-    df_edicion["Muestra"] = df_edicion["Muestra"].astype(str).str.strip()
-
     st.warning(f"VERIFICACIÓN FINAL: df_edicion['Muestra'].unique() = {df_edicion['Muestra'].unique()}")
 
     for muestra in df_edicion["Muestra"].unique():

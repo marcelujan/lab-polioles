@@ -276,8 +276,14 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 )
 
                 df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
+
+                # DEBUG extra: comparar puntos de integración
+                df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
+
                 st.warning(f"DEBUG fila {i}: df_main x = {df_main['x'].tolist()}")
                 st.warning(f"DEBUG fila {i}: df_as x = {df_as['x'].tolist()}")
+
+                # Calcular área normalmente
                 area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
                 df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
 

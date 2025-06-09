@@ -552,6 +552,15 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             check_d_por_espectro[archivo] = col_d.checkbox(f"D – {archivo}", key=f"chk_d_{archivo}_{key_sufijo}")
             check_t2_por_espectro[archivo] = col_t2.checkbox(f"T2 – {archivo}", key=f"chk_t2_{archivo}_{key_sufijo}")
 
+    # Preparar espectro_resta e id_resta para pasar a tablas también
+    espectro_resta = None
+    id_resta = None
+    if restar_espectro and seleccion_resta:
+        id_resta = seleccion_resta.split(" – ")[-1].strip()
+        fila_resta = df[df["archivo"] == id_resta].iloc[0] if id_resta in set(df["archivo"]) else None
+        if fila_resta is not None:
+            espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
+
     if mostrar_tabla_dt2_chk:
         mostrar_tabla_dt2(df, tipo, key_sufijo, db,
                   ajustes_y, normalizar,

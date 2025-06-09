@@ -226,7 +226,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     df_edicion[campo_has] = pd.to_numeric(df_edicion[campo_has], errors="coerce")
 
     # Bucle principal
-    st.warning("VERIFICACIÓN: código RMN actualizado 4")
+    st.warning("VERIFICACIÓN: código RMN actualizado 5")
     for i, row in df_edicion.iterrows():
         try:
             row_dict = row.to_dict()

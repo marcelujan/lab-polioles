@@ -283,33 +283,23 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 continue
 
             # Calcular Área
-            x_min_raw = row_dict.get("X min")
-            x_max_raw = row_dict.get("X max")
-            x_min     = safe_float(safe_scalar(x_min_raw))
-            x_max     = safe_float(safe_scalar(x_max_raw))
+            try:
+                x_min = float(row_dict.get("X min"))
+                x_max = float(row_dict.get("X max"))
 
-            # Depuración completa ANTES de is_valid_scalar
-            st.warning(
-                f"DEBUG fila {i} x_min_raw={x_min_raw} ({type(x_min_raw)}), x_max_raw={x_max_raw} ({type(x_max_raw)}), "
-                f"x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})"
-            )
-
-            # Evaluar is_valid_scalar por separado y forzar bool
-            x_min_ok = is_valid_scalar(x_min)
-            x_max_ok = is_valid_scalar(x_max)
-
-            if bool(x_min_ok) and bool(x_max_ok):
-                st.warning(f"DEBUG fila {i} → PASA is_valid_scalar(x_min, x_max)")
+                st.warning(
+                    f"DEBUG fila {i} x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})"
+                )
 
                 st.warning(f"DEBUG fila {i} df_esp['x'].head() = {df_esp['x'].head().tolist()}")
                 st.warning(f"DEBUG fila {i} df_esp['x'].dtype = {df_esp['x'].dtype}")
 
                 df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
                 area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
-                area = safe_scalar(area)
                 df_edicion.at[i, "Área"] = round(area, 2) if (area is not None) else None
-            else:
-                st.warning(f"DEBUG fila {i} → NO PASA is_valid_scalar(x_min, x_max) → x_min={x_min}, x_max={x_max}")
+
+            except Exception as e:
+                st.warning(f"⚠️ Error en fila {i} al calcular Área: {e}")
                 area = None
                 df_edicion.at[i, "Área"] = None
 

@@ -217,37 +217,37 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]
     st.warning(f"DEBUG columnas: {df_edicion.columns}")
 
+    # Helpers seguros
+    def safe_float(val):
+        try:
+            if pd.isna(val):
+                return None
+            return float(val) if val not in [None, ""] else None
+        except Exception:
+            return None
+
+    def safe_scalar(val):
+        if isinstance(val, pd.Series):
+            return val.iloc[0] if not val.empty else None
+        if pd.isna(val):
+            return None
+        return val
+
+    # Limpieza de nombres de columnas (ya lo tenías):
+    df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]
+    st.warning(f"DEBUG columnas: {df_edicion.columns}")
+
+    # Bucle principal
     for i, row in df_edicion.iterrows():
         try:
-          #  st.warning(f"DEBUG fila {i} → {row_dict}")
-            st.warning(f"DEBUG fila {i} → row={row}")
-            # Convertimos la fila a dict para acceder sin riesgo de Series
-            try:
-                row_dict = row.to_dict()
-            except Exception as e:
-                st.warning(f"⚠️ fila {i}: error convirtiendo row a dict → {e} → row={row}")
-                continue
-
-            # Evitamos cualquier campo que sea Series o esté vacío
-            campos_clave = ["Muestra", "Archivo", "X min", "X max", "Xas min", "Xas max", campo_has]
-            if any(isinstance(row_dict.get(k), pd.Series) for k in campos_clave):
-                st.warning(f"⚠️ Fila {i} descartada: al menos un campo es Series")
-                continue
+            row_dict = row.to_dict()
+            st.warning(f"DEBUG fila {i} → {row_dict}")
 
             muestra = row_dict.get("Muestra")
             archivo = row_dict.get("Archivo")
 
             if not muestra or not archivo:
                 continue
-
-            # Convertir a float cuando aplica
-            def safe_float(val):
-                try:
-                    if pd.isna(val):
-                        return None
-                    return float(val) if val not in [None, ""] else None
-                except Exception:
-                    return None
 
             x_min = safe_float(row_dict.get("X min"))
             x_max = safe_float(row_dict.get("X max"))
@@ -259,20 +259,25 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             if df_esp is None:
                 continue
 
-            # Calcular área principal
+            # Calcular Área
             if (x_min is not None) and (x_max is not None):
                 df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
                 area = np.trapz(df_main["y"], df_main["x"]) if not df_main.empty else None
+                area = safe_scalar(area)
                 df_edicion.at[i, "Área"] = round(area, 2) if (area is not None) else None
             else:
                 area = None
                 df_edicion.at[i, "Área"] = None
 
-            # Calcular área as y H/C
+            # Calcular Área as y H/C
             if (xas_min is not None) and (xas_max is not None):
                 df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]
                 area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
+                area_as = safe_scalar(area_as)
                 df_edicion.at[i, "Área as"] = round(area_as, 2) if (area_as is not None) else None
+
+                # También pasar has_or_cas por safe_scalar (por si acaso)
+                has_or_cas = safe_scalar(has_or_cas)
 
                 if (area is not None) and (area_as is not None) and (has_or_cas is not None) and (area_as != 0):
                     resultado = (area * has_or_cas) / area_as
@@ -285,6 +290,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
         except Exception as e:
             st.warning(f"⚠️ Error en fila {i}: {e}")
+
 
     # Guardar en Firebase (conservar combinaciones no actualizadas)
     filas_actualizadas_raw = df_edicion.to_dict(orient="records")

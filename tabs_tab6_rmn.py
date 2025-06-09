@@ -276,7 +276,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
     combinaciones_actualizadas = {
         (f.get("Muestra"), f.get("Archivo"))
         for f in filas_actualizadas_raw
-        if (f.get("Muestra") not in [None, "", np.nan]) and (f.get("Archivo") not in [None, "", np.nan])
+        if (not pd.isna(f.get("Muestra"))) and (not pd.isna(f.get("Archivo"))) and (f.get("Muestra") != "") and (f.get("Archivo") != "")
     }
 
     if tabla_destino == "dt2":

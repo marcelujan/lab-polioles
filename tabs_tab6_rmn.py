@@ -189,6 +189,13 @@ def precargar_dt2_muestra(db, muestra, tipo):
     data = doc.get().to_dict()
     return data.get("filas", []) if data else []
 
+# --- Helper para precarga de espectros por muestra (wrapper para obtener_df_esp_precargado) ---
+def precargar_espectros_por_muestra(db, muestra):
+    df = precargar_espectros_rmn(db, [{"nombre": muestra}])
+    return {
+        row["archivo"]: row for _, row in df.iterrows()
+    }
+
 # --- Cálculo de integrales: usar espectros precargados ---
 def obtener_df_esp_precargado(db, espectros_dict, muestra, archivo):
     espectro = espectros_dict.get(archivo)

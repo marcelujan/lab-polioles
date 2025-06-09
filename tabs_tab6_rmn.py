@@ -234,6 +234,11 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
             return None
         return val
 
+    def is_valid_scalar(val):
+        val = safe_scalar(val)
+        if pd.isna(val):
+            return False
+        return True
 
     # Limpieza de nombres de columnas
     df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]
@@ -260,14 +265,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 continue
 
             # Calcular Área
-            try:
-                x_min_check = (x_min is not None)
-                x_max_check = (x_max is not None)
-            except Exception as e:
-                st.warning(f"DEBUG fila {i} → ERROR evaluando x_min / x_max: {e}, x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})")
-                continue
-
-            if x_min_check and x_max_check:
+            if is_valid_scalar(x_min) and is_valid_scalar(x_max):
                 st.warning(f"DEBUG fila {i} → x_min={x_min} ({type(x_min)}), x_max={x_max} ({type(x_max)})")
 
                 df_main = df_esp[(df_esp["x"] >= min(x_min, x_max)) & (df_esp["x"] <= max(x_min, x_max))]
@@ -279,8 +277,7 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
                 df_edicion.at[i, "Área"] = None
 
             # Calcular Área as y H/C
-            if (xas_min is not None) and (xas_max is not None):
-                # 🔍 Debug de xas_min y xas_max antes de usar en min()
+            if is_valid_scalar(xas_min) and is_valid_scalar(xas_max):
                 st.warning(f"DEBUG fila {i} → xas_min={xas_min} ({type(xas_min)}), xas_max={xas_max} ({type(xas_max)})")
 
                 df_as = df_esp[(df_esp["x"] >= min(xas_min, xas_max)) & (df_esp["x"] <= max(xas_min, xas_max))]

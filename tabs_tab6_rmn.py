@@ -226,10 +226,14 @@ def recalcular_areas_y_guardar(df_edicion, tipo, db, nombre_tabla, tabla_destino
 
     def safe_scalar(val):
         if isinstance(val, pd.Series):
+            val = val.dropna()
             return val.iloc[0] if not val.empty else None
+        if isinstance(val, list) or isinstance(val, np.ndarray):
+            return val[0] if len(val) > 0 else None
         if pd.isna(val):
             return None
         return val
+
 
     # Limpieza de nombres de columnas
     df_edicion.columns = [str(col) if not pd.isna(col) else "" for col in df_edicion.columns]

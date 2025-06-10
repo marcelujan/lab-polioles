@@ -49,27 +49,6 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
 
     columnas = ["Muestra", "Grupo funcional", "D pico", "X min", "X max", "Área", "Observaciones", "Archivo"]
 
-    if not filas_totales:
-        st.info("No hay datos previos. Podés agregar una nueva fila manualmente.")
-        opciones_muestras = list(set([m for m, _, _, _ in datos_plotly]))
-        opciones_archivos = list(set([a for _, _, a, _ in datos_plotly]))
-        col1, col2 = st.columns(2)
-        with col1:
-            muestra_nueva = st.selectbox("Muestra para nueva fila", opciones_muestras, key="muestra_nueva_ftir")
-        with col2:
-            archivo_nuevo = st.selectbox("Archivo para nueva fila", opciones_archivos, key="archivo_nuevo_ftir")
-
-        filas_totales = [{
-            "Muestra": muestra_nueva,
-            "Grupo funcional": "",
-            "D pico": None,
-            "X min": None,
-            "X max": None,
-            "Área": None,
-            "Observaciones": "",
-            "Archivo": archivo_nuevo
-        }]
-
     df_tabla = pd.DataFrame(filas_totales, columns=columnas)
     df_tabla["Observaciones"] = df_tabla["Observaciones"].astype(str)
     df_tabla["Muestra"] = df_tabla["Muestra"].astype(str)
@@ -78,6 +57,26 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
         df_tabla[col] = pd.to_numeric(df_tabla[col], errors="coerce")
 
     if mostrar:
+        if not filas_totales:
+            st.info("No hay datos previos. Podés agregar una nueva fila manualmente.")
+            opciones_muestras = list(set([m for m, _, _, _ in datos_plotly]))
+            opciones_archivos = list(set([a for _, _, a, _ in datos_plotly]))
+            col1, col2 = st.columns(2)
+            with col1:
+                muestra_nueva = st.selectbox("Muestra para nueva fila", opciones_muestras, key="muestra_nueva_ftir")
+            with col2:
+                archivo_nuevo = st.selectbox("Archivo para nueva fila", opciones_archivos, key="archivo_nuevo_ftir")
+
+            filas_totales = [{
+                "Muestra": muestra_nueva,
+                "Grupo funcional": "",
+                "D pico": None,
+                "X min": None,
+                "X max": None,
+                "Área": None,
+                "Observaciones": "",
+                "Archivo": archivo_nuevo
+            }]
         st.markdown("**📊 Tabla de Cálculos FTIR**")
         key_editor = f"tabla_calculos_ftir_{'sombreado' if sombrear else 'normal'}"
         editada = st.data_editor(

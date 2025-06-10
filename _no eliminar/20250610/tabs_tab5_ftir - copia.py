@@ -759,57 +759,47 @@ def seleccionar_espectros_validos(db, muestras):
 
     # --- Selector de muestra y espectros ---
     muestras_disponibles = sorted(set(k[0] for k in espectros_dict.keys()))
-    muestras_sel = st.multiselect("Seleccionar muestras", muestras_disponibles)
+    muestras_sel = st.multiselect("Seleccionar muestras", opciones_muestras)
     if not muestras_sel:
-        return [], None, {}, None, None, None, None, None, None  # importante para que no falle el return final
-
-    archivos_disp = []
-    for muestra in muestras_sel:
-        archivos_disp.extend([k[1] for k in espectros_dict.keys() if k[0] == muestra])
-
-    archivos_disp = sorted(set(archivos_disp))  # evitar duplicados
-
-    archivos_sel = st.multiselect(
-        "Seleccionar espectros de las muestras seleccionadas",
-        archivos_disp,
-        key="archivos_ftir"
-    )
+        return
+    archivos_disp = [k[1] for k in espectros_dict.keys() if k[0] == muestra_sel]
+    archivos_sel = st.multiselect("Seleccionar espectros de esa muestra", archivos_disp, key="archivos_ftir")
 
     # --- Leer archivos seleccionados ---
     datos_plotly = []
-    for muestra in muestras_sel:
-        for archivo in archivos_sel:
-            clave = (muestra, archivo)
-            if clave not in espectros_dict:
-                continue  # puede que el archivo no pertenezca a esta muestra
-            e = espectros_dict[clave]
-            contenido = BytesIO(base64.b64decode(e["contenido"]))
-            ext = archivo.split(".")[-1].lower()
-            try:
-                if ext == "xlsx":
-                    df = pd.read_excel(contenido, header=None)
+    for archivo in archivos_sel:
+        clave = (muestra_sel, archivo)
+        e = espectros_dict[clave]
+        contenido = BytesIO(base64.b64decode(e["contenido"]))
+        ext = archivo.split(".")[-1].lower()
+
+        try:
+            if ext == "xlsx":
+                df = pd.read_excel(contenido, header=None)
+            else:
+                for sep in [",", ";", "\t", " "]:
+                    contenido.seek(0)
+                    try:
+                        df = pd.read_csv(contenido, sep=sep, header=None)
+                        if df.shape[1] >= 2:
+                            break
+                    except:
+                        continue
                 else:
-                    for sep in [",", ";", "\t", " "]:
-                        contenido.seek(0)
-                        try:
-                            df = pd.read_csv(contenido, sep=sep, header=None)
-                            if df.shape[1] >= 2:
-                                break
-                        except:
-                            continue
-                    else:
-                        df = None
-                if df is not None and df.shape[1] >= 2:
-                    df = df.iloc[:, :2]
-                    df.columns = ["x", "y"]
-                    df = df.apply(pd.to_numeric, errors="coerce").dropna()
-                    datos_plotly.append((e["muestra"], e["tipo"], e["archivo"], df))
-            except Exception as ex:
-                st.warning(f"Error al cargar {archivo}: {ex}")
+                    df = None
+
+            if df is not None and df.shape[1] >= 2:
+                df = df.iloc[:, :2]
+                df.columns = ["x", "y"]
+                df = df.apply(pd.to_numeric, errors="coerce").dropna()
+                datos_plotly.append((e["muestra"], e["tipo"], e["archivo"], df))
+        except Exception as ex:
+            st.warning(f"Error al cargar {archivo}: {ex}")
 
     if not datos_plotly:
         st.info("Seleccioná espectros válidos para graficar.")
-        return [], None, {}, None, None, None, None, None, None
+
+    return datos_plotly
 
 
 def calcular_indice_oh_auto(db, muestras):

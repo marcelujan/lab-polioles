@@ -67,33 +67,20 @@ def precargar_espectros_rmn(db, muestras):
 
 
 
-def mostrar_correccion_viscosidad_individual(df, tipo="RMN 1H"):
+def mostrar_correccion_viscosidad_individual(df):
     st.markdown("**Desplazamiento espectral por viscosidad**")
     correcciones = {}
-
-    # Definir rangos y valores por defecto según tipo
-    if tipo == "RMN 1H":
-        rango_pico1 = (7.20, 7.32)
-        valor_pico1_default = 7.26
-        rango_pico2 = (0.60, 0.80)
-        valor_pico2_default = 0.70
-    else:  # RMN 13C u otro
-        rango_pico1 = (36.5, 37.5)
-        valor_pico1_default = 37.0
-        rango_pico2 = (13.0, 14.0)
-        valor_pico2_default = 13.5
-
     for _, row in df.iterrows():
         archivo_actual = row["archivo"]
         df_esp = decodificar_csv_o_excel(row["contenido"], archivo_actual)
         if df_esp is None or df_esp.empty:
             continue
 
-        pico1 = df_esp[(df_esp["x"] >= rango_pico1[0]) & (df_esp["x"] <= rango_pico1[1])]
-        p1 = pico1["x"][pico1["y"] == pico1["y"].max()].values[0] if not pico1.empty else valor_pico1_default
+        pico1 = df_esp[(df_esp["x"] >= 7.20) & (df_esp["x"] <= 7.32)]
+        p1 = pico1["x"][pico1["y"] == pico1["y"].max()].values[0] if not pico1.empty else 7.26
 
-        pico2 = df_esp[(df_esp["x"] >= rango_pico2[0]) & (df_esp["x"] <= rango_pico2[1])]
-        p2 = pico2["x"][pico2["y"] == pico2["y"].max()].values[0] if not pico2.empty else valor_pico2_default
+        pico2 = df_esp[(df_esp["x"] >= 0.60) & (df_esp["x"] <= 0.80)]
+        p2 = pico2["x"][pico2["y"] == pico2["y"].max()].values[0] if not pico2.empty else 0.70
 
         col1, col2 = st.columns(2)
         with col1:
@@ -102,15 +89,14 @@ def mostrar_correccion_viscosidad_individual(df, tipo="RMN 1H"):
             p2_manual = st.number_input(f"Pico 2 ({archivo_actual})", value=float(p2), key=f"pico2_visc_{archivo_actual}")
 
         try:
-            a = (valor_pico1_default - valor_pico2_default) / (p1_manual - p2_manual)
-            b = valor_pico1_default - a * p1_manual
+            a = (7.26 - 0.70) / (p1_manual - p2_manual)
+            b = 7.26 - a * p1_manual
         except ZeroDivisionError:
             a, b = 1.0, 0.0
 
         correcciones[archivo_actual] = (a, b)
 
     return correcciones
-
 
 def mostrar_ajuste_bibliografia_individual(df):
     st.markdown("### 📘 Ajuste global a bibliografía")
@@ -498,7 +484,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     activar_viscosidad = colv.checkbox("Corregir por viscosidad", key=f"chk_visc_{key_sufijo}")
     activar_biblio = colb.checkbox("Ajustar a bibliografía", key=f"chk_biblio_{key_sufijo}")
 
-    correcciones_viscosidad = mostrar_correccion_viscosidad_individual(df, tipo=tipo) if activar_viscosidad else {}
+    correcciones_viscosidad = mostrar_correccion_viscosidad_individual(df) if activar_viscosidad else {}
 
     # Ajuste global a bibliografía
     if activar_biblio:
@@ -656,6 +642,7 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             altura_min=altura_min,
             distancia_min=distancia_min
         )
+
 
     mostrar_indiv = st.checkbox("Gráficos individuales", key=f"chk_indiv_{key_sufijo}")
     if mostrar_indiv:

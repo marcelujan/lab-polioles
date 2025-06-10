@@ -139,36 +139,7 @@ def mostrar_ajuste_bibliografia_individual(df):
         correcciones[archivo_actual] = (a, b)
 
     return correcciones
-def mostrar_correccion_viscosidad_individual(df):
-    st.markdown("**Desplazamiento espectral por viscosidad**")
-    correcciones = {}
-    for _, row in df.iterrows():
-        archivo_actual = row["archivo"]
-        df_esp = decodificar_csv_o_excel(row["contenido"], archivo_actual)
-        if df_esp is None or df_esp.empty:
-            continue
 
-        pico1 = df_esp[(df_esp["x"] >= 7.20) & (df_esp["x"] <= 7.32)]
-        p1 = pico1["x"][pico1["y"] == pico1["y"].max()].values[0] if not pico1.empty else 7.26
-
-        pico2 = df_esp[(df_esp["x"] >= 0.60) & (df_esp["x"] <= 0.80)]
-        p2 = pico2["x"][pico2["y"] == pico2["y"].max()].values[0] if not pico2.empty else 0.70
-
-        col1, col2 = st.columns(2)
-        with col1:
-            p1_manual = st.number_input(f"Pico 1 ({archivo_actual})", value=float(p1), key=f"pico1_visc_{archivo_actual}")
-        with col2:
-            p2_manual = st.number_input(f"Pico 2 ({archivo_actual})", value=float(p2), key=f"pico2_visc_{archivo_actual}")
-
-        try:
-            a = (7.26 - 0.70) / (p1_manual - p2_manual)
-            b = 7.26 - a * p1_manual
-        except ZeroDivisionError:
-            a, b = 1.0, 0.0
-
-        correcciones[archivo_actual] = (a, b)
-
-    return correcciones
 
 # --- Ajuste global a bibliografía (mismo para todos los espectros) ---
 def mostrar_ajuste_bibliografia_global():

@@ -761,13 +761,12 @@ def seleccionar_espectros_validos(db, muestras):
     muestras_disponibles = sorted(set(k[0] for k in espectros_dict.keys()))
     muestras_sel = st.multiselect("Seleccionar muestras", muestras_disponibles)
     if not muestras_sel:
-        return [], None, {}, None, None, None, None, None, None  # importante para que no falle el return final
+        return []
 
     archivos_disp = []
     for muestra in muestras_sel:
         archivos_disp.extend([k[1] for k in espectros_dict.keys() if k[0] == muestra])
-
-    archivos_disp = sorted(set(archivos_disp))  # evitar duplicados
+    archivos_disp = sorted(set(archivos_disp))
 
     archivos_sel = st.multiselect(
         "Seleccionar espectros de las muestras seleccionadas",
@@ -781,7 +780,7 @@ def seleccionar_espectros_validos(db, muestras):
         for archivo in archivos_sel:
             clave = (muestra, archivo)
             if clave not in espectros_dict:
-                continue  # puede que el archivo no pertenezca a esta muestra
+                continue
             e = espectros_dict[clave]
             contenido = BytesIO(base64.b64decode(e["contenido"]))
             ext = archivo.split(".")[-1].lower()
@@ -809,7 +808,9 @@ def seleccionar_espectros_validos(db, muestras):
 
     if not datos_plotly:
         st.info("Seleccioná espectros válidos para graficar.")
-        return [], None, {}, None, None, None, None, None, None
+
+    return datos_plotly
+
 
 
 def calcular_indice_oh_auto(db, muestras):

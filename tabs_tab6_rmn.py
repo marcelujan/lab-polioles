@@ -78,8 +78,8 @@ def mostrar_correccion_viscosidad_individual(df, tipo="RMN 1H"):
         rango_pico2 = (0.60, 0.80)
         valor_pico2_default = 0.70
     else:  # RMN 13C u otro
-        rango_pico1 = (77.5, 76.5)
-        valor_pico1_default = 77.0
+        rango_pico1 = (172.0, 173.0)
+        valor_pico1_default = 172.5
         rango_pico2 = (13.0, 14.0)
         valor_pico2_default = 13.5
 

@@ -580,31 +580,34 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
         mostrar_tabla_biblio(tipo, key_sufijo, db)
 
     fig = mostrar_grafico_combinado(
-        df=df,
-        tipo=tipo,
-        key_sufijo=key_sufijo,
-        db=db,
-        normalizar=normalizar,
-        mostrar_picos=mostrar_picos,
-        restar_espectro=restar_espectro,
-        seleccion_resta=seleccion_resta,
-        ajustes_y=ajustes_y,
-        superposicion_vertical=superposicion_vertical, 
-        x_min=x_min,
-        x_max=x_max,
-        y_min=y_min,
-        y_max=y_max,
-        aplicar_sombra_dt2=aplicar_sombra_dt2,
-        aplicar_sombra_senales=aplicar_sombra_senales,
-        aplicar_sombra_biblio=aplicar_sombra_biblio,
-        check_d_por_espectro=check_d_por_espectro,
-        check_t2_por_espectro=check_t2_por_espectro,
-        altura_min=altura_min,
-        distancia_min=distancia_min,
-        correcciones_viscosidad=correcciones_viscosidad,
-        a_bib=a_bib,
-        b_bib=b_bib
+    df=df,
+    tipo=tipo,
+    key_sufijo=key_sufijo,
+    db=db,
+    normalizar=normalizar,
+    mostrar_picos=mostrar_picos,
+    restar_espectro=restar_espectro,
+    seleccion_resta=seleccion_resta,
+    espectro_resta=espectro_resta, 
+    id_resta=id_resta,            
+    ajustes_y=ajustes_y,
+    superposicion_vertical=superposicion_vertical,
+    x_min=x_min,
+    x_max=x_max,
+    y_min=y_min,
+    y_max=y_max,
+    aplicar_sombra_dt2=aplicar_sombra_dt2,
+    aplicar_sombra_senales=aplicar_sombra_senales,
+    aplicar_sombra_biblio=aplicar_sombra_biblio,
+    check_d_por_espectro=check_d_por_espectro,
+    check_t2_por_espectro=check_t2_por_espectro,
+    altura_min=altura_min,
+    distancia_min=distancia_min,
+    correcciones_viscosidad=correcciones_viscosidad,
+    a_bib=a_bib,
+    b_bib=b_bib
     )
+
 
     if aplicar_sombra_dt2:
         mostrar_sombreados_dt2(fig, df, tipo, y_max, key_sufijo, check_d_por_espectro, check_t2_por_espectro, db)
@@ -676,6 +679,8 @@ def mostrar_grafico_combinado(
     mostrar_picos,
     restar_espectro,
     seleccion_resta,
+    espectro_resta, 
+    id_resta, 
     ajustes_y,
     superposicion_vertical,
     x_min,
@@ -692,16 +697,8 @@ def mostrar_grafico_combinado(
     correcciones_viscosidad=None,
     a_bib=1.0, b_bib=0.0
 ):
-    fig = go.Figure()
 
-    # --- Decodificar espectro de fondo si aplica ---
-    espectro_resta = None
-    id_resta = None
-    if restar_espectro and seleccion_resta:
-        id_resta = seleccion_resta.split(" – ")[-1].strip()
-        fila_resta = df[df["archivo"] == id_resta].iloc[0] if id_resta in set(df["archivo"]) else None
-        if fila_resta is not None:
-            espectro_resta = decodificar_csv_o_excel(fila_resta["contenido"], fila_resta["archivo"])
+    fig = go.Figure()
 
     # --- Precargar tabla de señales y bibliografía ---
     tipo_doc_senales = "rmn1h" if tipo == "RMN 1H" else "rmn13c"

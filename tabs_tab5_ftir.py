@@ -1160,7 +1160,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         st.markdown("---")
         #st.subheader("Interpretación")
 
-        if st.button("Interpretar espectros mostrados"):
+        if st.button("Interpretar"):
             with st.spinner("Consultando..."):
 
                 # Preparar prompt

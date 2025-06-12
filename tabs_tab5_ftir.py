@@ -1155,16 +1155,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
 
 
-    # 3. Índice OH espectroscópico (siempre visible al final)
-    st.subheader("Índice OH espectroscópico")
-    df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
-    if not df_oh.empty:
-        st.dataframe(df_oh, use_container_width=True)
-
-    # 4. Calculadora manual de Índice OH
-    calculadora_indice_oh_manual()
-    
-
     # --- Interpretación automática con GPT (solo para Marcelo) ---
     if st.session_state.get("user_email") == "mlujan1863@gmail.com" and datos_plotly:
         st.markdown("---")
@@ -1274,6 +1264,18 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
         # Mostrar texto sugerido
         interpretacion = st.session_state.get("interpretacion_gpt_ftir", "")
         st.text_area("Interpretación sugerida:", value=interpretacion, height=200)
+
+
+
+    # 3. Índice OH espectroscópico (siempre visible al final)
+    st.subheader("Índice OH espectroscópico")
+    df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
+    if not df_oh.empty:
+        st.dataframe(df_oh, use_container_width=True)
+
+    # 4. Calculadora manual de Índice OH
+    calculadora_indice_oh_manual()
+    
 
     # Sector flotante final
     mostrar_sector_flotante(db, key_suffix="tab5")

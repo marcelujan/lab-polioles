@@ -1244,7 +1244,7 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
                 client = openai.OpenAI(api_key=st.secrets["openai"]["api_key"])
 
                 try:
-                    respuesta = openai.ChatCompletion.create(
+                    respuesta = client.chat.completions.create(
                         model="gpt-4o",
                         messages=[
                             {"role": "system", "content": "Sos un experto en análisis de espectros FTIR."},
@@ -1253,7 +1253,7 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
                         temperature=0.7,
                         max_tokens=500
                     )
-                    texto_interpretacion = respuesta["choices"][0]["message"]["content"]
+                    texto_interpretacion = respuesta.choices[0].message.content
                     st.session_state["interpretacion_gpt_ftir"] = texto_interpretacion
                     st.success("Interpretación recibida.")
 

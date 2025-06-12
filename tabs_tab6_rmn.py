@@ -1539,7 +1539,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # Mostrar texto sugerido
         interpretacion = st.session_state.get("interpretacion_gpt_rmn", "")
-        st.text_area("Interpretación sugerida:", value=interpretacion, height=200)
+        st.text_area("Interpretación:", value=interpretacion, height=200)
 
     # Sector flotante final
     mostrar_sector_flotante(db, key_suffix="tab6")

@@ -1205,7 +1205,12 @@ Picos principales (posición en cm⁻¹): {picos_detectados}
 
                     picos_exclusivos_texto = ""
                     for i, nombre in enumerate(nombres_muestras):
-                        picos_otros = set.union(*[s for j, s in enumerate(sets_picos) if j != i])
+                        otros_sets = [s for j, s in enumerate(sets_picos) if j != i]
+                        if otros_sets:
+                            picos_otros = set.union(*otros_sets)
+                        else:
+                            picos_otros = set()  # conjunto vacío si no hay otros
+                            
                         picos_exclusivos = sorted(picos_dict[nombre] - picos_otros)
                         picos_exclusivos_texto += f"\n{nombre}\nPicos exclusivos: {picos_exclusivos}\n"
 

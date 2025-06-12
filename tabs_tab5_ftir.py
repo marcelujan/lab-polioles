@@ -1263,7 +1263,7 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
 
         # Mostrar texto sugerido
         interpretacion = st.session_state.get("interpretacion_gpt_ftir", "")
-        st.text_area("Interpretación sugerida:", value=interpretacion, height=200)
+        st.text_area("Interpretación:", value=interpretacion, height=200)
 
 
 

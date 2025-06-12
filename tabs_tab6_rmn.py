@@ -1527,7 +1527,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             {"role": "user", "content": prompt_final}
                         ],
                         temperature=0.7,
-                        max_tokens=500
+                        max_tokens=1200
                     )
                     texto_interpretacion = respuesta.choices[0].message.content
                     st.session_state["interpretacion_gpt_rmn"] = texto_interpretacion

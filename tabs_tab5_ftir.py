@@ -1251,7 +1251,7 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
                             {"role": "user", "content": prompt_final}
                         ],
                         temperature=0.7,
-                        max_tokens=500
+                        max_tokens=1200
                     )
                     texto_interpretacion = respuesta.choices[0].message.content
                     st.session_state["interpretacion_gpt_ftir"] = texto_interpretacion

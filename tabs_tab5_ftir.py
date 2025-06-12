@@ -1105,6 +1105,7 @@ def render_comparacion_espectros_ftir(db, muestras):
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 #    st.title("Análisis FTIR")
     st.session_state["current_tab"] = "Análisis FTIR"
+    datos_plotly = []
     opciones_muestras = sorted([m["nombre"] for m in cargar_muestras(db)])
     muestras_sel = st.multiselect("Seleccionar muestras", opciones_muestras)
     muestras = [m for m in cargar_muestras(db) if m["nombre"] in muestras_sel]
@@ -1167,10 +1168,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     # --- Interpretación automática con GPT (solo para Marcelo) ---
     if st.session_state.get("user_email") == "mlujan1863@gmail.com" and datos_plotly:
         st.markdown("---")
-        st.subheader("🧠 Interpretación automática (GPT-4o)")
+        #st.subheader("Interpretación")
 
         if st.button("Interpretar espectros mostrados"):
-            with st.spinner("Consultando GPT..."):
+            with st.spinner("Consultando..."):
 
                 # Preparar prompt
                 resumen = []

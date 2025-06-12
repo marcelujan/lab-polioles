@@ -409,46 +409,6 @@ def recalcular_areas_y_guardar(
     st.rerun()
 
 
-def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
-    # --- Cargar muestras y espectros ---
-    muestras = cargar_muestras(db)
-    if not muestras:
-        st.warning("No hay muestras disponibles.")
-        st.stop()
-
-    df_total = precargar_espectros_rmn(db, muestras)
-    if df_total.empty:
-        st.warning("No hay espectros RMN disponibles.")
-        st.stop()
-
-    muestras_sel = st.multiselect("Seleccionar muestras", sorted(df_total["muestra"].unique()))
-    df_filtrado = df_total[df_total["muestra"].isin(muestras_sel)]
-
-    opciones = [
-        f"{row['muestra']} – {row['archivo']}" for _, row in df_filtrado.iterrows()
-    ]
-    ids_map = dict(zip(opciones, df_filtrado["id"]))
-    seleccion = st.multiselect("Seleccionar espectros", opciones)
-
-    df_sel = df_filtrado[df_filtrado["id"].isin([ids_map.get(s) for s in seleccion])]
-
-    df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
-    if not df_rmn1h.empty:
-        st.markdown("## 🧪 RMN 1H")
-        render_rmn_plot(df_rmn1h, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
-
-    df_rmn13c = df_sel[df_sel["tipo"] == "RMN 13C"]
-    if not df_rmn13c.empty:
-        st.markdown("## 🧪 RMN 13C")
-        render_rmn_plot(df_rmn13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
-
-    imagenes_sel = df_sel[df_sel["archivo"].str.lower().str.endswith((".png", ".jpg", ".jpeg"))]
-    if not imagenes_sel.empty:
-        st.markdown("## 🧪 RMN Imágenes")
-        render_imagenes(imagenes_sel)
-
-
-
 
 def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:
@@ -1424,3 +1384,156 @@ def render_imagenes(df):
                 st.image(image, use_container_width=True)
             except Exception as e:
                 st.error(f"❌ No se pudo mostrar la imagen: {e}")
+
+
+def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
+    # --- Cargar muestras y espectros ---
+    muestras = cargar_muestras(db)
+    if not muestras:
+        st.warning("No hay muestras disponibles.")
+        st.stop()
+
+    df_total = precargar_espectros_rmn(db, muestras)
+    if df_total.empty:
+        st.warning("No hay espectros RMN disponibles.")
+        st.stop()
+
+    muestras_sel = st.multiselect("Seleccionar muestras", sorted(df_total["muestra"].unique()))
+    df_filtrado = df_total[df_total["muestra"].isin(muestras_sel)]
+
+    opciones = [
+        f"{row['muestra']} – {row['archivo']}" for _, row in df_filtrado.iterrows()
+    ]
+    ids_map = dict(zip(opciones, df_filtrado["id"]))
+    seleccion = st.multiselect("Seleccionar espectros", opciones)
+
+    df_sel = df_filtrado[df_filtrado["id"].isin([ids_map.get(s) for s in seleccion])]
+
+    df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
+    if not df_rmn1h.empty:
+        st.markdown("## 🧪 RMN 1H")
+        render_rmn_plot(df_rmn1h, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
+
+    df_rmn13c = df_sel[df_sel["tipo"] == "RMN 13C"]
+    if not df_rmn13c.empty:
+        st.markdown("## 🧪 RMN 13C")
+        render_rmn_plot(df_rmn13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
+
+    imagenes_sel = df_sel[df_sel["archivo"].str.lower().str.endswith((".png", ".jpg", ".jpeg"))]
+    if not imagenes_sel.empty:
+        st.markdown("## 🧪 RMN Imágenes")
+        render_imagenes(imagenes_sel)
+
+
+    # --- Interpretación  (solo para Marcelo) ---
+    if st.session_state.get("user_email") == "mlujan1863@gmail.com" and datos_plotly:
+        st.markdown("---")
+        st.subheader("Interpretación")
+
+        if st.button("Interpretar espectros mostrados (RMN)"):
+            with st.spinner("Consultando..."):
+
+                resumen = []
+                picos_dict = {}
+                from scipy.signal import find_peaks
+
+                # Recorrer espectros y obtener picos
+                for muestra, tipo, archivo, df in datos_plotly:
+                    x_vals = df["x"].values
+                    y_vals = df["y"].values
+
+                    peaks, _ = find_peaks(y_vals, height=max(y_vals) * 0.1)
+                    picos_detectados = [round(x_vals[p], 2) for p in peaks]
+
+                    resumen.append(f"""
+    Muestra: {muestra}
+    Tipo de espectro: {tipo}
+    Archivo: {archivo}
+    Número total de picos detectados: {len(picos_detectados)}
+    Picos principales (posición en ppm): {picos_detectados}
+    """)
+
+                    picos_dict[f"{muestra} – {archivo}"] = set(picos_detectados)
+
+                # Análisis de picos comunes y exclusivos
+                if picos_dict:
+                    sets_picos = list(picos_dict.values())
+                    nombres_muestras = list(picos_dict.keys())
+
+                    picos_comunes = sorted(set.intersection(*sets_picos)) if len(sets_picos) >= 2 else []
+
+                    picos_exclusivos_texto = ""
+                    for i, nombre in enumerate(nombres_muestras):
+                        otros_sets = [s for j, s in enumerate(sets_picos) if j != i]
+                        if otros_sets:
+                            picos_otros = set.union(*otros_sets)
+                        else:
+                            picos_otros = set()  # conjunto vacío
+
+                        picos_exclusivos = sorted(picos_dict[nombre] - picos_otros)
+                        picos_exclusivos_texto += f"\n{nombre}\nPicos exclusivos: {picos_exclusivos}\n"
+
+                    resumen_picos_comparativo = f"""
+    ---
+    Análisis comparativo automático:
+
+    Picos comunes a todos los espectros: {picos_comunes}
+
+    {picos_exclusivos_texto}
+    """
+                else:
+                    resumen_picos_comparativo = ""
+
+                # Armar prompt
+                prompt_final = f"""
+    Sos un asistente experto en análisis comparativo de espectros de RMN (1H y 13C) de muestras de laboratorio.
+    A continuación te paso un resumen de los espectros actualmente mostrados en el gráfico combinado.
+
+    Tu tarea es generar un texto interpretativo breve para ayudar a analizar estos espectros.
+
+    Por favor incluí los siguientes puntos:
+
+    1️⃣ **Descripción general**: describí los aspectos más relevantes de cada espectro (zonas con señales intensas, zonas limpias, regiones con ruido).
+    2️⃣ **Asignación de señales**: indicá las señales relevantes (ppm) con posibles asignaciones (tipos de protones o carbonos, CH2, CH3, insaturaciones, glicerol, ésteres, carbonilos, etc.).
+    3️⃣ **Comparación entre muestras**: destacá similitudes y diferencias entre los espectros. Comentá si hay señales desplazadas, ausentes o exclusivas.
+    4️⃣ **Resumen de diferencias**: decí si alguna muestra se destaca por tener señales que las otras no presentan.
+    5️⃣ **Sugerencias**: si es posible, sugerí qué diferencias químicas podrían explicar las observaciones.
+
+    NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias a que sos una IA.
+
+    ---
+
+    {''.join(resumen)}
+
+    {resumen_picos_comparativo}
+    """
+
+                # Llamar a GPT API
+                import openai
+                client = openai.OpenAI(api_key=st.secrets["openai"]["api_key"])
+
+                try:
+                    respuesta = client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {"role": "system", "content": "Sos un experto en análisis de espectros de RMN."},
+                            {"role": "user", "content": prompt_final}
+                        ],
+                        temperature=0.7,
+                        max_tokens=500
+                    )
+                    texto_interpretacion = respuesta.choices[0].message.content
+                    st.session_state["interpretacion_gpt_rmn"] = texto_interpretacion
+                    st.success("Interpretación recibida.")
+
+                except Exception as e:
+                    st.error(f"Error al consultar GPT: {e}")
+                    st.session_state["interpretacion_gpt_rmn"] = ""
+
+        # Mostrar texto sugerido
+        interpretacion = st.session_state.get("interpretacion_gpt_rmn", "")
+        st.text_area("Interpretación sugerida:", value=interpretacion, height=200)
+
+
+    # Sector flotante final
+    mostrar_sector_flotante(db, key_suffix="tab6")

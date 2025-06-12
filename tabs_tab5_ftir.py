@@ -1251,7 +1251,7 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
 
                 # Llamar a GPT API
                 import openai
-                openai.api_key = st.secrets["openai"]["api_key"]
+                client = openai.OpenAI(api_key=st.secrets["openai"]["api_key"])
 
                 try:
                     respuesta = openai.ChatCompletion.create(

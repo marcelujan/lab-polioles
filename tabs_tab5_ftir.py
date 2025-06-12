@@ -1174,46 +1174,74 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
                 # Preparar prompt
                 resumen = []
+                picos_dict = {}
                 from scipy.signal import find_peaks
 
+                # Recorrer espectros y obtener picos
                 for muestra, tipo, archivo, df in datos_plotly:
                     x_vals = df["x"].values
                     y_vals = df["y"].values
 
-                    # Detectar picos principales
-                    peaks, _ = find_peaks(y_vals, height=max(y_vals) * 0.1)  # umbral 10%
+                    peaks, _ = find_peaks(y_vals, height=max(y_vals) * 0.1)
                     picos_detectados = [round(x_vals[p], 2) for p in peaks]
 
                     resumen.append(f"""
-    Muestra: {muestra}
-    Tipo de espectro: {tipo}
-    Archivo: {archivo}
-    Número total de picos detectados: {len(picos_detectados)}
-    Picos principales (posición en cm⁻¹): {picos_detectados}
-    """)
+Muestra: {muestra}
+Tipo de espectro: {tipo}
+Archivo: {archivo}
+Número total de picos detectados: {len(picos_detectados)}
+Picos principales (posición en cm⁻¹): {picos_detectados}
+""")
 
+                    picos_dict[f"{muestra} – {archivo}"] = set(picos_detectados)
+
+                # Análisis de picos comunes y exclusivos
+                if picos_dict:
+                    sets_picos = list(picos_dict.values())
+                    nombres_muestras = list(picos_dict.keys())
+
+                    picos_comunes = sorted(set.intersection(*sets_picos)) if len(sets_picos) >= 2 else []
+
+                    picos_exclusivos_texto = ""
+                    for i, nombre in enumerate(nombres_muestras):
+                        picos_otros = set.union(*[s for j, s in enumerate(sets_picos) if j != i])
+                        picos_exclusivos = sorted(picos_dict[nombre] - picos_otros)
+                        picos_exclusivos_texto += f"\n{nombre}\nPicos exclusivos: {picos_exclusivos}\n"
+
+                    resumen_picos_comparativo = f"""
+---
+Análisis comparativo automático:
+
+Picos comunes a todos los espectros: {picos_comunes}
+
+{picos_exclusivos_texto}
+"""
+                else:
+                    resumen_picos_comparativo = ""
+
+                # Armar prompt
                 prompt_final = f"""
-                Sos un asistente experto en análisis comparativo de espectros FTIR de muestras de laboratorio.
-                A continuación te paso un resumen de los espectros actualmente mostrados en el gráfico combinado.
+Sos un asistente experto en análisis comparativo de espectros FTIR de muestras de laboratorio.
+A continuación te paso un resumen de los espectros actualmente mostrados en el gráfico combinado.
 
-                Tu tarea es generar un texto interpretativo breve para ayudar a analizar estos espectros.
+Tu tarea es generar un texto interpretativo breve para ayudar a analizar estos espectros.
 
-                Por favor incluí los siguientes puntos:
+Por favor incluí los siguientes puntos:
 
-                1️⃣ **Descripción general**: describí los aspectos más relevantes de cada espectro (bandas intensas, zonas limpias, zonas con ruido).
-                2️⃣ **Asignación de bandas**: indicá bandas relevantes de cada espectro con posibles asignaciones funcionales (ej: carbonilos, OH, C=C, CH2, CH3, etc.).
-                3️⃣ **Comparación entre muestras**: destacá similitudes y diferencias entre los espectros. Comentá si hay picos desplazados, ausentes o exclusivos.
-                4️⃣ **Resumen de diferencias**: decí si alguna muestra se destaca por tener bandas que las otras no presentan.
-                5️⃣ **Sugerencias**: si es posible, sugerí qué diferencias químicas podrían explicar las observaciones.
+1️⃣ **Descripción general**: describí los aspectos más relevantes de cada espectro (bandas intensas, zonas limpias, zonas con ruido).
+2️⃣ **Asignación de bandas**: indicá bandas relevantes de cada espectro con posibles asignaciones funcionales (ej: carbonilos, OH, C=C, CH2, CH3, etc.).
+3️⃣ **Comparación entre muestras**: destacá similitudes y diferencias entre los espectros. Comentá si hay picos desplazados, ausentes o exclusivos.
+4️⃣ **Resumen de diferencias**: decí si alguna muestra se destaca por tener bandas que las otras no presentan.
+5️⃣ **Sugerencias**: si es posible, sugerí qué diferencias químicas podrían explicar las observaciones.
 
-                NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias a que sos una IA.
+NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias a que sos una IA.
 
-                ---
+---
 
-                {''.join(resumen)}
-                """
+{''.join(resumen)}
 
-
+{resumen_picos_comparativo}
+"""
 
                 # Llamar a GPT API
                 import openai
@@ -1240,7 +1268,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         # Mostrar texto sugerido
         interpretacion = st.session_state.get("interpretacion_gpt_ftir", "")
         st.text_area("Interpretación sugerida:", value=interpretacion, height=200)
-
 
     # Sector flotante final
     mostrar_sector_flotante(db, key_suffix="tab5")

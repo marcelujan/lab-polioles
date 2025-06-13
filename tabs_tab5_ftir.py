@@ -873,10 +873,6 @@ def render_comparacion_espectros_ftir(db, muestras):
     tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
     espectros_dict = {}
 
-    # --- Inicializar filtros en session_state ---
-    if "filtros_muestra" not in st.session_state:
-        st.session_state["filtros_muestra"] = {}
-
     # --- Leer espectros válidos ---
     for m in muestras:
         nombre = m["nombre"]
@@ -893,77 +889,56 @@ def render_comparacion_espectros_ftir(db, muestras):
                     "peso_muestra": e.get("peso_muestra")
                 }
 
+    if not muestras:
+        return [], None, {}, None, None, None, None, None, None
+
     if not espectros_dict:
         st.info("No hay espectros FTIR válidos para mostrar.")
         return [], None, {}, None, None, None, None, None, None
 
-    # --- Selector de muestras ---
-    muestras_disponibles = sorted(set(k[0] for k in espectros_dict.keys()))
-    muestras_sel = st.multiselect("Seleccionar muestras", muestras_disponibles)
-    if not muestras_sel:
-        return [], None, {}, None, None, None, None, None, None
+    # --- Filtros globales ---
+    tipos_unicos = sorted(set(e["tipo"] for e in espectros_dict.values()))
+    fechas_unicas = sorted(set(e.get("fecha", "Sin fecha") for e in espectros_dict.values()))
+    pesos_validos = [
+        e.get("peso_muestra") for e in espectros_dict.values()
+        if isinstance(e.get("peso_muestra"), (int, float)) and e.get("peso_muestra") is not None
+    ]
 
-    # --- Filtros por muestra ---
-    for muestra in muestras_sel:
-        espectros_muestra = [e for k, e in espectros_dict.items() if k[0] == muestra]
-
-        tipos_unicos = sorted(set(e["tipo"] for e in espectros_muestra))
-        fechas_unicas = sorted(set(e.get("fecha", "Sin fecha") for e in espectros_muestra))
-        pesos_validos = [
-            e.get("peso_muestra") for e in espectros_muestra
-            if isinstance(e.get("peso_muestra"), (int, float)) and e.get("peso_muestra") is not None
-        ]
-
-        if muestra not in st.session_state["filtros_muestra"]:
-            st.session_state["filtros_muestra"][muestra] = {
-                "tipos_seleccionados": tipos_unicos.copy(),
-                "fechas_seleccionadas": fechas_unicas.copy(),
-                "peso_min": min(pesos_validos) if pesos_validos else None,
-                "peso_max": max(pesos_validos) if pesos_validos else None,
-            }
-
-        filtros = st.session_state["filtros_muestra"][muestra]
-
-        with st.expander(f"Filtros para muestra: {muestra}", expanded=True):
-            filtros["tipos_seleccionados"] = st.multiselect(
-                f"Tipos de espectro ({muestra})", tipos_unicos, default=filtros["tipos_seleccionados"],
-                key=f"tipos_{muestra}"
+    # --- Mostrar filtros globales ---
+    with st.expander("Filtros globales", expanded=True):
+        tipos_seleccionados = st.multiselect(
+            "Tipos de espectro", tipos_unicos, default=tipos_unicos, key="tipos_global"
+        )
+        fechas_seleccionadas = st.multiselect(
+            "Fechas", fechas_unicas, default=fechas_unicas, key="fechas_global"
+        )
+        if pesos_validos:
+            peso_min, peso_max = st.slider(
+                "Peso muestra", min_value=float(min(pesos_validos)),
+                max_value=float(max(pesos_validos)),
+                value=(float(min(pesos_validos)), float(max(pesos_validos))),
+                step=0.01,
+                key="peso_global"
             )
-            filtros["fechas_seleccionadas"] = st.multiselect(
-                f"Fechas ({muestra})", fechas_unicas, default=filtros["fechas_seleccionadas"],
-                key=f"fechas_{muestra}"
-            )
-            if pesos_validos:
-                peso_min, peso_max = st.slider(
-                    f"Peso muestra ({muestra})", min_value=float(min(pesos_validos)),
-                    max_value=float(max(pesos_validos)),
-                    value=(filtros["peso_min"], filtros["peso_max"]),
-                    step=0.01,
-                    key=f"peso_{muestra}"
-                )
-                filtros["peso_min"], filtros["peso_max"] = peso_min, peso_max
-            else:
-                st.info("Esta muestra no tiene pesos definidos para sus espectros.")
+        else:
+            peso_min, peso_max = None, None
+            st.info("No hay pesos definidos en los espectros.")
 
     # --- Selector de espectros filtrado ---
     archivos_disp = []
-    for muestra in muestras_sel:
-        filtros = st.session_state["filtros_muestra"][muestra]
-        for (m, archivo), e in espectros_dict.items():
-            if m != muestra:
+    for (m, archivo), e in espectros_dict.items():
+        if e["tipo"] not in tipos_seleccionados:
+            continue
+        if e.get("fecha", "Sin fecha") not in fechas_seleccionadas:
+            continue
+        peso = e.get("peso_muestra")
+        if isinstance(peso, (int, float)):
+            if not (peso_min <= peso <= peso_max):
                 continue
-            if e["tipo"] not in filtros["tipos_seleccionados"]:
+        else:
+            if peso_min is not None and peso_max is not None:
                 continue
-            if e.get("fecha", "Sin fecha") not in filtros["fechas_seleccionadas"]:
-                continue
-            peso = e.get("peso_muestra")
-            if isinstance(peso, (int, float)):
-                if not (filtros["peso_min"] <= peso <= filtros["peso_max"]):
-                    continue
-            else:
-                if filtros["peso_min"] is not None and filtros["peso_max"] is not None:
-                    continue
-            archivos_disp.append(f"{muestra} – {archivo}")
+        archivos_disp.append(f"{m} – {archivo}")
 
     archivos_disp = sorted(set(archivos_disp))
 
@@ -1005,7 +980,7 @@ def render_comparacion_espectros_ftir(db, muestras):
         st.info("Seleccioná espectros válidos para graficar.")
         return [], None, {}, None, None, None, None, None, None
 
-    # --- Resto de tu flujo (copiado de tu bloque actual) ---
+    # --- Resto de tu flujo ---
     controles = render_controles_preprocesamiento(datos_plotly)
 
     altura_min = 0.02

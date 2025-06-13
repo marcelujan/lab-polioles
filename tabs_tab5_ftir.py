@@ -795,7 +795,7 @@ def seleccionar_espectros_validos(db, muestras):
         filtros = st.session_state["filtros_muestra"][muestra]
 
         # --- Mostrar selectores de filtros ---
-        with st.expander(f"Filtros para muestra: {muestra}"):
+        with st.expander(f"Filtros para muestra: {muestra}", expanded=True):
             filtros["tipos_seleccionados"] = st.multiselect(
                 f"Tipos de espectro ({muestra})", tipos_unicos, default=filtros["tipos_seleccionados"],
                 key=f"tipos_{muestra}"

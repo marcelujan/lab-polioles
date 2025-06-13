@@ -905,24 +905,23 @@ def render_comparacion_espectros_ftir(db, muestras):
     ]
 
     # --- Mostrar filtros globales ---
-    with st.expander("Filtros globales", expanded=True):
-        tipos_seleccionados = st.multiselect(
-            "Tipos de espectro", tipos_unicos, default=tipos_unicos, key="tipos_global"
+    tipos_seleccionados = st.multiselect(
+        "Tipos de espectro", tipos_unicos, default=tipos_unicos, key="tipos_global"
+    )
+    fechas_seleccionadas = st.multiselect(
+        "Fechas", fechas_unicas, default=fechas_unicas, key="fechas_global"
+    )
+    if pesos_validos:
+        peso_min, peso_max = st.slider(
+            "Peso muestra", min_value=float(min(pesos_validos)),
+            max_value=float(max(pesos_validos)),
+            value=(float(min(pesos_validos)), float(max(pesos_validos))),
+            step=0.01,
+            key="peso_global"
         )
-        fechas_seleccionadas = st.multiselect(
-            "Fechas", fechas_unicas, default=fechas_unicas, key="fechas_global"
-        )
-        if pesos_validos:
-            peso_min, peso_max = st.slider(
-                "Peso muestra", min_value=float(min(pesos_validos)),
-                max_value=float(max(pesos_validos)),
-                value=(float(min(pesos_validos)), float(max(pesos_validos))),
-                step=0.01,
-                key="peso_global"
-            )
-        else:
-            peso_min, peso_max = None, None
-            st.info("No hay pesos definidos en los espectros.")
+    else:
+        peso_min, peso_max = None, None
+        st.info("No hay pesos definidos en los espectros.")
 
     # --- Selector de espectros filtrado ---
     archivos_disp = []

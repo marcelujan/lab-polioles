@@ -738,10 +738,6 @@ def render_controles_preprocesamiento(datos_plotly):
 def seleccionar_espectros_validos(db, muestras):
     tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
     espectros_dict = {}
-    # --- Inicializar filtros en session_state ---
-    if "filtros_muestra" not in st.session_state:
-        st.session_state["filtros_muestra"] = {}
-
 
     for m in muestras:
         nombre = m["nombre"]
@@ -753,9 +749,7 @@ def seleccionar_espectros_validos(db, muestras):
                     "contenido": e.get("contenido"),
                     "tipo": tipo,
                     "archivo": archivo,
-                    "muestra": nombre,
-                    "fecha": e.get("fecha", "Sin fecha"),
-                    "peso_muestra": e.get("peso_muestra")  # también conviene guardar esto
+                    "muestra": nombre
                 }
 
     if not espectros_dict:
@@ -768,78 +762,9 @@ def seleccionar_espectros_validos(db, muestras):
     if not muestras_sel:
         return []
 
-    # --- Procesar filtros por muestra ---
-    for muestra in muestras_sel:
-        # Subset de espectros de esta muestra
-        espectros_muestra = [e for k, e in espectros_dict.items() if k[0] == muestra]
-
-        # Tipos y fechas únicas
-        tipos_unicos = sorted(set(e["tipo"] for e in espectros_muestra))
-        fechas_unicas = sorted(set(e.get("fecha", "Sin fecha") for e in espectros_muestra))
-
-        # Pesos: filtrar solo espectros que tienen peso definido y que es numérico
-        pesos_validos = [
-            e.get("peso_muestra") for e in espectros_muestra
-            if isinstance(e.get("peso_muestra"), (int, float)) and e.get("peso_muestra") is not None
-        ]
-
-        # --- Inicializar filtros por muestra si no existen ---
-        if muestra not in st.session_state["filtros_muestra"]:
-            st.session_state["filtros_muestra"][muestra] = {
-                "tipos_seleccionados": tipos_unicos.copy(),
-                "fechas_seleccionadas": fechas_unicas.copy(),
-                "peso_min": min(pesos_validos) if pesos_validos else None,
-                "peso_max": max(pesos_validos) if pesos_validos else None,
-            }
-
-        filtros = st.session_state["filtros_muestra"][muestra]
-
-        # --- Mostrar selectores de filtros ---
-        with st.expander(f"Filtros para muestra: {muestra}"):
-            filtros["tipos_seleccionados"] = st.multiselect(
-                f"Tipos de espectro ({muestra})", tipos_unicos, default=filtros["tipos_seleccionados"],
-                key=f"tipos_{muestra}"
-            )
-            filtros["fechas_seleccionadas"] = st.multiselect(
-                f"Fechas ({muestra})", fechas_unicas, default=filtros["fechas_seleccionadas"],
-                key=f"fechas_{muestra}"
-            )
-            if pesos_validos:
-                peso_min, peso_max = st.slider(
-                    f"Peso muestra ({muestra})", min_value=float(min(pesos_validos)),
-                    max_value=float(max(pesos_validos)),
-                    value=(filtros["peso_min"], filtros["peso_max"]),
-                    step=0.01,
-                    key=f"peso_{muestra}"
-                )
-                filtros["peso_min"], filtros["peso_max"] = peso_min, peso_max
-            else:
-                st.info("Esta muestra no tiene pesos definidos para sus espectros.")
-
-    # --- Selector de espectros filtrado ---
     archivos_disp = []
     for muestra in muestras_sel:
-        filtros = st.session_state["filtros_muestra"][muestra]
-        for (m, archivo), e in espectros_dict.items():
-            if m != muestra:
-                continue
-            if e["tipo"] not in filtros["tipos_seleccionados"]:
-                continue
-            if e.get("fecha", "Sin fecha") not in filtros["fechas_seleccionadas"]:
-                continue
-            peso = e.get("peso_muestra")
-            if isinstance(peso, (int, float)):
-                # Espectros con peso → aplicar filtro de rango
-                if not (filtros["peso_min"] <= peso <= filtros["peso_max"]):
-                    continue
-            else:
-                # Espectros sin peso → solo incluir si no hay rango de peso activo
-                if filtros["peso_min"] is not None and filtros["peso_max"] is not None:
-                    # Si el usuario ajustó el slider, no incluir espectros sin peso
-                    continue
-
-            archivos_disp.append(archivo)
-
+        archivos_disp.extend([k[1] for k in espectros_dict.keys() if k[0] == muestra])
     archivos_disp = sorted(set(archivos_disp))
 
     archivos_sel = st.multiselect(

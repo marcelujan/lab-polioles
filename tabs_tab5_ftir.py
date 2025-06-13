@@ -1018,29 +1018,109 @@ def obtener_espectros_para_muestra(db, nombre):
 
 
 def render_comparacion_espectros_ftir(db, muestras):
-#    st.subheader("Comparación de espectros FTIR")
+    #st.subheader("Comparación de espectros FTIR")
     tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
     espectros_dict = {}
 
+    # --- Inicializar filtros en session_state ---
+    if "filtros_muestra" not in st.session_state:
+        st.session_state["filtros_muestra"] = {}
+
+    # --- Leer espectros válidos ---
     for m in muestras:
         nombre = m["nombre"]
         for e in obtener_espectros_para_muestra(db, nombre):
             tipo = e.get("tipo", "")
             if tipo in tipos_validos and not e.get("es_imagen", False):
                 archivo = e.get("nombre_archivo", "Sin nombre")
-                clave = (nombre, archivo)
-                espectros_dict[clave] = {
+                espectros_dict[(nombre, archivo)] = {
                     "contenido": e.get("contenido"),
                     "tipo": tipo,
                     "archivo": archivo,
-                    "muestra": nombre
+                    "muestra": nombre,
+                    "fecha": e.get("fecha", "Sin fecha"),
+                    "peso_muestra": e.get("peso_muestra")
                 }
 
-    archivos_disponibles = [
-        f"{muestra} – {archivo}" for (muestra, archivo) in espectros_dict.keys()
-    ]
-    archivos_sel = st.multiselect("Seleccionar espectros", archivos_disponibles, key="archivos_ftir")
+    if not espectros_dict:
+        st.info("No hay espectros FTIR válidos para mostrar.")
+        return [], None, {}, None, None, None, None, None, None
 
+    # --- Selector de muestras ---
+    muestras_disponibles = sorted(set(k[0] for k in espectros_dict.keys()))
+    muestras_sel = st.multiselect("Seleccionar muestras", muestras_disponibles)
+    if not muestras_sel:
+        return [], None, {}, None, None, None, None, None, None
+
+    # --- Filtros por muestra ---
+    for muestra in muestras_sel:
+        espectros_muestra = [e for k, e in espectros_dict.items() if k[0] == muestra]
+
+        tipos_unicos = sorted(set(e["tipo"] for e in espectros_muestra))
+        fechas_unicas = sorted(set(e.get("fecha", "Sin fecha") for e in espectros_muestra))
+        pesos_validos = [
+            e.get("peso_muestra") for e in espectros_muestra
+            if isinstance(e.get("peso_muestra"), (int, float)) and e.get("peso_muestra") is not None
+        ]
+
+        if muestra not in st.session_state["filtros_muestra"]:
+            st.session_state["filtros_muestra"][muestra] = {
+                "tipos_seleccionados": tipos_unicos.copy(),
+                "fechas_seleccionadas": fechas_unicas.copy(),
+                "peso_min": min(pesos_validos) if pesos_validos else None,
+                "peso_max": max(pesos_validos) if pesos_validos else None,
+            }
+
+        filtros = st.session_state["filtros_muestra"][muestra]
+
+        with st.expander(f"Filtros para muestra: {muestra}", expanded=True):
+            filtros["tipos_seleccionados"] = st.multiselect(
+                f"Tipos de espectro ({muestra})", tipos_unicos, default=filtros["tipos_seleccionados"],
+                key=f"tipos_{muestra}"
+            )
+            filtros["fechas_seleccionadas"] = st.multiselect(
+                f"Fechas ({muestra})", fechas_unicas, default=filtros["fechas_seleccionadas"],
+                key=f"fechas_{muestra}"
+            )
+            if pesos_validos:
+                peso_min, peso_max = st.slider(
+                    f"Peso muestra ({muestra})", min_value=float(min(pesos_validos)),
+                    max_value=float(max(pesos_validos)),
+                    value=(filtros["peso_min"], filtros["peso_max"]),
+                    step=0.01,
+                    key=f"peso_{muestra}"
+                )
+                filtros["peso_min"], filtros["peso_max"] = peso_min, peso_max
+            else:
+                st.info("Esta muestra no tiene pesos definidos para sus espectros.")
+
+    # --- Selector de espectros filtrado ---
+    archivos_disp = []
+    for muestra in muestras_sel:
+        filtros = st.session_state["filtros_muestra"][muestra]
+        for (m, archivo), e in espectros_dict.items():
+            if m != muestra:
+                continue
+            if e["tipo"] not in filtros["tipos_seleccionados"]:
+                continue
+            if e.get("fecha", "Sin fecha") not in filtros["fechas_seleccionadas"]:
+                continue
+            peso = e.get("peso_muestra")
+            if isinstance(peso, (int, float)):
+                if not (filtros["peso_min"] <= peso <= filtros["peso_max"]):
+                    continue
+            else:
+                if filtros["peso_min"] is not None and filtros["peso_max"] is not None:
+                    continue
+            archivos_disp.append(f"{muestra} – {archivo}")
+
+    archivos_disp = sorted(set(archivos_disp))
+
+    archivos_sel = st.multiselect(
+        "Seleccionar espectros", archivos_disp, key="archivos_ftir"
+    )
+
+    # --- Leer archivos seleccionados ---
     datos_plotly = []
     for item in archivos_sel:
         muestra, archivo = item.split(" – ", 1)
@@ -1069,13 +1149,14 @@ def render_comparacion_espectros_ftir(db, muestras):
                 datos_plotly.append((e["muestra"], e["tipo"], e["archivo"], df))
         except Exception as ex:
             st.warning(f"Error al cargar {archivo}: {ex}")
+
     if not datos_plotly:
         st.info("Seleccioná espectros válidos para graficar.")
         return [], None, {}, None, None, None, None, None, None
 
+    # --- Resto de tu flujo (copiado de tu bloque actual) ---
     controles = render_controles_preprocesamiento(datos_plotly)
 
-    # Mostrar controles de picos solo si está activado
     altura_min = 0.02
     distancia_min = 20
     if controles["mostrar_picos"]:
@@ -1104,10 +1185,9 @@ def render_comparacion_espectros_ftir(db, muestras):
         controles["x_min"], controles["x_max"]
     )
 
-
     render_tabla_calculos_ftir(db, datos_plotly, mostrar=mostrar_calculos, sombrear=sombrear_calculos)
     render_tabla_bibliografia_ftir(db, mostrar=mostrar_biblio, delinear=delinear_biblio)
- 
+
     if mostrar_similitud:
         col1, col2, col3, col4 = st.columns([1.2, 1.2, 1.2, 1.2])
         x_min = col1.number_input("X min", value=1000.0, step=1.0, key="simil_xmin")
@@ -1174,7 +1254,7 @@ def render_comparacion_espectros_ftir(db, muestras):
         controles["x_ref"], controles["y_ref"],
         controles["x_min"], controles["x_max"],
         controles["y_min"], controles["y_max"]
-        )
+    )
 
 
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):

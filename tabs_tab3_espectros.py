@@ -115,13 +115,10 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.markdown(f"**🆔 Nuevo nombre asignado al archivo para su descarga:** `{nombre_generado}`")
 
     if st.button("Guardar espectro") and archivo:
-        observaciones_totales = f"Archivo original: {archivo.name}"
-        if observaciones:
-            observaciones_totales += f" — {observaciones}"
-
         nuevo = {
             "tipo": tipo_espectro,
-            "observaciones": observaciones_totales,
+            "observaciones": observaciones.strip(), 
+            "archivo_original": archivo.name, 
             "nombre_archivo": nombre_generado,
             "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8"),
             "es_imagen": archivo.type.startswith("image/"),
@@ -136,7 +133,6 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         ref.document().set(nuevo)
         st.success("Espectro guardado.")
         st.rerun()
-
 
     st.subheader("Espectros cargados")   # Tabla de espectros ya cargados
     filas = []

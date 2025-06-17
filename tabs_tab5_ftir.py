@@ -886,7 +886,8 @@ def render_comparacion_espectros_ftir(db, muestras):
                     "archivo": archivo,
                     "muestra": nombre,
                     "fecha": e.get("fecha", "Sin fecha"),
-                    "peso_muestra": e.get("peso_muestra")
+                    "peso_muestra": e.get("peso_muestra"),
+                    "observaciones": e.get("observaciones", "")
                 }
 
     if not muestras:
@@ -925,6 +926,8 @@ def render_comparacion_espectros_ftir(db, muestras):
 
     # --- Selector de espectros filtrado ---
     archivos_disp = []
+    archivos_dict_displayname = {}  # Para mapear display_name → (m, archivo)
+
     for (m, archivo), e in espectros_dict.items():
         if e["tipo"] not in tipos_seleccionados:
             continue
@@ -934,10 +937,15 @@ def render_comparacion_espectros_ftir(db, muestras):
         if isinstance(peso, (int, float)):
             if not (peso_min <= peso <= peso_max):
                 continue
+
+        # Construir display_name
+        if e.get("observaciones", ""):
+            display_name = f"{archivo} – {e['observaciones'][:20]}"
         else:
-            if peso_min is not None and peso_max is not None:
-                continue
-        archivos_disp.append(f"{m} – {archivo}")
+            display_name = archivo
+
+        archivos_disp.append(display_name)
+        archivos_dict_displayname[display_name] = (m, archivo)  # para poder decodificar después
 
     archivos_disp = sorted(set(archivos_disp))
 
@@ -948,7 +956,7 @@ def render_comparacion_espectros_ftir(db, muestras):
     # --- Leer archivos seleccionados ---
     datos_plotly = []
     for item in archivos_sel:
-        muestra, archivo = item.split(" – ", 1)
+        muestra, archivo = archivos_dict_displayname[item]
         clave = (muestra, archivo)
         e = espectros_dict[clave]
         contenido = BytesIO(base64.b64decode(e["contenido"]))

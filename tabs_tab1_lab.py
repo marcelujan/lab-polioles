@@ -13,28 +13,43 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     muestras = cargar_muestras(db)
 
     if st.checkbox("Mostrar resumen de observaciones", key="mostrar_resumen_obs"):
-        st.markdown("#### 📝 Editar observaciones por muestra:")
+        st.markdown("#### 📝 Selecciona muestras para editar sus observaciones:")
 
-        observaciones_modificadas = {}
+        muestras = cargar_muestras(db)  # actualizar
+
+        # Parte 1: checkboxes en 4 columnas
+        muestras_seleccionadas = []
         cols = st.columns(4)
-
-        muestras = cargar_muestras(db)  # asegurar que está actualizado
 
         for idx, m in enumerate(muestras):
             nombre = m.get("nombre", "Sin nombre")
-            obs_original = m.get("observacion", "")
             key_checkbox = f"ver_obs_{nombre}"
-            key_textarea = f"textarea_obs_{nombre}"
-
             with cols[idx % 4]:
                 if st.checkbox(nombre, key=key_checkbox):
-                    nueva_obs = st.text_area(f"Observación – {nombre}", value=obs_original, key=key_textarea, height=100, label_visibility="collapsed")
-                    if nueva_obs.strip() != obs_original.strip():
-                        observaciones_modificadas[nombre] = nueva_obs.strip()
+                    muestras_seleccionadas.append(nombre)
+
+        # Parte 2: edición de observaciones (en orden de selección)
+        observaciones_modificadas = {}
+
+        for nombre in muestras_seleccionadas:
+            muestra = next((m for m in muestras if m["nombre"] == nombre), None)
+            if muestra:
+                obs_original = muestra.get("observacion", "")
+                key_textarea = f"textarea_obs_{nombre}"
+                st.markdown(f"**{nombre}**")
+                nueva_obs = st.text_area(
+                    label="",
+                    value=obs_original,
+                    key=key_textarea,
+                    height=100,
+                    label_visibility="collapsed"
+                )
+                if nueva_obs.strip() != obs_original.strip():
+                    observaciones_modificadas[nombre] = nueva_obs.strip()
 
         if observaciones_modificadas:
             if st.button("💾 Guardar cambios en observaciones"):
-                muestras = cargar_muestras(db)  # volver a cargar por seguridad
+                muestras = cargar_muestras(db)  # recargar por seguridad
                 for m in muestras:
                     nombre = m["nombre"]
                     if nombre in observaciones_modificadas:

@@ -36,13 +36,11 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             if muestra:
                 obs_original = muestra.get("observacion", "")
                 key_textarea = f"textarea_obs_{nombre}"
-                st.markdown(f"**{nombre}**")
                 nueva_obs = st.text_area(
-                    label="",
+                    label=nombre,  # Usamos el nombre directamente como etiqueta
                     value=obs_original,
                     key=key_textarea,
-                    height=100,
-                    label_visibility="collapsed"
+                    height=80,
                 )
                 if nueva_obs.strip() != obs_original.strip():
                     observaciones_modificadas[nombre] = nueva_obs.strip()

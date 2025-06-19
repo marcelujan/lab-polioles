@@ -13,32 +13,40 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     muestras = cargar_muestras(db)
 
     if st.checkbox("Mostrar resumen de observaciones", key="mostrar_resumen_obs"):
-        observaciones_seleccionadas = []
-        cols = st.columns(4)  # Usamos 4 columnas
+        st.markdown("#### 📝 Editar observaciones por muestra:")
+
+        observaciones_modificadas = {}
+        cols = st.columns(4)
+
+        muestras = cargar_muestras(db)  # asegurar que está actualizado
 
         for idx, m in enumerate(muestras):
             nombre = m.get("nombre", "Sin nombre")
-            obs = m.get("observacion", "")
+            obs_original = m.get("observacion", "")
             key_checkbox = f"ver_obs_{nombre}"
+            key_textarea = f"textarea_obs_{nombre}"
 
-            # Distribuye los checkboxes en las columnas
             with cols[idx % 4]:
                 if st.checkbox(nombre, key=key_checkbox):
-                    observaciones_seleccionadas.append(f"🔹 **{nombre}**:\n{obs.strip()}")
+                    nueva_obs = st.text_area(f"Observación – {nombre}", value=obs_original, key=key_textarea, height=100, label_visibility="collapsed")
+                    if nueva_obs.strip() != obs_original.strip():
+                        observaciones_modificadas[nombre] = nueva_obs.strip()
 
-        if observaciones_seleccionadas:
-            st.markdown(
-                """
-                <div style='border: 1px solid #ccc; border-radius: 8px; padding: 0.5em; font-size: 0.92em; line-height: 1.2em;'>
-                """ +
-                "<hr style='margin: 6px 0; border-top: 1px solid #eee;'>".join(
-                    f"<b>🔹 {nombre_obs.split(':')[0]}</b><br>{nombre_obs.split(':', 1)[1].strip()}"
-                    for nombre_obs in observaciones_seleccionadas
-                ) +
-                "</div>",
-                unsafe_allow_html=True
-            )
-
+        if observaciones_modificadas:
+            if st.button("💾 Guardar cambios en observaciones"):
+                muestras = cargar_muestras(db)  # volver a cargar por seguridad
+                for m in muestras:
+                    nombre = m["nombre"]
+                    if nombre in observaciones_modificadas:
+                        guardar_muestra(
+                            db,
+                            nombre,
+                            observaciones_modificadas[nombre],
+                            m.get("analisis", []),
+                            m.get("espectros", [])
+                        )
+                st.success("✔ Observaciones actualizadas.")
+                st.rerun()
 
     st.subheader("Añadir muestra")
     nombres = [m["nombre"] for m in muestras]

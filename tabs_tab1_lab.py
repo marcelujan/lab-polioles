@@ -11,6 +11,29 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Laboratorio de Polioles")
     st.session_state["current_tab"] = "Laboratorio de Polioles"
     muestras = cargar_muestras(db)
+
+    if st.checkbox("Mostrar resumen de observaciones", key="mostrar_resumen_obs"):
+        st.markdown("#### 📝 Selecciona muestras para ver sus observaciones:")
+        
+        observaciones_seleccionadas = []
+
+        for m in muestras:
+            nombre = m.get("nombre", "Sin nombre")
+            obs = m.get("observacion", "")
+            key_checkbox = f"ver_obs_{nombre}"
+
+            if st.checkbox(nombre, key=key_checkbox):
+                observaciones_seleccionadas.append(f"🔹 **{nombre}**:\n{obs.strip()}")
+
+        if observaciones_seleccionadas:
+            st.markdown("#### 🧾 Observaciones combinadas:")
+            st.markdown(
+                "<div style='white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; border-radius: 10px;'>"
+                + "\n\n---\n\n".join(observaciones_seleccionadas)
+                + "</div>",
+                unsafe_allow_html=True
+            )
+
     st.subheader("Añadir muestra")
     nombres = [m["nombre"] for m in muestras]
 

@@ -35,15 +35,26 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             muestra = next((m for m in muestras if m["nombre"] == nombre), None)
             if muestra:
                 obs_original = muestra.get("observacion", "")
+                texto_prellenado = f"{nombre}: {obs_original.strip()}" if obs_original.strip() else f"{nombre}: "
+
                 key_textarea = f"textarea_obs_{nombre}"
                 nueva_obs = st.text_area(
-                    label=nombre,  # Usamos el nombre directamente como etiqueta
-                    value=obs_original,
+                    label="",  # Sin label para evitar filas extra
+                    value=texto_prellenado,
                     key=key_textarea,
-                    height=80,
+                    height=70,
+                    label_visibility="collapsed"
                 )
-                if nueva_obs.strip() != obs_original.strip():
-                    observaciones_modificadas[nombre] = nueva_obs.strip()
+
+                # Remover el prefijo "Nombre: " para guardar solo la observación
+                prefijo = f"{nombre}:"
+                if nueva_obs.startswith(prefijo):
+                    solo_obs = nueva_obs[len(prefijo):].strip()
+                else:
+                    solo_obs = nueva_obs.strip()
+
+                if solo_obs != obs_original.strip():
+                    observaciones_modificadas[nombre] = solo_obs
 
         if observaciones_modificadas:
             if st.button("💾 Guardar cambios en observaciones"):

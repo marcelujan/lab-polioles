@@ -27,13 +27,18 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     observaciones_seleccionadas.append(f"🔹 **{nombre}**:\n{obs.strip()}")
 
         if observaciones_seleccionadas:
-            st.markdown("#### 🧾 Observaciones combinadas:")
             st.markdown(
-                "<div style='white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; border-radius: 10px;'>"
-                + "\n\n---\n\n".join(observaciones_seleccionadas)
-                + "</div>",
+                """
+                <div style='border: 1px solid #ccc; border-radius: 8px; padding: 0.5em; font-size: 0.92em; line-height: 1.2em;'>
+                """ +
+                "<hr style='margin: 6px 0; border-top: 1px solid #eee;'>".join(
+                    f"<b>🔹 {nombre_obs.split(':')[0]}</b><br>{nombre_obs.split(':', 1)[1].strip()}"
+                    for nombre_obs in observaciones_seleccionadas
+                ) +
+                "</div>",
                 unsafe_allow_html=True
             )
+
 
     st.subheader("Añadir muestra")
     nombres = [m["nombre"] for m in muestras]

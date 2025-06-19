@@ -13,8 +13,6 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     muestras = cargar_muestras(db)
 
     if st.checkbox("Mostrar resumen de observaciones", key="mostrar_resumen_obs"):
-        st.markdown("#### 📝 Selecciona muestras para ver sus observaciones:")
-
         observaciones_seleccionadas = []
         cols = st.columns(4)  # Usamos 4 columnas
 

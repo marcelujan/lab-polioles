@@ -189,7 +189,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if st.checkbox("Editar espectros"):
             columnas_visibles = ["Muestra", "Tipo", "Fecha", "Peso", "Observaciones"]
             df_edit = df_esp_tabla[columnas_visibles].copy()
-            df_edit_ids = df_esp_tabla["ID"].reset_index(drop=True)  # mantener mapeo por índice
+            ids_editables = df_esp_tabla["ID"].reset_index(drop=True)
 
             df_editor = st.data_editor(
                 df_edit,
@@ -209,8 +209,8 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             if st.button("💾 Guardar cambios"):
                 cambios = 0
                 for i, row in df_editor.iterrows():
-                    original = df_esp_tabla[df_esp_tabla["ID"] == row["ID"]].iloc[0]
-                    nombre, idx = df_edit_ids[i].split("__")
+                    original = df_esp_tabla.iloc[i]
+                    nombre, idx = ids_editables[i].split("__")
                     idx = int(idx)
                     espectros = obtener_espectros_para_muestra(db, nombre)
                     docs = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())
@@ -219,7 +219,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         cambios_doc = {}
                         if row["Observaciones"] != original["Observaciones"]:
                             cambios_doc["observaciones"] = row["Observaciones"]
-                        if not pd.isna(row.get("Peso")) and row["Peso"] != original.get("Peso"):
+                        if not pd.isna(row["Peso"]) and row["Peso"] != original["Peso"]:
                             cambios_doc["peso_muestra"] = row["Peso"]
                         if cambios_doc:
                             db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).update(cambios_doc)

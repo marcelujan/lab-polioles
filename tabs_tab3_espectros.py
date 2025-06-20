@@ -171,28 +171,25 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
 
 
-        if st.checkbox("✏️ Editar observaciones y metadatos"):
+        if st.checkbox("✏️ Editar observaciones y peso"):
             columnas_visibles = ["Muestra", "Tipo", "Fecha", "Peso", "Observaciones"]
-            columnas_bloqueadas = ["Muestra", "Tipo", "Fecha"]
-            
-            df_edit = df_esp_tabla.copy()
-            df_edit.rename(columns={
-                "Peso": "Peso",
-            }, inplace=True)
+
+            df_edit = df_esp_tabla[columnas_visibles + ["ID"]].copy()
 
             df_editor = st.data_editor(
-                df_edit[columnas_visibles],
+                df_edit,
                 column_config={
-                    "Observaciones": st.column_config.TextColumn("Observaciones"),
-                    "Peso": st.column_config.NumberColumn("Peso [g]", format="%.4f"),
                     "Muestra": st.column_config.TextColumn(disabled=True),
                     "Tipo": st.column_config.TextColumn(disabled=True),
                     "Fecha": st.column_config.TextColumn(disabled=True),
+                    "Peso": st.column_config.NumberColumn("Peso [g]", format="%.4f"),
+                    "Observaciones": st.column_config.TextColumn("Observaciones"),
+                    "ID": st.column_config.TextColumn(disabled=True),
                 },
                 use_container_width=True,
                 hide_index=True,
                 num_rows="fixed",
-                key="editor_obs_esp"
+                key="editor_obs_peso"
             )
 
             if st.button("💾 Guardar cambios"):
@@ -208,18 +205,13 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         cambios_doc = {}
                         if row["Observaciones"] != original["Observaciones"]:
                             cambios_doc["observaciones"] = row["Observaciones"]
-                        if not pd.isna(row.get("Peso")):
+                        if not pd.isna(row.get("Peso")) and row["Peso"] != original.get("Peso"):
                             cambios_doc["peso_muestra"] = row["Peso"]
-                        if not pd.isna(row.get("Señal 3548")):
-                            cambios_doc["senal_3548"] = row["Señal 3548"]
-                        if not pd.isna(row.get("Señal 3611")):
-                            cambios_doc["senal_3611"] = row["Señal 3611"]
                         if cambios_doc:
                             db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).update(cambios_doc)
                             cambios += 1
                 st.success(f"{cambios} espectro(s) actualizado(s).")
                 st.rerun()
-
 
 
         def descripcion_espectro(i):

@@ -165,6 +165,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             filas.append(fila)
 
     df_esp_tabla = pd.DataFrame(filas)
+    df_esp_tabla = df_esp_tabla.sort_values(by=["Muestra", "Fecha", "Observaciones"]).reset_index(drop=True)
     df_mascaras = pd.DataFrame(filas_mascaras)
 
     # Mostrar resumen solo si el usuario lo solicita

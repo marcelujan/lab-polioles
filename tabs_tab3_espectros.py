@@ -169,6 +169,41 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     df_mascaras = pd.DataFrame(filas_mascaras)
     if not df_esp_tabla.empty:
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
+
+
+        if st.checkbox("✏️ Editar observaciones de espectros cargados"):
+            df_edit = df_esp_tabla[["ID", "Muestra", "Tipo", "Fecha", "Archivo", "Observaciones"]].copy()
+            df_editado = st.data_editor(
+                df_edit,
+                column_config={
+                    "Observaciones": st.column_config.TextColumn("Observaciones (editable)"),
+                    "ID": st.column_config.TextColumn(disabled=True)
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="fixed",
+                key="editor_obs_espectros"
+            )
+
+            if st.button("💾 Guardar observaciones editadas"):
+                cambios = 0
+                for i, row in df_editado.iterrows():
+                    original = df_esp_tabla[df_esp_tabla["ID"] == row["ID"]].iloc[0]
+                    if row["Observaciones"] != original["Observaciones"]:
+                        nombre, idx = row["ID"].split("__")
+                        idx = int(idx)
+                        espectros = obtener_espectros_para_muestra(db, nombre)
+                        docs = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())
+                        if docs and idx < len(docs):
+                            espectro_id = docs[idx].id
+                            db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).update({
+                                "observaciones": row["Observaciones"]
+                            })
+                            cambios += 1
+                st.success(f"{cambios} observación(es) actualizada(s).")
+                st.rerun()
+
+
         def descripcion_espectro(i):
             fila = df_esp_tabla[df_esp_tabla['ID'] == i].iloc[0]
             peso = fila.get("Peso", "—")

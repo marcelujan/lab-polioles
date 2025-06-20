@@ -1255,7 +1255,7 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
 
     # 3. Índice OH espectroscópico (siempre visible al final)
     if st.checkbox("Índice OH espectroscópico", value=False):
-        st.subheader("Índice OH espectroscópico")
+        #st.subheader("Índice OH espectroscópico")
         df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
         if not df_oh.empty:
             st.dataframe(df_oh, use_container_width=True)

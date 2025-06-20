@@ -186,7 +186,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     # Editar, eliminar, descargar 
     if not df_esp_tabla.empty:
-        if st.checkbox("✏️ Editar espectros"):
+        if st.checkbox("Editar espectros"):
             columnas_visibles = ["ID", "Muestra", "Tipo", "Fecha", "Peso", "Observaciones"]
             df_edit = df_esp_tabla[columnas_visibles].copy()
 

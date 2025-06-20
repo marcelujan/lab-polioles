@@ -134,7 +134,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.success("Espectro guardado.")
         st.rerun()
 
-    st.subheader("Espectros cargados")   # Tabla de espectros ya cargados
+    st.subheader("Espectros cargados")
     filas = []
     filas_mascaras = []
     for m in muestras:
@@ -165,11 +165,18 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 fila["Máscaras"] = ""
             filas.append(fila)
 
-    df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
+    df_esp_tabla = pd.DataFrame(filas)
     df_mascaras = pd.DataFrame(filas_mascaras)
-    if not df_esp_tabla.empty and st.checkbox("📂 Mostrar espectros cargados"):
-        st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
 
+    # Mostrar resumen solo si el usuario lo solicita
+    if st.checkbox("Espectros cargados"):
+        if not df_esp_tabla.empty:
+            st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
+        else:
+            st.info("No hay espectros cargados.")
+
+    # Editar, eliminar, descargar 
+    if not df_esp_tabla.empty:
         if st.checkbox("Editar espectros"):
             columnas_visibles = ["Muestra", "Tipo", "Fecha", "Peso", "Observaciones"]
 

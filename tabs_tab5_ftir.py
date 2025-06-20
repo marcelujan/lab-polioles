@@ -810,7 +810,8 @@ def calcular_indice_oh_auto(db, muestras):
 
     df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
     df_oh["Índice OH"] = pd.to_numeric(df_oh["Índice OH"], errors="coerce")
-
+    df_oh = df_oh.sort_values(by=["Muestra", "Fecha", "Observaciones"])
+    
     return df_oh[["Muestra", "Tipo", "Observaciones", "Fecha","Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]]
 
 

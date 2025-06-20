@@ -1263,51 +1263,48 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
         if not df_resultado.empty:
             st.dataframe(df_resultado, use_container_width=True)
 
-            import matplotlib.pyplot as plt
+            if st.checkbox("📊 Graficar"):
+                st.markdown("**Selección de puntos para graficar**")
 
-            st.markdown("### 🎯 Selección de puntos XY para graficar")
+                # Clonamos df_resultado y le agregamos columnas editables
+                df_graf = df_resultado.copy().reset_index(drop=True)
+                df_graf["✔ Incluir"] = False
+                df_graf["X"] = None
+                df_graf["Curva"] = ""
 
-            # Clonamos df_resultado y le agregamos columnas editables
-            df_graf = df_resultado.copy().reset_index(drop=True)
-            df_graf["✔ Incluir"] = False
-            df_graf["X"] = None
-            df_graf["Curva"] = ""
+                # Mostrar editor
+                df_editado = st.data_editor(
+                    df_graf,
+                    column_config={
+                        "✔ Incluir": st.column_config.CheckboxColumn("✔ Incluir"),
+                        "X": st.column_config.NumberColumn("X", format="%.3f"),
+                        "Curva": st.column_config.TextColumn("Curva"),
+                    },
+                    use_container_width=True,
+                    hide_index=True,
+                    num_rows="fixed",
+                    key="editor_xy_manual"
+                )
 
-            # Mostrar editor
-            df_editado = st.data_editor(
-                df_graf,
-                column_config={
-                    "✔ Incluir": st.column_config.CheckboxColumn("✔ Incluir"),
-                    "X": st.column_config.NumberColumn("X", format="%.3f"),
-                    "Curva": st.column_config.TextColumn("Curva"),
-                },
-                use_container_width=True,
-                hide_index=True,
-                num_rows="fixed",
-                key="editor_xy_manual"
-            )
+                # Filtrar para graficar
+                df_filtrado = df_editado[
+                    df_editado["✔ Incluir"] & df_editado["X"].notna() & df_editado["Índice OH"].notna()
+                ]
 
-            # Filtrar para graficar
-            df_filtrado = df_editado[
-                df_editado["✔ Incluir"] & df_editado["X"].notna() & df_editado["Índice OH"].notna()
-            ]
+                if not df_filtrado.empty:
+                    #st.markdown("### 📈 Gráfico XY por curva")
+                    fig, ax = plt.subplots()
 
-            if not df_filtrado.empty:
-                st.markdown("### 📈 Gráfico XY por curva")
-                fig, ax = plt.subplots()
+                    for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                        ax.plot(grupo["X"], grupo["Índice OH"], marker='o', label=curva or "Sin curva")
+                        for _, row in grupo.iterrows():
+                            ax.text(row["X"], row["Índice OH"], row["Muestra"], fontsize=8)
 
-                for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
-                    ax.plot(grupo["X"], grupo["Índice OH"], marker='o', label=curva or "Sin curva")
-                    for _, row in grupo.iterrows():
-                        ax.text(row["X"], row["Índice OH"], row["Muestra"], fontsize=8)
-
-                ax.set_xlabel("X (manual)")
-                ax.set_ylabel("Índice OH")
-                ax.set_title("Curvas XY del Índice OH")
-                ax.legend()
-                st.pyplot(fig)
-            else:
-                st.info("Seleccioná puntos con X y curva para graficar.")
+                    ax.set_xlabel("X (manual)")
+                    ax.set_ylabel("Índice OH")
+                    st.pyplot(fig)
+                else:
+                    st.info("Seleccioná puntos con X y curva para graficar.")
 
            
 

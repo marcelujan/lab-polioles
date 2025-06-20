@@ -186,19 +186,19 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     # Editar, eliminar, descargar 
     if not df_esp_tabla.empty:
-        if st.checkbox("Editar espectros"):
-            columnas_visibles = ["Muestra", "Tipo", "Fecha", "Peso", "Observaciones"]
+        if st.checkbox("✏️ Editar espectros"):
+            columnas_visibles = ["ID", "Muestra", "Tipo", "Fecha", "Peso", "Observaciones"]
             df_edit = df_esp_tabla[columnas_visibles].copy()
-            ids_editables = df_esp_tabla["ID"].reset_index(drop=True)
 
             df_editor = st.data_editor(
                 df_edit,
                 column_config={
+                    "ID": st.column_config.TextColumn("ID", disabled=True),
                     "Muestra": st.column_config.TextColumn(disabled=True),
                     "Tipo": st.column_config.TextColumn(disabled=True),
                     "Fecha": st.column_config.TextColumn(disabled=True),
                     "Peso": st.column_config.NumberColumn("Peso [g]", format="%.4f"),
-                    "Observaciones": st.column_config.TextColumn("Observaciones"),
+                    "Observaciones": st.column_config.TextColumn("Observaciones")
                 },
                 use_container_width=True,
                 hide_index=True,
@@ -209,8 +209,8 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             if st.button("💾 Guardar cambios"):
                 cambios = 0
                 for i, row in df_editor.iterrows():
-                    original = df_esp_tabla.iloc[i]
-                    nombre, idx = ids_editables[i].split("__")
+                    original = df_esp_tabla[df_esp_tabla["ID"] == row["ID"]].iloc[0]
+                    nombre, idx = row["ID"].split("__")
                     idx = int(idx)
                     espectros = obtener_espectros_para_muestra(db, nombre)
                     docs = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())
@@ -226,6 +226,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             cambios += 1
                 st.success(f"{cambios} espectro(s) actualizado(s).")
                 st.rerun()
+
 
 
         def descripcion_espectro(i):

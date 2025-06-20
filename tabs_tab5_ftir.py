@@ -814,7 +814,7 @@ def calcular_indice_oh_auto(db, muestras):
 
 
 def calculadora_indice_oh_manual():
-    st.subheader("Calculadora manual de Índice OH")
+    #st.subheader("Calculadora manual de Índice OH")
 
     datos_oh = pd.DataFrame([
         {"Tipo": "FTIR-Acetato [3548 cm⁻¹]", "Señal": 0.0000, "Señal solvente": 0.0000, "Peso muestra [g]": 0.0000},
@@ -1261,7 +1261,7 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
             st.dataframe(df_oh, use_container_width=True)
 
     # 4. Calculadora manual de Índice OH
-    if st.checkbox("Calculadora manual de Índice OH", value=False):
+    if st.checkbox("Calculadora manual de Índice OH espectroscópico", value=False):
         calculadora_indice_oh_manual()
 
 

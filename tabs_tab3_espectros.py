@@ -167,9 +167,8 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
     df_mascaras = pd.DataFrame(filas_mascaras)
-    if not df_esp_tabla.empty:
+    if not df_esp_tabla.empty and st.checkbox("📂 Mostrar espectros cargados"):
         st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
-
 
         if st.checkbox("Editar espectros"):
             columnas_visibles = ["Muestra", "Tipo", "Fecha", "Peso", "Observaciones"]
@@ -218,7 +217,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             fila = df_esp_tabla[df_esp_tabla['ID'] == i].iloc[0]
             peso = fila.get("Peso", "—")
             return f"{fila['Muestra']} — {fila['Tipo']} — {fila['Fecha']} — {fila['Archivo']} — {peso} g"
-        if st.checkbox("🗑️ Eliminar espectro cargado"):
+        if st.checkbox("Eliminar espectro cargado"):
             seleccion = st.selectbox(
                 "Seleccionar espectro a eliminar",
                 df_esp_tabla["ID"],

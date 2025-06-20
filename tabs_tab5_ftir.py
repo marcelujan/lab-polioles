@@ -786,7 +786,8 @@ def calcular_indice_oh_auto(db, muestras):
                 "Señal": valor_y_extraido,
                 "Señal manual 3548": e.get("senal_3548"),
                 "Señal manual 3611": e.get("senal_3611"),
-                "Peso muestra [g]": e.get("peso_muestra")
+                "Peso muestra [g]": e.get("peso_muestra"),
+                "Archivo": e.get("nombre_archivo", ""),
             })
 
     df_oh = pd.DataFrame(espectros_info)
@@ -1267,7 +1268,7 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
             seleccionados = st.multiselect(
                 "Seleccionar muestras a comparar",
                 options=df_resultado.index,
-                format_func=lambda i: f"{df_resultado.loc[i, 'Muestra']} — {df_resultado.loc[i, 'Fecha']}"
+                format_func=lambda i: f"{df_resultado.loc[i, 'Archivo']} – {df_resultado.loc[i, 'Observaciones']}"
             )
 
             if seleccionados:

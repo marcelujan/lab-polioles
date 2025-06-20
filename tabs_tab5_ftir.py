@@ -1255,9 +1255,10 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
         interpretacion = st.session_state.get("interpretacion_gpt_ftir", "")
         st.text_area("Interpretación:", value=interpretacion, height=200)
 
-    # 3. Índice OH espectroscópico (siempre visible al final)
+    # 3. Índice OH espectroscópico
     if st.checkbox("Índice OH espectroscópico", value=False):
         df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db))
+        df_resultado = df_resultado.reset_index(drop=True)
         if not df_resultado.empty:
             st.dataframe(df_resultado, use_container_width=True)
 

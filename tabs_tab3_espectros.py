@@ -134,41 +134,46 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.success("Espectro guardado.")
         st.rerun()
 
-    st.subheader("Espectros cargados")   # Tabla de espectros ya cargados
-    filas = []
-    filas_mascaras = []
-    for m in muestras:
-        espectros = obtener_espectros_para_muestra(db, m["nombre"])
-        for i, e in enumerate(espectros):
-            fila = {
-                "Muestra": m["nombre"],
-                "Tipo": e.get("tipo", ""),
-                "Archivo": e.get("nombre_archivo", ""),
-                "Fecha": e.get("fecha", ""),
-                "Peso": e.get("peso_muestra", ""), 
-                "Observaciones": e.get("observaciones", ""),
-                "ID": f"{m['nombre']}__{i}"
-            }
-            if e.get("mascaras"):
-                fila["Máscaras"] = json.dumps(e["mascaras"])
-                for j, mascara in enumerate(e["mascaras"]):
-                    filas_mascaras.append({
-                        "Muestra": m["nombre"],
-                        "Archivo": e.get("nombre_archivo", ""),
-                        "Máscara N°": j+1,
-                        "D [m2/s]": mascara.get("difusividad"),
-                        "T2 [s]": mascara.get("t2"),
-                        "Xmin [ppm]": mascara.get("x_min"),
-                        "Xmax [ppm]": mascara.get("x_max")
-                    })
-            else:
-                fila["Máscaras"] = ""
-            filas.append(fila)
+    if st.checkbox("📂 Mostrar espectros cargados"):
+        st.subheader("Espectros cargados")
 
-    df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
-    df_mascaras = pd.DataFrame(filas_mascaras)
-    if not df_esp_tabla.empty:
-        st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
+        filas = []
+        filas_mascaras = []
+        for m in muestras:
+            espectros = obtener_espectros_para_muestra(db, m["nombre"])
+            for i, e in enumerate(espectros):
+                fila = {
+                    "Muestra": m["nombre"],
+                    "Tipo": e.get("tipo", ""),
+                    "Archivo": e.get("nombre_archivo", ""),
+                    "Fecha": e.get("fecha", ""),
+                    "Peso": e.get("peso_muestra", ""), 
+                    "Observaciones": e.get("observaciones", ""),
+                    "senal_3548": e.get("senal_3548"),
+                    "senal_3611": e.get("senal_3611"),
+                    "ID": f"{m['nombre']}__{i}"
+                }
+                if e.get("mascaras"):
+                    fila["Máscaras"] = json.dumps(e["mascaras"])
+                    for j, mascara in enumerate(e["mascaras"]):
+                        filas_mascaras.append({
+                            "Muestra": m["nombre"],
+                            "Archivo": e.get("nombre_archivo", ""),
+                            "Máscara N°": j+1,
+                            "D [m2/s]": mascara.get("difusividad"),
+                            "T2 [s]": mascara.get("t2"),
+                            "Xmin [ppm]": mascara.get("x_min"),
+                            "Xmax [ppm]": mascara.get("x_max")
+                        })
+                else:
+                    fila["Máscaras"] = ""
+                filas.append(fila)
+
+        df_esp_tabla = pd.DataFrame(filas)
+        df_mascaras = pd.DataFrame(filas_mascaras)
+
+        if not df_esp_tabla.empty:
+            st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
 
 
         if st.checkbox("Editar espectros"):

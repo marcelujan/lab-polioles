@@ -811,48 +811,8 @@ def calcular_indice_oh_auto(db, muestras):
     df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
     df_oh["Índice OH"] = pd.to_numeric(df_oh["Índice OH"], errors="coerce")
     df_oh = df_oh.sort_values(by=["Muestra", "Fecha", "Observaciones"])
-
+    
     return df_oh[["Muestra", "Tipo", "Observaciones", "Fecha","Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]]
-
-    st.markdown("### 📊 Comparación XY manual con Índice OH")
-
-    # Solo si hay resultados
-    if not df_resultado.empty:
-        seleccionados = st.multiselect(
-            "Seleccionar muestras a comparar",
-            options=df_resultado.index,
-            format_func=lambda i: f"{df_resultado.loc[i, 'Muestra']} — {df_resultado.loc[i, 'Fecha']}"
-        )
-
-        if seleccionados:
-            datos_xy = []
-            for i in seleccionados:
-                col_x = st.number_input(
-                    f"Valor X para {df_resultado.loc[i, 'Muestra']} ({df_resultado.loc[i, 'Fecha']})",
-                    key=f"xval_{i}"
-                )
-                datos_xy.append({
-                    "Muestra": df_resultado.loc[i, "Muestra"],
-                    "Fecha": df_resultado.loc[i, "Fecha"],
-                    "X": col_x,
-                    "Índice OH": df_resultado.loc[i, "Índice OH"]
-                })
-
-            df_xy = pd.DataFrame(datos_xy)
-            st.dataframe(df_xy, use_container_width=True)
-
-            # Graficar XY
-            import matplotlib.pyplot as plt
-
-            fig, ax = plt.subplots()
-            ax.plot(df_xy["X"], df_xy["Índice OH"], marker='o')
-            for _, row in df_xy.iterrows():
-                ax.text(row["X"], row["Índice OH"], row["Muestra"], fontsize=8)
-
-            ax.set_xlabel("X (manual)")
-            ax.set_ylabel("Índice OH")
-            ax.set_title("Curva XY de Índice OH")
-            st.pyplot(fig)
 
 
 def calculadora_indice_oh_manual():
@@ -1297,10 +1257,48 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
 
     # 3. Índice OH espectroscópico (siempre visible al final)
     if st.checkbox("Índice OH espectroscópico", value=False):
-        #st.subheader("Índice OH espectroscópico")
-        df_oh = calcular_indice_oh_auto(db, cargar_muestras(db))
-        if not df_oh.empty:
-            st.dataframe(df_oh, use_container_width=True)
+        df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db))
+        if not df_resultado.empty:
+            st.dataframe(df_resultado, use_container_width=True)
+
+            st.markdown("### 📊 Comparación XY manual con Índice OH")
+
+            seleccionados = st.multiselect(
+                "Seleccionar muestras a comparar",
+                options=df_resultado.index,
+                format_func=lambda i: f"{df_resultado.loc[i, 'Muestra']} — {df_resultado.loc[i, 'Fecha']}"
+            )
+
+            if seleccionados:
+                datos_xy = []
+                for i in seleccionados:
+                    col_x = st.number_input(
+                        f"Valor X para {df_resultado.loc[i, 'Muestra']} ({df_resultado.loc[i, 'Fecha']})",
+                        key=f"xval_{i}"
+                    )
+                    datos_xy.append({
+                        "Muestra": df_resultado.loc[i, "Muestra"],
+                        "Fecha": df_resultado.loc[i, "Fecha"],
+                        "X": col_x,
+                        "Índice OH": df_resultado.loc[i, "Índice OH"]
+                    })
+
+                df_xy = pd.DataFrame(datos_xy)
+                st.dataframe(df_xy, use_container_width=True)
+
+                # Graficar XY
+                import matplotlib.pyplot as plt
+
+                fig, ax = plt.subplots()
+                ax.plot(df_xy["X"], df_xy["Índice OH"], marker='o')
+                for _, row in df_xy.iterrows():
+                    ax.text(row["X"], row["Índice OH"], row["Muestra"], fontsize=8)
+
+                ax.set_xlabel("X (manual)")
+                ax.set_ylabel("Índice OH")
+                ax.set_title("Curva XY de Índice OH")
+                st.pyplot(fig)
+           
 
     # 4. Calculadora manual de Índice OH
     if st.checkbox("Calculadora manual de Índice OH espectroscópico", value=False):

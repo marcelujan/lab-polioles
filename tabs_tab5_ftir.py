@@ -1263,43 +1263,52 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
         if not df_resultado.empty:
             st.dataframe(df_resultado, use_container_width=True)
 
-            st.markdown("### 📊 Comparación XY manual con Índice OH")
+            import matplotlib.pyplot as plt
 
-            seleccionados = st.multiselect(
-                "Seleccionar muestras a comparar",
-                options=df_resultado.index,
-                format_func=lambda i: f"{df_resultado.loc[i, 'Archivo']} – {df_resultado.loc[i, 'Observaciones']}"
+            st.markdown("### 🎯 Selección de puntos XY para graficar")
+
+            # Clonamos df_resultado y le agregamos columnas editables
+            df_graf = df_resultado.copy().reset_index(drop=True)
+            df_graf["✔ Incluir"] = False
+            df_graf["X"] = None
+            df_graf["Curva"] = ""
+
+            # Mostrar editor
+            df_editado = st.data_editor(
+                df_graf,
+                column_config={
+                    "✔ Incluir": st.column_config.CheckboxColumn("✔ Incluir"),
+                    "X": st.column_config.NumberColumn("X", format="%.3f"),
+                    "Curva": st.column_config.TextColumn("Curva"),
+                },
+                use_container_width=True,
+                hide_index=True,
+                num_rows="fixed",
+                key="editor_xy_manual"
             )
 
-            if seleccionados:
-                datos_xy = []
-                for i in seleccionados:
-                    col_x = st.number_input(
-                        f"Valor X para {df_resultado.loc[i, 'Muestra']} ({df_resultado.loc[i, 'Fecha']})",
-                        key=f"xval_{i}"
-                    )
-                    datos_xy.append({
-                        "Muestra": df_resultado.loc[i, "Muestra"],
-                        "Fecha": df_resultado.loc[i, "Fecha"],
-                        "X": col_x,
-                        "Índice OH": df_resultado.loc[i, "Índice OH"]
-                    })
+            # Filtrar para graficar
+            df_filtrado = df_editado[
+                df_editado["✔ Incluir"] & df_editado["X"].notna() & df_editado["Índice OH"].notna()
+            ]
 
-                df_xy = pd.DataFrame(datos_xy)
-                st.dataframe(df_xy, use_container_width=True)
-
-                # Graficar XY
-                import matplotlib.pyplot as plt
-
+            if not df_filtrado.empty:
+                st.markdown("### 📈 Gráfico XY por curva")
                 fig, ax = plt.subplots()
-                ax.plot(df_xy["X"], df_xy["Índice OH"], marker='o')
-                for _, row in df_xy.iterrows():
-                    ax.text(row["X"], row["Índice OH"], row["Muestra"], fontsize=8)
+
+                for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                    ax.plot(grupo["X"], grupo["Índice OH"], marker='o', label=curva or "Sin curva")
+                    for _, row in grupo.iterrows():
+                        ax.text(row["X"], row["Índice OH"], row["Muestra"], fontsize=8)
 
                 ax.set_xlabel("X (manual)")
                 ax.set_ylabel("Índice OH")
-                ax.set_title("Curva XY de Índice OH")
+                ax.set_title("Curvas XY del Índice OH")
+                ax.legend()
                 st.pyplot(fig)
+            else:
+                st.info("Seleccioná puntos con X y curva para graficar.")
+
            
 
     # 4. Calculadora manual de Índice OH

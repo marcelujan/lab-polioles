@@ -218,31 +218,36 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             fila = df_esp_tabla[df_esp_tabla['ID'] == i].iloc[0]
             peso = fila.get("Peso", "—")
             return f"{fila['Muestra']} — {fila['Tipo']} — {fila['Fecha']} — {fila['Archivo']} — {peso} g"
-        seleccion = st.selectbox(
-            "Eliminar espectro",
-            df_esp_tabla["ID"],
-            format_func=descripcion_espectro
-        )        
-        st.markdown("")
-        confirmar = st.checkbox(f"Confirmar eliminación del espectro: {df_esp_tabla[df_esp_tabla['ID'] == seleccion]['Archivo'].values[0]}", key="chk_eliminar_esp")
-        if st.button("Eliminar espectro"):
-            if confirmar:
-                nombre, idx = seleccion.split("__")
-                for m in muestras:
-                    if m["nombre"] == nombre:
-                        espectros = obtener_espectros_para_muestra(db, nombre)
-                        docs = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())
-                        idx = int(idx)  # asegurar tipo entero
-                        if docs and idx < len(docs):
-                            espectro_id = docs[idx].id
-                        else:
-                            st.warning(f"No hay espectros disponibles para la muestra '{nombre}'")
-                            return
-                        db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).delete()
-                        st.success("Espectro eliminado.")
-                        st.rerun()
-            else:
-                st.warning("Debes confirmar la eliminación marcando la casilla.")
+        if st.checkbox("🗑️ Eliminar espectro cargado"):
+            seleccion = st.selectbox(
+                "Seleccionar espectro a eliminar",
+                df_esp_tabla["ID"],
+                format_func=descripcion_espectro
+            )        
+            st.markdown("")
+            confirmar = st.checkbox(
+                f"Confirmar eliminación del espectro: {df_esp_tabla[df_esp_tabla['ID'] == seleccion]['Archivo'].values[0]}",
+                key="chk_eliminar_esp"
+            )
+            if st.button("Eliminar espectro"):
+                if confirmar:
+                    nombre, idx = seleccion.split("__")
+                    for m in muestras:
+                        if m["nombre"] == nombre:
+                            espectros = obtener_espectros_para_muestra(db, nombre)
+                            docs = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())
+                            idx = int(idx)
+                            if docs and idx < len(docs):
+                                espectro_id = docs[idx].id
+                            else:
+                                st.warning(f"No hay espectros disponibles para la muestra '{nombre}'")
+                                return
+                            db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).delete()
+                            st.success("Espectro eliminado.")
+                            st.rerun()
+                else:
+                    st.warning("Debes confirmar la eliminación marcando la casilla.")
+
 
 
         if st.button("📦 Preparar descarga"):  # Preparar descarga de espectros (Excel y ZIP)

@@ -1263,7 +1263,7 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
         if not df_resultado.empty:
             st.dataframe(df_resultado, use_container_width=True)
 
-            if st.checkbox("📊 Graficar"):
+            if st.checkbox("Graficar índice OH espectroscópico"):
                 st.markdown("**Selección de puntos para graficar**")
 
                 # Clonamos df_resultado y le agregamos columnas editables

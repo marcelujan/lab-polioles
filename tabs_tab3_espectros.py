@@ -223,7 +223,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             fila = df_esp_tabla[df_esp_tabla['ID'] == i].iloc[0]
             peso = fila.get("Peso", "—")
             return f"{fila['Muestra']} — {fila['Tipo']} — {fila['Fecha']} — {fila['Archivo']} — {peso} g"
-        if st.checkbox("🗑️ Eliminar espectro cargado"):
+        if st.checkbox("Eliminar espectro cargado"):
             seleccion = st.selectbox(
                 "Seleccionar espectro a eliminar",
                 df_esp_tabla["ID"],

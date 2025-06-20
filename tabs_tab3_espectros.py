@@ -172,7 +172,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if not df_esp_tabla.empty:
             columnas_resumen = ["Muestra", "Tipo", "Fecha", "Peso", "Observaciones", "Archivo"]
             columnas_presentes = [col for col in columnas_resumen if col in df_esp_tabla.columns]
-            st.dataframe(df_esp_tabla[columnas_presentes], use_container_width=True)
+            st.dataframe(df_esp_tabla[columnas_presentes].reset_index(drop=True), use_container_width=True)
         else:
             st.info("No hay espectros cargados.")
 
@@ -181,7 +181,8 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if not df_esp_tabla.empty:
         if st.checkbox("Editar espectros"):
             columnas_visibles = ["Muestra", "Tipo", "Fecha", "Peso", "Observaciones"]
-            df_edit = df_esp_tabla[columnas_visibles + ["ID"]].copy()
+            df_edit = df_esp_tabla[columnas_visibles].copy()
+            df_edit_ids = df_esp_tabla["ID"].reset_index(drop=True)  # mantener mapeo por índice
 
             df_editor = st.data_editor(
                 df_edit,
@@ -202,7 +203,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 cambios = 0
                 for i, row in df_editor.iterrows():
                     original = df_esp_tabla[df_esp_tabla["ID"] == row["ID"]].iloc[0]
-                    nombre, idx = row["ID"].split("__")
+                    nombre, idx = df_edit_ids[i].split("__")
                     idx = int(idx)
                     espectros = obtener_espectros_para_muestra(db, nombre)
                     docs = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())

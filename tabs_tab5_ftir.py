@@ -781,6 +781,7 @@ def calcular_indice_oh_auto(db, muestras):
             espectros_info.append({
                 "Muestra": m["nombre"],
                 "Tipo": tipo,
+                "Observaciones": e.get("observaciones", ""),
                 "Fecha": e.get("fecha", ""),
                 "Señal": valor_y_extraido,
                 "Señal manual 3548": e.get("senal_3548"),
@@ -810,7 +811,7 @@ def calcular_indice_oh_auto(db, muestras):
     df_oh["Índice OH"] = df_oh.apply(calcular_indice, axis=1)
     df_oh["Índice OH"] = pd.to_numeric(df_oh["Índice OH"], errors="coerce")
 
-    return df_oh[["Muestra", "Tipo", "Fecha", "Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]]
+    return df_oh[["Muestra", "Tipo", "Observaciones", "Fecha","Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]]
 
 
 def calculadora_indice_oh_manual():

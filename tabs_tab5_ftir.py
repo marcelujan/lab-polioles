@@ -1261,8 +1261,6 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
         df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
 
         if not df_resultado.empty:
-            st.markdown("**Seleccionar puntos y curvas para graficar**")
-
             # Añadir columnas X y Curva
             df_graf = df_resultado.copy()
             df_graf["X"] = None

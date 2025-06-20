@@ -1256,57 +1256,53 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
         interpretacion = st.session_state.get("interpretacion_gpt_ftir", "")
         st.text_area("Interpretación:", value=interpretacion, height=200)
 
-    # 3. Índice OH espectroscópico
+    # 3. Índice OH espectroscópico 
     if st.checkbox("Índice OH espectroscópico", value=False):
-        df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db))
-        df_resultado = df_resultado.reset_index(drop=True)
+        df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
+
         if not df_resultado.empty:
-            st.dataframe(df_resultado, use_container_width=True)
+            st.markdown("**Seleccionar puntos y curvas para graficar**")
 
-            if st.checkbox("Graficar índice OH espectroscópico"):
-                st.markdown("**Selección de puntos para graficar**")
+            # Añadir columnas X y Curva
+            df_graf = df_resultado.copy()
+            df_graf["X"] = None
+            df_graf["Curva"] = ""
 
-                # Clonamos df_resultado y le agregamos columnas editables
-                df_graf = df_resultado.copy().reset_index(drop=True)
-                df_graf["✔ Incluir"] = False
-                df_graf["X"] = None
-                df_graf["Curva"] = ""
+            # Editor de tabla
+            df_editado = st.data_editor(
+                df_graf,
+                column_config={
+                    "X": st.column_config.NumberColumn("X", format="%.3f"),
+                    "Curva": st.column_config.TextColumn("Curva"),
+                },
+                use_container_width=True,
+                hide_index=True,
+                num_rows="fixed",
+                key="editor_xy_manual"
+            )
 
-                # Mostrar editor
-                df_editado = st.data_editor(
-                    df_graf,
-                    column_config={
-                        "✔ Incluir": st.column_config.CheckboxColumn("✔ Incluir"),
-                        "X": st.column_config.NumberColumn("X", format="%.3f"),
-                        "Curva": st.column_config.TextColumn("Curva"),
-                    },
-                    use_container_width=True,
-                    hide_index=True,
-                    num_rows="fixed",
-                    key="editor_xy_manual"
-                )
+            # Filtrar datos válidos
+            df_filtrado = df_editado[
+                df_editado["X"].notna() & df_editado["Índice OH"].notna()
+            ]
 
-                # Filtrar para graficar
-                df_filtrado = df_editado[
-                    df_editado["✔ Incluir"] & df_editado["X"].notna() & df_editado["Índice OH"].notna()
-                ]
+            if not df_filtrado.empty:
+                import matplotlib.pyplot as plt
+                fig, ax = plt.subplots()
 
-                if not df_filtrado.empty:
-                    #st.markdown("### 📈 Gráfico XY por curva")
-                    fig, ax = plt.subplots()
+                for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                    ax.plot(grupo["X"], grupo["Índice OH"], marker='o', label=curva or "Sin curva")
+                    for _, row in grupo.iterrows():
+                        ax.text(row["X"], row["Índice OH"], row["Muestra"], fontsize=8)
 
-                    for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
-                        ax.plot(grupo["X"], grupo["Índice OH"], marker='o', label=curva or "Sin curva")
-                        for _, row in grupo.iterrows():
-                            ax.text(row["X"], row["Índice OH"], row["Muestra"], fontsize=8)
+                ax.set_xlabel("X (manual)")
+                ax.set_ylabel("Índice OH")
+                ax.set_title("Curvas XY del Índice OH")
+                ax.legend()
+                st.pyplot(fig)
+            else:
+                st.info("Completá al menos X y Curva para graficar.")
 
-                    ax.set_xlabel("X (manual)")
-                    ax.set_ylabel("Índice OH")
-                    st.pyplot(fig)
-                else:
-                    st.info("Seleccioná puntos con X y curva para graficar.")
-
-           
 
     # 4. Calculadora manual de Índice OH
     if st.checkbox("Calculadora manual de Índice OH espectroscópico", value=False):

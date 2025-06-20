@@ -172,27 +172,22 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
 
         if st.checkbox("✏️ Editar observaciones y metadatos"):
-            columnas_visibles = ["Muestra", "Tipo", "Fecha", "Observaciones", "Peso", "Señal 3548", "Señal 3611"]
+            columnas_visibles = ["Muestra", "Tipo", "Fecha", "Peso", "Observaciones"]
             columnas_bloqueadas = ["Muestra", "Tipo", "Fecha"]
             
             df_edit = df_esp_tabla.copy()
             df_edit.rename(columns={
                 "Peso": "Peso",
-                "senal_3548": "Señal 3548",
-                "senal_3611": "Señal 3611"
             }, inplace=True)
 
             df_editor = st.data_editor(
-                df_edit[columnas_visibles + ["ID"]],  # mantener ID oculto internamente
+                df_edit[columnas_visibles],
                 column_config={
                     "Observaciones": st.column_config.TextColumn("Observaciones"),
                     "Peso": st.column_config.NumberColumn("Peso [g]", format="%.4f"),
-                    "Señal 3548": st.column_config.NumberColumn("Señal 3548", format="%.4f"),
-                    "Señal 3611": st.column_config.NumberColumn("Señal 3611", format="%.4f"),
                     "Muestra": st.column_config.TextColumn(disabled=True),
                     "Tipo": st.column_config.TextColumn(disabled=True),
                     "Fecha": st.column_config.TextColumn(disabled=True),
-                    "ID": st.column_config.TextColumn(disabled=True),
                 },
                 use_container_width=True,
                 hide_index=True,

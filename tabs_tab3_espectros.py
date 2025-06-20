@@ -134,46 +134,41 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.success("Espectro guardado.")
         st.rerun()
 
-    if st.checkbox("📂 Mostrar espectros cargados"):
-        st.subheader("Espectros cargados")
+    st.subheader("Espectros cargados")   # Tabla de espectros ya cargados
+    filas = []
+    filas_mascaras = []
+    for m in muestras:
+        espectros = obtener_espectros_para_muestra(db, m["nombre"])
+        for i, e in enumerate(espectros):
+            fila = {
+                "Muestra": m["nombre"],
+                "Tipo": e.get("tipo", ""),
+                "Archivo": e.get("nombre_archivo", ""),
+                "Fecha": e.get("fecha", ""),
+                "Peso": e.get("peso_muestra", ""), 
+                "Observaciones": e.get("observaciones", ""),
+                "ID": f"{m['nombre']}__{i}"
+            }
+            if e.get("mascaras"):
+                fila["Máscaras"] = json.dumps(e["mascaras"])
+                for j, mascara in enumerate(e["mascaras"]):
+                    filas_mascaras.append({
+                        "Muestra": m["nombre"],
+                        "Archivo": e.get("nombre_archivo", ""),
+                        "Máscara N°": j+1,
+                        "D [m2/s]": mascara.get("difusividad"),
+                        "T2 [s]": mascara.get("t2"),
+                        "Xmin [ppm]": mascara.get("x_min"),
+                        "Xmax [ppm]": mascara.get("x_max")
+                    })
+            else:
+                fila["Máscaras"] = ""
+            filas.append(fila)
 
-        filas = []
-        filas_mascaras = []
-        for m in muestras:
-            espectros = obtener_espectros_para_muestra(db, m["nombre"])
-            for i, e in enumerate(espectros):
-                fila = {
-                    "Muestra": m["nombre"],
-                    "Tipo": e.get("tipo", ""),
-                    "Archivo": e.get("nombre_archivo", ""),
-                    "Fecha": e.get("fecha", ""),
-                    "Peso": e.get("peso_muestra", ""), 
-                    "Observaciones": e.get("observaciones", ""),
-                    "senal_3548": e.get("senal_3548"),
-                    "senal_3611": e.get("senal_3611"),
-                    "ID": f"{m['nombre']}__{i}"
-                }
-                if e.get("mascaras"):
-                    fila["Máscaras"] = json.dumps(e["mascaras"])
-                    for j, mascara in enumerate(e["mascaras"]):
-                        filas_mascaras.append({
-                            "Muestra": m["nombre"],
-                            "Archivo": e.get("nombre_archivo", ""),
-                            "Máscara N°": j+1,
-                            "D [m2/s]": mascara.get("difusividad"),
-                            "T2 [s]": mascara.get("t2"),
-                            "Xmin [ppm]": mascara.get("x_min"),
-                            "Xmax [ppm]": mascara.get("x_max")
-                        })
-                else:
-                    fila["Máscaras"] = ""
-                filas.append(fila)
-
-        df_esp_tabla = pd.DataFrame(filas)
-        df_mascaras = pd.DataFrame(filas_mascaras)
-
-        if not df_esp_tabla.empty:
-            st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
+    df_esp_tabla = pd.DataFrame(filas)   # Eliminar espectros (Tabla de seleccion)
+    df_mascaras = pd.DataFrame(filas_mascaras)
+    if not df_esp_tabla.empty:
+        st.dataframe(df_esp_tabla.drop(columns=["ID"]), use_container_width=True)
 
 
         if st.checkbox("Editar espectros"):
@@ -223,36 +218,31 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             fila = df_esp_tabla[df_esp_tabla['ID'] == i].iloc[0]
             peso = fila.get("Peso", "—")
             return f"{fila['Muestra']} — {fila['Tipo']} — {fila['Fecha']} — {fila['Archivo']} — {peso} g"
-        if st.checkbox("Eliminar espectro cargado"):
-            seleccion = st.selectbox(
-                "Seleccionar espectro a eliminar",
-                df_esp_tabla["ID"],
-                format_func=descripcion_espectro
-            )        
-            st.markdown("")
-            confirmar = st.checkbox(
-                f"Confirmar eliminación del espectro: {df_esp_tabla[df_esp_tabla['ID'] == seleccion]['Archivo'].values[0]}",
-                key="chk_eliminar_esp"
-            )
-            if st.button("Eliminar espectro"):
-                if confirmar:
-                    nombre, idx = seleccion.split("__")
-                    for m in muestras:
-                        if m["nombre"] == nombre:
-                            espectros = obtener_espectros_para_muestra(db, nombre)
-                            docs = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())
-                            idx = int(idx)
-                            if docs and idx < len(docs):
-                                espectro_id = docs[idx].id
-                            else:
-                                st.warning(f"No hay espectros disponibles para la muestra '{nombre}'")
-                                return
-                            db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).delete()
-                            st.success("Espectro eliminado.")
-                            st.rerun()
-                else:
-                    st.warning("Debes confirmar la eliminación marcando la casilla.")
-
+        seleccion = st.selectbox(
+            "Eliminar espectro",
+            df_esp_tabla["ID"],
+            format_func=descripcion_espectro
+        )        
+        st.markdown("")
+        confirmar = st.checkbox(f"Confirmar eliminación del espectro: {df_esp_tabla[df_esp_tabla['ID'] == seleccion]['Archivo'].values[0]}", key="chk_eliminar_esp")
+        if st.button("Eliminar espectro"):
+            if confirmar:
+                nombre, idx = seleccion.split("__")
+                for m in muestras:
+                    if m["nombre"] == nombre:
+                        espectros = obtener_espectros_para_muestra(db, nombre)
+                        docs = list(db.collection("muestras").document(nombre).collection("espectros").list_documents())
+                        idx = int(idx)  # asegurar tipo entero
+                        if docs and idx < len(docs):
+                            espectro_id = docs[idx].id
+                        else:
+                            st.warning(f"No hay espectros disponibles para la muestra '{nombre}'")
+                            return
+                        db.collection("muestras").document(nombre).collection("espectros").document(espectro_id).delete()
+                        st.success("Espectro eliminado.")
+                        st.rerun()
+            else:
+                st.warning("Debes confirmar la eliminación marcando la casilla.")
 
 
         if st.button("📦 Preparar descarga"):  # Preparar descarga de espectros (Excel y ZIP)

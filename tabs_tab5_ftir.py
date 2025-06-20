@@ -1290,12 +1290,8 @@ NO incluyas disclaimers ni frases como "como modelo de lenguaje" ni referencias 
 
                 for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
                     ax.plot(grupo["X"], grupo["Índice OH"], marker='o', label=curva or "Sin curva")
-                    for _, row in grupo.iterrows():
-                        ax.text(row["X"], row["Índice OH"], row["Muestra"], fontsize=8)
 
-                ax.set_xlabel("X (manual)")
                 ax.set_ylabel("Índice OH")
-                ax.set_title("Curvas XY del Índice OH")
                 ax.legend()
                 st.pyplot(fig)
             else:

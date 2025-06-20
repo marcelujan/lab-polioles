@@ -172,7 +172,13 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if not df_esp_tabla.empty:
             columnas_resumen = ["Muestra", "Tipo", "Fecha", "Peso", "Observaciones", "Archivo"]
             columnas_presentes = [col for col in columnas_resumen if col in df_esp_tabla.columns]
-            st.dataframe(df_esp_tabla[columnas_presentes].reset_index(drop=True), use_container_width=True)
+            st.data_editor(
+                df_esp_tabla[columnas_presentes],
+                use_container_width=True,
+                hide_index=True,
+                disabled=True,
+                key="tabla_resumen_esp"
+            )
         else:
             st.info("No hay espectros cargados.")
 

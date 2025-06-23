@@ -155,7 +155,7 @@ def mostrar_panel_ia():
                         st.success("Conclusión guardada.")
 
             st.markdown("---")
-            st.markdown("### 📚 Cargar texto")
+            st.markdown("### 📚 Cargar info")
             texto = st.text_area("", key="ia_referencia_texto")
             etiqueta = st.text_input("Técnica relacionada (ej: FTIR, RMN, etc.)", key="ia_etiqueta")
             archivo = st.file_uploader("Subir PDF o TXT", key="ia_archivo")

@@ -83,4 +83,8 @@ with tabs[7]:
     render_tab8(db, mostrar_sector_flotante)
 with tabs[8]:
     render_tab9(db, cargar_muestras, mostrar_sector_flotante)
-import ia_flotante
+
+from ia_flotante import mostrar_panel_ia
+if "user_email" in st.session_state and "db" in st.session_state:
+    st.session_state["firebase_db"] = st.session_state.db
+    mostrar_panel_ia()

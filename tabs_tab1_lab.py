@@ -4,7 +4,6 @@ from datetime import date, datetime
 from io import BytesIO
 import json
 from firestore_utils import cargar_muestras, guardar_muestra
-from ui_utils import mostrar_sector_flotante
 from firestore_utils import eliminar_muestra  # asegurate de tener esta línea al inicio
 
 def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
@@ -198,4 +197,3 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    mostrar_sector_flotante(db, key_suffix="tab1")

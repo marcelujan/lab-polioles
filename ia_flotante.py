@@ -105,7 +105,7 @@ def mostrar_panel_ia():
     .floating-btn {
         position: fixed;
         bottom: 30px;
-        right: 220px;
+        right: 200px;
         background-color: #6c63ff;
         color: white;
         border: none;

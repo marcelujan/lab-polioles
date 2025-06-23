@@ -126,8 +126,9 @@ def mostrar_panel_ia():
         st.markdown("""<h2 id='ia-panel'>🧠 IA de laboratorio</h2>""", unsafe_allow_html=True)
 
         muestra = st.session_state.get("muestra_activa")
-        pregunta = st.text_area("Consulta o pedido de análisis", placeholder="Ej: Hacé un análisis de la muestra activa o comparala con la muestra 9")
-
+        pregunta = st.text_area(
+            "Análisis",
+            key="ia_pregunta")
         if st.button("💬 Consultar IA"):
             with st.spinner("Consultando..."):
                 comparar_con = None

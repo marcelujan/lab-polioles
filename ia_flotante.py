@@ -121,20 +121,20 @@ def mostrar_panel_ia():
         cursor: pointer;
     }
     </style>
-    <form action="#" method="post">
-        <button name="abrir_ia" class="floating-btn">🧠</button>
-    </form>
     """, unsafe_allow_html=True)
 
-    if st.session_state.get("abrir_ia"):
+    if st.button("🧠", key="btn_flotante_ia"):
         st.session_state["mostrar_ia"] = not st.session_state["mostrar_ia"]
 
     if st.session_state["mostrar_ia"]:
         with st.container():
             st.markdown("""
-                <div style='position:fixed; bottom:100px; right:20px; width:400px; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:10000;'>
+                <div style="position:fixed; bottom:100px; right:20px; width:400px; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:10000;">
             """, unsafe_allow_html=True)
-            st.markdown("<div style='text-align:right'><button onClick="window.location.reload()">❌</button></div>", unsafe_allow_html=True)
+            if st.button("❌ Cerrar IA", key="cerrar_ia"):
+                st.session_state["mostrar_ia"] = False
+                st.experimental_rerun()
+
             muestra = st.session_state.get("muestra_activa")
             pregunta = st.text_area("Consulta a la IA", key="ia_pregunta")
             if st.button("💬 Consultar IA"):

@@ -99,13 +99,16 @@ def mostrar_panel_ia():
     if st.session_state.get("user_email") != "mlujan1863@gmail.com":
         return
 
-    # Mostrar botón flotante 🧠
+    if "mostrar_ia" not in st.session_state:
+        st.session_state["mostrar_ia"] = False
+
+    # Botón flotante que activa el panel
     st.markdown("""
     <style>
     .floating-btn {
         position: fixed;
         bottom: 30px;
-        right: 200px;
+        right: 220px;
         background-color: #6c63ff;
         color: white;
         border: none;
@@ -118,56 +121,43 @@ def mostrar_panel_ia():
         cursor: pointer;
     }
     </style>
-    <script>
-    function toggleIA() {
-        const panel = window.parent.document.getElementById("ia-panel-box");
-        if (panel.style.display === "none") {
-            panel.style.display = "block";
-        } else {
-            panel.style.display = "none";
-        }
-    }
-    </script>
-    <button class="floating-btn" onclick="toggleIA()">🧠</button>
+    <form action="#" method="post">
+        <button name="abrir_ia" class="floating-btn">🧠</button>
+    </form>
     """, unsafe_allow_html=True)
 
-    # Panel IA flotante
-    st.markdown("""
-    <div id="ia-panel-box" style="display:none; position:fixed; bottom:100px; right:20px; width:400px; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:10000;">
-        <div style='text-align:right;'>
-            <button onclick="document.getElementById('ia-panel-box').style.display='none'">❌</button>
-        </div>
-        <div id='ia-panel-content'>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    if st.session_state.get("abrir_ia"):
+        st.session_state["mostrar_ia"] = not st.session_state["mostrar_ia"]
 
-    # Componente real oculto por defecto pero sincronizado
-    with st.empty():
-        if "mostrar_ia" not in st.session_state:
-            st.session_state.mostrar_ia = False
-        muestra = st.session_state.get("muestra_activa")
-        pregunta = st.text_area("Consulta a la IA", key="ia_pregunta")
-        if st.button("💬 Consultar IA"):
-            comparar_con = None
-            if "comparar con" in pregunta.lower():
-                import re
-                match = re.search(r"muestra\s*(\d+)", pregunta.lower())
-                if match:
-                    comparar_con = match.group(1)
-            respuesta = consultar_ia_avanzada(muestra_actual=muestra, comparar_con=comparar_con)
-            st.session_state["respuesta_ia"] = respuesta
+    if st.session_state["mostrar_ia"]:
+        with st.container():
+            st.markdown("""
+                <div style='position:fixed; bottom:100px; right:20px; width:400px; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:10000;'>
+            """, unsafe_allow_html=True)
+            st.markdown("<div style='text-align:right'><button onClick="window.location.reload()">❌</button></div>", unsafe_allow_html=True)
+            muestra = st.session_state.get("muestra_activa")
+            pregunta = st.text_area("Consulta a la IA", key="ia_pregunta")
+            if st.button("💬 Consultar IA"):
+                comparar_con = None
+                if "comparar con" in pregunta.lower():
+                    import re
+                    match = re.search(r"muestra\s*(\d+)", pregunta.lower())
+                    if match:
+                        comparar_con = match.group(1)
+                respuesta = consultar_ia_avanzada(muestra_actual=muestra, comparar_con=comparar_con)
+                st.session_state["respuesta_ia"] = respuesta
 
-        if "respuesta_ia" in st.session_state:
-            st.markdown("### Respuesta de IA")
-            st.markdown(st.session_state["respuesta_ia"])
-            if st.button("💾 Guardar como conclusión"):
-                fecha = datetime.now().isoformat()
-                nombre = muestra or "global"
-                db = st.session_state.get("firebase_db")
-                if db:
-                    ref = db.collection("conclusiones_muestras").document(nombre)
-                    prev = ref.get().to_dict() or {}
-                    nuevas = prev.get("conclusiones", []) + [{"fecha": fecha, "texto": st.session_state["respuesta_ia"]}]
-                    ref.set({"conclusiones": nuevas})
-                    st.success("Conclusión guardada.")
+            if "respuesta_ia" in st.session_state:
+                st.markdown("### Respuesta de IA")
+                st.markdown(st.session_state["respuesta_ia"])
+                if st.button("💾 Guardar como conclusión"):
+                    fecha = datetime.now().isoformat()
+                    nombre = muestra or "global"
+                    db = st.session_state.get("firebase_db")
+                    if db:
+                        ref = db.collection("conclusiones_muestras").document(nombre)
+                        prev = ref.get().to_dict() or {}
+                        nuevas = prev.get("conclusiones", []) + [{"fecha": fecha, "texto": st.session_state["respuesta_ia"]}]
+                        ref.set({"conclusiones": nuevas})
+                        st.success("Conclusión guardada.")
+            st.markdown("</div>", unsafe_allow_html=True)

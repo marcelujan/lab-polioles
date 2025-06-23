@@ -314,4 +314,3 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.session_state.pop("token", None)
         st.rerun()
 
-    mostrar_sector_flotante(db, key_suffix="tab7")

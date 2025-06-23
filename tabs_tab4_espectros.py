@@ -214,5 +214,3 @@ def render_tab4(db, cargar_muestras, mostrar_sector_flotante):
                 
         st.download_button("\U0001F4E6 Descargar ZIP de imágenes", data=zip_bytes,
                            file_name=os.path.basename(zip_path), mime="application/zip")
-
-    mostrar_sector_flotante(db, key_suffix="tab4")

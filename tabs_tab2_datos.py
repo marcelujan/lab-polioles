@@ -111,4 +111,3 @@ def render_tab2(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                            file_name=f"grafico_barras_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png",
                            mime="image/png")
 
-    mostrar_sector_flotante(db, key_suffix="tab2")

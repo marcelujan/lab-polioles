@@ -102,7 +102,6 @@ def mostrar_panel_ia():
     if "mostrar_ia" not in st.session_state:
         st.session_state["mostrar_ia"] = False
 
-    # Botón flotante que activa el panel
     st.markdown("""
     <style>
     .floating-btn {
@@ -127,14 +126,8 @@ def mostrar_panel_ia():
         st.session_state["mostrar_ia"] = not st.session_state["mostrar_ia"]
 
     if st.session_state["mostrar_ia"]:
-        with st.container():
-            st.markdown("""
-                <div style="position:fixed; bottom:100px; right:20px; width:400px; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:10000;">
-            """, unsafe_allow_html=True)
-            if st.button("❌ Cerrar IA", key="cerrar_ia"):
-                st.session_state["mostrar_ia"] = False
-                st.experimental_rerun()
-
+        with st.sidebar:
+            st.markdown("## 🧠 IA de laboratorio")
             muestra = st.session_state.get("muestra_activa")
             pregunta = st.text_area("Consulta a la IA", key="ia_pregunta")
             if st.button("💬 Consultar IA"):
@@ -160,4 +153,3 @@ def mostrar_panel_ia():
                         nuevas = prev.get("conclusiones", []) + [{"fecha": fecha, "texto": st.session_state["respuesta_ia"]}]
                         ref.set({"conclusiones": nuevas})
                         st.success("Conclusión guardada.")
-            st.markdown("</div>", unsafe_allow_html=True)

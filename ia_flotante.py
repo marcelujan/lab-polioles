@@ -4,7 +4,6 @@ from datetime import datetime
 import base64
 import json
 
-
 def consultar_ia_avanzada(muestra_actual=None, comparar_con=None):
     db = st.session_state.get("firebase_db")
     if not db:
@@ -96,52 +95,77 @@ No repitas disclaimers ni digas que sos una IA.
     except Exception as e:
         return f"❌ Error al consultar la IA: {e}"
 
-
 def mostrar_panel_ia():
     if st.session_state.get("user_email") != "mlujan1863@gmail.com":
         return
 
-    with st.container():
-        st.markdown("""
-        <style>
-        .floating-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #6c63ff;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            z-index: 9999;
-        }
-        </style>
-        <button class="floating-btn" onclick="window.location.href='#ia-panel'">🧠</button>
-        """, unsafe_allow_html=True)
+    # --- Botón flotante con JS para mostrar modal ---
+    st.markdown("""
+    <style>
+    .floating-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #6c63ff;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        z-index: 9999;
+        cursor: pointer;
+    }
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        display: none;
+        z-index: 9998;
+    }
+    .modal-box {
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        width: 400px;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        display: none;
+        z-index: 9999;
+    }
+    </style>
+    <div class="modal-overlay" id="ia-overlay" onclick="document.getElementById('ia-box').style.display='none';document.getElementById('ia-overlay').style.display='none'"></div>
+    <div class="modal-box" id="ia-box">
+        <h4>🧠 IA de laboratorio</h4>
+        <iframe srcdoc="" id="ia-content" width="100%" height="400" frameborder="0"></iframe>
+    </div>
+    <button class="floating-btn" onclick="document.getElementById('ia-box').style.display='block';document.getElementById('ia-overlay').style.display='block'">🧠</button>
+    <script>
+    const iframe = document.getElementById('ia-content');
+    let doc = `<!DOCTYPE html><html><head><base target='_parent'></head><body>`;
+    </script>
+    """, unsafe_allow_html=True)
 
-    with st.container():
-        st.markdown("""<h2 id='ia-panel'>🧠 IA de laboratorio</h2>""", unsafe_allow_html=True)
-
+    with st.empty():
         muestra = st.session_state.get("muestra_activa")
-        pregunta = st.text_area("", key="ia_pregunta")
+        pregunta = st.text_area("Análisis", key="ia_pregunta")
         if st.button("💬 Consultar IA"):
-            with st.spinner("Consultando..."):
-                comparar_con = None
-                if "comparar con" in pregunta.lower():
-                    import re
-                    match = re.search(r"muestra\s*(\d+)", pregunta.lower())
-                    if match:
-                        comparar_con = match.group(1)
-                respuesta = consultar_ia_avanzada(muestra_actual=muestra, comparar_con=comparar_con)
-                st.session_state["respuesta_ia"] = respuesta
+            comparar_con = None
+            if "comparar con" in pregunta.lower():
+                import re
+                match = re.search(r"muestra\s*(\d+)", pregunta.lower())
+                if match:
+                    comparar_con = match.group(1)
+            respuesta = consultar_ia_avanzada(muestra_actual=muestra, comparar_con=comparar_con)
+            st.session_state["respuesta_ia"] = respuesta
 
         if "respuesta_ia" in st.session_state:
             st.markdown("### Respuesta de IA")
             st.markdown(st.session_state["respuesta_ia"])
-
             if st.button("💾 Guardar como conclusión"):
                 fecha = datetime.now().isoformat()
                 nombre = muestra or "global"
@@ -152,28 +176,3 @@ def mostrar_panel_ia():
                     nuevas = prev.get("conclusiones", []) + [{"fecha": fecha, "texto": st.session_state["respuesta_ia"]}]
                     ref.set({"conclusiones": nuevas})
                     st.success("Conclusión guardada.")
-
-        st.markdown("---")
-        st.markdown("**📚 Base de conocimientos**")
-
-        texto = st.text_area("Contenido o resumen del artículo")
-        etiqueta = st.text_input("Técnica relacionada (ej: FTIR, RMN, etc.)")
-        archivo = st.file_uploader("Opcional: subir PDF o TXT")
-
-        if st.button("📌 Guardar referencia"):
-            db = st.session_state.get("firebase_db")
-            if db:
-                ref = db.collection("referencias_globales")
-                contenido = {
-                    "fecha": datetime.now().isoformat(),
-                    "texto": texto,
-                    "etiqueta": etiqueta,
-                }
-                if archivo:
-                    contenido["archivo_nombre"] = archivo.name
-                    contenido["archivo_base64"] = base64.b64encode(archivo.getvalue()).decode("utf-8")
-                ref.add(contenido)
-                st.success("Referencia guardada.")
-
-# --- Ejecutar panel al cargar ---
-mostrar_panel_ia()

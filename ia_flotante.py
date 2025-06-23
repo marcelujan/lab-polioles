@@ -127,7 +127,6 @@ def mostrar_panel_ia():
 
         muestra = st.session_state.get("muestra_activa")
         pregunta = st.text_area(
-            "Análisis",
             key="ia_pregunta")
         if st.button("💬 Consultar IA"):
             with st.spinner("Consultando..."):
@@ -156,14 +155,13 @@ def mostrar_panel_ia():
                     st.success("Conclusión guardada.")
 
         st.markdown("---")
-        st.markdown("### 📚 Base de conocimientos general")
-        st.markdown("Subí textos, papers o fragmentos que quieras que la IA considere.")
+        st.markdown("**📚 Base de conocimientos**")
 
         texto = st.text_area("Contenido o resumen del artículo")
         etiqueta = st.text_input("Técnica relacionada (ej: FTIR, RMN, etc.)")
         archivo = st.file_uploader("Opcional: subir PDF o TXT")
 
-        if st.button("📌 Guardar referencia global"):
+        if st.button("📌 Guardar referencia"):
             db = st.session_state.get("firebase_db")
             if db:
                 ref = db.collection("referencias_globales")

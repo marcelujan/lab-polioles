@@ -127,10 +127,10 @@ def mostrar_panel_ia():
 
     if st.session_state["mostrar_ia"]:
         with st.sidebar:
-            st.markdown("## 🧠 IA de laboratorio")
+            st.markdown("## 🧠 Consultas")
             muestra = st.session_state.get("muestra_activa")
-            pregunta = st.text_area("Consulta a la IA", key="ia_pregunta")
-            if st.button("💬 Consultar IA"):
+            pregunta = st.text_area("", key="ia_pregunta")
+            if st.button("💬 Consultar"):
                 comparar_con = None
                 if "comparar con" in pregunta.lower():
                     import re
@@ -143,7 +143,7 @@ def mostrar_panel_ia():
             if "respuesta_ia" in st.session_state:
                 st.markdown("### Respuesta de IA")
                 st.markdown(st.session_state["respuesta_ia"])
-                if st.button("💾 Guardar como conclusión"):
+                if st.button("💾 Guardar conclusión"):
                     fecha = datetime.now().isoformat()
                     nombre = muestra or "global"
                     db = st.session_state.get("firebase_db")
@@ -155,12 +155,12 @@ def mostrar_panel_ia():
                         st.success("Conclusión guardada.")
 
             st.markdown("---")
-            st.markdown("### 📚 Cargar paper o texto técnico")
-            texto = st.text_area("Contenido o resumen del artículo", key="ia_referencia_texto")
+            st.markdown("### 📚 Cargar texto")
+            texto = st.text_area("", key="ia_referencia_texto")
             etiqueta = st.text_input("Técnica relacionada (ej: FTIR, RMN, etc.)", key="ia_etiqueta")
-            archivo = st.file_uploader("Opcional: subir PDF o TXT", key="ia_archivo")
+            archivo = st.file_uploader("Subir PDF o TXT", key="ia_archivo")
 
-            if st.button("📌 Guardar referencia global"):
+            if st.button("📌 Guardar referencia"):
                 db = st.session_state.get("firebase_db")
                 if db:
                     ref = db.collection("referencias_globales")

@@ -153,3 +153,24 @@ def mostrar_panel_ia():
                         nuevas = prev.get("conclusiones", []) + [{"fecha": fecha, "texto": st.session_state["respuesta_ia"]}]
                         ref.set({"conclusiones": nuevas})
                         st.success("Conclusión guardada.")
+
+            st.markdown("---")
+            st.markdown("### 📚 Cargar paper o texto técnico")
+            texto = st.text_area("Contenido o resumen del artículo", key="ia_referencia_texto")
+            etiqueta = st.text_input("Técnica relacionada (ej: FTIR, RMN, etc.)", key="ia_etiqueta")
+            archivo = st.file_uploader("Opcional: subir PDF o TXT", key="ia_archivo")
+
+            if st.button("📌 Guardar referencia global"):
+                db = st.session_state.get("firebase_db")
+                if db:
+                    ref = db.collection("referencias_globales")
+                    contenido = {
+                        "fecha": datetime.now().isoformat(),
+                        "texto": texto,
+                        "etiqueta": etiqueta,
+                    }
+                    if archivo:
+                        contenido["archivo_nombre"] = archivo.name
+                        contenido["archivo_base64"] = base64.b64encode(archivo.getvalue()).decode("utf-8")
+                    ref.add(contenido)
+                    st.success("Referencia guardada.")

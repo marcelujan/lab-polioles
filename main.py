@@ -1,4 +1,3 @@
-
 import streamlit as st
 from firestore_utils import iniciar_firebase, cargar_muestras, guardar_muestra
 from auth_utils import registrar_usuario, iniciar_sesion
@@ -84,3 +83,4 @@ with tabs[7]:
     render_tab8(db, mostrar_sector_flotante)
 with tabs[8]:
     render_tab9(db, cargar_muestras, mostrar_sector_flotante)
+import ia_flotante

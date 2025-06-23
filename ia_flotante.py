@@ -4,10 +4,103 @@ from datetime import datetime
 import base64
 import json
 
-# --- Mostrar solo si es mlujan1863 ---
-if st.session_state.get("user_email") == "mlujan1863@gmail.com":
 
-    # --- Botón flotante inferior derecho ---
+def consultar_ia_avanzada(muestra_actual=None, comparar_con=None):
+    db = st.session_state.get("firebase_db")
+    if not db:
+        return "⚠️ No se encontró la base de datos."
+
+    def obtener_datos(nombre):
+        ref = db.collection("muestras").document(nombre)
+        doc = ref.get()
+        if not doc.exists:
+            return {}
+        datos = doc.to_dict()
+        espectros_ref = ref.collection("espectros").stream()
+        espectros = [e.to_dict() for e in espectros_ref]
+        obs_ref = db.collection("observaciones_muestras").document(nombre).get()
+        observaciones = obs_ref.to_dict().get("observaciones", []) if obs_ref.exists else []
+        conclusiones_ref = db.collection("conclusiones_muestras").document(nombre).get()
+        conclusiones = conclusiones_ref.to_dict().get("conclusiones", []) if conclusiones_ref.exists else []
+        return {
+            "nombre": nombre,
+            "observacion": datos.get("observacion", ""),
+            "analisis": datos.get("analisis", []),
+            "espectros": espectros,
+            "observaciones": observaciones,
+            "conclusiones": conclusiones
+        }
+
+    datos1 = obtener_datos(muestra_actual) if muestra_actual else {}
+    datos2 = obtener_datos(comparar_con) if comparar_con else {}
+
+    referencias_globales = db.collection("referencias_globales").stream()
+    referencias = [r.to_dict() for r in referencias_globales]
+
+    prompt = """
+Sos un asistente experto en análisis de laboratorio (FTIR, RMN, índice OH, viscosidad, etc.).
+Tu tarea es analizar las muestras dadas y generar un informe técnico interpretativo.
+Incluí observaciones sobre espectros, análisis, comparaciones, y usá bibliografía técnica si aplica.
+No repitas disclaimers ni digas que sos una IA.
+
+---
+"""
+
+    def resumen_muestra(d):
+        if not d:
+            return ""
+        bloques = [f"Muestra: {d['nombre']}\n"]
+        bloques.append(f"Observación general: {d['observacion']}")
+        if d["analisis"]:
+            bloques.append("Análisis:")
+            for a in d["analisis"]:
+                bloques.append(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
+        if d["espectros"]:
+            bloques.append("Espectros:")
+            for e in d["espectros"]:
+                bloques.append(f"- {e['tipo']} – {e.get('nombre_archivo', '')} – {e.get('fecha', '')}")
+        if d["observaciones"]:
+            bloques.append("Observaciones previas:")
+            for o in d["observaciones"]:
+                bloques.append(f"- {o['fecha']}: {o['texto']}")
+        if d["conclusiones"]:
+            bloques.append("Conclusiones anteriores:")
+            for c in d["conclusiones"]:
+                bloques.append(f"- {c['fecha']}: {c['texto']}")
+        return "\n".join(bloques)
+
+    prompt += resumen_muestra(datos1)
+    if datos2:
+        prompt += "\n---\nComparar con:\n"
+        prompt += resumen_muestra(datos2)
+
+    if referencias:
+        prompt += "\n---\nInformación técnica adicional cargada por el usuario:\n"
+        for r in referencias:
+            txt = r.get("texto", "")
+            etiqueta = r.get("etiqueta", "General")
+            prompt += f"\n[{etiqueta}] {txt[:500]}"
+
+    try:
+        client = openai.OpenAI(api_key=st.secrets["openai"]["api_key"])
+        respuesta = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "Sos un experto en análisis de laboratorio"},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.6,
+            max_tokens=1200
+        )
+        return respuesta.choices[0].message.content
+    except Exception as e:
+        return f"❌ Error al consultar la IA: {e}"
+
+
+def mostrar_panel_ia():
+    if st.session_state.get("user_email") != "mlujan1863@gmail.com":
+        return
+
     with st.container():
         st.markdown("""
         <style>
@@ -29,99 +122,6 @@ if st.session_state.get("user_email") == "mlujan1863@gmail.com":
         <button class="floating-btn" onclick="window.location.href='#ia-panel'">🧠</button>
         """, unsafe_allow_html=True)
 
-    # --- Función avanzada de consulta IA ---
-    def consultar_ia_avanzada(muestra_actual=None, comparar_con=None):
-        db = st.session_state.get("firebase_db")
-        if not db:
-            return "⚠️ No se encontró la base de datos."
-
-        def obtener_datos(nombre):
-            ref = db.collection("muestras").document(nombre)
-            doc = ref.get()
-            if not doc.exists:
-                return {}
-            datos = doc.to_dict()
-            espectros_ref = ref.collection("espectros").stream()
-            espectros = [e.to_dict() for e in espectros_ref]
-            obs_ref = db.collection("observaciones_muestras").document(nombre).get()
-            observaciones = obs_ref.to_dict().get("observaciones", []) if obs_ref.exists else []
-            conclusiones_ref = db.collection("conclusiones_muestras").document(nombre).get()
-            conclusiones = conclusiones_ref.to_dict().get("conclusiones", []) if conclusiones_ref.exists else []
-            return {
-                "nombre": nombre,
-                "observacion": datos.get("observacion", ""),
-                "analisis": datos.get("analisis", []),
-                "espectros": espectros,
-                "observaciones": observaciones,
-                "conclusiones": conclusiones
-            }
-
-        datos1 = obtener_datos(muestra_actual) if muestra_actual else {}
-        datos2 = obtener_datos(comparar_con) if comparar_con else {}
-
-        referencias_globales = db.collection("referencias_globales").stream()
-        referencias = [r.to_dict() for r in referencias_globales]
-
-        # Armar prompt
-        prompt = """
-Sos un asistente experto en análisis de laboratorio (FTIR, RMN, índice OH, viscosidad, etc.).
-Tu tarea es analizar las muestras dadas y generar un informe técnico interpretativo.
-Incluí observaciones sobre espectros, análisis, comparaciones, y usá bibliografía técnica si aplica.
-No repitas disclaimers ni digas que sos una IA.
-
----
-"""
-        def resumen_muestra(d):
-            if not d:
-                return ""
-            bloques = [f"Muestra: {d['nombre']}\n"]
-            bloques.append(f"Observación general: {d['observacion']}")
-            if d["analisis"]:
-                bloques.append("Análisis:")
-                for a in d["analisis"]:
-                    bloques.append(f"- {a['tipo']}: {a['valor']} ({a['fecha']})")
-            if d["espectros"]:
-                bloques.append("Espectros:")
-                for e in d["espectros"]:
-                    bloques.append(f"- {e['tipo']} – {e.get('nombre_archivo', '')} – {e.get('fecha', '')}")
-            if d["observaciones"]:
-                bloques.append("Observaciones previas:")
-                for o in d["observaciones"]:
-                    bloques.append(f"- {o['fecha']}: {o['texto']}")
-            if d["conclusiones"]:
-                bloques.append("Conclusiones anteriores:")
-                for c in d["conclusiones"]:
-                    bloques.append(f"- {c['fecha']}: {c['texto']}")
-            return "\n".join(bloques)
-
-        prompt += resumen_muestra(datos1)
-        if datos2:
-            prompt += "\n---\nComparar con:\n"
-            prompt += resumen_muestra(datos2)
-
-        if referencias:
-            prompt += "\n---\nInformación técnica adicional cargada por el usuario:\n"
-            for r in referencias:
-                txt = r.get("texto", "")
-                etiqueta = r.get("etiqueta", "General")
-                prompt += f"\n[{etiqueta}] {txt[:500]}"
-
-        try:
-            client = openai.OpenAI(api_key=st.secrets["openai"]["api_key"])
-            respuesta = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "Sos un experto en análisis de laboratorio"},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.6,
-                max_tokens=1200
-            )
-            return respuesta.choices[0].message.content
-        except Exception as e:
-            return f"❌ Error al consultar la IA: {e}"
-
-    # --- Panel IA ---
     with st.container():
         st.markdown("""<h2 id='ia-panel'>🧠 IA de laboratorio</h2>""", unsafe_allow_html=True)
 
@@ -176,3 +176,6 @@ No repitas disclaimers ni digas que sos una IA.
                     contenido["archivo_base64"] = base64.b64encode(archivo.getvalue()).decode("utf-8")
                 ref.add(contenido)
                 st.success("Referencia guardada.")
+
+# --- Ejecutar panel al cargar ---
+mostrar_panel_ia()

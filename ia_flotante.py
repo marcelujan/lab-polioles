@@ -99,13 +99,12 @@ def mostrar_panel_ia():
     if st.session_state.get("user_email") != "mlujan1863@gmail.com":
         return
 
-    # --- Botón flotante con JS para mostrar modal ---
     st.markdown("""
     <style>
     .floating-btn {
         position: fixed;
-        bottom: 20px;
-        right: 20px;
+        bottom: 30px;
+        right: 120px;
         background-color: #6c63ff;
         color: white;
         border: none;
@@ -117,62 +116,58 @@ def mostrar_panel_ia():
         z-index: 9999;
         cursor: pointer;
     }
-    .modal-overlay {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.3);
-        display: none;
-        z-index: 9998;
-    }
-    .modal-box {
-        position: fixed;
-        bottom: 90px;
-        right: 20px;
-        width: 400px;
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        display: none;
-        z-index: 9999;
-    }
     </style>
-    <div class="modal-overlay" id="ia-overlay" onclick="document.getElementById('ia-box').style.display='none';document.getElementById('ia-overlay').style.display='none'"></div>
-    <div class="modal-box" id="ia-box">
-        <h4>🧠 IA de laboratorio</h4>
-        <iframe srcdoc="" id="ia-content" width="100%" height="400" frameborder="0"></iframe>
-    </div>
-    <button class="floating-btn" onclick="document.getElementById('ia-box').style.display='block';document.getElementById('ia-overlay').style.display='block'">🧠</button>
+    <button class="floating-btn" onclick="window.parent.postMessage({type: 'toggleIA'}, '*')">🧠</button>
     <script>
-    const iframe = document.getElementById('ia-content');
-    let doc = `<!DOCTYPE html><html><head><base target='_parent'></head><body>`;
+    window.addEventListener('message', function(e) {
+        if (e.data.type === 'toggleIA') {
+            const panel = window.document.getElementById('ia-panel-box');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+    });
     </script>
     """, unsafe_allow_html=True)
 
-    with st.empty():
-        muestra = st.session_state.get("muestra_activa")
-        pregunta = st.text_area("Análisis", key="ia_pregunta")
-        if st.button("💬 Consultar IA"):
-            comparar_con = None
-            if "comparar con" in pregunta.lower():
-                import re
-                match = re.search(r"muestra\s*(\d+)", pregunta.lower())
-                if match:
-                    comparar_con = match.group(1)
-            respuesta = consultar_ia_avanzada(muestra_actual=muestra, comparar_con=comparar_con)
-            st.session_state["respuesta_ia"] = respuesta
+    if "mostrar_ia" not in st.session_state:
+        st.session_state.mostrar_ia = False
 
-        if "respuesta_ia" in st.session_state:
-            st.markdown("### Respuesta de IA")
-            st.markdown(st.session_state["respuesta_ia"])
-            if st.button("💾 Guardar como conclusión"):
-                fecha = datetime.now().isoformat()
-                nombre = muestra or "global"
-                db = st.session_state.get("firebase_db")
-                if db:
-                    ref = db.collection("conclusiones_muestras").document(nombre)
-                    prev = ref.get().to_dict() or {}
-                    nuevas = prev.get("conclusiones", []) + [{"fecha": fecha, "texto": st.session_state["respuesta_ia"]}]
-                    ref.set({"conclusiones": nuevas})
-                    st.success("Conclusión guardada.")
+    # Panel IA real
+    st.markdown("""
+    <div id="ia-panel-box" style="display:none; position:fixed; bottom:100px; right:20px; width:400px; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:10000;">
+        <div style='text-align:right;'>
+            <button onclick="window.parent.postMessage({type: 'toggleIA'}, '*')">❌</button>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.container():
+        if st.session_state.get("mostrar_ia"):
+            muestra = st.session_state.get("muestra_activa")
+            pregunta = st.text_area("Consulta a la IA", key="ia_pregunta")
+            if st.button("💬 Consultar IA"):
+                comparar_con = None
+                if "comparar con" in pregunta.lower():
+                    import re
+                    match = re.search(r"muestra\s*(\d+)", pregunta.lower())
+                    if match:
+                        comparar_con = match.group(1)
+                respuesta = consultar_ia_avanzada(muestra_actual=muestra, comparar_con=comparar_con)
+                st.session_state["respuesta_ia"] = respuesta
+
+            if "respuesta_ia" in st.session_state:
+                st.markdown("### Respuesta de IA")
+                st.markdown(st.session_state["respuesta_ia"])
+                if st.button("💾 Guardar como conclusión"):
+                    fecha = datetime.now().isoformat()
+                    nombre = muestra or "global"
+                    db = st.session_state.get("firebase_db")
+                    if db:
+                        ref = db.collection("conclusiones_muestras").document(nombre)
+                        prev = ref.get().to_dict() or {}
+                        nuevas = prev.get("conclusiones", []) + [{"fecha": fecha, "texto": st.session_state["respuesta_ia"]}]
+                        ref.set({"conclusiones": nuevas})
+                        st.success("Conclusión guardada.")

@@ -20,7 +20,7 @@ st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate("secrets/firebase_key.json")
+    cred = credentials.Certificate(".streamlit/secrets")
     firebase_admin.initialize_app(cred, {
         'storageBucket': 'laboratorio-polioles.firebasestorage.app'
     })

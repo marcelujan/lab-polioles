@@ -80,14 +80,17 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             yaxis_title="F1 (s⁻¹ o m²/s)",
             height=700,
             xaxis=dict(
+                autorange="reversed",
                 showgrid=False,
                 zeroline=False,
-                linecolor='black'
+                linecolor="black"
             ),
             yaxis=dict(
+                type="log",  # si querés log
+                autorange="reversed",  # opcional
                 showgrid=False,
                 zeroline=False,
-                linecolor='black'
+                linecolor="black"
             ),
             showlegend=False
         )

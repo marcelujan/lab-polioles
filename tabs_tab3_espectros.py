@@ -135,7 +135,10 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 "archivo_original": archivo.name,
                 "nombre_archivo": nombre_generado,
                 "url_archivo": url_publica,
-                "es_imagen": False
+                "es_imagen": False,
+                "fecha": str(fecha_espectro), 
+                "peso_muestra": None,   
+                "mascaras": []  
             }
 
         else:

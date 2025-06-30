@@ -46,27 +46,31 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
         fig.add_trace(go.Contour(
             x=x1, y=y1, z=z1,
-            colorscale="Reds",
+            colorscale=[[0, 'red'], [1, 'red']],  # rojo sólido
             contours=dict(
                 coloring="lines",
                 start=level1,
                 end=level1,
                 size=0.1,
-                showlabels=True
+                showlabels=False
             ),
+            line=dict(width=1.5),  # grosor de línea
+            showscale=False,
             name="Espectro 1"
         ))
 
         fig.add_trace(go.Contour(
             x=x2, y=y2, z=z2,
-            colorscale="Blues",
+            colorscale=[[0, 'blue'], [1, 'blue']],
             contours=dict(
                 coloring="lines",
                 start=level2,
                 end=level2,
                 size=0.1,
-                showlabels=True
+                showlabels=False
             ),
+            line=dict(width=1.5),
+            showscale=False,
             name="Espectro 2"
         ))
 
@@ -74,6 +78,18 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             title="Superposición de mapas 2D",
             xaxis_title="F2 (ppm)",
             yaxis_title="F1 (s⁻¹ o m²/s)",
-            height=700
+            height=700,
+            xaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                linecolor='black'
+            ),
+            yaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                linecolor='black'
+            ),
+            showlegend=False
         )
+
         st.plotly_chart(fig, use_container_width=True)

@@ -86,13 +86,21 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                 linecolor="black"
             ),
             yaxis=dict(
-                type="log",  # si querés log
-                autorange="reversed",  # opcional
+                type="log",
+                autorange="reversed",    # opcional, quitar si no querés invertir
+                exponentformat="e",      # notación científica
                 showgrid=False,
                 zeroline=False,
                 linecolor="black"
             ),
-            showlegend=False
+            showlegend=True,
+            legend=dict(
+                x=0.01,
+                y=0.99,
+                bgcolor="white",
+                bordercolor="black"
+            )
         )
+
 
         st.plotly_chart(fig, use_container_width=True)

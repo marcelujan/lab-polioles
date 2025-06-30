@@ -72,7 +72,7 @@ tabs = st.tabs([
     "Análisis de espectros",    # 3
     "FTIR",            # 4
     "RMN",             # 5
-    "RMN 2D",                   # 6
+    "RMN D",                   # 6
     "Consola",                  # 7
     "Sugerencias",              # 8
     "Desarrollos"               # 9

@@ -5,37 +5,66 @@ import plotly.graph_objects as go
 import base64
 import io
 import numpy as np
+import requests
 
-def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
+def render_tab10(db, cargar_muestras):
     st.title("Comparar mapas 2D RMN")
 
     st.session_state["current_tab"] = "Comparar mapas 2D RMN"
 
+    # Cargar todas las muestras
     muestras = cargar_muestras(db)
-    nombres_muestras = [m["nombre"] for m in muestras]
 
-    # multiselect de muestras
-    muestras_sel = st.multiselect("Seleccionar muestras", nombres_muestras,key="multiselect_muestras_tab10")
+    # Filtrar solo las que tienen espectros RMN 1H D
+    muestras_filtradas = []
+    espectros_dict = {}
 
-    espectros_rmn_2d = []
+    for muestra in muestras:
+        espectros_ref = db.collection("muestras").document(muestra["nombre"]).collection("espectros")
+        docs = espectros_ref.stream()
+        espectros_rmn2d = []
+        for doc in docs:
+            data = doc.to_dict()
+            if data.get("tipo") == "RMN 1H D":
+                espectros_rmn2d.append({
+                    "muestra": muestra["nombre"],
+                    "nombre": data.get("nombre_archivo", "sin nombre"),
+                    "url_archivo": data.get("url_archivo"),
+                })
+        if espectros_rmn2d:
+            muestras_filtradas.append(muestra["nombre"])
+            espectros_dict[muestra["nombre"]] = espectros_rmn2d
+
+    if not muestras_filtradas:
+        st.warning("No hay muestras con espectros RMN 1H D.")
+        return
+
+    # Selector múltiple de muestras
+    muestras_sel = st.multiselect(
+        "Seleccionar muestras con espectros RMN 1H D",
+        options=muestras_filtradas
+    )
+
+    # Segundo selector de espectros para cada muestra elegida
+    espectros_seleccionados = []
     if muestras_sel:
-        for nombre_muestra in muestras_sel:
-            ref = db.collection("muestras").document(nombre_muestra).collection("espectros")
-            docs = ref.stream()
-            for doc in docs:
-                data = doc.to_dict()
-                if data.get("tipo") == "RMN 2D":
-                    espectros_rmn_2d.append({
-                        "muestra": nombre_muestra,
-                        "nombre": data.get("nombre_archivo", "sin nombre"),
-                        "contenido": data.get("contenido"),
-                    })
+        for m in muestras_sel:
+            archivos = espectros_dict[m]
+            opciones = [a['nombre'] for a in archivos]
+            sel = st.multiselect(
+                f"Seleccionar espectros de {m}",
+                options=opciones,
+                key=f"sel_{m}"
+            )
+            for s in sel:
+                espectros_seleccionados.append({"muestra": m, "nombre_archivo": s})
 
-    opciones = [f"{e['muestra']} – {e['nombre']}" for e in espectros_rmn_2d]
-    seleccionados = st.multiselect("Elegir espectros 2D a superponer", opciones)
+    # Mostrar resultado parcial
+    if espectros_seleccionados:
+        st.success(f"Espectros seleccionados: {[e['nombre_archivo'] for e in espectros_seleccionados]}")
 
     # campos minimalistas para ajustes de ejes y contornos
-    if seleccionados:
+    if espectros_seleccionados:
         c1, c2, c3, c4 = st.columns(4)
         with c1:
             nivel_contorno_1 = st.number_input("Nivel 1", value=0.1, format="%.3f")
@@ -51,11 +80,22 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']  # para varios espectros
         color_idx = 0
 
-        for sel in seleccionados:
-            match = next((e for e in espectros_rmn_2d if f"{e['muestra']} – {e['nombre']}" == sel), None)
+        for sel in espectros_seleccionados:
+            match = next(
+                (e for e in espectros_dict[sel['muestra']] if e['nombre'] == sel['nombre_archivo']),
+                None
+            )
             if match:
-                csv_bytes = base64.b64decode(match["contenido"])
-                df = pd.read_csv(io.StringIO(csv_bytes.decode()), sep="\t")
+                if "url_archivo" in match:
+                    response = requests.get(match["url_archivo"])
+                    if response.status_code == 200:
+                        df = pd.read_csv(io.StringIO(response.text), sep="\t")
+                    else:
+                        st.error(f"No se pudo leer el archivo en {match['url_archivo']}")
+                else:
+                    csv_bytes = base64.b64decode(match["contenido"])
+                    df = pd.read_csv(io.StringIO(csv_bytes.decode()), sep="\t")
+
 
                 x = pd.to_numeric(df.columns[1:], errors="coerce")
                 x = x[~pd.isna(x)]
@@ -78,7 +118,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                     ),
                     line=dict(width=1.5),
                     showscale=False,
-                    name=match["nombre"]
+                    name=match["nombre_archivo"]
                 ))
                 color_idx += 1
 

@@ -32,6 +32,14 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         x2 = x2[~pd.isna(x2)]
         y2 = df2.iloc[:, 0].astype(float)
         z2 = df2.iloc[:, 1:len(x2)+1].values
+        
+        st.write(f"x1: {x1.min()} - {x1.max()}")
+        st.write(f"y1: {y1.min()} - {y1.max()}")
+        st.write(f"z1 max: {z1.max()}")
+
+        st.write(f"x2: {x2.min()} - {x2.max()}")
+        st.write(f"y2: {y2.min()} - {y2.max()}")
+        st.write(f"z2 max: {z2.max()}")
 
         # graficar con plotly
         fig = go.Figure()

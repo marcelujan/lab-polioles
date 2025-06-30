@@ -177,8 +177,11 @@ def mostrar_panel_ia():
         with st.sidebar:
             st.markdown("## 🧠 Consultas")
             muestra = st.session_state.get("muestra_activa")
-            pregunta = st.text_area("", key="ia_pregunta")
-
+            pregunta = st.text_area(
+                "Pregunta IA",
+                key="ia_pregunta",
+                label_visibility="collapsed"
+            )
             datos_plotly = st.session_state.get("datos_plotly", [])
             if datos_plotly:
                 st.markdown("**Picos detectados**")
@@ -211,7 +214,11 @@ def mostrar_panel_ia():
 
             st.markdown("---")
             st.markdown("### 📚 Cargar info")
-            texto = st.text_area("", key="ia_referencia_texto")
+            texto = st.text_area(
+                    "Referencia IA",
+                    key="ia_referencia_texto",
+                    label_visibility="collapsed"
+                )
             etiqueta = st.text_input("Técnica relacionada (ej: FTIR, RMN, etc.)", key="ia_etiqueta")
             archivo = st.file_uploader("Subir PDF o TXT", key="ia_archivo")
 

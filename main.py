@@ -55,12 +55,12 @@ db = st.session_state.db
 
 # --- Tabs principales ---
 tabs = st.tabs([
-    "Laboratorio de Polioles",  # 0
+    "Lab de polioles",  # 0
     "Análisis de datos",        # 1
     "Carga de espectros",       # 2
     "Análisis de espectros",    # 3
-    "Análisis FTIR",            # 4
-    "Análisis RMN",             # 5
+    "FTIR",            # 4
+    "RMN",             # 5
     "RMN 2D",                   # 6
     "Consola",                  # 7
     "Sugerencias",              # 8

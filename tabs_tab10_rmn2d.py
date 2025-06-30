@@ -1,8 +1,10 @@
+# tabs_tab10_rmn2d.py
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import numpy as np
 import base64
+import io
+import numpy as np
 
 def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     st.title("Comparar mapas 2D RMN")
@@ -12,33 +14,33 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     muestras = cargar_muestras(db)
     nombres_muestras = [m["nombre"] for m in muestras]
 
-    st.subheader("Comparar espectros 2D desde la base de datos")
+    # multiselect de muestras
+    muestras_sel = st.multiselect("Seleccionar muestras", nombres_muestras)
 
-    nombre_muestra = st.selectbox("Seleccionar muestra", nombres_muestras, key="selectbox_tab10")
     espectros_rmn_2d = []
+    if muestras_sel:
+        for nombre_muestra in muestras_sel:
+            ref = db.collection("muestras").document(nombre_muestra).collection("espectros")
+            docs = ref.stream()
+            for doc in docs:
+                data = doc.to_dict()
+                if data.get("tipo") == "RMN 2D":
+                    espectros_rmn_2d.append({
+                        "muestra": nombre_muestra,
+                        "nombre": data.get("nombre_archivo", "sin nombre"),
+                        "contenido": data.get("contenido"),
+                    })
 
-    # buscar espectros guardados como RMN 1H D
-    ref = db.collection("muestras").document(nombre_muestra).collection("espectros")
-    docs = ref.stream()
-    for doc in docs:
-        data = doc.to_dict()
-        if data.get("tipo") == "RMN 1H D":
-            espectros_rmn_2d.append({
-                "nombre": data.get("nombre_archivo", "sin nombre"),
-                "contenido": data.get("contenido"),
-            })
+    opciones = [f"{e['muestra']} – {e['nombre']}" for e in espectros_rmn_2d]
+    seleccionados = st.multiselect("Elegir espectros 2D a superponer", opciones)
 
-    nombres_archivos = [e["nombre"] for e in espectros_rmn_2d]
-
-    seleccionados = st.multiselect("Elegir espectros 2D a superponer", nombres_archivos)
-
+    # campos minimalistas para ajustes de ejes y contornos
     if seleccionados:
-        # 4 campos minimalistas
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            level1 = st.number_input("Nivel 1", value=0.1, format="%.3f")
+            nivel_contorno_1 = st.number_input("Nivel 1", value=0.1, format="%.3f")
         with c2:
-            level2 = st.number_input("Nivel 2", value=0.1, format="%.3f")
+            nivel_contorno_2 = st.number_input("Nivel 2", value=0.1, format="%.3f")
         with c3:
             y_max = st.number_input("Y máximo", value=1e-9, format="%.1e")
         with c4:
@@ -46,43 +48,42 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
         fig = go.Figure()
 
-        colores = ["red", "blue", "green", "orange", "purple", "black"]
-        
-        for idx, nombre_archivo in enumerate(seleccionados):
-            espectro = next(e for e in espectros_rmn_2d if e["nombre"] == nombre_archivo)
-            csv_bytes = base64.b64decode(espectro["contenido"])
-            csv_str = csv_bytes.decode("utf-8")
-            from io import StringIO
-            df = pd.read_csv(StringIO(csv_str), sep="\t")
+        colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']  # para varios espectros
+        color_idx = 0
 
-            x = pd.to_numeric(df.columns[1:], errors="coerce")
-            x = x[~pd.isna(x)]
-            raw_y = df.iloc[:, 0].astype(float)
-            z = df.iloc[:, 1:len(x)+1].values
+        for sel in seleccionados:
+            match = next((e for e in espectros_rmn_2d if f"{e['muestra']} – {e['nombre']}" == sel), None)
+            if match:
+                csv_bytes = base64.b64decode(match["contenido"])
+                df = pd.read_csv(io.StringIO(csv_bytes.decode()), sep="\t")
 
-            # remapear Y
-            y = y_min * (y_max / y_min) ** raw_y
+                x = pd.to_numeric(df.columns[1:], errors="coerce")
+                x = x[~pd.isna(x)]
+                y_raw = df.iloc[:, 0].astype(float)
+                z = df.iloc[:, 1:len(x)+1].values
 
-            nivel = level1 if idx == 0 else level2 if idx == 1 else 0.1  # para más de 2 espectros
-            color = colores[idx % len(colores)]
+                y_scaled = y_min * (y_max / y_min) ** y_raw
 
-            fig.add_trace(go.Contour(
-                x=x, y=y, z=z,
-                colorscale=[[0, color], [1, color]],
-                contours=dict(
-                    coloring="lines",
-                    start=nivel,
-                    end=nivel,
-                    size=0.1,
-                    showlabels=False
-                ),
-                line=dict(width=1.5),
-                showscale=False,
-                name=nombre_archivo
-            ))
+                fig.add_trace(go.Contour(
+                    x=x,
+                    y=y_scaled,
+                    z=z,
+                    colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
+                    contours=dict(
+                        coloring="lines",
+                        start=nivel_contorno_1 if color_idx == 0 else nivel_contorno_2,
+                        end=nivel_contorno_1 if color_idx == 0 else nivel_contorno_2,
+                        size=0.1,
+                        showlabels=False
+                    ),
+                    line=dict(width=1.5),
+                    showscale=False,
+                    name=match["nombre"]
+                ))
+                color_idx += 1
 
         fig.update_layout(
-            title="Comparación de mapas 2D",
+            title="Superposición de mapas 2D",
             xaxis_title="F2 (ppm)",
             yaxis_title="F1 (s⁻¹ o m²/s)",
             height=700,
@@ -108,5 +109,21 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                 bordercolor="black"
             )
         )
+
+        # agregar etiquetas de extremos (custom)
+        fig.add_trace(go.Scatter(
+            x=[x.max()],
+            y=[y_min],
+            text=[f"{y_min:.1e}"],
+            mode="text",
+            showlegend=False
+        ))
+        fig.add_trace(go.Scatter(
+            x=[x.max()],
+            y=[y_max],
+            text=[f"{y_max:.1e}"],
+            mode="text",
+            showlegend=False
+        ))
 
         st.plotly_chart(fig, use_container_width=True)

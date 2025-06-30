@@ -32,7 +32,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         x2 = x2[~pd.isna(x2)]
         y2 = df2.iloc[:, 0].astype(float)
         z2 = df2.iloc[:, 1:len(x2)+1].values
-        
+
         st.write(f"x1: {x1.min()} - {x1.max()}")
         st.write(f"y1: {y1.min()} - {y1.max()}")
         st.write(f"z1 max: {z1.max()}")
@@ -47,17 +47,17 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         fig.add_trace(go.Contour(
             x=x1, y=y1, z=z1,
             colorscale="Reds",
-            contours=dict(showlabels=True),
-            name="Espectro 1",
-            opacity=0.7
+            contours=dict(showlabels=False),
+            opacity=0.5,
+            name="Espectro 1"
         ))
 
         fig.add_trace(go.Contour(
             x=x2, y=y2, z=z2,
             colorscale="Blues",
-            contours=dict(showlabels=True),
-            name="Espectro 2",
-            opacity=0.7
+            contours=dict(showlabels=False),
+            opacity=0.5,
+            name="Espectro 2"
         ))
 
         fig.update_layout(

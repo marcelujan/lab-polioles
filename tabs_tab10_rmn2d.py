@@ -8,14 +8,9 @@ import numpy as np
 import requests
 
 def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
-    st.title("Comparar mapas 2D RMN")
-
     st.session_state["current_tab"] = "Comparar mapas 2D RMN"
 
-    # Cargar todas las muestras
     muestras = cargar_muestras(db)
-
-    # Filtrar solo las que tienen espectros RMN 1H D
     muestras_filtradas = []
     espectros_dict = {}
 
@@ -41,7 +36,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
     # Selector múltiple de muestras
     muestras_sel = st.multiselect(
-        "Seleccionar muestras con espectros RMN 1H D",
+        "Seleccionar muestras",
         options=muestras_filtradas
     )
 
@@ -52,24 +47,20 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             archivos = espectros_dict[m]
             opciones = [a['nombre'] for a in archivos]
             sel = st.multiselect(
-                f"Seleccionar espectros de {m}",
+                f"Seleccionar espectros",
                 options=opciones,
                 key=f"sel_{m}"
             )
             for s in sel:
                 espectros_seleccionados.append({"muestra": m, "nombre_archivo": s})
 
-    # Mostrar resultado parcial
-    if espectros_seleccionados:
-        st.success(f"Espectros seleccionados: {[e['nombre_archivo'] for e in espectros_seleccionados]}")
-
     # campos minimalistas para ajustes de ejes y contornos
     if espectros_seleccionados:
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            nivel_contorno_1 = st.number_input("Nivel 1", value=0.1, format="%.3f")
+            nivel_contorno_1 = st.number_input("Nivel 1", value=0.1, format="%.2f")
         with c2:
-            nivel_contorno_2 = st.number_input("Nivel 2", value=0.1, format="%.3f")
+            nivel_contorno_2 = st.number_input("Nivel 2", value=0.1, format="%.2f")
         with c3:
             y_max = st.number_input("Y máximo", value=1e-9, format="%.1e")
         with c4:

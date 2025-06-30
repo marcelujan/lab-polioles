@@ -3,8 +3,52 @@ import openai
 from datetime import datetime
 import base64
 import json
+from scipy.signal import find_peaks
 
-def consultar_ia_avanzada(muestra_actual=None, comparar_con=None):
+def generar_resumen_picos_rmn(datos_plotly):
+    resumen = []
+    picos_dict = {}
+
+    for muestra, tipo, archivo, df in datos_plotly:
+        x_vals = df["x"].values
+        y_vals = df["y"].values
+        peaks, _ = find_peaks(y_vals, height=max(y_vals) * 0.1)
+        picos_detectados = [round(x_vals[p], 2) for p in peaks]
+
+        resumen.append(f"""
+Muestra: {muestra}
+Tipo de espectro: {tipo}
+Archivo: {archivo}
+Número total de picos detectados: {len(picos_detectados)}
+Picos principales (posición en ppm): {picos_detectados}
+""")
+        picos_dict[f"{muestra} – {archivo}"] = set(picos_detectados)
+
+    resumen_picos_comparativo = ""
+    if picos_dict:
+        sets_picos = list(picos_dict.values())
+        nombres_muestras = list(picos_dict.keys())
+        picos_comunes = sorted(set.intersection(*sets_picos)) if len(sets_picos) >= 2 else []
+
+        picos_exclusivos_texto = ""
+        for i, nombre in enumerate(nombres_muestras):
+            otros_sets = [s for j, s in enumerate(sets_picos) if j != i]
+            picos_otros = set.union(*otros_sets) if otros_sets else set()
+            picos_exclusivos = sorted(picos_dict[nombre] - picos_otros)
+            picos_exclusivos_texto += f"\n{nombre}\nPicos exclusivos: {picos_exclusivos}\n"
+
+        resumen_picos_comparativo = f"""
+---
+Análisis comparativo automático:
+
+Picos comunes a todos los espectros: {picos_comunes}
+
+{picos_exclusivos_texto}
+"""
+
+    return "\n".join(resumen) + "\n" + resumen_picos_comparativo
+
+def consultar_ia_avanzada(muestra_actual=None, comparar_con=None, datos_plotly=None):
     db = st.session_state.get("firebase_db")
     if not db:
         return "⚠️ No se encontró la base de datos."
@@ -80,6 +124,10 @@ No repitas disclaimers ni digas que sos una IA.
             etiqueta = r.get("etiqueta", "General")
             prompt += f"\n[{etiqueta}] {txt[:500]}"
 
+    if datos_plotly:
+        prompt += "\n---\nResumen automático de espectros cargados:\n"
+        prompt += generar_resumen_picos_rmn(datos_plotly)
+
     try:
         client = openai.OpenAI(api_key=st.secrets["openai"]["api_key"])
         respuesta = client.chat.completions.create(
@@ -130,6 +178,13 @@ def mostrar_panel_ia():
             st.markdown("## 🧠 Consultas")
             muestra = st.session_state.get("muestra_activa")
             pregunta = st.text_area("", key="ia_pregunta")
+
+            datos_plotly = st.session_state.get("datos_plotly", [])
+            if datos_plotly:
+                st.markdown("**Picos detectados**")
+                resumen_previo = generar_resumen_picos_rmn(datos_plotly)
+                st.code(resumen_previo, language="markdown")
+
             if st.button("💬 Consultar"):
                 comparar_con = None
                 if "comparar con" in pregunta.lower():
@@ -137,7 +192,7 @@ def mostrar_panel_ia():
                     match = re.search(r"muestra\s*(\d+)", pregunta.lower())
                     if match:
                         comparar_con = match.group(1)
-                respuesta = consultar_ia_avanzada(muestra_actual=muestra, comparar_con=comparar_con)
+                respuesta = consultar_ia_avanzada(muestra_actual=muestra, comparar_con=comparar_con, datos_plotly=datos_plotly)
                 st.session_state["respuesta_ia"] = respuesta
 
             if "respuesta_ia" in st.session_state:

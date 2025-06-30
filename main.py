@@ -12,6 +12,7 @@ from tabs_tab6_rmn import render_tab6
 from tabs_tab7_consola import render_tab7
 from tabs_tab8_sugerencias import render_tab8
 from tabs_tab9_desarrollos import render_tab9  # Hoja en blanco para pruebas
+from tabs_tab10_rmn2d import render_tab10
 
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]
@@ -54,16 +55,18 @@ db = st.session_state.db
 
 # --- Tabs principales ---
 tabs = st.tabs([
-    "Laboratorio de Polioles",
-    "Análisis de datos",
-    "Carga de espectros",
-    "Análisis de espectros",
-    "Análisis FTIR",   # <- Esta reemplaza a la anterior hoja 5
-    "Análisis RMN",
-    "Consola",
-    "Sugerencias",
-    "Desarrollos"       # <- Nueva hoja 9
+    "Laboratorio de Polioles",  # 0
+    "Análisis de datos",        # 1
+    "Carga de espectros",       # 2
+    "Análisis de espectros",    # 3
+    "Análisis FTIR",            # 4
+    "Análisis RMN",             # 5
+    "RMN 2D",                   # 6
+    "Consola",                  # 7
+    "Sugerencias",              # 8
+    "Desarrollos"               # 9
 ])
+
 
 with tabs[0]:
     render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
@@ -74,14 +77,16 @@ with tabs[2]:
 with tabs[3]:
     render_tab4(db, cargar_muestras, mostrar_sector_flotante)
 with tabs[4]:
-    render_tab5(db, cargar_muestras, mostrar_sector_flotante)  # <-- Ahora hoja 5 es FTIR
+    render_tab5(db, cargar_muestras, mostrar_sector_flotante) 
 with tabs[5]:
     render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
 with tabs[6]:
-    render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
+    render_tab10(db, cargar_muestras, mostrar_sector_flotante)
 with tabs[7]:
-    render_tab8(db, mostrar_sector_flotante)
+    render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
 with tabs[8]:
+    render_tab8(db, mostrar_sector_flotante)
+with tabs[9]:
     render_tab9(db, cargar_muestras, mostrar_sector_flotante)
 
 from ia_flotante import mostrar_panel_ia

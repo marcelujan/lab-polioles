@@ -34,7 +34,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     nombre_sel = st.selectbox("Seleccionar muestra", nombres_muestras)
     st.session_state["muestra_activa"] = nombre_sel
 
-    tipos_espectro_base = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR", "RMN 1H", "RMN 13C", "RMN-LF 1H"]
+    tipos_espectro_base = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR", "RMN 1H", "RMN 1H D", "RMN 13C", "RMN-LF 1H"]
     if "tipos_espectro" not in st.session_state:
         st.session_state.tipos_espectro = tipos_espectro_base.copy()
     tipo_espectro = st.selectbox("Tipo de espectro", st.session_state.tipos_espectro)
@@ -226,8 +226,6 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                             cambios += 1
                 st.success(f"{cambios} espectro(s) actualizado(s).")
                 st.rerun()
-
-
 
         def descripcion_espectro(i):
             fila = df_esp_tabla[df_esp_tabla['ID'] == i].iloc[0]

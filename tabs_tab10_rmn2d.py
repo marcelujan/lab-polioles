@@ -150,20 +150,4 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             )
         )
 
-        # agregar etiquetas de extremos (custom)
-        fig.add_trace(go.Scatter(
-            x=[x.max()],
-            y=[y_min],
-            text=[f"{y_min:.1e}"],
-            mode="text",
-            showlegend=False
-        ))
-        fig.add_trace(go.Scatter(
-            x=[x.max()],
-            y=[y_max],
-            text=[f"{y_max:.1e}"],
-            mode="text",
-            showlegend=False
-        ))
-
         st.plotly_chart(fig, use_container_width=True)

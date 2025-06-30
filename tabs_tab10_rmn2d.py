@@ -15,7 +15,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     nombres_muestras = [m["nombre"] for m in muestras]
 
     # multiselect de muestras
-    muestras_sel = st.multiselect("Seleccionar muestras", nombres_muestras)
+    muestras_sel = st.multiselect("Seleccionar muestras", nombres_muestras,key="multiselect_muestras_tab10")
 
     espectros_rmn_2d = []
     if muestras_sel:

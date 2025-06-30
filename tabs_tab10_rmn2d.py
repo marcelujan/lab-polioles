@@ -31,32 +31,23 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         raw_y2 = df2.iloc[:, 0].astype(float)
         z2 = df2.iloc[:, 1:len(x2)+1].values
 
-        # sliders para nivel de contorno
-        level1 = st.slider("Nivel de contorno Espectro 1", 
-                           min_value=float(z1.min()), 
-                           max_value=float(z1.max()), 
-                           value=float(z1.max()/2))
-
-        level2 = st.slider("Nivel de contorno Espectro 2", 
-                           min_value=float(z2.min()), 
-                           max_value=float(z2.max()), 
-                           value=float(z2.max()/2))
-
-        # sliders para rango Y
-        y_max = st.number_input(
-            "Y máximo (por defecto 1e-9)", 
-            value=1e-9, 
-            format="%.1e"
-        )
-        y_min = st.number_input(
-            "Y mínimo (por defecto 1e-13)", 
-            value=1e-13, 
-            format="%.1e"
-        )
+        # fila minimalista con 4 entradas manuales
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            level1 = st.number_input("Nivel contorno 1", value=float(z1.max()/2))
+        with c2:
+            level2 = st.number_input("Nivel contorno 2", value=float(z2.max()/2))
+        with c3:
+            y_max = st.number_input("Y máximo", value=1e-9, format="%.1e")
+        with c4:
+            y_min = st.number_input("Y mínimo", value=1e-13, format="%.1e")
 
         # redistribución proporcional logarítmica
         y1 = y_min * (y_max / y_min) ** raw_y1
         y2 = y_min * (y_max / y_min) ** raw_y2
+
+        # generar etiquetas automáticas
+        custom_ticks = np.logspace(np.log10(y_max), np.log10(y_min), num=5)
 
         fig = go.Figure()
 
@@ -103,8 +94,8 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             ),
             yaxis=dict(
                 type="log",
-                autorange="reversed",
-                exponentformat="e",
+                tickvals=custom_ticks,
+                ticktext=[f"{v:.1e}" for v in custom_ticks],
                 showgrid=False,
                 zeroline=False,
                 linecolor="black"

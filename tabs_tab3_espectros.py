@@ -115,19 +115,44 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.markdown(f"**🆔 Nuevo nombre asignado al archivo para su descarga:** `{nombre_generado}`")
 
     if st.button("Guardar espectro") and archivo:
-        nuevo = {
-            "tipo": tipo_espectro,
-            "observaciones": observaciones.strip(), 
-            "archivo_original": archivo.name, 
-            "nombre_archivo": nombre_generado,
-            "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8"),
-            "es_imagen": archivo.type.startswith("image/"),
-            "fecha": str(fecha_espectro),
-            "senal_3548": senal_3548,
-            "senal_3611": senal_3611,
-            "peso_muestra": peso_muestra,
-            "mascaras": mascaras_rmn1h if tipo_espectro == "RMN 1H" else []
-        }
+        extension = os.path.splitext(archivo.name)[1].lower().strip(".")
+        resumen_obs = observaciones.replace("\n", " ").strip()[:30].replace(" ", "_")
+        fecha_str = fecha_espectro.strftime("%Y-%m-%d")
+        nombre_sin_ext = f"{nombre_sel}_{tipo_espectro}_{fecha_str}-{resumen_obs}"
+        nombre_generado = f"{nombre_sin_ext}.{extension}"
+
+        if tipo_espectro == "RMN 1H D":
+            # subir SOLO RMN 1H D a storage
+            bucket = storage.bucket()
+            blob = bucket.blob(f"espectros/{nombre_generado}")
+            blob.upload_from_string(archivo.getvalue(), content_type=archivo.type)
+            blob.make_public()
+            url_publica = blob.public_url
+
+            nuevo = {
+                "tipo": tipo_espectro,
+                "observaciones": observaciones.strip(),
+                "archivo_original": archivo.name,
+                "nombre_archivo": nombre_generado,
+                "url_archivo": url_publica,
+                "es_imagen": False
+            }
+
+        else:
+            # resto de tipos va como siempre a Firestore con base64
+            nuevo = {
+                "tipo": tipo_espectro,
+                "observaciones": observaciones.strip(), 
+                "archivo_original": archivo.name, 
+                "nombre_archivo": nombre_generado,
+                "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8"),
+                "es_imagen": archivo.type.startswith("image/"),
+                "fecha": str(fecha_espectro),
+                "senal_3548": senal_3548,
+                "senal_3611": senal_3611,
+                "peso_muestra": peso_muestra,
+                "mascaras": mascaras_rmn1h if tipo_espectro == "RMN 1H" else []
+            }
 
         ref = db.collection("muestras").document(nombre_sel).collection("espectros")
         ref.document().set(nuevo)

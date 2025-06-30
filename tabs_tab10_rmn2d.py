@@ -23,13 +23,15 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         df2 = pd.read_csv(archivo_2, sep="\t")
 
         # preparar ejes
-        x1 = df1.columns[1:].astype(float)
+        x1 = pd.to_numeric(df1.columns[1:], errors="coerce")
+        x1 = x1[~pd.isna(x1)]
         y1 = df1.iloc[:, 0].astype(float)
-        z1 = df1.iloc[:, 1:].values
+        z1 = df1.iloc[:, 1:len(x1)+1].values
 
-        x2 = df2.columns[1:].astype(float)
+        x2 = pd.to_numeric(df2.columns[1:], errors="coerce")
+        x2 = x2[~pd.isna(x2)]
         y2 = df2.iloc[:, 0].astype(float)
-        z2 = df2.iloc[:, 1:].values
+        z2 = df2.iloc[:, 1:len(x2)+1].values
 
         # graficar con plotly
         fig = go.Figure()

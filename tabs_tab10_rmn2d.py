@@ -23,12 +23,12 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         # preparar ejes
         x1 = pd.to_numeric(df1.columns[1:], errors="coerce")
         x1 = x1[~pd.isna(x1)]
-        y1 = df1.iloc[:, 0].astype(float)
+        raw_y1 = df1.iloc[:, 0].astype(float)
         z1 = df1.iloc[:, 1:len(x1)+1].values
 
         x2 = pd.to_numeric(df2.columns[1:], errors="coerce")
         x2 = x2[~pd.isna(x2)]
-        y2 = df2.iloc[:, 0].astype(float)
+        raw_y2 = df2.iloc[:, 0].astype(float)
         z2 = df2.iloc[:, 1:len(x2)+1].values
 
         # sliders para nivel de contorno
@@ -42,7 +42,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                            max_value=float(z2.max()), 
                            value=float(z2.max()/2))
 
-        # sliders para rango eje Y
+        # sliders para rango Y
         y_max = st.number_input(
             "Y máximo (por defecto 1e-9)", 
             value=1e-9, 
@@ -54,11 +54,15 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             format="%.1e"
         )
 
+        # redistribución proporcional logarítmica
+        y1 = y_min * (y_max / y_min) ** raw_y1
+        y2 = y_min * (y_max / y_min) ** raw_y2
+
         fig = go.Figure()
 
         fig.add_trace(go.Contour(
             x=x1, y=y1, z=z1,
-            colorscale=[[0, 'red'], [1, 'red']],  # rojo sólido
+            colorscale=[[0, 'red'], [1, 'red']],  
             contours=dict(
                 coloring="lines",
                 start=level1,
@@ -99,7 +103,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             ),
             yaxis=dict(
                 type="log",
-                range=[np.log10(y_min), np.log10(y_max)],
+                autorange="reversed",
                 exponentformat="e",
                 showgrid=False,
                 zeroline=False,
@@ -115,4 +119,3 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         )
 
         st.plotly_chart(fig, use_container_width=True)
-

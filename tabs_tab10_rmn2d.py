@@ -14,7 +14,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
     st.subheader("Comparar espectros 2D desde la base de datos")
 
-    nombre_muestra = st.selectbox("Seleccionar muestra", nombres_muestras)
+    nombre_muestra = st.selectbox("Seleccionar muestra", nombres_muestras, key="selectbox_tab10")
     espectros_rmn_2d = []
 
     # buscar espectros guardados como RMN 1H D

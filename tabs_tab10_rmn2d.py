@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import numpy as np
 
 def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     st.title("Comparar mapas 2D RMN")
@@ -41,7 +42,18 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                            max_value=float(z2.max()), 
                            value=float(z2.max()/2))
 
-        # graficar
+        # sliders para rango eje Y
+        y_max = st.number_input(
+            "Y máximo (por defecto 1e-9)", 
+            value=1e-9, 
+            format="%.1e"
+        )
+        y_min = st.number_input(
+            "Y mínimo (por defecto 1e-13)", 
+            value=1e-13, 
+            format="%.1e"
+        )
+
         fig = go.Figure()
 
         fig.add_trace(go.Contour(
@@ -54,9 +66,9 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                 size=0.1,
                 showlabels=False
             ),
-            line=dict(width=1.5),  # grosor de línea
+            line=dict(width=1.5),
             showscale=False,
-            name="Espectro 1"
+            name="Muestra 1"
         ))
 
         fig.add_trace(go.Contour(
@@ -71,7 +83,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             ),
             line=dict(width=1.5),
             showscale=False,
-            name="Espectro 2"
+            name="Muestra 2"
         ))
 
         fig.update_layout(
@@ -87,8 +99,8 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             ),
             yaxis=dict(
                 type="log",
-                autorange="reversed",    # opcional, quitar si no querés invertir
-                exponentformat="e",      # notación científica
+                range=[np.log10(y_min), np.log10(y_max)],
+                exponentformat="e",
                 showgrid=False,
                 zeroline=False,
                 linecolor="black"
@@ -102,5 +114,5 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             )
         )
 
-
         st.plotly_chart(fig, use_container_width=True)
+

@@ -34,9 +34,9 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         # fila minimalista con 4 entradas manuales
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            level1 = st.number_input("Nivel contorno 1", value=float(z1.max()/2))
+            level1 = st.number_input("Nivel 1", value=float(z1.max()/2))
         with c2:
-            level2 = st.number_input("Nivel contorno 2", value=float(z2.max()/2))
+            level2 = st.number_input("Nivel 2", value=float(z2.max()/2))
         with c3:
             y_max = st.number_input("Y máximo", value=1e-9, format="%.1e")
         with c4:

@@ -1,4 +1,3 @@
-
 # tabs_tab3_espectros.py
 import streamlit as st
 import pandas as pd
@@ -11,7 +10,7 @@ import base64
 import json
 from tempfile import TemporaryDirectory
 import zipfile
-
+from firebase_admin import storage
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]

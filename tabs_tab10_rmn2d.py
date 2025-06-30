@@ -1,5 +1,4 @@
 # tabs_tab10_rmn2d.py
-
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -9,7 +8,6 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
     st.session_state["current_tab"] = "Comparar mapas 2D RMN"
 
-    # subir dos CSV para comparar
     st.subheader("Subir espectros transformados (CSV)")
     col1, col2 = st.columns(2)
     with col1:
@@ -18,7 +16,6 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         archivo_2 = st.file_uploader("Espectro 2 (CSV)", type="csv", key="csv2")
 
     if archivo_1 and archivo_2:
-        # leer ambos CSV con separador tabulador
         df1 = pd.read_csv(archivo_1, sep="\t")
         df2 = pd.read_csv(archivo_2, sep="\t")
 
@@ -33,22 +30,43 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         y2 = df2.iloc[:, 0].astype(float)
         z2 = df2.iloc[:, 1:len(x2)+1].values
 
-        # graficar con plotly
+        # sliders para nivel de contorno
+        level1 = st.slider("Nivel de contorno Espectro 1", 
+                           min_value=float(z1.min()), 
+                           max_value=float(z1.max()), 
+                           value=float(z1.max()/2))
+
+        level2 = st.slider("Nivel de contorno Espectro 2", 
+                           min_value=float(z2.min()), 
+                           max_value=float(z2.max()), 
+                           value=float(z2.max()/2))
+
+        # graficar
         fig = go.Figure()
 
         fig.add_trace(go.Contour(
             x=x1, y=y1, z=z1,
             colorscale="Reds",
-            contours=dict(showlabels=False),
-            opacity=0.5,
+            contours=dict(
+                coloring="lines",
+                start=level1,
+                end=level1,
+                size=0.1,
+                showlabels=True
+            ),
             name="Espectro 1"
         ))
 
         fig.add_trace(go.Contour(
             x=x2, y=y2, z=z2,
             colorscale="Blues",
-            contours=dict(showlabels=False),
-            opacity=0.5,
+            contours=dict(
+                coloring="lines",
+                start=level2,
+                end=level2,
+                size=0.1,
+                showlabels=True
+            ),
             name="Espectro 2"
         ))
 
@@ -59,7 +77,3 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             height=700
         )
         st.plotly_chart(fig, use_container_width=True)
-
-    # muestra flotante
-    mostrar_sector_flotante(db, key_suffix="tab10")
-

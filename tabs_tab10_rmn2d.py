@@ -118,7 +118,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                     ),
                     line=dict(width=1.5),
                     showscale=False,
-                    name=match["nombre_archivo"]
+                    name=match["nombre"]
                 ))
                 color_idx += 1
 

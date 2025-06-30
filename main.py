@@ -15,15 +15,18 @@ from tabs_tab7_consola import render_tab7
 from tabs_tab8_sugerencias import render_tab8
 from tabs_tab9_desarrollos import render_tab9  # Hoja en blanco para pruebas
 from tabs_tab10_rmn2d import render_tab10
-
-st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
-FIREBASE_API_KEY = st.secrets["firebase_api_key"]
+import json
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(".streamlit/secrets")
+    cred = credentials.Certificate(
+        json.loads(st.secrets["firebase_key"])
+    )
     firebase_admin.initialize_app(cred, {
         'storageBucket': 'laboratorio-polioles.firebasestorage.app'
     })
+
+st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
+FIREBASE_API_KEY = st.secrets["firebase_api_key"]
 
 # --- Autenticación ---
 if "token" not in st.session_state:
@@ -57,7 +60,7 @@ if "token" not in st.session_state:
 
 # --- Firebase ---
 if "firebase_initialized" not in st.session_state:
-    st.session_state.db = iniciar_firebase(st.secrets["firebase_key"])
+    st.session_state.db = firebase_admin.firestore.client()
     st.session_state.firebase_initialized = True
 db = st.session_state.db
 

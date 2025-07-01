@@ -13,34 +13,38 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     muestras = cargar_muestras(db)
     espectros_dict = {}
 
-    # construir diccionario con todos los espectros RMN 1H D
+    # recolectar espectros RMN 1H D
     for muestra in muestras:
         espectros_ref = db.collection("muestras").document(muestra["nombre"]).collection("espectros")
         docs = espectros_ref.stream()
-        espectros_rmn2d = []
+        espectros_rmn_d = []
         for doc in docs:
             data = doc.to_dict()
             if data.get("tipo") == "RMN 1H D":
-                espectros_rmn2d.append({
+                espectros_rmn_d.append({
                     "nombre": data.get("nombre_archivo", "sin nombre"),
                     "url_archivo": data.get("url_archivo")
                 })
-        if espectros_rmn2d:
-            espectros_dict[muestra["nombre"]] = espectros_rmn2d
+        if espectros_rmn_d:
+            espectros_dict[muestra["nombre"]] = espectros_rmn_d
 
-    # crear lista única solo con espectros tipo RMN 1H D
-    todos_espectros = []
-    for espectros in espectros_dict.values():
-        for e in espectros:
-            if e['nombre']:
-                todos_espectros.append(e['nombre'])
-
-    # selector unificado
-    espectros_seleccionados = st.multiselect(
-        "Seleccionar espectros RMN 1H D",
-        options=todos_espectros
+    # primer selector de muestras
+    muestras_filtradas = list(espectros_dict.keys())
+    muestras_sel = st.multiselect(
+        "Seleccionar muestras con espectros RMN 1H D",
+        options=muestras_filtradas
     )
 
+    # segundo selector unificado de espectros, SOLO de las muestras seleccionadas
+    espectros_opciones = []
+    if muestras_sel:
+        for m in muestras_sel:
+            espectros_opciones.extend([e["nombre"] for e in espectros_dict[m]])
+
+    espectros_seleccionados = st.multiselect(
+        "Seleccionar espectros dentro de las muestras elegidas",
+        options=espectros_opciones
+    )
 
     if espectros_seleccionados:
         st.success(f"Espectros seleccionados: {espectros_seleccionados}")
@@ -52,7 +56,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         with c2:
             y_min = st.number_input("Y mínimo", value=1e-13, format="%.1e")
 
-        # ajustes de nivel contorno por espectro
+        # niveles de contorno por espectro
         niveles_contorno = {}
         st.subheader("Ajustes de niveles de contorno por espectro")
         for nombre in espectros_seleccionados:

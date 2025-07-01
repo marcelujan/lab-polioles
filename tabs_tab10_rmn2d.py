@@ -29,7 +29,8 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     muestras_filtradas = list(espectros_dict.keys())
     muestras_sel = st.multiselect(
         "Seleccionar muestras",
-        options=muestras_filtradas
+        options=muestras_filtradas,
+        key="multiselect_muestras_tab10"
     )
 
     # segundo selector unificado de espectros, SOLO de las muestras seleccionadas
@@ -40,7 +41,8 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
     espectros_seleccionados = st.multiselect(
         "Seleccionar espectros",
-        options=espectros_opciones
+        options=espectros_opciones,
+        key="multiselect_espectros_tab10"
     )
 
     if espectros_seleccionados:

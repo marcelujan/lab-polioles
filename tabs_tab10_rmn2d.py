@@ -115,6 +115,8 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
                 y_scaled = y_min * (y_max / y_min) ** y_raw
 
+                nivel_contorno = niveles_contorno.get(match["nombre_archivo"], 0.10)
+
                 fig.add_trace(go.Contour(
                     x=x,
                     y=y_scaled,
@@ -122,7 +124,6 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                     colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
                     contours=dict(
                         coloring="lines",
-                        nivel_contorno = niveles_contorno.get(match["nombre_archivo"], 0.10)
                         start=nivel_contorno,
                         end=nivel_contorno,
                         size=0.1,

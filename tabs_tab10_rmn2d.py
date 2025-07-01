@@ -130,8 +130,8 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                     else:
                         st.warning(f"No se pudo cargar el archivo {match['nombre_archivo']}")
                 except Exception as e:
-                    nombre_match = match['nombre_archivo'] if match and 'nombre_archivo' in match else "desconocido"
-                    st.warning(f"Error graficando {nombre_match}: {e}")
+                    nombre_archivo = match.get("nombre_archivo", "desconocido") if match else "desconocido"
+                    st.warning(f"Error graficando {nombre_archivo}: {e}")
 
 
         fig.update_layout(

@@ -6,7 +6,7 @@ import io
 import numpy as np
 import requests
 
-def render_tab10(db, cargar_muestras):
+def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     st.title("Comparar mapas 2D RMN")
 
     st.session_state["current_tab"] = "Comparar mapas 2D RMN"

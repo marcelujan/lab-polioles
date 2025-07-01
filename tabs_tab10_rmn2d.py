@@ -138,7 +138,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             height=700,
             xaxis=dict(
                 autorange=False,
-                range=[x_min, x_max],
+                range=[x_max, x_min],
                 showgrid=False,
                 zeroline=False,
                 linecolor="black"

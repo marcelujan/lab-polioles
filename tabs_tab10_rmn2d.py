@@ -58,17 +58,22 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
         # niveles de contorno por espectro
         niveles_contorno = {}
-        st.subheader("Ajustes de niveles de contorno por espectro")
-        for nombre in espectros_seleccionados:
-            nivel = st.number_input(
-                f"Nivel para {nombre}",
-                min_value=0.01,
-                max_value=1.0,
-                value=0.10,
-                format="%.3f",
-                key=f"nivel_{nombre}"
-            )
-            niveles_contorno[nombre] = nivel
+        cols = st.columns(5)
+
+        for idx, nombre in enumerate(espectros_seleccionados):
+            col = cols[idx % 5]
+            muestra_base = nombre.split("_RMN")[0]  # corta el nombre antes de _RMN
+            with col:
+                nivel = st.number_input(
+                    f"{muestra_base}",
+                    min_value=0.01,
+                    max_value=1.0,
+                    value=0.10,
+                    format="%.3f",
+                    key=f"nivel_{nombre}"
+                )
+                niveles_contorno[nombre] = nivel
+
 
         # graficar
         fig = go.Figure()

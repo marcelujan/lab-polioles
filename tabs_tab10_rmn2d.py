@@ -56,39 +56,31 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     if espectros_seleccionados:
         st.success(f"Espectros seleccionados: {[e['nombre_archivo'] for e in espectros_seleccionados]}")
 
-    # ajustes globales Y
-    if espectros_seleccionados:
+        # campos para ajustes globales de Y
         c1, c2 = st.columns(2)
         with c1:
-            y_min = st.number_input("Y mínimo (global)", value=1e-13, format="%.1e")
+            y_max = st.number_input("Y máximo", value=1e-9, format="%.1e")
         with c2:
-            y_max = st.number_input("Y máximo (global)", value=1e-9, format="%.1e")
+            y_min = st.number_input("Y mínimo", value=1e-13, format="%.1e")
 
-        # ajustes de nivel para cada espectro
-        niveles = {}
-        st.markdown("### Configurar niveles de contorno para cada espectro")
-        for espectro in espectros_seleccionados:
-            try:
-                match = next((e for e in espectros_dict[espectro['muestra']] if e['nombre'] == espectro['nombre_archivo']), None)
-                if match and "url_archivo" in match:
-                    response = requests.get(match["url_archivo"])
-                    if response.status_code == 200:
-                        df = pd.read_csv(io.StringIO(response.text), sep="\t")
-                        valores = df.iloc[:, 1:].values.flatten()
-                        min_val, max_val = np.nanmin(valores), np.nanmax(valores)
-                        st.write(f"**{espectro['nombre_archivo']}** (min: {min_val:.3f}, max: {max_val:.3f})")
-                        nivel = st.number_input(
-                            f"Nivel para {espectro['nombre_archivo']}",
-                            value=0.1,
-                            min_value=float(min_val),
-                            max_value=float(max_val),
-                            key=f"nivel_{espectro['nombre_archivo']}"
-                        )
-                        niveles[espectro['nombre_archivo']] = nivel
-                    else:
-                        st.warning(f"No se pudo leer el archivo {match['nombre_archivo']}")
-            except Exception as e:
-                st.warning(f"Error leyendo espectro: {e}")
+        # contornos por espectro
+        niveles_contorno = {}
+
+        if espectros_seleccionados:
+            st.subheader("Ajustes de niveles de contorno para cada espectro")
+            for sel in espectros_seleccionados:
+                minimo = 0.01  # podés ajustar si querés
+                maximo = 1.0
+                nivel = st.number_input(
+                    f"Nivel para {sel['nombre_archivo']}",
+                    min_value=minimo,
+                    max_value=maximo,
+                    value=0.10,
+                    format="%.3f",
+                    key=f"nivel_{sel['nombre_archivo']}"
+                )
+                niveles_contorno[sel['nombre_archivo']] = nivel
+
 
         # graficar
         fig = go.Figure()
@@ -130,8 +122,9 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                     colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
                     contours=dict(
                         coloring="lines",
-                        start=nivel_contorno_1 if color_idx == 0 else nivel_contorno_2,
-                        end=nivel_contorno_1 if color_idx == 0 else nivel_contorno_2,
+                        nivel_contorno = niveles_contorno.get(match["nombre_archivo"], 0.10)
+                        start=nivel_contorno,
+                        end=nivel_contorno,
                         size=0.1,
                         showlabels=False
                     ),

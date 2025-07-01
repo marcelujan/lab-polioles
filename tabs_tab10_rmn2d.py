@@ -130,7 +130,9 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                     else:
                         st.warning(f"No se pudo cargar el archivo {match['nombre_archivo']}")
                 except Exception as e:
-                    st.warning(f"Error graficando {match['nombre_archivo']}: {e}")
+                    nombre_match = match['nombre_archivo'] if match and 'nombre_archivo' in match else "desconocido"
+                    st.warning(f"Error graficando {nombre_match}: {e}")
+
 
         fig.update_layout(
             title="Superposición de mapas 2D",

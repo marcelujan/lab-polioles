@@ -6,10 +6,7 @@ import numpy as np
 import requests
 
 def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
-    st.title("Comparar mapas 2D RMN")
-
     st.session_state["current_tab"] = "Comparar mapas 2D RMN"
-
     muestras = cargar_muestras(db)
     espectros_dict = {}
 
@@ -31,7 +28,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     # primer selector de muestras
     muestras_filtradas = list(espectros_dict.keys())
     muestras_sel = st.multiselect(
-        "Seleccionar muestras con espectros RMN 1H D",
+        "Seleccionar muestras",
         options=muestras_filtradas
     )
 
@@ -42,13 +39,11 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             espectros_opciones.extend([e["nombre"] for e in espectros_dict[m]])
 
     espectros_seleccionados = st.multiselect(
-        "Seleccionar espectros dentro de las muestras elegidas",
+        "Seleccionar espectros",
         options=espectros_opciones
     )
 
     if espectros_seleccionados:
-        st.success(f"Espectros seleccionados: {espectros_seleccionados}")
-
         # ajustes globales de Y
         c1, c2 = st.columns(2)
         with c1:
@@ -131,7 +126,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                 st.warning(f"Error graficando {nombre}: {e}")
 
         fig.update_layout(
-            title="Superposición de mapas 2D",
+            title="",
             xaxis_title="F2 (ppm)",
             yaxis_title="F1 (s⁻¹ o m²/s)",
             height=700,

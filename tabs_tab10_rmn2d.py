@@ -137,7 +137,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             yaxis_title="F1 (s⁻¹ o m²/s)",
             height=700,
             xaxis=dict(
-                autorange="reversed",
+                autorange=False,
                 range=[x_min, x_max],
                 showgrid=False,
                 zeroline=False,

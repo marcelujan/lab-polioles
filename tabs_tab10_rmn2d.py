@@ -28,22 +28,19 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         if espectros_rmn2d:
             espectros_dict[muestra["nombre"]] = espectros_rmn2d
 
-    # juntar todos los nombres
+    # crear lista única solo con espectros tipo RMN 1H D
     todos_espectros = []
     for espectros in espectros_dict.values():
         for e in espectros:
             if e['nombre']:
-                todos_espectros.append(e['nombre'])            
+                todos_espectros.append(e['nombre'])
 
-    if not todos_espectros:
-        st.warning("No hay espectros RMN 1H D disponibles.")
-        return
-
-    # multiselect unificado
+    # selector unificado
     espectros_seleccionados = st.multiselect(
-        "Seleccionar espectros 2D a superponer",
+        "Seleccionar espectros RMN 1H D",
         options=todos_espectros
     )
+
 
     if espectros_seleccionados:
         st.success(f"Espectros seleccionados: {espectros_seleccionados}")

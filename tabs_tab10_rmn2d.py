@@ -46,12 +46,16 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     )
 
     if espectros_seleccionados:
-        # ajustes globales de Y
-        c1, c2 = st.columns(2)
+        c1, c2, c3, c4 = st.columns(4)
         with c1:
-            y_max = st.number_input("Y máximo", value=1e-9, format="%.1e")
+            x_min = st.number_input("X mínimo", value=0.0, format="%.2f")
         with c2:
+            x_max = st.number_input("X máximo", value=9.0, format="%.2f")
+        with c3:
             y_min = st.number_input("Y mínimo", value=1e-13, format="%.1e")
+        with c4:
+            y_max = st.number_input("Y máximo", value=1e-9, format="%.1e")
+
 
         # niveles de contorno por espectro
         niveles_contorno = {}
@@ -66,7 +70,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                     min_value=0.01,
                     max_value=1.0,
                     value=0.10,
-                    format="%.3f",
+                    format="%.2f",
                     key=f"nivel_{nombre}"
                 )
                 niveles_contorno[nombre] = nivel
@@ -134,6 +138,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             height=700,
             xaxis=dict(
                 autorange="reversed",
+                range=[x_min, x_max],
                 showgrid=False,
                 zeroline=False,
                 linecolor="black"

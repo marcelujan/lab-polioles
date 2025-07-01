@@ -63,6 +63,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
 
         # niveles de contorno por espectro
+        st.markdown("**Curva de nivel**", unsafe_allow_html=True)
         niveles_contorno = {}
         cols = st.columns(5)
 
@@ -164,5 +165,5 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                 bordercolor="black"
             )
         )
-        
+
         st.plotly_chart(fig, use_container_width=True)

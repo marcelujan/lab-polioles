@@ -1,4 +1,3 @@
-# tabs_tab10_rmn2d.py
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -7,7 +6,9 @@ import io
 import numpy as np
 import requests
 
-def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
+def render_tab10(db, cargar_muestras):
+    st.title("Comparar mapas 2D RMN")
+
     st.session_state["current_tab"] = "Comparar mapas 2D RMN"
 
     muestras = cargar_muestras(db)
@@ -34,84 +35,102 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         st.warning("No hay muestras con espectros RMN 1H D.")
         return
 
-    # Selector múltiple de muestras
     muestras_sel = st.multiselect(
-        "Seleccionar muestras",
+        "Seleccionar muestras con espectros RMN 1H D",
         options=muestras_filtradas
     )
 
-    # Segundo selector de espectros para cada muestra elegida
     espectros_seleccionados = []
     if muestras_sel:
         for m in muestras_sel:
             archivos = espectros_dict[m]
             opciones = [a['nombre'] for a in archivos]
             sel = st.multiselect(
-                f"Seleccionar espectros",
+                f"Seleccionar espectros de {m}",
                 options=opciones,
                 key=f"sel_{m}"
             )
             for s in sel:
                 espectros_seleccionados.append({"muestra": m, "nombre_archivo": s})
 
-    # campos minimalistas para ajustes de ejes y contornos
     if espectros_seleccionados:
-        c1, c2, c3, c4 = st.columns(4)
+        st.success(f"Espectros seleccionados: {[e['nombre_archivo'] for e in espectros_seleccionados]}")
+
+    # ajustes globales Y
+    if espectros_seleccionados:
+        c1, c2 = st.columns(2)
         with c1:
-            nivel_contorno_1 = st.number_input("Nivel 1", value=0.1, format="%.2f")
+            y_min = st.number_input("Y mínimo (global)", value=1e-13, format="%.1e")
         with c2:
-            nivel_contorno_2 = st.number_input("Nivel 2", value=0.1, format="%.2f")
-        with c3:
-            y_max = st.number_input("Y máximo", value=1e-9, format="%.1e")
-        with c4:
-            y_min = st.number_input("Y mínimo", value=1e-13, format="%.1e")
+            y_max = st.number_input("Y máximo (global)", value=1e-9, format="%.1e")
 
-        fig = go.Figure()
-
-        colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']  # para varios espectros
-        color_idx = 0
-
-        for sel in espectros_seleccionados:
-            match = next(
-                (e for e in espectros_dict[sel['muestra']] if e['nombre'] == sel['nombre_archivo']),
-                None
-            )
-            if match:
-                if "url_archivo" in match:
+        # ajustes de nivel para cada espectro
+        niveles = {}
+        st.markdown("### Configurar niveles de contorno para cada espectro")
+        for espectro in espectros_seleccionados:
+            try:
+                match = next((e for e in espectros_dict[espectro['muestra']] if e['nombre'] == espectro['nombre_archivo']), None)
+                if match and "url_archivo" in match:
                     response = requests.get(match["url_archivo"])
                     if response.status_code == 200:
                         df = pd.read_csv(io.StringIO(response.text), sep="\t")
+                        valores = df.iloc[:, 1:].values.flatten()
+                        min_val, max_val = np.nanmin(valores), np.nanmax(valores)
+                        st.write(f"**{espectro['nombre_archivo']}** (min: {min_val:.3f}, max: {max_val:.3f})")
+                        nivel = st.number_input(
+                            f"Nivel para {espectro['nombre_archivo']}",
+                            value=0.1,
+                            min_value=float(min_val),
+                            max_value=float(max_val),
+                            key=f"nivel_{espectro['nombre_archivo']}"
+                        )
+                        niveles[espectro['nombre_archivo']] = nivel
                     else:
-                        st.error(f"No se pudo leer el archivo en {match['url_archivo']}")
-                else:
-                    csv_bytes = base64.b64decode(match["contenido"])
-                    df = pd.read_csv(io.StringIO(csv_bytes.decode()), sep="\t")
+                        st.warning(f"No se pudo leer el archivo {match['nombre_archivo']}")
+            except Exception as e:
+                st.warning(f"Error leyendo espectro: {e}")
 
+        # graficar
+        fig = go.Figure()
+        colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
+        color_idx = 0
 
-                x = pd.to_numeric(df.columns[1:], errors="coerce")
-                x = x[~pd.isna(x)]
-                y_raw = df.iloc[:, 0].astype(float)
-                z = df.iloc[:, 1:len(x)+1].values
+        for espectro in espectros_seleccionados:
+            match = next((e for e in espectros_dict[espectro['muestra']] if e['nombre'] == espectro['nombre_archivo']), None)
+            if match:
+                try:
+                    response = requests.get(match["url_archivo"])
+                    if response.status_code == 200:
+                        df = pd.read_csv(io.StringIO(response.text), sep="\t")
+                        x = pd.to_numeric(df.columns[1:], errors="coerce")
+                        x = x[~pd.isna(x)]
+                        y_raw = df.iloc[:, 0].astype(float)
+                        z = df.iloc[:, 1:len(x)+1].values
+                        y_scaled = y_min * (y_max / y_min) ** y_raw
 
-                y_scaled = y_min * (y_max / y_min) ** y_raw
+                        nivel_este = niveles.get(espectro['nombre_archivo'], 0.1)
 
-                fig.add_trace(go.Contour(
-                    x=x,
-                    y=y_scaled,
-                    z=z,
-                    colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
-                    contours=dict(
-                        coloring="lines",
-                        start=nivel_contorno_1 if color_idx == 0 else nivel_contorno_2,
-                        end=nivel_contorno_1 if color_idx == 0 else nivel_contorno_2,
-                        size=0.1,
-                        showlabels=False
-                    ),
-                    line=dict(width=1.5),
-                    showscale=False,
-                    name=match["nombre"]
-                ))
-                color_idx += 1
+                        fig.add_trace(go.Contour(
+                            x=x,
+                            y=y_scaled,
+                            z=z,
+                            colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
+                            contours=dict(
+                                coloring="lines",
+                                start=nivel_este,
+                                end=nivel_este,
+                                size=0.1,
+                                showlabels=False
+                            ),
+                            line=dict(width=1.5),
+                            showscale=False,
+                            name=match["nombre_archivo"]
+                        ))
+                        color_idx += 1
+                    else:
+                        st.warning(f"No se pudo cargar el archivo {match['nombre_archivo']}")
+                except Exception as e:
+                    st.warning(f"Error graficando {match['nombre_archivo']}: {e}")
 
         fig.update_layout(
             title="Superposición de mapas 2D",
@@ -142,3 +161,4 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         )
 
         st.plotly_chart(fig, use_container_width=True)
+

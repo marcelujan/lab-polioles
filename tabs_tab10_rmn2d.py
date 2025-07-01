@@ -63,7 +63,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
 
 
         # niveles de contorno por espectro
-        st.markdown("**Curva de nivel**", unsafe_allow_html=True)
+        st.markdown("**Modificar nivel**")
         niveles_contorno = {}
         cols = st.columns(5)
 

@@ -95,43 +95,55 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
         colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
         color_idx = 0
 
-        for espectro in espectros_seleccionados:
-            match = next((e for e in espectros_dict[espectro['muestra']] if e['nombre'] == espectro['nombre_archivo']), None)
-            if match:
-                try:
+        for sel in espectros_seleccionados:
+            match = next(
+                (e for e in espectros_dict[sel['muestra']] if e['nombre'] == sel['nombre_archivo']),
+                None
+            )
+            if not match:
+                st.warning(f"No se encontró el espectro {sel['nombre_archivo']} en {sel['muestra']}")
+                continue
+
+            try:
+                if "url_archivo" in match:
                     response = requests.get(match["url_archivo"])
                     if response.status_code == 200:
                         df = pd.read_csv(io.StringIO(response.text), sep="\t")
-                        x = pd.to_numeric(df.columns[1:], errors="coerce")
-                        x = x[~pd.isna(x)]
-                        y_raw = df.iloc[:, 0].astype(float)
-                        z = df.iloc[:, 1:len(x)+1].values
-                        y_scaled = y_min * (y_max / y_min) ** y_raw
-
-                        nivel_este = niveles.get(espectro['nombre_archivo'], 0.1)
-
-                        fig.add_trace(go.Contour(
-                            x=x,
-                            y=y_scaled,
-                            z=z,
-                            colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
-                            contours=dict(
-                                coloring="lines",
-                                start=nivel_este,
-                                end=nivel_este,
-                                size=0.1,
-                                showlabels=False
-                            ),
-                            line=dict(width=1.5),
-                            showscale=False,
-                            name=match["nombre_archivo"]
-                        ))
-                        color_idx += 1
                     else:
-                        st.warning(f"No se pudo cargar el archivo {match['nombre_archivo']}")
-                except Exception as e:
-                    nombre_archivo = match.get("nombre_archivo", "desconocido") if match else "desconocido"
-                    st.warning(f"Error graficando {nombre_archivo}: {e}")
+                        st.error(f"No se pudo leer el archivo en {match['url_archivo']}")
+                        continue
+                else:
+                    st.warning("No se encontró la URL del espectro para graficar.")
+                    continue
+
+                x = pd.to_numeric(df.columns[1:], errors="coerce")
+                x = x[~pd.isna(x)]
+                y_raw = df.iloc[:, 0].astype(float)
+                z = df.iloc[:, 1:len(x)+1].values
+
+                y_scaled = y_min * (y_max / y_min) ** y_raw
+
+                fig.add_trace(go.Contour(
+                    x=x,
+                    y=y_scaled,
+                    z=z,
+                    colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
+                    contours=dict(
+                        coloring="lines",
+                        start=nivel_contorno_1 if color_idx == 0 else nivel_contorno_2,
+                        end=nivel_contorno_1 if color_idx == 0 else nivel_contorno_2,
+                        size=0.1,
+                        showlabels=False
+                    ),
+                    line=dict(width=1.5),
+                    showscale=False,
+                    name=match.get("nombre_archivo", "sin_nombre")
+                ))
+                color_idx += 1
+
+            except Exception as e:
+                st.warning(f"Error graficando {match.get('nombre_archivo', 'desconocido')}: {e}")
+
 
 
         fig.update_layout(

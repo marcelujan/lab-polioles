@@ -32,7 +32,8 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     todos_espectros = []
     for espectros in espectros_dict.values():
         for e in espectros:
-            todos_espectros.append(e['nombre'])
+            if e['nombre']:
+                todos_espectros.append(e['nombre'])            
 
     if not todos_espectros:
         st.warning("No hay espectros RMN 1H D disponibles.")

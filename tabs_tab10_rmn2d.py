@@ -46,15 +46,20 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
     )
 
     if espectros_seleccionados:
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
+
         with c1:
-            x_min = st.number_input("X mínimo", value=0.0, format="%.2f")
+            x_min = st.number_input("X mín", value=0.0, format="%.2f")
         with c2:
-            x_max = st.number_input("X máximo", value=9.0, format="%.2f")
+            x_max = st.number_input("X máx", value=9.0, format="%.2f")
         with c3:
-            y_min = st.number_input("Y mínimo", value=1e-13, format="%.1e")
+            y_min_axis = st.number_input("Y mín", value=1e-13, format="%.1e")
         with c4:
-            y_max = st.number_input("Y máximo", value=1e-9, format="%.1e")
+            y_max_axis = st.number_input("Y máx", value=1e-9, format="%.1e")
+        with c5:
+            y_min_scale = st.number_input("Y mín reescalado", value=1e-13, format="%.1e")
+        with c6:
+            y_max_scale = st.number_input("Y máx reescalado", value=1e-9, format="%.1e")
 
 
         # niveles de contorno por espectro
@@ -107,7 +112,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                 y_raw = df.iloc[:, 0].astype(float)
                 z = df.iloc[:, 1:len(x)+1].values
 
-                y_scaled = y_min * (y_max / y_min) ** y_raw
+                y_scaled = y_min_scale * (y_max_scale / y_min_scale) ** y_raw
                 nivel_contorno = niveles_contorno.get(nombre, 0.10)
 
                 fig.add_trace(go.Contour(
@@ -138,7 +143,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
             height=700,
             xaxis=dict(
                 autorange=False,
-                range=[x_max, x_min],
+                range=[x_max, x_min],  # mayor a menor para sentido RMN
                 showgrid=False,
                 zeroline=False,
                 linecolor="black"
@@ -149,7 +154,7 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                 showgrid=False,
                 zeroline=False,
                 linecolor="black",
-                range=[np.log10(y_min), np.log10(y_max)]
+                range=[np.log10(y_min_axis), np.log10(y_max_axis)]  # ojo, log10 porque el eje es log
             ),
             showlegend=True,
             legend=dict(
@@ -159,5 +164,5 @@ def render_tab10(db, cargar_muestras, mostrar_sector_flotante):
                 bordercolor="black"
             )
         )
-
+        
         st.plotly_chart(fig, use_container_width=True)

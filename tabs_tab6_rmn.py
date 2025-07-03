@@ -1563,27 +1563,55 @@ def render_rmn_1h_t2(df_tipo):
             continue
 
         # --- gráfico 2D
-        fig2d = go.Figure(data=go.Heatmap(
+        nivel = st.number_input(
+            "Nivel de contorno",
+            min_value=0.01,
+            max_value=1.0,
+            value=0.1,
+            format="%.2f",
+            key=f"nivel_{nombre_archivo}"
+        )
+
+        fig2d = go.Figure()
+        fig2d.add_trace(go.Contour(
             x=ppmAxis,
             y=T2axis,
             z=ILT2D,
-            colorscale="Viridis"
+            colorscale="Viridis",
+            contours=dict(
+                coloring="lines",
+                start=nivel,
+                end=nivel,
+                size=0.1,
+                showlabels=False
+            ),
+            line=dict(width=1.5),
+            showscale=False
         ))
         fig2d.update_layout(
             title=f"ILT2D de {nombre_archivo}",
-            xaxis_title="ppm",
-            yaxis_title="T2 (s)",
-            yaxis_type="log",
+            xaxis=dict(
+                autorange=False,
+                range=[9, 0],
+                title="ppm"
+            ),
+            yaxis=dict(
+                type="log",
+                autorange=False,
+                range=[np.log10(T2axis.min()), np.log10(T2axis.max())],
+                title="T2 (s)"
+            ),
             height=500
         )
         st.plotly_chart(fig2d, use_container_width=True)
+
 
         # --- curva de decaimiento
         fig1d = go.Figure()
         fig1d.add_trace(go.Scatter(
             x=T2axis,
             y=T2_proy,
-            mode="lines+markers",
+            mode="lines",   # solo líneas, sin puntos
             name="Proyección T2"
         ))
         fig1d.update_layout(
@@ -1594,7 +1622,6 @@ def render_rmn_1h_t2(df_tipo):
             height=400
         )
         st.plotly_chart(fig1d, use_container_width=True)
-
 
 
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):

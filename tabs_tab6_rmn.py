@@ -1089,7 +1089,8 @@ def generar_elementos_rmn(
     mostrar_picos=False,
     filas_dt2=None,
     check_d_por_espectro=None,
-    check_t2_por_espectro=None
+    check_t2_por_espectro=None, 
+    color_map=None
 ):
     elementos = []  # lista de go.Scatter, go.Shape, go.Annotation
 

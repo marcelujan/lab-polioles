@@ -73,6 +73,52 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         T2axis_file = st.file_uploader("Archivo T2axis.dat", type=["dat"], key="T2axis")
         T2_proy_file = st.file_uploader("Archivo T2_proy.dat", type=["dat"], key="T2proy")
         ILT2D_file   = st.file_uploader("Archivo ILT2D.dat", type=["dat"], key="ILT2D")
+
+
+        if ppmAxis_file and T2axis_file and T2_proy_file and ILT2D_file:
+            try:
+                ppmAxis = np.loadtxt(ppmAxis_file)
+                T2axis = np.loadtxt(T2axis_file)
+                T2_proy = np.loadtxt(T2_proy_file)
+                ILT2D = np.loadtxt(ILT2D_file)
+
+                st.markdown("### Vista previa ILT2D")
+
+                fig2d = go.Figure(data=go.Heatmap(
+                    x=ppmAxis,
+                    y=T2axis,
+                    z=ILT2D,
+                    colorscale="Viridis"
+                ))
+                fig2d.update_layout(
+                    xaxis_title="ppm",
+                    yaxis_title="T2 (s)",
+                    yaxis_type="log",
+                    height=500
+                )
+                st.plotly_chart(fig2d, use_container_width=True)
+
+                st.markdown("### Vista previa curva de decaimiento T2")
+
+                fig1d = go.Figure()
+                fig1d.add_trace(go.Scatter(
+                    x=T2axis,
+                    y=T2_proy,
+                    mode="lines+markers",
+                    name="Proyección T2"
+                ))
+                fig1d.update_layout(
+                    xaxis_title="T2 (s)",
+                    yaxis_title="Intensidad",
+                    xaxis_type="log",
+                    height=400
+                )
+                st.plotly_chart(fig1d, use_container_width=True)
+
+            except Exception as e:
+                st.warning(f"Error generando vista previa: {e}")
+
+
         if st.button("Guardar espectro RMN 1H T2"):
             if not (ppmAxis_file and T2axis_file and T2_proy_file and ILT2D_file):
                 st.warning("Debes subir los 4 archivos obligatorios.")

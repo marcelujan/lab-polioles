@@ -17,7 +17,6 @@ import io
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
 colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'darkcyan', 'teal', 'crimson', 'goldenrod']
 
-
 # --- Cacheo de espectros por archivo base64 ---
 session_cache = {}
 
@@ -690,7 +689,7 @@ def mostrar_grafico_combinado(
             color=color,
         )
         color_idx += 1
-        
+
         for el in elementos:
             if isinstance(el, go.Scatter):
                 fig.add_trace(el)

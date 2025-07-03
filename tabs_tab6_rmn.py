@@ -1471,28 +1471,16 @@ def render_rmn_1h_t2(df_tipo):
         st.info("No hay espectros RMN 1H T2 disponibles.")
         return
 
-    st.markdown("### Mapa 2D RMN 1H T2 (ILT + proyección)")
+    st.markdown("### Mapa 2D RMN 1H T2 (ILT + Proyección)")
 
-    espectros_opciones = df_tipo["archivo"].tolist()
-    espectros_sel = st.multiselect(
-        "Seleccionar espectros RMN 1H T2",
-        espectros_opciones,
-        key="rmn1h_t2_espectros"
-    )
-
-    if not espectros_sel:
-        st.info("Selecciona al menos un espectro para graficar.")
-        return
-
-    for nombre_archivo in espectros_sel:
-        fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
+    for _, fila in df_tipo.iterrows():
+        nombre_archivo = fila["archivo"]
         archivos = fila.get("archivos", {})
         if not archivos:
             st.warning(f"No hay archivos asociados en {nombre_archivo}")
             continue
 
         try:
-            # descargar
             ppm_data = requests.get(archivos["ppmAxis"]).text
             T2axis_data = requests.get(archivos["T2axis"]).text
             T2_proy_data = requests.get(archivos["T2_proy"]).text
@@ -1504,7 +1492,7 @@ def render_rmn_1h_t2(df_tipo):
             ILT2D = np.loadtxt(io.StringIO(ILT2D_data))
 
         except Exception as e:
-            st.warning(f"Error descargando archivos: {e}")
+            st.warning(f"Error descargando archivos para {nombre_archivo}: {e}")
             continue
 
         # --- gráfico 2D
@@ -1539,6 +1527,7 @@ def render_rmn_1h_t2(df_tipo):
             height=400
         )
         st.plotly_chart(fig1d, use_container_width=True)
+
 
 
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):

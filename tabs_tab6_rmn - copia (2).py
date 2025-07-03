@@ -1551,15 +1551,7 @@ def render_rmn_1h_t2(df_tipo):
 
     st.markdown("### Mapa 2D RMN 1H T2 (ILT + Proyección)")
 
-    # Checkbox para mostrar también los gráficos individuales
-    mostrar_indiv = st.checkbox("Mostrar gráficos individuales", key="chk_indiv_rmn1h_t2")
-
-    # Inicializar gráficos combinados
-    fig2d = go.Figure()
-    fig1d = go.Figure()
-
     color_idx = 0
-
     for _, fila in df_tipo.iterrows():
         color = colores[color_idx % len(colores)]
         nombre_archivo = fila["archivo"]
@@ -1583,21 +1575,23 @@ def render_rmn_1h_t2(df_tipo):
             st.warning(f"Error descargando archivos para {nombre_archivo}: {e}")
             continue
 
-        # --- gráfico 2D combinado
+        # --- gráfico 2D
+        z = ILT2D.T
+
         nivel = st.number_input(
-            f"Nivel de contorno {nombre_archivo}",
+            "Nivel de contorno",
             min_value=0.01,
             max_value=1.0,
             value=0.1,
             format="%.2f",
             key=f"nivel_{nombre_archivo}"
         )
-        z = ILT2D.T
 
+        fig2d = go.Figure()
         fig2d.add_trace(go.Contour(
-            x=ppmAxis,
-            y=T2axis,
-            z=z,
+            x=ppmAxis,       # 217 puntos
+            y=T2axis,        # 100 puntos
+            z=z,             # 100 x 217
             contours=dict(
                 coloring="lines",
                 start=nivel,
@@ -1607,145 +1601,44 @@ def render_rmn_1h_t2(df_tipo):
             ),
             line=dict(color=color, width=1.5),
             showscale=False,
-            name=nombre_archivo,
             colorscale=[[0, color],[1, color]]
         ))
+        fig2d.update_layout(
+            title=f"ILT2D de {nombre_archivo}",
+            xaxis=dict(
+                autorange=False,
+                range=[9, 0],
+                title="ppm"
+            ),
+            yaxis=dict(
+                type="log",
+                autorange=False,
+                range=[np.log10(T2axis.min()), np.log10(T2axis.max())],
+                title="T2 (s)"
+            ),
+            height=500
+        )
+        st.plotly_chart(fig2d, use_container_width=True)
 
-        # --- curva de decaimiento combinada
+
+        # --- curva de decaimiento
+        fig1d = go.Figure()
         fig1d.add_trace(go.Scatter(
             x=T2axis,
             y=T2_proy,
             mode="lines",
-            name=nombre_archivo,
+            name="Proyección T2",
             line=dict(color=color, width=2)
         ))
-
+        fig1d.update_layout(
+            title=f"Curva de decaimiento T2 de {nombre_archivo}",
+            xaxis_title="T2 (s)",
+            yaxis_title="Intensidad",
+            xaxis_type="log",
+            height=400
+        )
+        st.plotly_chart(fig1d, use_container_width=True)
         color_idx += 1
-
-    # Mostrar gráficos combinados
-    fig2d.update_layout(
-        title="ILT2D combinado",
-        xaxis=dict(
-            autorange=False,
-            range=[9, 0],
-            title="ppm"
-        ),
-        yaxis=dict(
-            type="log",
-            autorange=False,
-            range=[
-                np.log10(T2axis.min()),
-                np.log10(T2axis.max())
-            ],
-            title="T2 (s)"
-        ),
-        height=600,
-        legend=dict(orientation="h", x=0, y=-0.15)
-    )
-    st.plotly_chart(fig2d, use_container_width=True)
-
-    fig1d.update_layout(
-        title="Curvas de decaimiento T2 combinadas",
-        xaxis_title="T2 (s)",
-        yaxis_title="Intensidad",
-        xaxis_type="log",
-        height=400,
-        legend=dict(orientation="h", x=0, y=-0.2)
-    )
-    st.plotly_chart(fig1d, use_container_width=True)
-
-    # Mostrar gráficos individuales opcionales
-    if mostrar_indiv:
-        st.markdown("### Gráficos individuales")
-        color_idx = 0
-        for _, fila in df_tipo.iterrows():
-            color = colores[color_idx % len(colores)]
-            nombre_archivo = fila["archivo"]
-            archivos = fila.get("archivos", {})
-            if not archivos:
-                continue
-            try:
-                ppm_data = requests.get(archivos["ppmAxis"]).text
-                T2axis_data = requests.get(archivos["T2axis"]).text
-                T2_proy_data = requests.get(archivos["T2_proy"]).text
-                ILT2D_data = requests.get(archivos["ILT2D"]).text
-
-                ppmAxis = np.loadtxt(io.StringIO(ppm_data))
-                T2axis = np.loadtxt(io.StringIO(T2axis_data))
-                T2_proy = np.loadtxt(io.StringIO(T2_proy_data))
-                ILT2D = np.loadtxt(io.StringIO(ILT2D_data))
-
-            except Exception as e:
-                st.warning(f"Error descargando archivos para {nombre_archivo}: {e}")
-                continue
-
-            nivel = st.number_input(
-                f"Nivel de contorno (indiv) {nombre_archivo}",
-                min_value=0.01,
-                max_value=1.0,
-                value=0.1,
-                format="%.2f",
-                key=f"nivel_indiv_{nombre_archivo}"
-            )
-            z = ILT2D.T
-
-            # gráfico 2D individual
-            fig2d_indiv = go.Figure()
-            fig2d_indiv.add_trace(go.Contour(
-                x=ppmAxis,
-                y=T2axis,
-                z=z,
-                contours=dict(
-                    coloring="lines",
-                    start=nivel,
-                    end=nivel,
-                    size=0.1,
-                    showlabels=False
-                ),
-                line=dict(color=color, width=1.5),
-                showscale=False,
-                colorscale=[[0, color],[1, color]]
-            ))
-            fig2d_indiv.update_layout(
-                title=f"ILT2D de {nombre_archivo}",
-                xaxis=dict(
-                    autorange=False,
-                    range=[9, 0],
-                    title="ppm"
-                ),
-                yaxis=dict(
-                    type="log",
-                    autorange=False,
-                    range=[
-                        np.log10(T2axis.min()),
-                        np.log10(T2axis.max())
-                    ],
-                    title="T2 (s)"
-                ),
-                height=500
-            )
-            st.plotly_chart(fig2d_indiv, use_container_width=True)
-
-            # curva de decaimiento individual
-            fig1d_indiv = go.Figure()
-            fig1d_indiv.add_trace(go.Scatter(
-                x=T2axis,
-                y=T2_proy,
-                mode="lines",
-                name="Proyección T2",
-                line=dict(color=color, width=2)
-            ))
-            fig1d_indiv.update_layout(
-                title=f"Curva de decaimiento T2 de {nombre_archivo}",
-                xaxis_title="T2 (s)",
-                yaxis_title="Intensidad",
-                xaxis_type="log",
-                height=400
-            )
-            st.plotly_chart(fig1d_indiv, use_container_width=True)
-
-            color_idx += 1
-
 
 
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):

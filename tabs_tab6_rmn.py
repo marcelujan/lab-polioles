@@ -562,7 +562,8 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None, color_map=No
     distancia_min=distancia_min,
     correcciones_viscosidad=correcciones_viscosidad,
     a_bib=a_bib,
-    b_bib=b_bib
+    b_bib=b_bib,
+    color_map=color_map
     )
 
 

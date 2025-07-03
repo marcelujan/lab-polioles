@@ -85,11 +85,23 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
                 st.markdown("### Vista previa ILT2D")
 
-                fig2d = go.Figure(data=go.Heatmap(
+                nivel = st.number_input("Nivel de contorno para vista previa", min_value=0.01, max_value=1.0, value=0.1, format="%.2f")
+
+                fig2d = go.Figure()
+                fig2d.add_trace(go.Contour(
                     x=ppmAxis,
                     y=T2axis,
                     z=ILT2D,
-                    colorscale="Viridis"
+                    colorscale="Viridis",
+                    contours=dict(
+                        coloring="lines",
+                        start=nivel,
+                        end=nivel,
+                        size=0.1,
+                        showlabels=False
+                    ),
+                    line=dict(width=1.5),
+                    showscale=False
                 ))
                 fig2d.update_layout(
                     xaxis_title="ppm",
@@ -97,6 +109,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     yaxis_type="log",
                     height=500
                 )
+
                 st.plotly_chart(fig2d, use_container_width=True)
 
                 st.markdown("### Vista previa curva de decaimiento T2")

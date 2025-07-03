@@ -664,7 +664,8 @@ def mostrar_grafico_combinado(
     filas_biblio = doc_biblio.to_dict().get("filas", []) if doc_biblio.exists else []
 
     # --- Añadir trazas generadas por función heredada ---
-    for _, row in df.iterrows():
+    for idx, (_, row) in enumerate(df.iterrows()):
+        color = colores[idx % len(colores)]
         elementos = generar_elementos_rmn(
             row=row,
             ajustes_y=ajustes_y,
@@ -1085,6 +1086,7 @@ def generar_elementos_rmn(
     filas_dt2=None,
     check_d_por_espectro=None,
     check_t2_por_espectro=None, 
+    color=None 
 ):
     nombre_archivo = row["archivo"]
     elementos = []  # lista de go.Scatter, go.Shape, go.Annotation
@@ -1112,7 +1114,8 @@ def generar_elementos_rmn(
     if normalizar:
         y_vals = y_vals / y_vals.max() if y_vals.max() != 0 else y_vals
 
-    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual))
+    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual,
+    line=dict(color=color, width=2)))
 
     # --- Picos ---
     if mostrar_picos and altura_min is not None and distancia_min is not None:

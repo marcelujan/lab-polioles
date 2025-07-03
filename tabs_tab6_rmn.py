@@ -1601,8 +1601,7 @@ def render_rmn_1h_t2(df_tipo):
             ),
             line=dict(color=color, width=1.5),
             showscale=False,
-            colorscale=[[0, color],[1, color]],
-            line=dict(width=1.5)
+            colorscale=[[0, color],[1, color]]
         ))
         fig2d.update_layout(
             title=f"ILT2D de {nombre_archivo}",

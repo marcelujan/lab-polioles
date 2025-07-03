@@ -1411,8 +1411,8 @@ def render_rmn_1h_d(df_tipo):
     colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
     color_idx = 0
 
-    for nombre_archivo in espectros_seleccionados:
-        fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
+    for _, fila in df_tipo.iterrows():
+        nombre_archivo = fila["archivo"]
         url = fila.get("url_archivo")
         if not url:
             st.warning(f"No se encontró la URL de {nombre_archivo}")

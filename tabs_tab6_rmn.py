@@ -687,7 +687,8 @@ def mostrar_grafico_combinado(
             y_max=y_max,
             aplicar_sombra_senales=aplicar_sombra_senales,
             aplicar_sombra_biblio=aplicar_sombra_biblio,
-            mostrar_picos=mostrar_picos
+            mostrar_picos=mostrar_picos,
+            color_map=color_map
         )
         for el in elementos:
             if isinstance(el, go.Scatter):
@@ -1040,7 +1041,8 @@ def mostrar_grafico_stacked(
             mostrar_picos=mostrar_picos,
             filas_dt2=filas_dt2,
             check_d_por_espectro=check_d_por_espectro,
-            check_t2_por_espectro=check_t2_por_espectro
+            check_t2_por_espectro=check_t2_por_espectro,
+            color_map=color_map
         )
         offset = offset_manual * i
         for el in elementos:

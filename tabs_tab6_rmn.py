@@ -1551,6 +1551,24 @@ def render_rmn_1h_t2(df_tipo):
 
     st.markdown("### Mapa 2D RMN 1H T2 (ILT + Proyección)")
 
+    # Bloque de niveles de contorno en columnas, como RMN 1H D
+    st.markdown("**Modificar nivel**")
+    cols = st.columns(5)
+    niveles_contorno = {}
+    for idx, nombre_archivo in enumerate(df_tipo["archivo"]):
+        col = cols[idx % 5]
+        muestra_base = nombre_archivo.split("_RMN")[0]
+        with col:
+            nivel = st.number_input(
+                f"{muestra_base}",
+                min_value=0.01,
+                max_value=1.0,
+                value=0.10,
+                format="%.2f",
+                key=f"nivel_{nombre_archivo}"
+            )
+            niveles_contorno[nombre_archivo] = nivel
+
     # Inicializar gráficos combinados
     fig2d = go.Figure()
     fig1d = go.Figure()
@@ -1580,17 +1598,11 @@ def render_rmn_1h_t2(df_tipo):
             st.warning(f"Error descargando archivos para {nombre_archivo}: {e}")
             continue
 
-        # --- gráfico 2D combinado
-        nivel = st.number_input(
-            f"Nivel de contorno {nombre_archivo}",
-            min_value=0.01,
-            max_value=1.0,
-            value=0.1,
-            format="%.2f",
-            key=f"nivel_{nombre_archivo}"
-        )
+        # nivel ya capturado con columnas
+        nivel = niveles_contorno.get(nombre_archivo, 0.10)
         z = ILT2D.T
 
+        # gráfico 2D combinado
         fig2d.add_trace(go.Contour(
             x=ppmAxis,
             y=T2axis,
@@ -1608,7 +1620,7 @@ def render_rmn_1h_t2(df_tipo):
             colorscale=[[0, color],[1, color]]
         ))
 
-        # --- curva de decaimiento combinada
+        # curva de decaimiento combinada
         fig1d.add_trace(go.Scatter(
             x=T2axis,
             y=T2_proy,
@@ -1651,10 +1663,9 @@ def render_rmn_1h_t2(df_tipo):
     )
     st.plotly_chart(fig1d, use_container_width=True)
 
-    # Checkbox para mostrar también los gráficos individuales
+    # Checkbox para gráficos individuales, debajo de los combinados
     mostrar_indiv = st.checkbox("Mostrar gráficos individuales", key="chk_indiv_rmn1h_t2")
 
-    # Mostrar gráficos individuales opcionales
     if mostrar_indiv:
         st.markdown("### Gráficos individuales")
         color_idx = 0
@@ -1679,14 +1690,7 @@ def render_rmn_1h_t2(df_tipo):
                 st.warning(f"Error descargando archivos para {nombre_archivo}: {e}")
                 continue
 
-            nivel = st.number_input(
-                f"Nivel de contorno (indiv) {nombre_archivo}",
-                min_value=0.01,
-                max_value=1.0,
-                value=0.1,
-                format="%.2f",
-                key=f"nivel_indiv_{nombre_archivo}"
-            )
+            nivel = niveles_contorno.get(nombre_archivo, 0.10)
             z = ILT2D.T
 
             # gráfico 2D individual

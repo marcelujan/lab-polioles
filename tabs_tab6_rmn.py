@@ -17,6 +17,11 @@ import io
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
 COLOR_CONTORNO_RMN = "Cividis"
 COLOR_LINEAS_RMN = "blue"
+PALETA_RMN = [
+    "red", "blue", "green", "orange", "purple", "brown", "pink",
+    "gray", "olive", "cyan", "magenta", "teal", "gold", "indigo", "darkgreen",
+    "#FF6347", "#4682B4", "#32CD32", "#FFD700", "#8A2BE2"
+]
 
 # --- Cacheo de espectros por archivo base64 ---
 session_cache = {}
@@ -1111,7 +1116,7 @@ def generar_elementos_rmn(
     if normalizar:
         y_vals = y_vals / y_vals.max() if y_vals.max() != 0 else y_vals
 
-    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual,line=dict(color=COLOR_LINEAS_RMN, width=2)))
+    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual,line=dict(color=color_map[nombre_archivo], width=2)))
 
     # --- Picos ---
     if mostrar_picos and altura_min is not None and distancia_min is not None:
@@ -1393,7 +1398,7 @@ def render_imagenes(df):
                 st.error(f"❌ No se pudo mostrar la imagen: {e}")
 
 
-def render_rmn_1h_d(df_tipo):
+def render_rmn_1h_d(df_tipo, color_map):
     if df_tipo.empty:
         st.info("No hay espectros RMN 1H D disponibles.")
         return
@@ -1473,7 +1478,7 @@ def render_rmn_1h_d(df_tipo):
             x=x,
             y=y_scaled,
             z=z,
-            colorscale=COLOR_CONTORNO_RMN,
+            colorscale=[[0, color_map[nombre_archivo]], [1, color_map[nombre_archivo]]],
             contours=dict(
                 coloring="lines",
                 start=nivel_contorno,
@@ -1535,7 +1540,7 @@ def render_rmn_1h_d(df_tipo):
 
 
 
-def render_rmn_1h_t2(df_tipo):
+def render_rmn_1h_t2(df_tipo, color_map):
     if df_tipo.empty:
         st.info("No hay espectros RMN 1H T2 disponibles.")
         return
@@ -1581,7 +1586,7 @@ def render_rmn_1h_t2(df_tipo):
             x=ppmAxis,       # 217 puntos
             y=T2axis,        # 100 puntos
             z=z,             # 100 x 217
-            colorscale=COLOR_CONTORNO_RMN,
+            colorscale=[[0, color_map[nombre_archivo]], [1, color_map[nombre_archivo]]],
             contours=dict(
                 coloring="lines",
                 start=nivel,
@@ -1617,7 +1622,7 @@ def render_rmn_1h_t2(df_tipo):
             y=T2_proy,
             mode="lines",
             name="Proyección T2",
-            line=dict(color=COLOR_LINEAS_RMN, width=2)
+            line=dict(color=color_map[nombre_archivo], width=2)
         ))
         fig1d.update_layout(
             title=f"Curva de decaimiento T2 de {nombre_archivo}",
@@ -1643,6 +1648,10 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if df_total.empty:
         st.warning("No hay espectros RMN disponibles.")
         st.stop()
+
+    # construir mapa de colores por archivo
+    archivos_unicos = df_total["archivo"].unique()
+    color_map = {nombre: PALETA_RMN[idx % len(PALETA_RMN)] for idx, nombre in enumerate(archivos_unicos)}
 
     # --- filtro 1: seleccionar muestras ---
     opciones_muestras = sorted(df_total["muestra"].unique())

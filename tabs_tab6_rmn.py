@@ -1112,7 +1112,7 @@ def generar_elementos_rmn(
     if normalizar:
         y_vals = y_vals / y_vals.max() if y_vals.max() != 0 else y_vals
 
-    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual, width=2))
+    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual))
 
     # --- Picos ---
     if mostrar_picos and altura_min is not None and distancia_min is not None:

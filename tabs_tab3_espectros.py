@@ -97,7 +97,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 fig2d.add_trace(go.Contour(
                     x=ppmAxis,
                     y=T2axis,
-                    z=z,
+                    z=ILT2D,
                     colorscale="Viridis",
                     contours=dict(
                         coloring="lines",
@@ -115,8 +115,12 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                         range=[9, 0],
                         title="ppm"
                     ),
-                    yaxis_title="T2 (s)",
-                    yaxis_type="log",
+                    yaxis=dict(
+                        type="log",
+                        autorange=False,
+                        range=[np.log10(T2axis.min()), np.log10(T2axis.max())],
+                        title="T2 (s)"
+                    ),
                     height=500
                 )
 

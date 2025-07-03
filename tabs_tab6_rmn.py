@@ -422,7 +422,7 @@ def recalcular_areas_y_guardar(
 
 
 
-def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
+def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None, color_map=None):
     if df.empty:
         st.info(f"No hay espectros disponibles para {tipo}.")
         return
@@ -1726,9 +1726,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.markdown(f"## 🧪 {tipo}")
 
         if tipo == "RMN 1H":
-            render_rmn_plot(df_tipo, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
+            render_rmn_plot(df_tipo, tipo="RMN 1H", key_sufijo="rmn1h", db=db, color_map=color_map)
         elif tipo == "RMN 13C":
-            render_rmn_plot(df_tipo, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
+            render_rmn_plot(df_tipo, tipo="RMN 13C", key_sufijo="rmn13c", db=db, color_map=color_map)
         elif tipo == "RMN 1H D":
             render_rmn_1h_d(df_tipo)
         elif tipo == "RMN 1H T2":

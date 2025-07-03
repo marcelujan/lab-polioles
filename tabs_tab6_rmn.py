@@ -1563,6 +1563,8 @@ def render_rmn_1h_t2(df_tipo):
             continue
 
         # --- gráfico 2D
+        z = ILT2D.T
+
         nivel = st.number_input(
             "Nivel de contorno",
             min_value=0.01,
@@ -1574,9 +1576,9 @@ def render_rmn_1h_t2(df_tipo):
 
         fig2d = go.Figure()
         fig2d.add_trace(go.Contour(
-            x=ppmAxis,
-            y=T2axis,
-            z=ILT2D,
+            x=T2axis,
+            y=ppmAxis,
+            z=z,
             colorscale="Viridis",
             contours=dict(
                 coloring="lines",
@@ -1591,15 +1593,15 @@ def render_rmn_1h_t2(df_tipo):
         fig2d.update_layout(
             title=f"ILT2D de {nombre_archivo}",
             xaxis=dict(
-                autorange=False,
-                range=[9, 0],
-                title="ppm"
-            ),
-            yaxis=dict(
                 type="log",
                 autorange=False,
                 range=[np.log10(T2axis.min()), np.log10(T2axis.max())],
                 title="T2 (s)"
+            ),
+            yaxis=dict(
+                autorange=False,
+                range=[9, 0],
+                title="ppm"
             ),
             height=500
         )

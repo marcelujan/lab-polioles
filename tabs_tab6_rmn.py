@@ -1551,9 +1551,6 @@ def render_rmn_1h_t2(df_tipo):
 
     st.markdown("### Mapa 2D RMN 1H T2 (ILT + Proyección)")
 
-    # Checkbox para mostrar también los gráficos individuales
-    mostrar_indiv = st.checkbox("Mostrar gráficos individuales", key="chk_indiv_rmn1h_t2")
-
     # Inicializar gráficos combinados
     fig2d = go.Figure()
     fig1d = go.Figure()
@@ -1653,6 +1650,9 @@ def render_rmn_1h_t2(df_tipo):
         legend=dict(orientation="h", x=0, y=-0.2)
     )
     st.plotly_chart(fig1d, use_container_width=True)
+
+    # Checkbox para mostrar también los gráficos individuales
+    mostrar_indiv = st.checkbox("Mostrar gráficos individuales", key="chk_indiv_rmn1h_t2")
 
     # Mostrar gráficos individuales opcionales
     if mostrar_indiv:

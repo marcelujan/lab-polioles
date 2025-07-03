@@ -104,7 +104,11 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                     showscale=False
                 ))
                 fig2d.update_layout(
-                    xaxis_title="ppm",
+                    xaxis=dict(
+                        autorange=False,
+                        range=[9, 0],
+                        title="ppm"
+                    ),
                     yaxis_title="T2 (s)",
                     yaxis_type="log",
                     height=500

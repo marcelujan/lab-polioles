@@ -16,6 +16,7 @@ import io
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
 COLOR_CONTORNO_RMN = "Cividis"
+COLOR_LINEAS_RMN = "blue"
 
 # --- Cacheo de espectros por archivo base64 ---
 session_cache = {}
@@ -1110,7 +1111,7 @@ def generar_elementos_rmn(
     if normalizar:
         y_vals = y_vals / y_vals.max() if y_vals.max() != 0 else y_vals
 
-    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual))
+    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual,line=dict(color=COLOR_LINEAS_RMN, width=2)))
 
     # --- Picos ---
     if mostrar_picos and altura_min is not None and distancia_min is not None:
@@ -1614,8 +1615,9 @@ def render_rmn_1h_t2(df_tipo):
         fig1d.add_trace(go.Scatter(
             x=T2axis,
             y=T2_proy,
-            mode="lines",   # solo líneas, sin puntos
-            name="Proyección T2"
+            mode="lines",
+            name="Proyección T2",
+            line=dict(color=COLOR_LINEAS_RMN, width=2)
         ))
         fig1d.update_layout(
             title=f"Curva de decaimiento T2 de {nombre_archivo}",

@@ -84,6 +84,11 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 ILT2D = np.loadtxt(ILT2D_file)
                 z = ILT2D.T
 
+                # chequeo
+                st.write(f"ppmAxis shape: {ppmAxis.shape}")
+                st.write(f"T2axis shape: {T2axis.shape}")
+                st.write(f"ILT2D shape: {ILT2D.shape}")
+
                 st.markdown("### Vista previa ILT2D")
 
                 nivel = st.number_input("Nivel de contorno para vista previa", min_value=0.01, max_value=1.0, value=0.1, format="%.2f")
@@ -92,7 +97,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 fig2d.add_trace(go.Contour(
                     x=ppmAxis,
                     y=T2axis,
-                    z=ILT2D,
+                    z=z,
                     colorscale="Viridis",
                     contours=dict(
                         coloring="lines",

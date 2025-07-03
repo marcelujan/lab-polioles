@@ -1620,7 +1620,20 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     }
     df_sel = df_filtrado[df_filtrado["id"].isin([ids_map.get(s) for s in seleccion_archivos])]
 
-    for tipo in tipos_sel:
+    # orden de aparición deseado
+    orden_prioridad = [
+        "RMN 1H",
+        "RMN 1H D",
+        "RMN 1H T2",
+        "RMN-LF 1H",
+        "RMN 1H imagen",
+        "RMN 13C"
+    ]
+
+    for tipo in orden_prioridad:
+        if tipo not in tipos_sel:
+            continue
+
         df_tipo = df_sel[df_sel["tipo"] == tipo]
         if df_tipo.empty:
             continue
@@ -1635,6 +1648,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             render_rmn_1h_d(df_tipo)
         elif tipo == "RMN 1H T2":
             render_rmn_1h_t2(df_tipo)
-
-
+        elif tipo == "RMN-LF 1H":
+            render_rmn_plot(df_tipo, tipo="RMN-LF 1H", key_sufijo="rmnlf1h", db=db)
+        elif tipo == "RMN 1H imagen":
+            render_imagenes(df_tipo)
 

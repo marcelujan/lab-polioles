@@ -15,6 +15,7 @@ import io
 
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
+COLOR_CONTORNO_RMN = "Cividis"
 
 # --- Cacheo de espectros por archivo base64 ---
 session_cache = {}
@@ -1471,7 +1472,7 @@ def render_rmn_1h_d(df_tipo):
             x=x,
             y=y_scaled,
             z=z,
-            colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
+            colorscale=COLOR_CONTORNO_RMN,
             contours=dict(
                 coloring="lines",
                 start=nivel_contorno,
@@ -1579,7 +1580,7 @@ def render_rmn_1h_t2(df_tipo):
             x=ppmAxis,       # 217 puntos
             y=T2axis,        # 100 puntos
             z=z,             # 100 x 217
-            colorscale="Viridis",
+            colorscale=COLOR_CONTORNO_RMN,
             contours=dict(
                 coloring="lines",
                 start=nivel,

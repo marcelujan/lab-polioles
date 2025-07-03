@@ -1096,6 +1096,7 @@ def generar_elementos_rmn(
     check_t2_por_espectro=None, 
     color_map=None
 ):
+    nombre_archivo = row["archivo"]
     elementos = []  # lista de go.Scatter, go.Shape, go.Annotation
 
     archivo_actual = row["archivo"]

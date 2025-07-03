@@ -15,7 +15,7 @@ import io
 
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
-colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'darkcyan', 'crimson', 'goldenrod']
+colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'darkcyan', 'teal', 'crimson', 'goldenrod']
 
 
 # --- Cacheo de espectros por archivo base64 ---
@@ -1441,7 +1441,6 @@ def render_rmn_1h_d(df_tipo):
             niveles_contorno[nombre] = nivel
 
     fig = go.Figure()
-    colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
     color_idx = 0
 
     for nombre_archivo in espectros_seleccionados:

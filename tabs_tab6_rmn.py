@@ -1446,7 +1446,8 @@ def render_rmn_1h_d(df_tipo):
     fig = go.Figure()
     color_idx = 0
 
-    for nombre_archivo in espectros_seleccionados:
+    for idx, nombre_archivo in enumerate(espectros_seleccionados):
+        color = colores[idx % len(colores)]
         fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
         url = fila.get("url_archivo")
         if not url:
@@ -1483,7 +1484,7 @@ def render_rmn_1h_d(df_tipo):
                 size=0.1,
                 showlabels=False
             ),
-            line=dict(width=1.5),
+            line=dict(color=color, width=1.5),
             showscale=False,
             name=f"{muestra_base}",
             hoverinfo="x+y+name"
@@ -1544,7 +1545,8 @@ def render_rmn_1h_t2(df_tipo):
 
     st.markdown("### Mapa 2D RMN 1H T2 (ILT + Proyección)")
 
-    for _, fila in df_tipo.iterrows():
+    for idx, (_, fila) in enumerate(df_tipo.iterrows()):
+        color = colores[idx % len(colores)]
         nombre_archivo = fila["archivo"]
         archivos = fila.get("archivos", {})
         if not archivos:
@@ -1590,7 +1592,7 @@ def render_rmn_1h_t2(df_tipo):
                 size=0.1,
                 showlabels=False
             ),
-            line=dict(width=1.5),
+            line=dict(color=color, width=1.5),
             showscale=False
         ))
         fig2d.update_layout(
@@ -1618,7 +1620,7 @@ def render_rmn_1h_t2(df_tipo):
             y=T2_proy,
             mode="lines",
             name="Proyección T2",
-            line=dict(width=2)
+            line=dict(color=color, width=2)
         ))
         fig1d.update_layout(
             title=f"Curva de decaimiento T2 de {nombre_archivo}",

@@ -133,7 +133,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 fig1d.add_trace(go.Scatter(
                     x=T2axis,
                     y=T2_proy,
-                    mode="lines+markers",
+                    mode="lines",
                     name="Proyección T2"
                 ))
                 fig1d.update_layout(

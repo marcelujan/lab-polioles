@@ -1517,12 +1517,19 @@ def render_rmn_1h_d(df_tipo):
 
     st.plotly_chart(fig, use_container_width=True)
 
-
+    # leyenda en 4 columnas
+    referencias = []
     for idx, nombre in enumerate(espectros_seleccionados):
         muestra_base = nombre.split("_RMN")[0]
         color = colores[idx % len(colores)]
         nivel = niveles_contorno[nombre]
-        st.markdown(f"<span style='color:{color};font-weight:bold'>--- </span> {muestra_base} (nivel {nivel:.2f})", unsafe_allow_html=True)
+        referencias.append(f"<span style='color:{color};font-weight:bold'>—</span> {muestra_base} (nivel {nivel:.2f})")
+
+    cols = st.columns(4)
+    for i, ref in enumerate(referencias):
+        col = cols[i % 4]
+        col.markdown(ref, unsafe_allow_html=True)
+
 
 
 def render_rmn_1h_t2(df_tipo):

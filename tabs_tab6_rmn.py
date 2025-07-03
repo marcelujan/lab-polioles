@@ -1446,8 +1446,8 @@ def render_rmn_1h_d(df_tipo):
     fig = go.Figure()
     color_idx = 0
 
-    for idx, nombre_archivo in enumerate(espectros_seleccionados):
-        color = colores[idx % len(colores)]
+    for nombre_archivo in espectros_seleccionados:
+        color = colores[color_idx % len(colores)]
         fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
         url = fila.get("url_archivo")
         if not url:
@@ -1545,8 +1545,9 @@ def render_rmn_1h_t2(df_tipo):
 
     st.markdown("### Mapa 2D RMN 1H T2 (ILT + Proyección)")
 
-    for idx, (_, fila) in enumerate(df_tipo.iterrows()):
-        color = colores[idx % len(colores)]
+    color_idx = 0
+    for _, fila in df_tipo.iterrows():
+        color = colores[color_idx % len(colores)]
         nombre_archivo = fila["archivo"]
         archivos = fila.get("archivos", {})
         if not archivos:
@@ -1630,6 +1631,7 @@ def render_rmn_1h_t2(df_tipo):
             height=400
         )
         st.plotly_chart(fig1d, use_container_width=True)
+        color_idx += 1
 
 
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):

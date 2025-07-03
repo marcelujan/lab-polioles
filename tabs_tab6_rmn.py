@@ -64,7 +64,8 @@ def precargar_espectros_rmn(db, muestras):
                     "contenido": e.get("contenido"),
                     "mascaras": e.get("mascaras", []),
                     "fecha": e.get("fecha", "Sin fecha"),
-                    "url_archivo": e.get("url_archivo"),   # <- agregar esto
+                    "url_archivo": e.get("url_archivo"),
+                    "archivos": e.get("archivos", {}),
                     "id": f"{nombre}__{i}"
                 })
     return pd.DataFrame(espectros_total)

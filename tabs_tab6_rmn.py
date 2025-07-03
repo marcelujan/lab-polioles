@@ -15,13 +15,8 @@ import io
 
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
-COLOR_CONTORNO_RMN = "Cividis"
-COLOR_LINEAS_RMN = "blue"
-PALETA_RMN = [
-    "red", "blue", "green", "orange", "purple", "brown", "pink",
-    "gray", "olive", "cyan", "magenta", "teal", "gold", "indigo", "darkgreen",
-    "#FF6347", "#4682B4", "#32CD32", "#FFD700", "#8A2BE2"
-]
+colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'darkcyan', 'crimson', 'goldenrod']
+
 
 # --- Cacheo de espectros por archivo base64 ---
 session_cache = {}
@@ -422,7 +417,7 @@ def recalcular_areas_y_guardar(
 
 
 
-def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None, color_map=None):
+def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
     if df.empty:
         st.info(f"No hay espectros disponibles para {tipo}.")
         return
@@ -563,7 +558,6 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None, color_map=No
     correcciones_viscosidad=correcciones_viscosidad,
     a_bib=a_bib,
     b_bib=b_bib,
-    color_map=color_map
     )
 
 
@@ -656,7 +650,6 @@ def mostrar_grafico_combinado(
     distancia_min=None,
     correcciones_viscosidad=None,
     a_bib=1.0, b_bib=0.0,
-    color_map=None
 ):
 
     fig = go.Figure()
@@ -690,7 +683,6 @@ def mostrar_grafico_combinado(
             aplicar_sombra_senales=aplicar_sombra_senales,
             aplicar_sombra_biblio=aplicar_sombra_biblio,
             mostrar_picos=mostrar_picos,
-            color_map=color_map
         )
         for el in elementos:
             if isinstance(el, go.Scatter):
@@ -1044,7 +1036,6 @@ def mostrar_grafico_stacked(
             filas_dt2=filas_dt2,
             check_d_por_espectro=check_d_por_espectro,
             check_t2_por_espectro=check_t2_por_espectro,
-            color_map=color_map
         )
         offset = offset_manual * i
         for el in elementos:
@@ -1094,7 +1085,6 @@ def generar_elementos_rmn(
     filas_dt2=None,
     check_d_por_espectro=None,
     check_t2_por_espectro=None, 
-    color_map=None
 ):
     nombre_archivo = row["archivo"]
     elementos = []  # lista de go.Scatter, go.Shape, go.Annotation
@@ -1122,7 +1112,7 @@ def generar_elementos_rmn(
     if normalizar:
         y_vals = y_vals / y_vals.max() if y_vals.max() != 0 else y_vals
 
-    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual,line=dict(color=color_map[nombre_archivo], width=2)))
+    elementos.append(go.Scatter(x=x_vals, y=y_vals, mode="lines", name=archivo_actual, width=2))
 
     # --- Picos ---
     if mostrar_picos and altura_min is not None and distancia_min is not None:
@@ -1311,7 +1301,6 @@ def mostrar_graficos_individuales(
             filas_dt2=filas_dt2,
             check_d_por_espectro=check_d_por_espectro,
             check_t2_por_espectro=check_t2_por_espectro,
-            color_map=color_map
         )
         for el in elementos:
             if isinstance(el, go.Scatter):
@@ -1405,7 +1394,7 @@ def render_imagenes(df):
                 st.error(f"❌ No se pudo mostrar la imagen: {e}")
 
 
-def render_rmn_1h_d(df_tipo, color_map):
+def render_rmn_1h_d(df_tipo):
     if df_tipo.empty:
         st.info("No hay espectros RMN 1H D disponibles.")
         return
@@ -1485,7 +1474,6 @@ def render_rmn_1h_d(df_tipo, color_map):
             x=x,
             y=y_scaled,
             z=z,
-            colorscale=[[0, color_map[nombre_archivo]], [1, color_map[nombre_archivo]]],
             contours=dict(
                 coloring="lines",
                 start=nivel_contorno,
@@ -1547,7 +1535,7 @@ def render_rmn_1h_d(df_tipo, color_map):
 
 
 
-def render_rmn_1h_t2(df_tipo, color_map):
+def render_rmn_1h_t2(df_tipo):
     if df_tipo.empty:
         st.info("No hay espectros RMN 1H T2 disponibles.")
         return
@@ -1593,7 +1581,6 @@ def render_rmn_1h_t2(df_tipo, color_map):
             x=ppmAxis,       # 217 puntos
             y=T2axis,        # 100 puntos
             z=z,             # 100 x 217
-            colorscale=[[0, color_map[nombre_archivo]], [1, color_map[nombre_archivo]]],
             contours=dict(
                 coloring="lines",
                 start=nivel,
@@ -1629,7 +1616,7 @@ def render_rmn_1h_t2(df_tipo, color_map):
             y=T2_proy,
             mode="lines",
             name="Proyección T2",
-            line=dict(color=color_map[nombre_archivo], width=2)
+            line=dict(width=2)
         ))
         fig1d.update_layout(
             title=f"Curva de decaimiento T2 de {nombre_archivo}",
@@ -1655,10 +1642,6 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     if df_total.empty:
         st.warning("No hay espectros RMN disponibles.")
         st.stop()
-
-    # construir mapa de colores por archivo
-    archivos_unicos = df_total["archivo"].unique()
-    color_map = {nombre: PALETA_RMN[idx % len(PALETA_RMN)] for idx, nombre in enumerate(archivos_unicos)}
 
     # --- filtro 1: seleccionar muestras ---
     opciones_muestras = sorted(df_total["muestra"].unique())
@@ -1733,13 +1716,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.markdown(f"## 🧪 {tipo}")
 
         if tipo == "RMN 1H":
-            render_rmn_plot(df_tipo, tipo="RMN 1H", key_sufijo="rmn1h", db=db, color_map=color_map)
+            render_rmn_plot(df_tipo, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
         elif tipo == "RMN 13C":
-            render_rmn_plot(df_tipo, tipo="RMN 13C", key_sufijo="rmn13c", db=db, color_map=color_map)
+            render_rmn_plot(df_tipo, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
         elif tipo == "RMN 1H D":
-            render_rmn_1h_d(df_tipo, color_map=color_map)
+            render_rmn_1h_d(df_tipo,)
         elif tipo == "RMN 1H T2":
-            render_rmn_1h_t2(df_tipo, color_map=color_map)
+            render_rmn_1h_t2(df_tipo)
         elif tipo == "RMN-LF 1H":
             render_rmn_plot(df_tipo, tipo="RMN-LF 1H", key_sufijo="rmnlf1h", db=db)
         elif tipo == "RMN 1H imagen":

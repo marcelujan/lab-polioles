@@ -11,6 +11,7 @@ import json
 from tempfile import TemporaryDirectory
 import zipfile
 from firebase_admin import storage
+import plotly.graph_objects as go
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]

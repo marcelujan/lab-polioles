@@ -10,8 +10,6 @@ from functools import lru_cache
 import math
 from PIL import Image
 from scipy.signal import find_peaks
-import requests
-import io
 
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
@@ -1388,252 +1386,43 @@ def render_imagenes(df):
                 st.error(f"❌ No se pudo mostrar la imagen: {e}")
 
 
-def render_rmn_1h_d(df_tipo):
-    if df_tipo.empty:
-        st.info("No hay espectros RMN 1H D disponibles.")
-        return
-
-    st.markdown("### Mapa 2D RMN 1H D (Difusión-T2)")
-
-    # selector de espectros
-    espectros_opciones = df_tipo["archivo"].tolist()
-    espectros_seleccionados = st.multiselect(
-        "Seleccionar espectros para mapa 2D",
-        espectros_opciones,
-        key="rmn1h_d_espectros"
-    )
-
-    if not espectros_seleccionados:
-        st.info("Selecciona al menos un espectro para ver el mapa.")
-        return
-
-    # parámetros de escala y niveles
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        x_min = st.number_input("X mín", value=0.0, format="%.2f")
-    with c2:
-        x_max = st.number_input("X máx", value=9.0, format="%.2f")
-    with c3:
-        y_min = st.number_input("Y mín", value=1e-13, format="%.1e")
-    with c4:
-        y_max = st.number_input("Y máx", value=1e-9, format="%.1e")
-
-    fig = go.Figure()
-    colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
-    color_idx = 0
-
-    for nombre_archivo in espectros_seleccionados:
-        fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
-        url = fila.get("url_archivo")
-        if not url:
-            st.warning(f"No se encontró la URL de {nombre_archivo}")
-            continue
-
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                df = pd.read_csv(io.StringIO(response.text), sep="\t")
-            else:
-                st.warning(f"No se pudo leer {url}")
-                continue
-        except Exception as e:
-            st.warning(f"Error leyendo {nombre_archivo}: {e}")
-            continue
-
-        # la matriz suele estar así: columnas X, filas Y
-        x = pd.to_numeric(df.columns[1:], errors="coerce")
-        y_raw = df.iloc[:, 0].astype(float)
-        z = df.iloc[:, 1:].values
-
-        fig.add_trace(go.Contour(
-            x=x,
-            y=y_raw,
-            z=z,
-            colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
-            contours=dict(
-                coloring="heatmap",
-                showlabels=False
-            ),
-            name=nombre_archivo
-        ))
-
-        color_idx += 1
-
-    fig.update_layout(
-        title="Mapa 2D RMN 1H D",
-        xaxis_title="ppm",
-        yaxis_title="Difusión (s⁻¹ o m²/s)",
-        height=700,
-        xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(type="log", range=[np.log10(y_min), np.log10(y_max)]),
-        legend=dict(
-            x=0.01,
-            y=0.99,
-            bgcolor="white",
-            bordercolor="black"
-        )
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def render_rmn_1h_t2(df_tipo):
-    if df_tipo.empty:
-        st.info("No hay espectros RMN 1H T2 disponibles.")
-        return
-
-    st.markdown("### Mapa 2D RMN 1H T2 (ILT + proyección)")
-
-    espectros_opciones = df_tipo["archivo"].tolist()
-    espectros_sel = st.multiselect(
-        "Seleccionar espectros RMN 1H T2",
-        espectros_opciones,
-        key="rmn1h_t2_espectros"
-    )
-
-    if not espectros_sel:
-        st.info("Selecciona al menos un espectro para graficar.")
-        return
-
-    for nombre_archivo in espectros_sel:
-        fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
-        archivos = fila.get("archivos", {})
-        if not archivos:
-            st.warning(f"No hay archivos asociados en {nombre_archivo}")
-            continue
-
-        try:
-            # descargar
-            ppm_data = requests.get(archivos["ppmAxis"]).text
-            T2axis_data = requests.get(archivos["T2axis"]).text
-            T2_proy_data = requests.get(archivos["T2_proy"]).text
-            ILT2D_data = requests.get(archivos["ILT2D"]).text
-
-            ppmAxis = np.loadtxt(io.StringIO(ppm_data))
-            T2axis = np.loadtxt(io.StringIO(T2axis_data))
-            T2_proy = np.loadtxt(io.StringIO(T2_proy_data))
-            ILT2D = np.loadtxt(io.StringIO(ILT2D_data))
-
-        except Exception as e:
-            st.warning(f"Error descargando archivos: {e}")
-            continue
-
-        # --- gráfico 2D
-        fig2d = go.Figure(data=go.Heatmap(
-            x=ppmAxis,
-            y=T2axis,
-            z=ILT2D,
-            colorscale="Viridis"
-        ))
-        fig2d.update_layout(
-            title=f"ILT2D de {nombre_archivo}",
-            xaxis_title="ppm",
-            yaxis_title="T2 (s)",
-            yaxis_type="log",
-            height=500
-        )
-        st.plotly_chart(fig2d, use_container_width=True)
-
-        # --- curva de decaimiento
-        fig1d = go.Figure()
-        fig1d.add_trace(go.Scatter(
-            x=T2axis,
-            y=T2_proy,
-            mode="lines+markers",
-            name="Proyección T2"
-        ))
-        fig1d.update_layout(
-            title=f"Curva de decaimiento T2 de {nombre_archivo}",
-            xaxis_title="T2 (s)",
-            yaxis_title="Intensidad",
-            xaxis_type="log",
-            height=400
-        )
-        st.plotly_chart(fig1d, use_container_width=True)
-
-
 def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.session_state["current_tab"] = "Análisis RMN"
-
-    # --- cargar todas las muestras ---
+    datos_plotly = [] 
+    # --- Cargar muestras y espectros ---
     muestras = cargar_muestras(db)
     if not muestras:
         st.warning("No hay muestras disponibles.")
         st.stop()
 
-    # --- precargar espectros ---
     df_total = precargar_espectros_rmn(db, muestras)
     if df_total.empty:
         st.warning("No hay espectros RMN disponibles.")
         st.stop()
 
-    # --- filtro 1: seleccionar muestras ---
-    opciones_muestras = sorted(df_total["muestra"].unique())
-    muestras_sel = st.multiselect(
-        "Seleccionar muestras",
-        opciones_muestras,
-        default=opciones_muestras,
-        key="muestras_rmn"
-    )
+    muestras_sel = st.multiselect("Seleccionar muestras", sorted(df_total["muestra"].unique()))
+    df_filtrado = df_total[df_total["muestra"].isin(muestras_sel)]
 
-    # --- filtro 2: tipos de espectro ---
-    tipos_disponibles = sorted(df_total["tipo"].unique())
-    tipos_sel = st.multiselect(
-        "Tipos de espectro RMN",
-        tipos_disponibles,
-        default=tipos_disponibles,
-        key="tipos_rmn"
-    )
-
-    # --- filtro 3: fechas ---
-    fechas_disponibles = sorted(df_total["fecha"].unique())
-    fechas_sel = st.multiselect(
-        "Fechas",
-        fechas_disponibles,
-        default=fechas_disponibles,
-        key="fechas_rmn"
-    )
-
-    # --- aplicar filtros ---
-    df_filtrado = df_total[
-        (df_total["muestra"].isin(muestras_sel)) &
-        (df_total["tipo"].isin(tipos_sel)) &
-        (df_total["fecha"].isin(fechas_sel))
+    opciones = [
+        f"{row['muestra']} – {row['archivo']}" for _, row in df_filtrado.iterrows()
     ]
+    ids_map = dict(zip(opciones, df_filtrado["id"]))
+    seleccion = st.multiselect("Seleccionar espectros", opciones)
 
-    # --- filtro 4: espectros específicos ---
-    opciones_archivos = [
-        f"{row['muestra']} – {row['tipo']} – {row['archivo']}"
-        for _, row in df_filtrado.iterrows()
-    ]
-    seleccion_archivos = st.multiselect(
-        "Seleccionar espectros",
-        opciones_archivos,
-        key="archivos_rmn"
-    )
+    df_sel = df_filtrado[df_filtrado["id"].isin([ids_map.get(s) for s in seleccion])]
 
-    # crear mapa id para filtrar
-    ids_map = {
-        f"{row['muestra']} – {row['tipo']} – {row['archivo']}": row["id"]
-        for _, row in df_filtrado.iterrows()
-    }
-    df_sel = df_filtrado[df_filtrado["id"].isin([ids_map.get(s) for s in seleccion_archivos])]
+    df_rmn1h = df_sel[df_sel["tipo"] == "RMN 1H"]
+    if not df_rmn1h.empty:
+        st.markdown("## 🧪 RMN 1H")
+        render_rmn_plot(df_rmn1h, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
 
-    for tipo in tipos_sel:
-        df_tipo = df_sel[df_sel["tipo"] == tipo]
-        if df_tipo.empty:
-            continue
+    df_rmn13c = df_sel[df_sel["tipo"] == "RMN 13C"]
+    if not df_rmn13c.empty:
+        st.markdown("## 🧪 RMN 13C")
+        render_rmn_plot(df_rmn13c, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
 
-        st.markdown(f"## 🧪 {tipo}")
-
-        if tipo == "RMN 1H":
-            render_rmn_plot(df_tipo, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
-        elif tipo == "RMN 13C":
-            render_rmn_plot(df_tipo, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
-        elif tipo == "RMN 1H D":
-            render_rmn_1h_d(df_tipo)
-        elif tipo == "RMN 1H T2":
-            render_rmn_1h_t2(df_tipo)
-
-
+    imagenes_sel = df_sel[df_sel["archivo"].str.lower().str.endswith((".png", ".jpg", ".jpeg"))]
+    if not imagenes_sel.empty:
+        st.markdown("## 🧪 RMN Imágenes")
+        render_imagenes(imagenes_sel)
 

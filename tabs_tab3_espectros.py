@@ -82,6 +82,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 T2axis = np.loadtxt(T2axis_file)
                 T2_proy = np.loadtxt(T2_proy_file)
                 ILT2D = np.loadtxt(ILT2D_file)
+                z = ILT2D.T
 
                 st.markdown("### Vista previa ILT2D")
 

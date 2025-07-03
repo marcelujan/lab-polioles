@@ -1397,23 +1397,51 @@ def render_rmn_1h_d(df_tipo):
 
     st.markdown("### Mapa 2D RMN 1H D (Difusión-T2)")
 
-    # parámetros de escala y niveles
-    c1, c2, c3, c4 = st.columns(4)
+    # usar espectros ya seleccionados
+    espectros_seleccionados = df_tipo["archivo"].tolist()
+
+    if not espectros_seleccionados:
+        st.info("Selecciona al menos un espectro para ver el mapa.")
+        return
+
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+
     with c1:
         x_min = st.number_input("X mín", value=0.0, format="%.2f")
     with c2:
         x_max = st.number_input("X máx", value=9.0, format="%.2f")
     with c3:
-        y_min = st.number_input("Y mín", value=1e-13, format="%.1e")
+        y_min_axis = st.number_input("Y mín", value=1e-13, format="%.1e")
     with c4:
-        y_max = st.number_input("Y máx", value=1e-9, format="%.1e")
+        y_max_axis = st.number_input("Y máx", value=1e-9, format="%.1e")
+    with c5:
+        y_min_scale = st.number_input("Y mín reescalado", value=1e-13, format="%.1e")
+    with c6:
+        y_max_scale = st.number_input("Y máx reescalado", value=1e-9, format="%.1e")
+
+    st.markdown("**Modificar nivel**")
+    niveles_contorno = {}
+    cols = st.columns(5)
+    for idx, nombre in enumerate(espectros_seleccionados):
+        col = cols[idx % 5]
+        muestra_base = nombre.split("_RMN")[0]
+        with col:
+            nivel = st.number_input(
+                f"{muestra_base}",
+                min_value=0.01,
+                max_value=1.0,
+                value=0.10,
+                format="%.2f",
+                key=f"nivel_{nombre}"
+            )
+            niveles_contorno[nombre] = nivel
 
     fig = go.Figure()
     colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
     color_idx = 0
 
-    for _, fila in df_tipo.iterrows():
-        nombre_archivo = fila["archivo"]
+    for nombre_archivo in espectros_seleccionados:
+        fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
         url = fila.get("url_archivo")
         if not url:
             st.warning(f"No se encontró la URL de {nombre_archivo}")
@@ -1424,26 +1452,34 @@ def render_rmn_1h_d(df_tipo):
             if response.status_code == 200:
                 df = pd.read_csv(io.StringIO(response.text), sep="\t")
             else:
-                st.warning(f"No se pudo leer {url}")
+                st.error(f"No se pudo leer el archivo en {url}")
                 continue
         except Exception as e:
             st.warning(f"Error leyendo {nombre_archivo}: {e}")
             continue
 
-        # la matriz suele estar así: columnas X, filas Y
         x = pd.to_numeric(df.columns[1:], errors="coerce")
+        x = x[~pd.isna(x)]
         y_raw = df.iloc[:, 0].astype(float)
-        z = df.iloc[:, 1:].values
+        z = df.iloc[:, 1:len(x)+1].values
+
+        y_scaled = y_min_scale * (y_max_scale / y_min_scale) ** y_raw
+        nivel_contorno = niveles_contorno.get(nombre_archivo, 0.10)
 
         fig.add_trace(go.Contour(
             x=x,
-            y=y_raw,
+            y=y_scaled,
             z=z,
             colorscale=[[0, colores[color_idx % len(colores)]], [1, colores[color_idx % len(colores)]]],
             contours=dict(
-                coloring="heatmap",
+                coloring="lines",
+                start=nivel_contorno,
+                end=nivel_contorno,
+                size=0.1,
                 showlabels=False
             ),
+            line=dict(width=1.5),
+            showscale=False,
             name=nombre_archivo
         ))
 
@@ -1451,11 +1487,25 @@ def render_rmn_1h_d(df_tipo):
 
     fig.update_layout(
         title="Mapa 2D RMN 1H D",
-        xaxis_title="ppm",
-        yaxis_title="Difusión (s⁻¹ o m²/s)",
+        xaxis_title="F2 (ppm)",
+        yaxis_title="F1 (s⁻¹ o m²/s)",
         height=700,
-        xaxis=dict(range=[x_max, x_min]),
-        yaxis=dict(type="log", range=[np.log10(y_min), np.log10(y_max)]),
+        xaxis=dict(
+            autorange=False,
+            range=[x_max, x_min],
+            showgrid=False,
+            zeroline=False,
+            linecolor="black"
+        ),
+        yaxis=dict(
+            type="log",
+            showticklabels=False,
+            showgrid=False,
+            zeroline=False,
+            linecolor="black",
+            range=[np.log10(y_min_axis), np.log10(y_max_axis)]
+        ),
+        showlegend=True,
         legend=dict(
             x=0.01,
             y=0.99,

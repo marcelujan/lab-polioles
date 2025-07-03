@@ -1730,9 +1730,9 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         elif tipo == "RMN 13C":
             render_rmn_plot(df_tipo, tipo="RMN 13C", key_sufijo="rmn13c", db=db, color_map=color_map)
         elif tipo == "RMN 1H D":
-            render_rmn_1h_d(df_tipo)
+            render_rmn_1h_d(df_tipo, color_map=color_map)
         elif tipo == "RMN 1H T2":
-            render_rmn_1h_t2(df_tipo)
+            render_rmn_1h_t2(df_tipo, color_map=color_map)
         elif tipo == "RMN-LF 1H":
             render_rmn_plot(df_tipo, tipo="RMN-LF 1H", key_sufijo="rmnlf1h", db=db)
         elif tipo == "RMN 1H imagen":

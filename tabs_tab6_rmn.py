@@ -1305,7 +1305,8 @@ def mostrar_graficos_individuales(
             mostrar_picos=mostrar_picos,
             filas_dt2=filas_dt2,
             check_d_por_espectro=check_d_por_espectro,
-            check_t2_por_espectro=check_t2_por_espectro
+            check_t2_por_espectro=check_t2_por_espectro,
+            color_map=color_map
         )
         for el in elementos:
             if isinstance(el, go.Scatter):

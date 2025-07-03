@@ -1396,18 +1396,6 @@ def render_rmn_1h_d(df_tipo):
 
     st.markdown("### Mapa 2D RMN 1H D (Difusión-T2)")
 
-    # selector de espectros
-    espectros_opciones = df_tipo["archivo"].tolist()
-    espectros_seleccionados = st.multiselect(
-        "Seleccionar espectros para mapa 2D",
-        espectros_opciones,
-        key="rmn1h_d_espectros"
-    )
-
-    if not espectros_seleccionados:
-        st.info("Selecciona al menos un espectro para ver el mapa.")
-        return
-
     # parámetros de escala y niveles
     c1, c2, c3, c4 = st.columns(4)
     with c1:

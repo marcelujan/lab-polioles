@@ -1480,7 +1480,8 @@ def render_rmn_1h_d(df_tipo):
             ),
             line=dict(width=1.5),
             showscale=False,
-            name=nombre_archivo
+            name=f"{muestra_base}",
+            hoverinfo="x+y+name"
         ))
 
         color_idx += 1

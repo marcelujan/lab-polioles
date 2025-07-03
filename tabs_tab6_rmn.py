@@ -664,8 +664,11 @@ def mostrar_grafico_combinado(
     filas_biblio = doc_biblio.to_dict().get("filas", []) if doc_biblio.exists else []
 
     # --- Añadir trazas generadas por función heredada ---
-    for idx, (_, row) in enumerate(df.iterrows()):
-        color = colores[idx % len(colores)]
+    colores = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
+    color_idx = 0
+
+    for _, row in df.iterrows():
+        color = colores[color_idx % len(colores)]
         elementos = generar_elementos_rmn(
             row=row,
             ajustes_y=ajustes_y,
@@ -684,7 +687,10 @@ def mostrar_grafico_combinado(
             aplicar_sombra_senales=aplicar_sombra_senales,
             aplicar_sombra_biblio=aplicar_sombra_biblio,
             mostrar_picos=mostrar_picos,
+            color=color,
         )
+        color_idx += 1
+        
         for el in elementos:
             if isinstance(el, go.Scatter):
                 fig.add_trace(el)
@@ -1444,8 +1450,8 @@ def render_rmn_1h_d(df_tipo):
             niveles_contorno[nombre] = nivel
 
     fig = go.Figure()
+    
     color_idx = 0
-
     for nombre_archivo in espectros_seleccionados:
         color = colores[color_idx % len(colores)]
         fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
@@ -1487,7 +1493,9 @@ def render_rmn_1h_d(df_tipo):
             line=dict(color=color, width=1.5),
             showscale=False,
             name=f"{muestra_base}",
-            hoverinfo="x+y+name"
+            hoverinfo="x+y+name",
+            colorscale=[[0, color],[1, color]],
+            line=dict(width=1.5),
         ))
 
         color_idx += 1
@@ -1594,7 +1602,9 @@ def render_rmn_1h_t2(df_tipo):
                 showlabels=False
             ),
             line=dict(color=color, width=1.5),
-            showscale=False
+            showscale=False,
+            colorscale=[[0, color],[1, color]],
+            line=dict(width=1.5)
         ))
         fig2d.update_layout(
             title=f"ILT2D de {nombre_archivo}",

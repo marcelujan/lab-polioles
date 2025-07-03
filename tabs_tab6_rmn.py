@@ -1576,9 +1576,9 @@ def render_rmn_1h_t2(df_tipo):
 
         fig2d = go.Figure()
         fig2d.add_trace(go.Contour(
-            x=T2axis,
-            y=ppmAxis,
-            z=z,
+            x=ppmAxis,       # 217 puntos
+            y=T2axis,        # 100 puntos
+            z=z,             # 100 x 217
             colorscale="Viridis",
             contours=dict(
                 coloring="lines",
@@ -1593,15 +1593,15 @@ def render_rmn_1h_t2(df_tipo):
         fig2d.update_layout(
             title=f"ILT2D de {nombre_archivo}",
             xaxis=dict(
+                autorange=False,
+                range=[9, 0],
+                title="ppm"
+            ),
+            yaxis=dict(
                 type="log",
                 autorange=False,
                 range=[np.log10(T2axis.min()), np.log10(T2axis.max())],
                 title="T2 (s)"
-            ),
-            yaxis=dict(
-                autorange=False,
-                range=[9, 0],
-                title="ppm"
             ),
             height=500
         )

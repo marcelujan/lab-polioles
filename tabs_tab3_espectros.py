@@ -45,10 +45,12 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         st.markdown("**Datos manuales opcionales para FTIR-Acetato:**")
         senal_3548 = st.number_input("Señal de Acetato a 3548 cm⁻¹", step=0.0001, format="%.4f")
         peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
+
     elif tipo_espectro == "FTIR-Cloroformo":
         st.markdown("**Datos manuales opcionales para FTIR-Cloroformo:**")
         senal_3611 = st.number_input("Señal de Cloroformo a 3611 cm⁻¹", step=0.0001, format="%.4f")
         peso_muestra = st.number_input("Peso de la muestra [g]", step=0.0001, format="%.4f")
+
     elif tipo_espectro == "RMN 1H":
         st.markdown("**Máscaras D/T2 (opcional):**")
         n_mascaras = st.number_input("Cantidad de conjuntos D, T2, Xmin, Xmax", min_value=0, max_value=30, step=1, value=0)
@@ -64,6 +66,50 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             with col4:
                 xmax = st.number_input(f"Xmax [ppm] {i+1}", key=f"xmax_{i}")
             mascaras_rmn1h.append({"difusividad": d, "t2": t2, "x_min": xmin, "x_max": xmax})
+
+    elif tipo_espectro == "RMN 1H T2":
+        st.markdown("**Subir los 4 archivos requeridos para RMN 1H T2**")
+        ppmAxis_file = st.file_uploader("Archivo ppmAxis.dat", type=["dat"], key="ppmAxis")
+        T2axis_file = st.file_uploader("Archivo T2axis.dat", type=["dat"], key="T2axis")
+        T2_proy_file = st.file_uploader("Archivo T2_proy.dat", type=["dat"], key="T2proy")
+        ILT2D_file   = st.file_uploader("Archivo ILT2D.dat", type=["dat"], key="ILT2D")
+        if st.button("Guardar espectro RMN 1H T2"):
+            if not (ppmAxis_file and T2axis_file and T2_proy_file and ILT2D_file):
+                st.warning("Debes subir los 4 archivos obligatorios.")
+            else:
+                bucket = storage.bucket()
+                fecha_str = fecha_espectro.strftime("%Y-%m-%d")
+                resumen_obs = observaciones.replace("\n", " ").strip()[:30].replace(" ", "_")
+
+                archivos_urls = {}
+                for nombre_arch, fileobj in [
+                    ("ppmAxis", ppmAxis_file),
+                    ("T2axis", T2axis_file),
+                    ("T2_proy", T2_proy_file),
+                    ("ILT2D", ILT2D_file)
+                ]:
+                    nombre_final = f"{nombre_sel}_{tipo_espectro}_{fecha_str}_{nombre_arch}_{resumen_obs}.dat"
+                    blob = bucket.blob(f"espectros/{nombre_final}")
+                    blob.upload_from_string(fileobj.getvalue(), content_type="text/plain")
+                    blob.make_public()
+                    archivos_urls[nombre_arch] = blob.public_url
+
+                nuevo = {
+                    "tipo": tipo_espectro,
+                    "observaciones": observaciones.strip(),
+                    "archivo_original": "",  # no aplica
+                    "nombre_archivo": f"{nombre_sel}_{tipo_espectro}_{fecha_str}",
+                    "url_archivo": None,
+                    "archivos": archivos_urls,
+                    "es_imagen": False,
+                    "fecha": str(fecha_espectro)
+                }
+
+                ref = db.collection("muestras").document(nombre_sel).collection("espectros")
+                ref.document().set(nuevo)
+
+                st.success("Espectro RMN 1H T2 guardado correctamente.")
+                st.rerun()
 
     nuevo_tipo = st.text_input("¿Agregar nuevo tipo de espectro?", "")
     if nuevo_tipo and nuevo_tipo not in st.session_state.tipos_espectro:

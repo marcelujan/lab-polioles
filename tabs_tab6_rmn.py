@@ -1494,7 +1494,6 @@ def render_rmn_1h_d(df_tipo):
             name=f"{muestra_base}",
             hoverinfo="x+y+name",
             colorscale=[[0, color],[1, color]],
-            line=dict(width=1.5),
         ))
 
         color_idx += 1

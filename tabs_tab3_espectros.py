@@ -83,7 +83,7 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 T2_proy = np.loadtxt(T2_proy_file)
                 ILT2D = np.loadtxt(ILT2D_file)
                 z = ILT2D.T
-                fecha_espectro = st.date_input("Fecha del espectro", value=date.today())
+                fecha_espectro = st.date_input("Fecha del espectro", value=date.today(), key="fecha_rmn1h_t2")
                 observaciones = st.text_area("Observaciones", key="obs_rmn1h_t2")
 
                 st.markdown("### Vista previa ILT2D")

@@ -655,7 +655,8 @@ def mostrar_grafico_combinado(
     altura_min=None,
     distancia_min=None,
     correcciones_viscosidad=None,
-    a_bib=1.0, b_bib=0.0
+    a_bib=1.0, b_bib=0.0,
+    color_map=None
 ):
 
     fig = go.Figure()

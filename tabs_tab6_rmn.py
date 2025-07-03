@@ -1522,7 +1522,7 @@ def render_rmn_1h_d(df_tipo):
         muestra_base = nombre.split("_RMN")[0]
         color = colores[idx % len(colores)]
         nivel = niveles_contorno[nombre]
-        st.markdown(f"<span style='color:{color};font-weight:bold'>---</span> {muestra_base} (nivel {nivel:.2f})", unsafe_allow_html=True)
+        st.markdown(f"<span style='color:{color};font-weight:bold'>--- </span> {muestra_base} (nivel {nivel:.2f})", unsafe_allow_html=True)
 
 
 def render_rmn_1h_t2(df_tipo):

@@ -1181,7 +1181,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         # actualizar session_state
         st.session_state["df_oh_editado"] = df_editado
 
-        if st.button("Permanecer gráfico"):
+        if st.button("Actualizar gráfico"):
             doc_ref.set({"filas": df_editado.to_dict(orient="records")})
             st.success("Datos guardados permanentemente en Firestore.")
 

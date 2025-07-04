@@ -1209,11 +1209,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             claves_curvas = df_filtrado["Curva"].fillna("Sin curva").unique()
             col1, col2, col3, col4, col5 = st.columns(5)
 
+            st.markdown("**Ajuste manual Y**")
             for i, curva in enumerate(claves_curvas):
                 col = [col1, col2, col3, col4, col5][i % 5]
                 ajustes_y[curva] = col.number_input(
-                    f"Ajuste Y {curva}", value=0.0, step=1.0, format="%.2f", key=f"ajuste_y_{curva}"
+                    curva, value=0.0, step=1.0, format="%.2f", key=f"ajuste_y_{curva}"
                 )
+
 
             # graficar con offset
             for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):

@@ -594,6 +594,19 @@ def render_rmn_plot(df, tipo="RMN 1H", key_sufijo="rmn1h", db=None):
             distancia_min=distancia_min
         )
 
+    # --- Mostrar imágenes asociadas al final ---
+    imagenes = df[df.get("es_imagen", False)]
+    if not imagenes.empty:
+        st.markdown("### 📸 Imágenes asociadas")
+        for _, row in imagenes.iterrows():
+            st.markdown(f"**{row['archivo']}** – {row['muestra']}")
+            try:
+                image_data = BytesIO(base64.b64decode(row["contenido"]))
+                image = Image.open(image_data)
+                st.image(image, use_container_width=True)
+            except Exception as e:
+                st.error(f"❌ No se pudo mostrar la imagen: {e}")
+
     mostrar_indiv = st.checkbox("Gráficos individuales", key=f"chk_indiv_{key_sufijo}")
     if mostrar_indiv:
         mostrar_graficos_individuales(

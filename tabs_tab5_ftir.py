@@ -1178,7 +1178,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             # botón para guardar
             if st.button("Permanecer gráfico"):
                 doc_ref.set({"filas": df_editado.to_dict(orient="records")})
-                st.success("Datos guardados permanentemente en Firestore.")
+                st.success("Datos guardados")
 
             # filtrar datos válidos
             df_filtrado = df_editado[

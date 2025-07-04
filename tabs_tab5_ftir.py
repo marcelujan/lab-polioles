@@ -1145,30 +1145,42 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 exportar_figura_plotly_png(fig, nombre_base="FTIR")
 
 
-    # 3. Índice OH espectroscópico 
+    # 3. Índice OH espectroscópico
     if st.checkbox("Índice OH espectroscópico", value=False):
-        df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
+        # referencia a Firestore para guardar el gráfico permanentemente
+        doc_ref = db.document("tablas_indice_oh/manual")
+        doc = doc_ref.get()
+        
+        # intentar recuperar si hay valores guardados
+        if doc.exists:
+            filas_guardadas = doc.to_dict().get("filas", [])
+            df_resultado = pd.DataFrame(filas_guardadas)
+        else:
+            df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
+            if not df_resultado.empty:
+                df_resultado["X"] = None
+                df_resultado["Curva"] = ""
 
         if not df_resultado.empty:
-            # Añadir columnas X y Curva
-            df_graf = df_resultado.copy()
-            df_graf["X"] = None
-            df_graf["Curva"] = ""
-
-            # Editor de tabla
+            # editor de tabla
             df_editado = st.data_editor(
-                df_graf,
+                df_resultado,
                 column_config={
                     "X": st.column_config.NumberColumn("X", format="%.3f"),
                     "Curva": st.column_config.TextColumn("Curva"),
                 },
                 use_container_width=True,
                 hide_index=True,
-                num_rows="fixed",
+                num_rows="dynamic",
                 key="editor_xy_manual"
             )
+            
+            # botón para guardar
+            if st.button("Permanecer gráfico"):
+                doc_ref.set({"filas": df_editado.to_dict(orient="records")})
+                st.success("Datos guardados permanentemente en Firestore.")
 
-            # Filtrar datos válidos
+            # filtrar datos válidos
             df_filtrado = df_editado[
                 df_editado["X"].notna() & df_editado["Índice OH"].notna()
             ]
@@ -1185,6 +1197,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 st.pyplot(fig)
             else:
                 st.info("Completá al menos X y Curva para graficar.")
+        else:
+            st.info("No hay datos de Índice OH para mostrar todavía.")
 
 
     # 4. Calculadora manual de Índice OH

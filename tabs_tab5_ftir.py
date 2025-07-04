@@ -1150,7 +1150,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         doc_ref = db.document("tablas_indice_oh/manual")
         doc = doc_ref.get()
         
-        # solo leer de Firestore al arrancar
+        # leer solo al iniciar
         if doc.exists and "df_oh_editado" not in st.session_state:
             filas_guardadas = doc.to_dict().get("filas", [])
             st.session_state["df_oh_editado"] = pd.DataFrame(filas_guardadas)
@@ -1179,54 +1179,27 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         )
 
         if st.button("Actualizar gráfico"):
-            st.session_state["df_oh_editado"] = df_editado  # actualiza la sesión SOLO al guardar
+            st.session_state["df_oh_editado"] = df_editado
             doc_ref.set({"filas": df_editado.to_dict(orient="records")})
             st.success("Datos guardados")
 
-
-        # graficar
+        # filtrar datos válidos
         df_filtrado = df_editado[
             df_editado["X"].notna() & df_editado["Índice OH"].notna()
         ]
 
         if not df_filtrado.empty:
-            import matplotlib.pyplot as plt
-            fig, ax = plt.subplots()
-            for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
-                ax.plot(grupo["X"], grupo["Índice OH"], marker='o', label=curva or "Sin curva")
-            ax.set_ylabel("Índice OH")
-            ax.legend()
-            st.pyplot(fig)
-        else:
-            st.info("Completá al menos X y Curva para graficar.")
-
-        # --- Gráfico ---
-        if not df_filtrado.empty:
+            # PRIMER gráfico (Plotly simple, sin ajustes)
             fig_plotly = go.Figure()
 
-            # controles de desplazamiento Y
-            st.markdown("**Ajuste manual Y**")
-            ajustes_y = {}
-            claves_curvas = df_filtrado["Curva"].fillna("Sin curva").unique()
-            col1, col2, col3, col4, col5 = st.columns(5)
-
-            for i, curva in enumerate(claves_curvas):
-                col = [col1, col2, col3, col4, col5][i % 5]
-                ajustes_y[curva] = col.number_input(
-                    curva, value=0.0, step=1.0, format="%.2f", key=f"ajuste_y_{curva}"
-                )
-
-
-            # graficar con offset
             for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
-                offset = ajustes_y.get(curva or "Sin curva", 0.0)
                 fig_plotly.add_trace(
                     go.Scatter(
                         x=grupo["X"],
-                        y=grupo["Índice OH"] + offset,
+                        y=grupo["Índice OH"],
                         mode="lines+markers",
                         name=curva or "Sin curva",
-                        hovertemplate="X=%{x:.2f}<br>Índice OH ajustado=%{y:.2f}<extra></extra>"
+                        hovertemplate="X=%{x:.2f}<br>Índice OH=%{y:.2f}<extra></extra>"
                     )
                 )
 
@@ -1238,6 +1211,44 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 margin=dict(l=20, r=20, t=40, b=20)
             )
             st.plotly_chart(fig_plotly, use_container_width=True)
+
+            # SEGUNDO gráfico (Plotly con ajuste Y, opcional)
+            if st.checkbox("Ajuste manual Y"):
+                fig_plotly2 = go.Figure()
+                ajustes_y = {}
+
+                st.markdown("**Ajustes Y individuales**")
+                claves_curvas = df_filtrado["Curva"].fillna("Sin curva").unique()
+                col1, col2, col3, col4, col5 = st.columns(5)
+
+                for i, curva in enumerate(claves_curvas):
+                    col = [col1, col2, col3, col4, col5][i % 5]
+                    ajustes_y[curva] = col.number_input(
+                        curva, value=0.0, step=0.1, format="%.2f", key=f"ajuste_y_{curva}"
+                    )
+
+                for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                    offset = ajustes_y.get(curva or "Sin curva", 0.0)
+                    fig_plotly2.add_trace(
+                        go.Scatter(
+                            x=grupo["X"],
+                            y=grupo["Índice OH"] + offset,
+                            mode="lines+markers",
+                            name=curva or "Sin curva",
+                            hovertemplate="X=%{x:.2f}<br>Índice OH ajustado=%{y:.2f}<extra></extra>"
+                        )
+                    )
+
+                fig_plotly2.update_layout(
+                    xaxis_title="tiempo",
+                    yaxis_title="Índice OH",
+                    legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
+                    height=500,
+                    margin=dict(l=20, r=20, t=40, b=20)
+                )
+                st.plotly_chart(fig_plotly2, use_container_width=True)
+        else:
+            st.info("Completá al menos X y Curva para graficar.")
 
 
     # 4. Calculadora manual de Índice OH

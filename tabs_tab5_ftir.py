@@ -1167,6 +1167,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 "X": st.column_config.NumberColumn("X", format="%.3f"),
                 "Curva": st.column_config.TextColumn("Curva"),
             },
+            column_order=[
+                "Muestra", "Tipo", "Observaciones", "Fecha",
+                "Señal", "Señal solvente", "Peso muestra [g]",
+                "Índice OH", "X", "Curva"
+            ],
             use_container_width=True,
             hide_index=True,
             num_rows="dynamic",

@@ -1221,9 +1221,22 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 col1, col2, col3, col4, col5 = st.columns(5)
 
                 for i, curva in enumerate(claves_curvas):
+                    grupo = df_filtrado[df_filtrado["Curva"] == curva]
+                    # buscar si hay x=0 exacto
+                    x0_match = grupo[grupo["X"] == 0.0]
+                    if not x0_match.empty:
+                        y0 = x0_match["Índice OH"].iloc[0]
+                        valor_por_defecto = -y0
+                    else:
+                        valor_por_defecto = 0.0
+
                     col = [col1, col2, col3, col4, col5][i % 5]
                     ajustes_y[curva] = col.number_input(
-                        curva, value=0.0, step=0.1, format="%.2f", key=f"ajuste_y_{curva}"
+                        curva,
+                        value=valor_por_defecto,
+                        step=0.1,
+                        format="%.2f",
+                        key=f"ajuste_y_{curva}"
                     )
 
                 for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):

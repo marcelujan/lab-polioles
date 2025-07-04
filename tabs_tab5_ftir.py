@@ -1231,7 +1231,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 )
 
             fig_plotly.update_layout(
-                title="Índice OH con ajuste Y",
                 xaxis_title="tiempo",
                 yaxis_title="Índice OH",
                 legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),

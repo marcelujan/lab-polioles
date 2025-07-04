@@ -65,16 +65,15 @@ db = st.session_state.db
 
 # --- Tabs principales ---
 tabs = st.tabs([
-    "Lab de polioles", 
+    "Lab polioles", 
     "Análisis de datos", 
     "Carga de espectros", 
     "Análisis de espectros", 
     "FTIR",
     "RMN",  
-
     "Consola",  
     "Sugerencias",     
-    "Desarrollos"  
+    "Desarrollo"  
 ])
 
 
@@ -90,11 +89,11 @@ with tabs[4]:
     render_tab5(db, cargar_muestras, mostrar_sector_flotante) 
 with tabs[5]:
     render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
-with tabs[7]:
+with tabs[6]:
     render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
-with tabs[8]:
+with tabs[7]:
     render_tab8(db, mostrar_sector_flotante)
-with tabs[9]:
+with tabs[8]:
     render_tab9(db, cargar_muestras, mostrar_sector_flotante)
 
 from ia_flotante import mostrar_panel_ia

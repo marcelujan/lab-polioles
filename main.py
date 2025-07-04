@@ -14,7 +14,6 @@ from tabs_tab6_rmn import render_tab6
 from tabs_tab7_consola import render_tab7
 from tabs_tab8_sugerencias import render_tab8
 from tabs_tab9_desarrollos import render_tab9  # Hoja en blanco para pruebas
-from tabs_tab10_rmn2d import render_tab10
 import json
 
 if not firebase_admin._apps:
@@ -66,16 +65,16 @@ db = st.session_state.db
 
 # --- Tabs principales ---
 tabs = st.tabs([
-    "Lab de polioles",  # 0
-    "Análisis de datos",        # 1
-    "Carga de espectros",       # 2
-    "Análisis de espectros",    # 3
-    "FTIR",            # 4
-    "RMN",             # 5
-    "RMN D",                   # 6
-    "Consola",                  # 7
-    "Sugerencias",              # 8
-    "Desarrollos"               # 9
+    "Lab de polioles", 
+    "Análisis de datos", 
+    "Carga de espectros", 
+    "Análisis de espectros", 
+    "FTIR",
+    "RMN",  
+
+    "Consola",  
+    "Sugerencias",     
+    "Desarrollos"  
 ])
 
 
@@ -91,8 +90,6 @@ with tabs[4]:
     render_tab5(db, cargar_muestras, mostrar_sector_flotante) 
 with tabs[5]:
     render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
-with tabs[6]:
-    render_tab10(db, cargar_muestras, mostrar_sector_flotante)
 with tabs[7]:
     render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
 with tabs[8]:

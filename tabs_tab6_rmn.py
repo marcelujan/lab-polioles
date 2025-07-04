@@ -1407,8 +1407,6 @@ def render_rmn_1h_d(df_tipo):
         st.info("No hay espectros RMN 1H D disponibles.")
         return
 
-    st.markdown("### Mapa 2D RMN 1H D (Difusión-T2)")
-
     # usar espectros ya seleccionados
     espectros_seleccionados = df_tipo["archivo"].tolist()
 
@@ -1549,8 +1547,6 @@ def render_rmn_1h_t2(df_tipo):
         st.info("No hay espectros RMN 1H T2 disponibles.")
         return
 
-    st.markdown("### Mapa 2D RMN 1H T2 (ILT + Proyección)")
-
     # Bloque de niveles de contorno en columnas, como RMN 1H D
     st.markdown("**Modificar nivel**")
     cols = st.columns(5)
@@ -1633,7 +1629,7 @@ def render_rmn_1h_t2(df_tipo):
 
     # Mostrar gráficos combinados
     fig2d.update_layout(
-        title="ILT2D combinado",
+        title="ILT2D",
         xaxis=dict(
             autorange=False,
             range=[9, 0],
@@ -1654,7 +1650,7 @@ def render_rmn_1h_t2(df_tipo):
     st.plotly_chart(fig2d, use_container_width=True)
 
     fig1d.update_layout(
-        title="Curvas de decaimiento T2 combinadas",
+        title="Decaimiento T2",
         xaxis_title="T2 (s)",
         yaxis_title="Intensidad",
         xaxis_type="log",

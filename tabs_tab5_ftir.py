@@ -1217,7 +1217,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 fig_plotly2 = go.Figure()
                 ajustes_y = {}
 
-                st.markdown("**Ajustes Y individuales**")
                 claves_curvas = df_filtrado["Curva"].fillna("Sin curva").unique()
                 col1, col2, col3, col4, col5 = st.columns(5)
 

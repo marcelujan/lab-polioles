@@ -1178,12 +1178,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             key="editor_xy_manual"
         )
 
-        # actualizar session_state
-        st.session_state["df_oh_editado"] = df_editado
-
         if st.button("Actualizar gráfico"):
+            st.session_state["df_oh_editado"] = df_editado  # actualiza la sesión SOLO al guardar
             doc_ref.set({"filas": df_editado.to_dict(orient="records")})
-            st.success("Datos guardados permanentemente en Firestore.")
+            st.success("Datos guardados")
+
 
         # graficar
         df_filtrado = df_editado[

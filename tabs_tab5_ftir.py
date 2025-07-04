@@ -1192,7 +1192,20 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             # PRIMER gráfico (Plotly simple, sin ajustes)
             fig_plotly = go.Figure()
 
+            # generar un checkbox para cada curva
+            st.markdown("**Mostrar curvas**")
+            claves_curvas = df_filtrado["Curva"].fillna("Sin curva").unique()
+            col1, col2, col3, col4, col5 = st.columns(5)
+            mostrar_curvas = {}
+
+            for i, curva in enumerate(claves_curvas):
+                col = [col1, col2, col3, col4, col5][i % 5]
+                mostrar_curvas[curva] = col.checkbox(curva, value=True, key=f"mostrar_{curva}")
+
             for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                if not mostrar_curvas.get(curva, True):
+                    continue  # salta la curva si está desactivada
+
                 grupo_ordenado = grupo.sort_values("X")
                 fig_plotly.add_trace(
                     go.Scatter(

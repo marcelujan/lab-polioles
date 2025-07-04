@@ -1250,6 +1250,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     )
 
                 for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                    if not mostrar_curvas.get(curva, True):
+                       continue
                     grupo_ordenado = grupo.sort_values("X")
                     offset = ajustes_y.get(curva or "Sin curva", 0.0)
                     fig_plotly2.add_trace(

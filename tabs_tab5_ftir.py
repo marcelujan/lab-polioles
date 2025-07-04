@@ -1200,23 +1200,36 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         else:
             st.info("Completá al menos X y Curva para graficar.")
 
-        # --- Gráfico Plotly de comparación ---
+        # --- Gráfico ---
         if not df_filtrado.empty:
             fig_plotly = go.Figure()
 
+            # controles de desplazamiento Y
+            ajustes_y = {}
+            claves_curvas = df_filtrado["Curva"].fillna("Sin curva").unique()
+            col1, col2, col3, col4, col5 = st.columns(5)
+
+            for i, curva in enumerate(claves_curvas):
+                col = [col1, col2, col3, col4, col5][i % 5]
+                ajustes_y[curva] = col.number_input(
+                    f"Ajuste Y {curva}", value=0.0, step=1.0, format="%.2f", key=f"ajuste_y_{curva}"
+                )
+
+            # graficar con offset
             for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                offset = ajustes_y.get(curva or "Sin curva", 0.0)
                 fig_plotly.add_trace(
                     go.Scatter(
                         x=grupo["X"],
-                        y=grupo["Índice OH"],
+                        y=grupo["Índice OH"] + offset,
                         mode="lines+markers",
                         name=curva or "Sin curva",
-                        hovertemplate="X=%{x:.2f}<br>Índice OH=%{y:.2f}<extra></extra>"
+                        hovertemplate="X=%{x:.2f}<br>Índice OH ajustado=%{y:.2f}<extra></extra>"
                     )
                 )
 
             fig_plotly.update_layout(
-                title="Índice OH - Plotly (comparativo)",
+                title="Índice OH - Plotly (comparativo con ajuste Y)",
                 xaxis_title="X",
                 yaxis_title="Índice OH",
                 legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),

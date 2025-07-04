@@ -1200,6 +1200,31 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         else:
             st.info("Completá al menos X y Curva para graficar.")
 
+        # --- Gráfico Plotly de comparación ---
+        if not df_filtrado.empty:
+            fig_plotly = go.Figure()
+
+            for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                fig_plotly.add_trace(
+                    go.Scatter(
+                        x=grupo["X"],
+                        y=grupo["Índice OH"],
+                        mode="lines+markers",
+                        name=curva or "Sin curva",
+                        hovertemplate="X=%{x:.2f}<br>Índice OH=%{y:.2f}<extra></extra>"
+                    )
+                )
+
+            fig_plotly.update_layout(
+                title="Índice OH - Plotly (comparativo)",
+                xaxis_title="X",
+                yaxis_title="Índice OH",
+                legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
+                height=500,
+                margin=dict(l=20, r=20, t=40, b=20)
+            )
+            st.plotly_chart(fig_plotly, use_container_width=True)
+
 
     # 4. Calculadora manual de Índice OH
     if st.checkbox("Calculadora manual de Índice OH espectroscópico", value=False):

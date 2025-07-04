@@ -1147,58 +1147,54 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     # 3. Índice OH espectroscópico
     if st.checkbox("Índice OH espectroscópico", value=False):
-        # referencia a Firestore para guardar el gráfico permanentemente
         doc_ref = db.document("tablas_indice_oh/manual")
         doc = doc_ref.get()
         
-        # intentar recuperar si hay valores guardados
-        if doc.exists:
+        # solo leer de Firestore al arrancar
+        if doc.exists and "df_oh_editado" not in st.session_state:
             filas_guardadas = doc.to_dict().get("filas", [])
-            df_resultado = pd.DataFrame(filas_guardadas)
-        else:
+            st.session_state["df_oh_editado"] = pd.DataFrame(filas_guardadas)
+        elif "df_oh_editado" not in st.session_state:
             df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
             if not df_resultado.empty:
                 df_resultado["X"] = None
                 df_resultado["Curva"] = ""
+                st.session_state["df_oh_editado"] = df_resultado
 
-        if not df_resultado.empty:
-            # editor de tabla
-            df_editado = st.data_editor(
-                df_resultado,
-                column_config={
-                    "X": st.column_config.NumberColumn("X", format="%.3f"),
-                    "Curva": st.column_config.TextColumn("Curva"),
-                },
-                use_container_width=True,
-                hide_index=True,
-                num_rows="dynamic",
-                key="editor_xy_manual"
-            )
-            
-            # botón para guardar
-            if st.button("Permanecer gráfico"):
-                doc_ref.set({"filas": df_editado.to_dict(orient="records")})
-                st.success("Datos guardados")
+        df_editado = st.data_editor(
+            st.session_state.get("df_oh_editado", pd.DataFrame()),
+            column_config={
+                "X": st.column_config.NumberColumn("X", format="%.3f"),
+                "Curva": st.column_config.TextColumn("Curva"),
+            },
+            use_container_width=True,
+            hide_index=True,
+            num_rows="dynamic",
+            key="editor_xy_manual"
+        )
 
-            # filtrar datos válidos
-            df_filtrado = df_editado[
-                df_editado["X"].notna() & df_editado["Índice OH"].notna()
-            ]
+        # actualizar session_state
+        st.session_state["df_oh_editado"] = df_editado
 
-            if not df_filtrado.empty:
-                import matplotlib.pyplot as plt
-                fig, ax = plt.subplots()
+        if st.button("Permanecer gráfico"):
+            doc_ref.set({"filas": df_editado.to_dict(orient="records")})
+            st.success("Datos guardados permanentemente en Firestore.")
 
-                for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
-                    ax.plot(grupo["X"], grupo["Índice OH"], marker='o', label=curva or "Sin curva")
+        # graficar
+        df_filtrado = df_editado[
+            df_editado["X"].notna() & df_editado["Índice OH"].notna()
+        ]
 
-                ax.set_ylabel("Índice OH")
-                ax.legend()
-                st.pyplot(fig)
-            else:
-                st.info("Completá al menos X y Curva para graficar.")
+        if not df_filtrado.empty:
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots()
+            for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                ax.plot(grupo["X"], grupo["Índice OH"], marker='o', label=curva or "Sin curva")
+            ax.set_ylabel("Índice OH")
+            ax.legend()
+            st.pyplot(fig)
         else:
-            st.info("No hay datos de Índice OH para mostrar todavía.")
+            st.info("Completá al menos X y Curva para graficar.")
 
 
     # 4. Calculadora manual de Índice OH

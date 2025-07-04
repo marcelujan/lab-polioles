@@ -1205,11 +1205,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             fig_plotly = go.Figure()
 
             # controles de desplazamiento Y
+            st.markdown("**Ajuste manual Y**")
             ajustes_y = {}
             claves_curvas = df_filtrado["Curva"].fillna("Sin curva").unique()
             col1, col2, col3, col4, col5 = st.columns(5)
 
-            st.markdown("**Ajuste manual Y**")
             for i, curva in enumerate(claves_curvas):
                 col = [col1, col2, col3, col4, col5][i % 5]
                 ajustes_y[curva] = col.number_input(

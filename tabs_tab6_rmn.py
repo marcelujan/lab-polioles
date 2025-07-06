@@ -1663,12 +1663,16 @@ def render_rmn_1h_t2(df_tipo):
         legend=dict(orientation="h", x=0, y=-0.15)
     )
     
-    fig2d.add_annotation(
-        text="RMN 1H T2 (ILT2D): gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Es ideal para separar señales que se solapan en gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.",
+    fig2d.add_annotation( 
+        text=(
+            "RMN 1H T2 (ILT2D): gráfico 2D que muestra contornos de T2 vs. desplazamiento químico.<br>"
+            "Es ideal para separar señales que se solapan en gráfico 1D.<br>"
+            "Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas."
+        ),
         xref="paper", yref="paper",
         x=0.5, y=1.08,  # un poco debajo del título
         showarrow=False,
-        font=dict(size=10, color="black"),
+        font=dict(size=12, color="black"),
         align="center"
     )
 

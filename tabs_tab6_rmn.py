@@ -1662,6 +1662,7 @@ def render_rmn_1h_t2(df_tipo):
         legend=dict(orientation="h", x=0, y=-0.15)
     )
     st.plotly_chart(fig2d, use_container_width=True)
+    st.markdown("<small>RMN 1H T2 (ILT2D): gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Es ideal para separar señales que se solapan en gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.</small>", unsafe_allow_html=True)
 
     fig1d.update_layout(
         title="Decaimiento T2",
@@ -1672,6 +1673,8 @@ def render_rmn_1h_t2(df_tipo):
         legend=dict(orientation="h", x=0, y=-0.2)
     )
     st.plotly_chart(fig1d, use_container_width=True)
+    st.markdown("<small>RMN 1H T2 (Decaimiento): gráfico 1D intensidad vs tiempo de relajación T2. Cada pico muestra cuántos protones tienen un cierto tiempo de decaimiento, cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceite) y un T2 corto indica estructuras más rígidas (polioles).</small>", unsafe_allow_html=True)
+
 
     # Checkbox para gráficos individuales, debajo de los combinados
     mostrar_indiv = st.checkbox("Mostrar gráficos individuales", key="chk_indiv_rmn1h_t2")
@@ -1847,8 +1850,21 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if df_tipo.empty:
             continue
 
+        # texto antes
+        if tipo == "RMN 1H D":
+            st.markdown("<small>RMN 1H LF: utiliza campos magnéticos más bajos. Los picos se ven más anchos y menos diferenciados pero permite estudiar difusión y relajación T2.</small>", unsafe_allow_html=True)
+
         st.markdown(f"## 🧪 {tipo}")
 
+        # texto después
+        if tipo == "RMN 1H":
+            st.markdown("<small>RMN 1H: gráfico 1D de intensidad vs desplazamiento químico. Señal de cada grupo de protones en la muestra. Primera identificación química.</small>", unsafe_allow_html=True)
+        if tipo == "RMN 1H D":
+            st.markdown("<small>RMN 1H D: gráfico 2D que muestra contornos de difusión vs desplazamiento químico. Las especies químicas se separan por el desplazamiento químico, y en estos gráficos se separan también por difusión. Así se pueden diferenciar compuestos que se solapan en espectros 1D (en campo bajo, aunque el espectro 1D se ‘ensucie’, la nueva dimensión ‘difusión’ ayuda a distinguir componentes, ayuda a caracterizar mezclas complejas).</small>", unsafe_allow_html=True)
+        if tipo == "RMN 1H T2":
+            st.markdown("<small>T2: tiempo de relajación transversal. Describe que tan rápido desaparece la señal de un grupo de protones, relacionado con la movilidad molecular. En campo bajo T2 se mide con gran sensibilidad.</small>", unsafe_allow_html=True)
+
+        # render
         if tipo == "RMN 1H":
             render_rmn_plot(df_tipo, tipo="RMN 1H", key_sufijo="rmn1h", db=db)
         elif tipo == "RMN 13C":

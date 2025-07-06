@@ -1178,7 +1178,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             key="editor_xy_manual"
         )
 
-        if st.button("Actualizar gráfico"):
+        if st.button("Guardar curvas"):
             st.session_state["df_oh_editado"] = df_editado
             doc_ref.set({"filas": df_editado.to_dict(orient="records")})
             st.success("Datos guardados")

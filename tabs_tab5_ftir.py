@@ -1188,27 +1188,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             df_editado["X"].notna() & df_editado["Índice OH"].notna()
         ]
 
-        # calcular valores automáticos de rango
-        df_visibles = df_filtrado[df_filtrado["Curva"].isin([c for c, v in mostrar_curvas.items() if v])]
-        if not df_visibles.empty:
-            x_min_default = df_visibles["X"].min()
-            x_max_default = df_visibles["X"].max()
-            y_min_default = df_visibles["Índice OH"].min()
-            y_max_default = df_visibles["Índice OH"].max()
-        else:
-            x_min_default = 0.0
-            x_max_default = 1000.0
-            y_min_default = 0.0
-            y_max_default = 100.0
-
-        # controles de rango de ejes
-        st.markdown("**Rango de los ejes**")
-        colx1, colx2, coly1, coly2 = st.columns(4)
-
-        rango_x_min = colx1.number_input("X mínimo", value=x_min_default, step=10.0, format="%.1f")
-        rango_x_max = colx2.number_input("X máximo", value=x_max_default, step=10.0, format="%.1f")
-        rango_y_min = coly1.number_input("Y mínimo", value=y_min_default, step=1.0, format="%.1f")
-        rango_y_max = coly2.number_input("Y máximo", value=y_max_default, step=1.0, format="%.1f")
 
         if not df_filtrado.empty:
             # PRIMER gráfico (Plotly simple, sin ajustes)
@@ -1238,6 +1217,28 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         hovertemplate="X=%{x:.2f}<br>Índice OH=%{y:.2f}<extra></extra>"
                     )
                 )
+
+            # calcular valores automáticos de rango
+            df_visibles = df_filtrado[df_filtrado["Curva"].isin([c for c, v in mostrar_curvas.items() if v])]
+            if not df_visibles.empty:
+                x_min_default = df_visibles["X"].min()
+                x_max_default = df_visibles["X"].max()
+                y_min_default = df_visibles["Índice OH"].min()
+                y_max_default = df_visibles["Índice OH"].max()
+            else:
+                x_min_default = 0.0
+                x_max_default = 1000.0
+                y_min_default = 0.0
+                y_max_default = 100.0
+
+            # controles de rango de ejes
+            st.markdown("**Rango de los ejes**")
+            colx1, colx2, coly1, coly2 = st.columns(4)
+
+            rango_x_min = colx1.number_input("X mínimo", value=x_min_default, step=10.0, format="%.1f")
+            rango_x_max = colx2.number_input("X máximo", value=x_max_default, step=10.0, format="%.1f")
+            rango_y_min = coly1.number_input("Y mínimo", value=y_min_default, step=1.0, format="%.1f")
+            rango_y_max = coly2.number_input("Y máximo", value=y_max_default, step=1.0, format="%.1f")
 
             fig_plotly.update_layout(
                 xaxis_title="tiempo",

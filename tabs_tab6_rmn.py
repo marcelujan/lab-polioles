@@ -1852,7 +1852,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         # texto antes
         if tipo == "RMN 1H":
             st.markdown("""
-            <span style="font-size: 0.85rem;">
+            <span style="font-size: 0.85rem; text-align:center; display:block;">
             <b>RMN 1H: gráfico 1D de intensidad vs desplazamiento químico. Señal de cada grupo de protones en la muestra. Primera identificación química.</b>
             </span>
             """, unsafe_allow_html=True)

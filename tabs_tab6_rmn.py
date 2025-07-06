@@ -1866,8 +1866,8 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         if tipo == "RMN 1H T2":
             st.markdown("""
-            <span style="font-size: 0.85rem;">
-            <b>T2: tiempo de relajación transversal. Describe qué tan rápido desaparece la señal de un grupo de protones, relacionado con la movilidad molecular. En campo bajo T2 se mide con gran sensibilidad.</b>
+            <span style="font-size: 0.85rem; text-align:center; display:block;">
+            <br><br><b>T2: tiempo de relajación transversal. Describe qué tan rápido desaparece la señal de un grupo de protones, relacionado con la movilidad molecular. En campo bajo T2 se mide con gran sensibilidad.</b>
             </span>
             """, unsafe_allow_html=True)
 

@@ -1860,7 +1860,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if tipo == "RMN 1H D":
             st.markdown("""
             <span style="font-size: 0.85rem; text-align:center; display:block;">
-            <br><br><b>RMN 1H LF: utiliza campos magnéticos más bajos. Los picos se ven más anchos y menos diferenciados pero permite estudiar difusión y relajación T2.</b><br><br>
+            <br><br><b>RMN 1H LF: utiliza campos magnéticos más bajos. Los picos se ven más anchos y menos diferenciados pero permite estudiar difusión y relajación T2.</b>
             </span>
             """, unsafe_allow_html=True)
 

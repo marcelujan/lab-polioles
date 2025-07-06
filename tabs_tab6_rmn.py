@@ -1642,7 +1642,7 @@ def render_rmn_1h_t2(df_tipo):
         color_idx += 1
 
     # Mostrar gráficos combinados
-    st.markdown("<small>RMN 1H T2 (ILT2D): gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Es ideal para separar señales que se solapan en gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.</small>", unsafe_allow_html=True)
+#    st.markdown("<small>RMN 1H T2 (ILT2D): gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Es ideal para separar señales que se solapan en gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.</small>", unsafe_allow_html=True)
     fig2d.update_layout(
         title="ILT2D",
         xaxis=dict(
@@ -1662,6 +1662,16 @@ def render_rmn_1h_t2(df_tipo):
         height=600,
         legend=dict(orientation="h", x=0, y=-0.15)
     )
+    
+    fig2d.add_annotation(
+        text="RMN 1H T2 (ILT2D): gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Es ideal para separar señales que se solapan en gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.",
+        xref="paper", yref="paper",
+        x=0.5, y=1.08,  # un poco debajo del título
+        showarrow=False,
+        font=dict(size=10, color="black"),
+        align="center"
+    )
+
     st.plotly_chart(fig2d, use_container_width=True)
 
     st.markdown("<small>RMN 1H T2 (Decaimiento): gráfico 1D intensidad vs tiempo de relajación T2. Cada pico muestra cuántos protones tienen un cierto tiempo de decaimiento, cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceite) y un T2 corto indica estructuras más rígidas (polioles).</small>", unsafe_allow_html=True)

@@ -1871,6 +1871,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             </span>
             """, unsafe_allow_html=True)
 
+        if tipo == "RMN 13C":
+            st.markdown("""
+            <span style="font-size: 0.85rem; text-align:center; display:block;">
+            <br><br><b>RMN 13C:</b> gráfico 1D de intensidad vs desplazamiento químico. Señal de cada grupo de carbonos en la muestra. Complementa la identificación estructural junto al espectro de 1H.
+            </span>
+            """, unsafe_allow_html=True)
+
         st.markdown(f"## 🧪 {tipo}")
 
         # texto después

@@ -1870,7 +1870,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if tipo == "RMN 1H D":
             st.markdown("""
             <span style="font-size: 0.85rem;">
-            <b>RMN 1H D:</b> gráfico 2D que muestra contornos de difusión vs desplazamiento químico. Las especies químicas se separan por el desplazamiento químico, y en estos gráficos se separan también por difusión. Así se pueden diferenciar compuestos que se solapan en espectros 1D (en campo bajo, aunque el espectro 1D se ‘ensucie’, la nueva dimensión ‘difusión’ ayuda a distinguir componentes, ayuda a caracterizar mezclas complejas).
+            <b>RMN 1H D:</b> gráfico 2D que muestra contornos de difusión vs desplazamiento químico. Las especies químicas se separan por el desplazamiento químico, y en estos gráficos se separan también por difusión. Así se pueden diferenciar compuestos que se solapan en espectros 1D (en campo bajo, aunque el espectro 1D se ‘ensucie’, la nueva dimensión ‘difusión’ ayuda a distinguir componentes, ayuda a caracterizar mezclas complejas).<br><br>
             </span>
             """, unsafe_allow_html=True)
 

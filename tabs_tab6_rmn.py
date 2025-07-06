@@ -1865,7 +1865,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         <span style="font-size: 0.85rem;">
         <b>T2:</b> tiempo de relajación transversal. Describe qué tan rápido desaparece la señal de un grupo de protones, relacionado con la movilidad molecular. En campo bajo T2 se mide con gran sensibilidad.<br>
         <b>RMN 1H T2 (ILT2D):</b> gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Ideal para separar señales que se solapan en un gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.<br>
-        <b>RMN 1H T2 (Decaimiento):</b> gráfico 1D intensidad vs tiempo de relajación T2. Cada pico indica cuántos protones tienen un cierto T2, reflejando cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceites) y un T2 corto indica estructuras más rígidas (polioles).
+        <b>RMN 1H T2 (Decaimiento):</b> gráfico 1D intensidad vs tiempo de relajación T2. Cada pico indica cuántos protones tienen un cierto T2, reflejando cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceites) y un T2 corto indica estructuras más rígidas (polioles).<br><br>
         </span>
         """, unsafe_allow_html=True)
 

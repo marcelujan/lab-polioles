@@ -1857,17 +1857,27 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # texto después
         if tipo == "RMN 1H":
-            st.markdown("<small>RMN 1H: gráfico 1D de intensidad vs desplazamiento químico. Señal de cada grupo de protones en la muestra. Primera identificación química.</small>", unsafe_allow_html=True)
+            st.markdown("""
+            <span style="font-size: 0.85rem;">
+            <b>RMN 1H:</b> gráfico 1D de intensidad vs desplazamiento químico. Señal de cada grupo de protones en la muestra. Primera identificación química.
+            </span>
+            """, unsafe_allow_html=True)
+
         if tipo == "RMN 1H D":
-            st.markdown("<small>RMN 1H D: gráfico 2D que muestra contornos de difusión vs desplazamiento químico. Las especies químicas se separan por el desplazamiento químico, y en estos gráficos se separan también por difusión. Así se pueden diferenciar compuestos que se solapan en espectros 1D (en campo bajo, aunque el espectro 1D se ‘ensucie’, la nueva dimensión ‘difusión’ ayuda a distinguir componentes, ayuda a caracterizar mezclas complejas).</small>", unsafe_allow_html=True)
+            st.markdown("""
+            <span style="font-size: 0.85rem;">
+            <b>RMN 1H D:</b> gráfico 2D que muestra contornos de difusión vs desplazamiento químico. Las especies químicas se separan por el desplazamiento químico, y en estos gráficos se separan también por difusión. Así se pueden diferenciar compuestos que se solapan en espectros 1D (en campo bajo, aunque el espectro 1D se ‘ensucie’, la nueva dimensión ‘difusión’ ayuda a distinguir componentes, ayuda a caracterizar mezclas complejas).
+            </span>
+            """, unsafe_allow_html=True)
+
         if tipo == "RMN 1H T2":
             st.markdown("""
-        <span style="font-size: 0.85rem;">
-        <b>T2:</b> tiempo de relajación transversal. Describe qué tan rápido desaparece la señal de un grupo de protones, relacionado con la movilidad molecular. En campo bajo T2 se mide con gran sensibilidad.<br>
-        <b>RMN 1H T2 (ILT2D):</b> gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Ideal para separar señales que se solapan en un gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.<br>
-        <b>RMN 1H T2 (Decaimiento):</b> gráfico 1D intensidad vs tiempo de relajación T2. Cada pico indica cuántos protones tienen un cierto T2, reflejando cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceites) y un T2 corto indica estructuras más rígidas (polioles).<br><br>
-        </span>
-        """, unsafe_allow_html=True)
+            <span style="font-size: 0.85rem;">
+            <b>T2:</b> tiempo de relajación transversal. Describe qué tan rápido desaparece la señal de un grupo de protones, relacionado con la movilidad molecular. En campo bajo T2 se mide con gran sensibilidad.<br>
+            <b>RMN 1H T2 (ILT2D):</b> gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Ideal para separar señales que se solapan en un gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.<br>
+            <b>RMN 1H T2 (Decaimiento):</b> gráfico 1D intensidad vs tiempo de relajación T2. Cada pico indica cuántos protones tienen un cierto T2, reflejando cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceites) y un T2 corto indica estructuras más rígidas (polioles).<br><br>
+            </span>
+            """, unsafe_allow_html=True)
 
         # render
         if tipo == "RMN 1H":

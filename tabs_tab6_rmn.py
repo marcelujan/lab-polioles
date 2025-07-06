@@ -1661,8 +1661,9 @@ def render_rmn_1h_t2(df_tipo):
         height=600,
         legend=dict(orientation="h", x=0, y=-0.15)
     )
-    st.plotly_chart(fig2d, use_container_width=True)
     st.markdown("<small>RMN 1H T2 (ILT2D): gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Es ideal para separar señales que se solapan en gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.</small>", unsafe_allow_html=True)
+    st.plotly_chart(fig2d, use_container_width=True)
+
 
     fig1d.update_layout(
         title="Decaimiento T2",
@@ -1672,8 +1673,9 @@ def render_rmn_1h_t2(df_tipo):
         height=400,
         legend=dict(orientation="h", x=0, y=-0.2)
     )
-    st.plotly_chart(fig1d, use_container_width=True)
     st.markdown("<small>RMN 1H T2 (Decaimiento): gráfico 1D intensidad vs tiempo de relajación T2. Cada pico muestra cuántos protones tienen un cierto tiempo de decaimiento, cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceite) y un T2 corto indica estructuras más rígidas (polioles).</small>", unsafe_allow_html=True)
+    st.plotly_chart(fig1d, use_container_width=True)
+
 
 
     # Checkbox para gráficos individuales, debajo de los combinados

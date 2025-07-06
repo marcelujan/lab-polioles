@@ -1190,9 +1190,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
 
         if not df_filtrado.empty:
-            # PRIMER gráfico (Plotly simple, sin ajustes)
-            fig_plotly = go.Figure()
-
             # generar un checkbox para cada curva
             st.markdown("**Mostrar curvas**")
             claves_curvas = df_filtrado["Curva"].fillna("Sin curva").unique()
@@ -1203,23 +1200,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 col = [col1, col2, col3, col4, col5][i % 5]
                 mostrar_curvas[curva] = col.checkbox(curva, value=True, key=f"mostrar_{curva}")
 
-            for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
-                if not mostrar_curvas.get(curva, True):
-                    continue  # salta la curva si está desactivada
+            # calcular valores automáticos de rango una vez definidos los checkboxes
+            curvas_activas = [c for c, v in mostrar_curvas.items() if v]
+            df_visibles = df_filtrado[df_filtrado["Curva"].isin(curvas_activas)]
 
-                grupo_ordenado = grupo.sort_values("X")
-                fig_plotly.add_trace(
-                    go.Scatter(
-                        x=grupo_ordenado["X"],
-                        y=grupo_ordenado["Índice OH"],
-                        mode="lines+markers",
-                        name=curva or "Sin curva",
-                        hovertemplate="X=%{x:.2f}<br>Índice OH=%{y:.2f}<extra></extra>"
-                    )
-                )
-
-            # calcular valores automáticos de rango
-            df_visibles = df_filtrado[df_filtrado["Curva"].isin([c for c, v in mostrar_curvas.items() if v])]
             if not df_visibles.empty:
                 x_min_default = df_visibles["X"].min()
                 x_max_default = df_visibles["X"].max()
@@ -1239,6 +1223,23 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             rango_x_max = colx2.number_input("X máximo", value=x_max_default, step=10.0, format="%.1f")
             rango_y_min = coly1.number_input("Y mínimo", value=y_min_default, step=1.0, format="%.1f")
             rango_y_max = coly2.number_input("Y máximo", value=y_max_default, step=1.0, format="%.1f")
+
+            # ahora si armar la figura
+            fig_plotly = go.Figure()
+
+            for curva, grupo in df_filtrado.groupby("Curva" if "Curva" in df_filtrado else ""):
+                if not mostrar_curvas.get(curva, True):
+                    continue
+                grupo_ordenado = grupo.sort_values("X")
+                fig_plotly.add_trace(
+                    go.Scatter(
+                        x=grupo_ordenado["X"],
+                        y=grupo_ordenado["Índice OH"],
+                        mode="lines+markers",
+                        name=curva or "Sin curva",
+                        hovertemplate="X=%{x:.2f}<br>Índice OH=%{y:.2f}<extra></extra>"
+                    )
+                )
 
             fig_plotly.update_layout(
                 xaxis_title="tiempo",

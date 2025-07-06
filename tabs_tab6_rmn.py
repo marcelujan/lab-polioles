@@ -1642,7 +1642,6 @@ def render_rmn_1h_t2(df_tipo):
         color_idx += 1
 
     # Mostrar gráficos combinados
-#    st.markdown("<small>RMN 1H T2 (ILT2D): gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Es ideal para separar señales que se solapan en gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.</small>", unsafe_allow_html=True)
     fig2d.update_layout(
         title="ILT2D",
         xaxis=dict(
@@ -1662,23 +1661,8 @@ def render_rmn_1h_t2(df_tipo):
         height=600,
         legend=dict(orientation="h", x=0, y=-0.15)
     )
-    
-    fig2d.add_annotation( 
-        text=(
-            "RMN 1H T2 (ILT2D): gráfico 2D que muestra contornos de T2 vs. desplazamiento químico.<br>"
-            "Es ideal para separar señales que se solapan en gráfico 1D.<br>"
-            "Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas."
-        ),
-        xref="paper", yref="paper",
-        x=0.5, y=1.08,  # un poco debajo del título
-        showarrow=False,
-        font=dict(size=12, color="black"),
-        align="left"
-    )
-
     st.plotly_chart(fig2d, use_container_width=True)
 
-    st.markdown("<small>RMN 1H T2 (Decaimiento): gráfico 1D intensidad vs tiempo de relajación T2. Cada pico muestra cuántos protones tienen un cierto tiempo de decaimiento, cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceite) y un T2 corto indica estructuras más rígidas (polioles).</small>", unsafe_allow_html=True)
     fig1d.update_layout(
         title="Decaimiento T2",
         xaxis_title="T2 (s)",
@@ -1877,7 +1861,13 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if tipo == "RMN 1H D":
             st.markdown("<small>RMN 1H D: gráfico 2D que muestra contornos de difusión vs desplazamiento químico. Las especies químicas se separan por el desplazamiento químico, y en estos gráficos se separan también por difusión. Así se pueden diferenciar compuestos que se solapan en espectros 1D (en campo bajo, aunque el espectro 1D se ‘ensucie’, la nueva dimensión ‘difusión’ ayuda a distinguir componentes, ayuda a caracterizar mezclas complejas).</small>", unsafe_allow_html=True)
         if tipo == "RMN 1H T2":
-            st.markdown("<small>T2: tiempo de relajación transversal. Describe que tan rápido desaparece la señal de un grupo de protones, relacionado con la movilidad molecular. En campo bajo T2 se mide con gran sensibilidad.</small>", unsafe_allow_html=True)
+            st.markdown("""
+        <span style="font-size: 0.85rem;">
+        <b>T2:</b> tiempo de relajación transversal. Describe qué tan rápido desaparece la señal de un grupo de protones, relacionado con la movilidad molecular. En campo bajo T2 se mide con gran sensibilidad.<br>
+        <b>RMN 1H T2 (ILT2D):</b> gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Ideal para separar señales que se solapan en un gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.<br>
+        <b>RMN 1H T2 (Decaimiento):</b> gráfico 1D intensidad vs tiempo de relajación T2. Cada pico indica cuántos protones tienen un cierto T2, reflejando cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceites) y un T2 corto indica estructuras más rígidas (polioles).
+        </span>
+        """, unsafe_allow_html=True)
 
         # render
         if tipo == "RMN 1H":

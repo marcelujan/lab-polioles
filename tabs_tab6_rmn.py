@@ -1851,7 +1851,11 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         # texto antes
         if tipo == "RMN 1H D":
-            st.markdown("<small>RMN 1H LF: utiliza campos magnéticos más bajos. Los picos se ven más anchos y menos diferenciados pero permite estudiar difusión y relajación T2.</small>", unsafe_allow_html=True)
+            st.markdown("""
+            <span style="font-size: 0.85rem;">
+            <b>RMN 1H LF: utiliza campos magnéticos más bajos. Los picos se ven más anchos y menos diferenciados pero permite estudiar difusión y relajación T2.</b>
+            </span>
+            """, unsafe_allow_html=True)
 
         st.markdown(f"## 🧪 {tipo}")
 

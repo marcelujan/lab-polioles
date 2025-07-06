@@ -1673,7 +1673,7 @@ def render_rmn_1h_t2(df_tipo):
         x=0.5, y=1.08,  # un poco debajo del título
         showarrow=False,
         font=dict(size=12, color="black"),
-        align="center"
+        align="left"
     )
 
     st.plotly_chart(fig2d, use_container_width=True)

@@ -1191,15 +1191,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         # calcular valores automáticos de rango
         df_visibles = df_filtrado[df_filtrado["Curva"].isin([c for c, v in mostrar_curvas.items() if v])]
         if not df_visibles.empty:
-        x_min_default = df_visibles["X"].min()
-        x_max_default = df_visibles["X"].max()
-        y_min_default = df_visibles["Índice OH"].min()
-        y_max_default = df_visibles["Índice OH"].max()
+            x_min_default = df_visibles["X"].min()
+            x_max_default = df_visibles["X"].max()
+            y_min_default = df_visibles["Índice OH"].min()
+            y_max_default = df_visibles["Índice OH"].max()
         else:
-        x_min_default = 0.0
-        x_max_default = 1000.0
-        y_min_default = 0.0
-        y_max_default = 100.0
+            x_min_default = 0.0
+            x_max_default = 1000.0
+            y_min_default = 0.0
+            y_max_default = 100.0
 
         # controles de rango de ejes
         st.markdown("**Rango de los ejes**")

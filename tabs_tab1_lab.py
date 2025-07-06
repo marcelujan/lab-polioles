@@ -36,13 +36,13 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 texto_prellenado = f"{nombre}: {obs_original.strip()}" if obs_original.strip() else f"{nombre}: "
 
                 key_textarea = f"textarea_obs_{nombre}"
-                    nueva_obs = st.text_area(
-                        label=f"Observación {nombre}",
-                        value=texto_prellenado,
-                        key=key_textarea,
-                        height=70,
-                        label_visibility="collapsed"
-                    )
+                nueva_obs = st.text_area(
+                    label=f"Observación {nombre}",
+                    value=texto_prellenado,
+                    key=key_textarea,
+                    height=70,
+                    label_visibility="collapsed"
+                )
 
                 # Remover el prefijo "Nombre: " para guardar solo la observación
                 prefijo = f"{nombre}:"

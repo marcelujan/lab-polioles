@@ -1757,8 +1757,7 @@ def render_rmn_1h_d(df_tipo, db):
                             st.plotly_chart(fig_proy, use_container_width=True)
                             
                             st.markdown(f"**📈 Tabla de integrales para Zona {idx_zona+1}**")
-                            factor_hc = st.number_input("Factor H*", value=1.00, format="%.2f", step=0.01, key=f"factor_h_zona_{nombre_archivo}_{idx_zona}")
-
+    
                             columnas_zona = [
                                 "Muestra", "Grupo funcional", "X min", "X max", "Área",
                                 "Xas min", "Xas max", "Has", "Área as", "H", "🔴exH", "Observaciones", "Archivo"

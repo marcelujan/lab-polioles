@@ -1624,6 +1624,14 @@ def render_rmn_1h_d(df_tipo, db):
                             z_recorte = z[np.ix_(idx_y, idx_x)]
                             proy1d = np.sum(z_recorte, axis=0)
 
+                            # --- AJUSTE DE LONGITUDES ---
+                            n = min(len(x), len(proy1d))
+                            x = np.array(x)[:n]
+                            proy1d = np.array(proy1d)[:n]
+                            n_ex = min(len(x_ex), len(proy1d_ex))
+                            x_ex = np.array(x_ex)[:n_ex]
+                            proy1d_ex = np.array(proy1d_ex)[:n_ex]
+
                             # --- NUEVA TABLA DE INTEGRALES DE ZONA (igual a RMN 1H, sin D ni T2) ---
                             columnas_zona = [
                                 "Muestra", "Grupo funcional", "X min", "X max", "Área",

@@ -1648,6 +1648,9 @@ def render_rmn_1h_d(df_tipo, db):
                                 "Grupo funcional", "δ pico", "X min", "X max", "Área",
                                 "Xas min", "Xas max", "Has", "Área as", "H", "🔴H*", "🔴exH", "Observaciones"
                             ]
+                            # Reubicar exH entre H* y Observaciones
+                            columnas_zona.remove("🔴exH")
+                            columnas_zona.insert(columnas_zona.index("🔴H*")+1, "🔴exH")
                             try:
                                 muestra_base = nombre_archivo.split("_RMN")[0]
                                 nombre_doc = f"{nombre_archivo}_zona_{idx_zona+1}"

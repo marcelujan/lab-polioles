@@ -1663,12 +1663,17 @@ def render_rmn_1h_d(df_tipo, db):
                                 df_calc = df_zona.copy()
                                 for i, row in df_calc.iterrows():
                                     try:
-                                        # Convertir a float, forzar NaN si vacío
-                                        x_min = pd.to_numeric(row.get("X min"), errors="coerce")
-                                        x_max = pd.to_numeric(row.get("X max"), errors="coerce")
-                                        xas_min = pd.to_numeric(row.get("Xas min"), errors="coerce")
-                                        xas_max = pd.to_numeric(row.get("Xas max"), errors="coerce")
-                                        has = pd.to_numeric(row.get("Has"), errors="coerce")
+                                        # Convertir a float escalar, forzar NaN si vacío o no convertible
+                                        def to_float(val):
+                                            try:
+                                                return float(pd.to_numeric(val, errors="coerce"))
+                                            except Exception:
+                                                return float('nan')
+                                        x_min = to_float(row.get("X min"))
+                                        x_max = to_float(row.get("X max"))
+                                        xas_min = to_float(row.get("Xas min"))
+                                        xas_max = to_float(row.get("Xas max"))
+                                        has = to_float(row.get("Has"))
 
                                         # Si falta algún valor clave, dejar los calculados en None
                                         if np.isnan(x_min) or np.isnan(x_max) or np.isnan(xas_min) or np.isnan(xas_max) or np.isnan(has):
@@ -1690,7 +1695,7 @@ def render_rmn_1h_d(df_tipo, db):
 
                                         # --- H (con filtro Y) ---
                                         if area is not None and area_as not in [None, 0] and not np.isnan(has):
-                                            h = (area * has) / area_as
+                                            h = (float(area) * has) / float(area_as)
                                             df_calc.at[i, "H"] = round(h, 2)
                                         else:
                                             df_calc.at[i, "H"] = None
@@ -1701,7 +1706,7 @@ def render_rmn_1h_d(df_tipo, db):
                                         area_ex = np.trapz(proy1d_ex[mask_x_ex], x_ex[mask_x_ex]) if np.any(mask_x_ex) else None
                                         area_as_ex = np.trapz(proy1d_ex[mask_xas_ex], x_ex[mask_xas_ex]) if np.any(mask_xas_ex) else None
                                         if area_ex is not None and area_as_ex not in [None, 0] and not np.isnan(has):
-                                            exH = (area_ex * has) / area_as_ex
+                                            exH = (float(area_ex) * has) / float(area_as_ex)
                                             df_calc.at[i, "🔴exH"] = round(exH, 2)
                                         else:
                                             df_calc.at[i, "🔴exH"] = None

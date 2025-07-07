@@ -1758,7 +1758,6 @@ def render_rmn_1h_d(df_tipo, db):
                             col_config = {
                                 "Muestra": st.column_config.TextColumn(disabled=True),
                                 "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                                "δ pico": st.column_config.NumberColumn(format="%.2f"),
                                 "X min": st.column_config.NumberColumn(format="%.2f"),
                                 "X max": st.column_config.NumberColumn(format="%.2f"),
                                 "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),

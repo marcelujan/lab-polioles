@@ -1673,9 +1673,13 @@ def render_rmn_1h_d(df_tipo, db):
                                 df_zona = pd.DataFrame(columns=columnas_zona)
                                 df_zona.loc[0] = [None, None, None, None, None, ""]
 
-                            # Mostrar tabla editable antes del botón
-                            df_zona_edit = st.data_editor(
-                                df_zona,
+                            # Mostrar tabla editable y guardar en estado
+                            key_tabla = f"tabla_zona_{nombre_archivo}_{idx_zona}"
+                            if key_tabla not in st.session_state:
+                                st.session_state[key_tabla] = df_zona.copy()
+
+                            df_editable = st.data_editor(
+                                st.session_state[key_tabla],
                                 column_config={
                                     "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
                                     "δ pico": st.column_config.NumberColumn(format="%.2f"),
@@ -1687,12 +1691,12 @@ def render_rmn_1h_d(df_tipo, db):
                                 hide_index=True,
                                 use_container_width=True,
                                 num_rows="dynamic",
-                                key=f"tabla_zona_{nombre_archivo}_{idx_zona}"
+                                key=key_tabla
                             )
 
-                            # Botón para recalcular
+                            # Recalcular y actualizar session_state
                             if st.button(f"🔴 Recalcular áreas en Zona {idx_zona+1}", key=f"btn_area_{nombre_archivo}_{idx_zona}"):
-                                for i, fila in df_zona_edit.iterrows():
+                                for i, fila in df_editable.iterrows():
                                     x_min_i = fila.get("X min")
                                     x_max_i = fila.get("X max")
                                     if x_min_i is None or x_max_i is None:
@@ -1702,10 +1706,11 @@ def render_rmn_1h_d(df_tipo, db):
                                         st.warning(f"⚠️ Integral vacía para fila {i+1}")
                                         continue
                                     area = np.trapz(proy1d[mask_integral], x[idx_x][mask_integral])
-                                    df_zona_edit.at[i, "Área"] = round(area, 2)
+                                    df_editable.at[i, "Área"] = round(area, 2)
+                                # ⬅️ guardar resultado en el session_state
+                                st.session_state[key_tabla] = df_editable
                                 st.success(f"✅ Áreas recalculadas en Zona {idx_zona+1}")
 
-                            
                             if st.button(f"💾 Guardar integrales de Zona {idx_zona+1}", key=f"btn_save_{nombre_archivo}_{idx_zona}"):
                                 try:
                                     # asegúrate de tener muestra_base

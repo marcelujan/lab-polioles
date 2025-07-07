@@ -1400,23 +1400,6 @@ def mostrar_sombreados_dt2(fig, df, tipo, y_max, key_sufijo, check_d_por_espectr
                 )
 
 
-def render_imagenes(df):
-    #st.markdown("## 🧪 RMN Imágenes")
-    imagenes_disponibles = df[df["archivo"].str.lower().str.endswith((".png", ".jpg", ".jpeg"))]
-
-    if imagenes_disponibles.empty:
-        st.info("No hay imágenes seleccionadas.")
-    else:
-        for _, row in imagenes_disponibles.iterrows():
-            st.markdown(f"**{row['archivo']}** – {row['muestra']}")
-            try:
-                image_data = BytesIO(base64.b64decode(row["contenido"]))
-                image = Image.open(image_data)
-                st.image(image, use_container_width=True)
-            except Exception as e:
-                st.error(f"❌ No se pudo mostrar la imagen: {e}")
-
-
 def render_rmn_1h_d(df_tipo, db):
     if df_tipo.empty:
         st.info("No hay espectros RMN 1H D disponibles.")
@@ -1557,7 +1540,7 @@ def render_rmn_1h_d(df_tipo, db):
 
     # Cuantificar zonas
     for nombre_archivo in espectros_seleccionados:
-        st.write("Archivos seleccionados:", espectros_seleccionados)
+        #st.write("Archivos seleccionados:", espectros_seleccionados)
         with st.expander(f"🧮 Cuantificar zonas en {nombre_archivo}"):
             cuantificar = st.checkbox(
                 f"Activar cuantificación de zonas para {nombre_archivo}",
@@ -1657,12 +1640,11 @@ def render_rmn_1h_d(df_tipo, db):
                             fig_proy.update_xaxes(autorange="reversed")
                             st.plotly_chart(fig_proy, use_container_width=True)
 
-                            # tabla con integrales
-                            st.markdown(f"**📈 Tabla de integrales para Zona {idx_zona+1}**")
-          
-                            # definir columnas de la tabla
-                            columnas_zona = ["Grupo funcional", "δ pico", "X min", "X max", "Área", "Observaciones"]
-
+                            # --- NUEVA TABLA DE INTEGRALES DE ZONA (igual a RMN 1H, sin D ni T2) ---
+                            columnas_zona = [
+                                "Grupo funcional", "δ pico", "X min", "X max", "Área",
+                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴H*", "Observaciones"
+                            ]
                             try:
                                 muestra_base = nombre_archivo.split("_RMN")[0]
                                 nombre_doc = f"{nombre_archivo}_zona_{idx_zona+1}"
@@ -1671,59 +1653,76 @@ def render_rmn_1h_d(df_tipo, db):
                                 if datos and "filas" in datos:
                                     df_zona = pd.DataFrame(datos["filas"])
                                 else:
-                                    df_zona = pd.DataFrame(columns=columnas_zona)
-                                    df_zona.loc[0] = [None, None, None, None, None, ""]
+                                    df_zona = pd.DataFrame([{col: None for col in columnas_zona}])
                             except Exception as e:
                                 st.warning(f"No se pudo recuperar tabla previa: {e}")
-                                df_zona = pd.DataFrame(columns=columnas_zona)
-                                df_zona.loc[0] = [None, None, None, None, None, ""]
+                                df_zona = pd.DataFrame([{col: None for col in columnas_zona}])
 
-                            # Mostrar tabla editable y guardar en estado
                             key_tabla = f"tabla_zona_{nombre_archivo}_{idx_zona}"
                             if key_tabla not in st.session_state:
                                 st.session_state[key_tabla] = df_zona.copy()
-
-                            # Parche: asegurar que siempre sea DataFrame
                             if not isinstance(st.session_state[key_tabla], pd.DataFrame):
                                 st.session_state[key_tabla] = pd.DataFrame(st.session_state[key_tabla])
 
-                            widget_key = f"{key_tabla}_widget"
-                            df_editable = st.data_editor(
-                                st.session_state[key_tabla],
-                                column_config={
+                            st.markdown(f"**📈 Tabla de integrales para Zona {idx_zona+1}**")
+                            with st.form(f"form_zona_{nombre_archivo}_{idx_zona}"):
+                                factor_hc = st.number_input("Factor H*", value=1.00, format="%.2f", step=0.01, key=f"factor_h_zona_{nombre_archivo}_{idx_zona}")
+                                df_zona = st.session_state[key_tabla].copy()
+                                if "H" in df_zona.columns:
+                                    df_zona["🔴H*"] = df_zona["H"].apply(lambda h: round(h * factor_hc, 2) if pd.notna(h) else None)
+                                col_config = {
                                     "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
                                     "δ pico": st.column_config.NumberColumn(format="%.2f"),
                                     "X min": st.column_config.NumberColumn(format="%.2f"),
                                     "X max": st.column_config.NumberColumn(format="%.2f"),
-                                    "Área": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                                    "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
+                                    "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                                    "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                                    "Has": st.column_config.NumberColumn(format="%.2f"),
+                                    "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
+                                    "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
+                                    "🔴H*": st.column_config.NumberColumn(format="%.2f", label="🔴H*", disabled=True),
                                     "Observaciones": st.column_config.TextColumn(),
-                                },
-                                hide_index=True,
-                                use_container_width=True,
-                                num_rows="dynamic",
-                                key=widget_key
-                            )
+                                }
+                                df_editable = st.data_editor(
+                                    df_zona,
+                                    column_config=col_config,
+                                    hide_index=True,
+                                    use_container_width=True,
+                                    num_rows="dynamic",
+                                    key=f"tabla_zona_widget_{nombre_archivo}_{idx_zona}"
+                                )
+                                recalcular = st.form_submit_button("🔴 Recalcular áreas y H")
+                                guardar = st.form_submit_button("💾 Guardar integrales de Zona")
 
-                            # Recalcular y actualizar session_state
-                            if st.button(f"🔴 Recalcular áreas en Zona {idx_zona+1}", key=f"btn_area_{nombre_archivo}_{idx_zona}"):
+                            if recalcular:
+                                # Cálculo igual a RMN 1H, pero usando proy1d y x[idx_x] de la zona
                                 for i, fila in df_editable.iterrows():
                                     x_min_i = fila.get("X min")
                                     x_max_i = fila.get("X max")
-                                    if x_min_i is None or x_max_i is None:
-                                        continue
-                                    mask_integral = (x[idx_x] >= x_min_i) & (x[idx_x] <= x_max_i)
-                                    if not mask_integral.any():
-                                        st.warning(f"⚠️ Integral vacía para fila {i+1}")
-                                        continue
-                                    area = np.trapz(proy1d[mask_integral], x[idx_x][mask_integral])
-                                    df_editable.at[i, "Área"] = round(area, 2)
-                                # ⬅️ guardar resultado en el session_state
+                                    xas_min_i = fila.get("Xas min")
+                                    xas_max_i = fila.get("Xas max")
+                                    has = fila.get("Has")
+                                    mask_integral = (x[idx_x] >= x_min_i) & (x[idx_x] <= x_max_i) if x_min_i is not None and x_max_i is not None else None
+                                    mask_as = (x[idx_x] >= xas_min_i) & (x[idx_x] <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
+                                    area = np.trapz(proy1d[mask_integral], x[idx_x][mask_integral]) if mask_integral is not None and mask_integral.any() else None
+                                    area_as = np.trapz(proy1d[mask_as], x[idx_x][mask_as]) if mask_as is not None and mask_as.any() else None
+                                    df_editable.at[i, "Área"] = round(area, 2) if area is not None else None
+                                    df_editable.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
+                                    if area is not None and area_as not in [None, 0] and has not in [None, ""] and area_as != 0:
+                                        h_val = (area * has) / area_as
+                                        df_editable.at[i, "H"] = round(h_val, 2)
+                                    else:
+                                        df_editable.at[i, "H"] = None
+                                    if df_editable.at[i, "H"] is not None:
+                                        df_editable.at[i, "🔴H*"] = round(df_editable.at[i, "H"] * factor_hc, 2)
+                                    else:
+                                        df_editable.at[i, "🔴H*"] = None
                                 st.session_state[key_tabla] = df_editable
-                                st.success(f"✅ Áreas recalculadas en Zona {idx_zona+1}")
+                                st.success(f"✅ Áreas y H recalculadas en Zona {idx_zona+1}")
 
-                            if st.button(f"💾 Guardar integrales de Zona {idx_zona+1}", key=f"btn_save_{nombre_archivo}_{idx_zona}"):
+                            if guardar:
                                 try:
-                                    # asegúrate de tener muestra_base
                                     muestra_base = nombre_archivo.split("_RMN")[0]
                                     nombre_doc = f"{nombre_archivo}_zona_{idx_zona+1}"
                                     doc_ref = db.collection("muestras").document(muestra_base).collection("zonas").document(nombre_doc)

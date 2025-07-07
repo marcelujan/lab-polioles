@@ -1649,6 +1649,7 @@ def render_rmn_1h_d(df_tipo, db):
                                 yaxis_title="Intensidad integrada",
                                 height=300
                             )
+                            fig_proy.update_xaxes(autorange="reversed")
                             st.plotly_chart(fig_proy, use_container_width=True)
 
                             # tabla con integrales

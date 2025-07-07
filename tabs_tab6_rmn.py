@@ -1650,6 +1650,31 @@ def render_rmn_1h_d(df_tipo, db):
                             if not isinstance(st.session_state[key_tabla], pd.DataFrame):
                                 st.session_state[key_tabla] = pd.DataFrame(st.session_state[key_tabla])
 
+                            # graficar proyección 1D de la zona ANTES de la tabla
+                            fig_proy = go.Figure()
+                            fig_proy.add_trace(go.Scatter(
+                                x=x_ex,
+                                y=proy1d_ex,
+                                mode="lines",
+                                name="Espectro completo",
+                                line=dict(color="black", width=1, dash="solid"),
+                                opacity=0.5
+                            ))
+                            fig_proy.add_trace(go.Scatter(
+                                x=x[idx_x],
+                                y=proy1d,
+                                mode="lines",
+                                name=f"Zona {idx_zona+1}",
+                                line=dict(width=2)
+                            ))
+                            fig_proy.update_layout(
+                                title=f"Proyección 1D de Zona {idx_zona+1} en {nombre_archivo}",
+                                xaxis_title="ppm",
+                                yaxis_title="Intensidad integrada",
+                                height=300
+                            )
+                            fig_proy.update_xaxes(autorange="reversed")
+                            st.plotly_chart(fig_proy, use_container_width=True)
                             st.markdown(f"**📈 Tabla de integrales para Zona {idx_zona+1}**")
                             factor_hc = st.number_input("Factor H*", value=1.00, format="%.2f", step=0.01, key=f"factor_h_zona_{nombre_archivo}_{idx_zona}")
                             df_zona = st.session_state[key_tabla].copy()
@@ -1670,39 +1695,6 @@ def render_rmn_1h_d(df_tipo, db):
                                 "🔴exH": st.column_config.NumberColumn(format="%.2f", label="🔴exH", disabled=True),
                                 "Observaciones": st.column_config.TextColumn(),
                             }
-                            # --- Recalcular automáticamente áreas y H al cambiar límites ---
-                            for i, fila in df_zona.iterrows():
-                                x_min_i = fila.get("X min")
-                                x_max_i = fila.get("X max")
-                                xas_min_i = fila.get("Xas min")
-                                xas_max_i = fila.get("Xas max")
-                                has = fila.get("Has")
-                                # --- cálculo filtrado (zona) ---
-                                mask_integral = (x[idx_x] >= x_min_i) & (x[idx_x] <= x_max_i) if x_min_i is not None and x_max_i is not None else None
-                                mask_as = (x[idx_x] >= xas_min_i) & (x[idx_x] <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
-                                area = np.trapz(proy1d[mask_integral], x[idx_x][mask_integral]) if mask_integral is not None and mask_integral.any() else None
-                                area_as = np.trapz(proy1d[mask_as], x[idx_x][mask_as]) if mask_as is not None and mask_as.any() else None
-                                df_zona.at[i, "Área"] = round(area, 2) if area is not None else None
-                                df_zona.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
-                                if area is not None and area_as not in [None, 0] and has not in [None, ""] and area_as != 0:
-                                    h_val = (area * has) / area_as
-                                    df_zona.at[i, "H"] = round(h_val, 2)
-                                else:
-                                    df_zona.at[i, "H"] = None
-                                if df_zona.at[i, "H"] is not None:
-                                    df_zona.at[i, "🔴H*"] = round(df_zona.at[i, "H"] * factor_hc, 2)
-                                else:
-                                    df_zona.at[i, "🔴H*"] = None
-                                # --- cálculo exH (sin filtro de zona en Y) ---
-                                mask_integral_ex = (x_ex >= x_min_i) & (x_ex <= x_max_i) if x_min_i is not None and x_max_i is not None else None
-                                mask_as_ex = (x_ex >= xas_min_i) & (x_ex <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
-                                area_ex = np.trapz(proy1d_ex[mask_integral_ex], x_ex[mask_integral_ex]) if mask_integral_ex is not None and mask_integral_ex.any() else None
-                                area_as_ex = np.trapz(proy1d_ex[mask_as_ex], x_ex[mask_as_ex]) if mask_as_ex is not None and mask_as_ex.any() else None
-                                if area_ex is not None and area_as_ex not in [None, 0] and has not in [None, ""] and area_as_ex != 0:
-                                    exh_val = (area_ex * has) / area_as_ex
-                                    df_zona.at[i, "🔴exH"] = round(exh_val, 2)
-                                else:
-                                    df_zona.at[i, "🔴exH"] = None
                             df_editable = st.data_editor(
                                 df_zona,
                                 column_config=col_config,
@@ -1722,35 +1714,6 @@ def render_rmn_1h_d(df_tipo, db):
                                     st.success(f"✅ Guardado correcto para {nombre_doc}")
                                 except Exception as e:
                                     st.error(f"❌ Error al guardar: {e}")
-
-                            # graficar proyección 1D de la zona ANTES de la tabla
-                            fig_proy = go.Figure()
-                            # Línea negra fina: espectro completo
-                            fig_proy.add_trace(go.Scatter(
-                                x=x_ex,
-                                y=proy1d_ex,
-                                mode="lines",
-                                name="Espectro completo",
-                                line=dict(color="black", width=1, dash="solid"),
-                                opacity=0.5
-                            ))
-                            # Curva filtrada de la zona
-                            fig_proy.add_trace(go.Scatter(
-                                x=x[idx_x],
-                                y=proy1d,
-                                mode="lines",
-                                name=f"Zona {idx_zona+1}",
-                                line=dict(width=2)
-                            ))
-                            fig_proy.update_layout(
-                                title=f"Proyección 1D de Zona {idx_zona+1} en {nombre_archivo}",
-                                xaxis_title="ppm",
-                                yaxis_title="Intensidad integrada",
-                                height=300
-                            )
-                            fig_proy.update_xaxes(autorange="reversed")
-                            st.plotly_chart(fig_proy, use_container_width=True)
-                            # --- tabla editable de integrales de zona ---
 
 
 

@@ -1673,7 +1673,7 @@ def render_rmn_1h_d(df_tipo, db):
                                 df_zona = pd.DataFrame(columns=columnas_zona)
                                 df_zona.loc[0] = [None, None, None, None, None, ""]
 
-                            # tabla editable principal antes del botón
+                            # Mostrar tabla editable antes del botón
                             df_zona_edit = st.data_editor(
                                 df_zona,
                                 column_config={
@@ -1690,7 +1690,7 @@ def render_rmn_1h_d(df_tipo, db):
                                 key=f"tabla_zona_{nombre_archivo}_{idx_zona}"
                             )
 
-                            # recalcular áreas y forzar recarga visual
+                            # Botón para recalcular
                             if st.button(f"🔴 Recalcular áreas en Zona {idx_zona+1}", key=f"btn_area_{nombre_archivo}_{idx_zona}"):
                                 for i, fila in df_zona_edit.iterrows():
                                     x_min_i = fila.get("X min")
@@ -1705,22 +1705,17 @@ def render_rmn_1h_d(df_tipo, db):
                                     df_zona_edit.at[i, "Área"] = round(area, 2)
                                 st.success(f"✅ Áreas recalculadas en Zona {idx_zona+1}")
 
-                                # ⚠️ Vuelve a mostrar tabla ya actualizada (con un key nuevo para que se renderice)
-                                st.data_editor(
-                                    df_zona_edit,
-                                    column_config={
-                                        "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                                        "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                                        "X min": st.column_config.NumberColumn(format="%.2f"),
-                                        "X max": st.column_config.NumberColumn(format="%.2f"),
-                                        "Área": st.column_config.NumberColumn(format="%.2f", disabled=True),
-                                        "Observaciones": st.column_config.TextColumn(),
-                                    },
-                                    hide_index=True,
-                                    use_container_width=True,
-                                    num_rows="dynamic",
-                                    key=f"tabla_zona_recalculo_{nombre_archivo}_{idx_zona}"
-                                )
+                            
+                            if st.button(f"💾 Guardar integrales de Zona {idx_zona+1}", key=f"btn_save_{nombre_archivo}_{idx_zona}"):
+                                try:
+                                    # asegúrate de tener muestra_base
+                                    muestra_base = nombre_archivo.split("_RMN")[0]
+                                    nombre_doc = f"{nombre_archivo}_zona_{idx_zona+1}"
+                                    doc_ref = db.collection("muestras").document(muestra_base).collection("zonas").document(nombre_doc)
+                                    doc_ref.set({"filas": df_zona_edit.to_dict(orient="records")})
+                                    st.success(f"✅ Guardado correcto para {nombre_doc}")
+                                except Exception as e:
+                                    st.error(f"❌ Error al guardar: {e}")
 
 
 

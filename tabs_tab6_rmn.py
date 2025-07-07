@@ -1575,10 +1575,15 @@ def render_rmn_1h_d(df_tipo, db):
                 zonas = []
                 for i in range(int(n_zonas)):
                     st.markdown(f"**Zona {i+1}**")
-                    x_min = st.number_input(f"X min zona {i+1}", value=0.0, key=f"xmin_{nombre_archivo}_{i}")
-                    x_max = st.number_input(f"X max zona {i+1}", value=9.0, key=f"xmax_{nombre_archivo}_{i}")
-                    y_min = st.number_input(f"Y min zona {i+1}", value=1e-13, format="%.1e", key=f"ymin_{nombre_archivo}_{i}")
-                    y_max = st.number_input(f"Y max zona {i+1}", value=1e-9, format="%.1e", key=f"ymax_{nombre_archivo}_{i}")
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        x_min = st.number_input("X min", value=0.0, key=f"xmin_{nombre_archivo}_{i}")
+                    with col2:
+                        x_max = st.number_input("X max", value=9.0, key=f"xmax_{nombre_archivo}_{i}")
+                    with col3:
+                        y_min = st.number_input("Y min", value=1e-13, format="%.1e", key=f"ymin_{nombre_archivo}_{i}")
+                    with col4:
+                        y_max = st.number_input("Y max", value=1e-9, format="%.1e", key=f"ymax_{nombre_archivo}_{i}")
                     zonas.append({
                         "x_min": x_min,
                         "x_max": x_max,

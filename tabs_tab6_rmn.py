@@ -1693,10 +1693,7 @@ def render_rmn_1h_d(df_tipo, db):
 
                                         # --- Área (con filtro Y) ---
                                         mask_x = (x >= x_min) & (x <= x_max)
-                                        st.write(f"[DEBUG] x_min={x_min}, x_max={x_max}, x.shape={getattr(x, 'shape', None)}, proy1d.shape={getattr(proy1d, 'shape', None)}, mask_x.sum()={np.sum(mask_x)}")
-                                        st.write(f"[DEBUG] x[mask_x]={x[mask_x] if np.any(mask_x) else '[]'}, proy1d[mask_x]={proy1d[mask_x] if np.any(mask_x) else '[]'}")
                                         area = np.trapz(proy1d[mask_x], x[mask_x]) if np.any(mask_x) else None
-                                        st.write(f"[DEBUG] area={area}")
                                         df_calc.at[i, "Área"] = round(float(area), 2) if area is not None else None
 
                                         # --- Área as (con filtro Y) ---

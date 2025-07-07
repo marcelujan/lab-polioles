@@ -1663,60 +1663,54 @@ def render_rmn_1h_d(df_tipo, db):
                                 df_calc = df_zona.copy()
                                 for i, row in df_calc.iterrows():
                                     try:
-                                        x_min = float(row.get("X min", np.nan))
-                                        x_max = float(row.get("X max", np.nan))
-                                        xas_min = float(row.get("Xas min", np.nan))
-                                        xas_max = float(row.get("Xas max", np.nan))
-                                        has = float(row.get("Has", np.nan))
-                                        
+                                        # Convertir a float, forzar NaN si vacío
+                                        x_min = pd.to_numeric(row.get("X min"), errors="coerce")
+                                        x_max = pd.to_numeric(row.get("X max"), errors="coerce")
+                                        xas_min = pd.to_numeric(row.get("Xas min"), errors="coerce")
+                                        xas_max = pd.to_numeric(row.get("Xas max"), errors="coerce")
+                                        has = pd.to_numeric(row.get("Has"), errors="coerce")
+
+                                        # Si falta algún valor clave, dejar los calculados en None
+                                        if np.isnan(x_min) or np.isnan(x_max) or np.isnan(xas_min) or np.isnan(xas_max) or np.isnan(has):
+                                            df_calc.at[i, "Área"] = None
+                                            df_calc.at[i, "Área as"] = None
+                                            df_calc.at[i, "H"] = None
+                                            df_calc.at[i, "🔴exH"] = None
+                                            continue
+
                                         # --- Área (con filtro Y) ---
                                         mask_x = (x >= x_min) & (x <= x_max)
-                                        if np.any(mask_x):
-                                            area = np.trapz(proy1d[mask_x], x[mask_x])
-                                            df_calc.at[i, "Área"] = round(float(area), 2) if not np.isnan(area) else None
-                                        else:
-                                            df_calc.at[i, "Área"] = None
-                                        
+                                        area = np.trapz(proy1d[mask_x], x[mask_x]) if np.any(mask_x) else None
+                                        df_calc.at[i, "Área"] = round(float(area), 2) if area is not None else None
+
                                         # --- Área as (con filtro Y) ---
                                         mask_xas = (x >= xas_min) & (x <= xas_max)
-                                        if np.any(mask_xas):
-                                            area_as = np.trapz(proy1d[mask_xas], x[mask_xas])
-                                            df_calc.at[i, "Área as"] = round(float(area_as), 2) if not np.isnan(area_as) else None
-                                        else:
-                                            df_calc.at[i, "Área as"] = None
-                                        
+                                        area_as = np.trapz(proy1d[mask_xas], x[mask_xas]) if np.any(mask_xas) else None
+                                        df_calc.at[i, "Área as"] = round(float(area_as), 2) if area_as is not None else None
+
                                         # --- H (con filtro Y) ---
-                                        if (df_calc.at[i, "Área"] is not None and 
-                                            df_calc.at[i, "Área as"] is not None and 
-                                            df_calc.at[i, "Área as"] != 0 and 
-                                            not np.isnan(has)):
-                                            h = (df_calc.at[i, "Área"] * has) / df_calc.at[i, "Área as"]
+                                        if area is not None and area_as not in [None, 0] and not np.isnan(has):
+                                            h = (area * has) / area_as
                                             df_calc.at[i, "H"] = round(h, 2)
                                         else:
                                             df_calc.at[i, "H"] = None
-                                        
+
                                         # --- 🔴exH (sin filtro Y) ---
                                         mask_x_ex = (x_ex >= x_min) & (x_ex <= x_max)
                                         mask_xas_ex = (x_ex >= xas_min) & (x_ex <= xas_max)
-                                        
-                                        if np.any(mask_x_ex):
-                                            area_ex = np.trapz(proy1d_ex[mask_x_ex], x_ex[mask_x_ex])
-                                            df_calc.at[i, "🔴exH"] = round(float(area_ex), 2) if not np.isnan(area_ex) else None
+                                        area_ex = np.trapz(proy1d_ex[mask_x_ex], x_ex[mask_x_ex]) if np.any(mask_x_ex) else None
+                                        area_as_ex = np.trapz(proy1d_ex[mask_xas_ex], x_ex[mask_xas_ex]) if np.any(mask_xas_ex) else None
+                                        if area_ex is not None and area_as_ex not in [None, 0] and not np.isnan(has):
+                                            exH = (area_ex * has) / area_as_ex
+                                            df_calc.at[i, "🔴exH"] = round(exH, 2)
                                         else:
                                             df_calc.at[i, "🔴exH"] = None
-                                            
-                                        # Calcular H para exH si hay área as
-                                        if (df_calc.at[i, "🔴exH"] is not None and 
-                                            np.any(mask_xas_ex)):
-                                            area_as_ex = np.trapz(proy1d_ex[mask_xas_ex], x_ex[mask_xas_ex])
-                                            if area_as_ex != 0 and not np.isnan(has):
-                                                exH = (df_calc.at[i, "🔴exH"] * has) / area_as_ex
-                                                df_calc.at[i, "🔴exH"] = round(exH, 2)
-                                        
+
                                     except Exception as e:
-                                        # Silenciar errores de cálculo
-                                        pass
-                                
+                                        df_calc.at[i, "Área"] = None
+                                        df_calc.at[i, "Área as"] = None
+                                        df_calc.at[i, "H"] = None
+                                        df_calc.at[i, "🔴exH"] = None
                                 return df_calc
 
                             # --- RECALCULAR ANTES DE MOSTRAR LA TABLA ---

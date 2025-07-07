@@ -1678,6 +1678,10 @@ def render_rmn_1h_d(df_tipo, db):
                             if key_tabla not in st.session_state:
                                 st.session_state[key_tabla] = df_zona.copy()
 
+                            # Parche: asegurar que siempre sea DataFrame
+                            if not isinstance(st.session_state[key_tabla], pd.DataFrame):
+                                st.session_state[key_tabla] = pd.DataFrame(st.session_state[key_tabla])
+
                             df_editable = st.data_editor(
                                 st.session_state[key_tabla],
                                 column_config={
@@ -1717,7 +1721,7 @@ def render_rmn_1h_d(df_tipo, db):
                                     muestra_base = nombre_archivo.split("_RMN")[0]
                                     nombre_doc = f"{nombre_archivo}_zona_{idx_zona+1}"
                                     doc_ref = db.collection("muestras").document(muestra_base).collection("zonas").document(nombre_doc)
-                                    doc_ref.set({"filas": df_zona_edit.to_dict(orient="records")})
+                                    doc_ref.set({"filas": st.session_state[key_tabla].to_dict(orient="records")})
                                     st.success(f"✅ Guardado correcto para {nombre_doc}")
                                 except Exception as e:
                                     st.error(f"❌ Error al guardar: {e}")
@@ -2053,7 +2057,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         if tipo == "RMN 1H D":
             st.markdown("""
             <span style="font-size: 0.85rem;">
-            <b>RMN 1H D:</b> gráfico 2D que muestra contornos de difusión vs desplazamiento químico. Las especies químicas se separan por el desplazamiento químico, y en estos gráficos se separan también por difusión. Así se pueden diferenciar compuestos que se solapan en espectros 1D (en campo bajo, aunque el espectro 1D se ‘ensucie’, la nueva dimensión ‘difusión’ ayuda a distinguir componentes, ayuda a caracterizar mezclas complejas).<br><br>
+            <b>RMN 1H D:</b> gráfico 2D que muestra contornos de difusión vs desplazamiento químico. Las especies químicas se separan por el desplazamiento químico, y en estos gráficos se separan también por difusión. Así se pueden diferenciar compuestos que se solapan en espectros 1D (en campo bajo, aunque el espectro 1D se 'ensucie', la nueva dimensión 'difusión' ayuda a distinguir componentes, ayuda a caracterizar mezclas complejas).<br><br>
             </span>
             """, unsafe_allow_html=True)
 
@@ -2061,7 +2065,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.markdown("""
             <span style="font-size: 0.85rem;">
             <b>RMN 1H T2 (ILT2D):</b> gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Ideal para separar señales que se solapan en un gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.<br>
-            <b>RMN 1H T2 (Decaimiento):</b> gráfico 1D intensidad vs tiempo de relajación T2. Cada pico indica cuántos protones tienen un cierto T2, reflejando cuán ‘rígidos’ o ‘móviles’ son. Mayor T2 indica mayor movilidad molecular (aceites) y un T2 corto indica estructuras más rígidas (polioles).<br><br>
+            <b>RMN 1H T2 (Decaimiento):</b> gráfico 1D intensidad vs tiempo de relajación T2. Cada pico indica cuántos protones tienen un cierto T2, reflejando cuán 'rígidos' o 'móviles' son. Mayor T2 indica mayor movilidad molecular (aceites) y un T2 corto indica estructuras más rígidas (polioles).<br><br>
             </span>
             """, unsafe_allow_html=True)
 

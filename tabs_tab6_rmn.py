@@ -1723,6 +1723,23 @@ def render_rmn_1h_d(df_tipo, db):
                                 except Exception as e:
                                     st.error(f"❌ Error al guardar: {e}")
 
+                            # graficar proyección 1D de la zona antes de la tabla
+                            fig_proy = go.Figure()
+                            fig_proy.add_trace(go.Scatter(
+                                x=x[idx_x],
+                                y=proy1d,
+                                mode="lines",
+                                name=f"Zona {idx_zona+1}"
+                            ))
+                            fig_proy.update_layout(
+                                title=f"Proyección 1D de Zona {idx_zona+1} en {nombre_archivo}",
+                                xaxis_title="ppm",
+                                yaxis_title="Intensidad integrada",
+                                height=300
+                            )
+                            fig_proy.update_xaxes(autorange="reversed")
+                            st.plotly_chart(fig_proy, use_container_width=True)
+
 
 
 

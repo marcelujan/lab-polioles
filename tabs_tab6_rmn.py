@@ -1704,6 +1704,23 @@ def render_rmn_1h_d(df_tipo, db):
                                     df_zona_edit.at[i, "Área"] = round(area, 2)
                                 st.success(f"✅ Áreas recalculadas en Zona {idx_zona+1}")
 
+                                # mostrar tabla actualizada
+                                st.data_editor(
+                                    df_zona_actualizada,
+                                    column_config={
+                                        "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                                        "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                                        "X min": st.column_config.NumberColumn(format="%.2f"),
+                                        "X max": st.column_config.NumberColumn(format="%.2f"),
+                                        "Área": st.column_config.NumberColumn(format="%.2f", disabled=True),
+                                        "Observaciones": st.column_config.TextColumn(),
+                                    },
+                                    hide_index=True,
+                                    use_container_width=True,
+                                    num_rows="dynamic",
+                                    key=f"tabla_zona_recalculada_{nombre_archivo}_{idx_zona}"
+                                )
+                            
                             if st.button(f"💾 Guardar integrales de Zona {idx_zona+1}", key=f"btn_save_{nombre_archivo}_{idx_zona}"):
                                 try:
                                     # asegúrate de tener muestra_base

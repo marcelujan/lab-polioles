@@ -12,8 +12,7 @@ from PIL import Image
 from scipy.signal import find_peaks
 import requests
 import io
-from firebase_admin import firestore
-db = firestore.client()
+
 
 # --- Configuraciones globales ---
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
@@ -1418,7 +1417,7 @@ def render_imagenes(df):
                 st.error(f"❌ No se pudo mostrar la imagen: {e}")
 
 
-def render_rmn_1h_d(df_tipo):
+def render_rmn_1h_d(df_tipo, db):
     if df_tipo.empty:
         st.info("No hay espectros RMN 1H D disponibles.")
         return
@@ -2064,7 +2063,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         elif tipo == "RMN 13C":
             render_rmn_plot(df_tipo, tipo="RMN 13C", key_sufijo="rmn13c", db=db)
         elif tipo == "RMN 1H D":
-            render_rmn_1h_d(df_tipo,)
+            render_rmn_1h_d(df_tipo, db)
         elif tipo == "RMN 1H T2":
             render_rmn_1h_t2(df_tipo)
         elif tipo == "RMN-LF 1H":

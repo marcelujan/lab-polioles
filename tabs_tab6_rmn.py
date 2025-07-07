@@ -1725,11 +1725,22 @@ def render_rmn_1h_d(df_tipo, db):
 
                             # graficar proyección 1D de la zona antes de la tabla
                             fig_proy = go.Figure()
+                            # Línea negra fina: espectro completo
+                            fig_proy.add_trace(go.Scatter(
+                                x=x_ex,
+                                y=proy1d_ex,
+                                mode="lines",
+                                name="Espectro completo",
+                                line=dict(color="black", width=1, dash="solid"),
+                                opacity=0.5
+                            ))
+                            # Curva filtrada de la zona
                             fig_proy.add_trace(go.Scatter(
                                 x=x[idx_x],
                                 y=proy1d,
                                 mode="lines",
-                                name=f"Zona {idx_zona+1}"
+                                name=f"Zona {idx_zona+1}",
+                                line=dict(width=2)
                             ))
                             fig_proy.update_layout(
                                 title=f"Proyección 1D de Zona {idx_zona+1} en {nombre_archivo}",

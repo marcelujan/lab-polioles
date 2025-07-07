@@ -1803,7 +1803,7 @@ def render_rmn_1h_d(df_tipo, db):
                                     # Mantener el orden de columnas
                                     df_zona_actualizada = df_zona_actualizada[columnas_zona]
                                     st.session_state[key_tabla] = df_zona_actualizada
-                                    st.experimental_rerun()
+                                    # st.experimental_rerun()  # ELIMINADA
 
                                 if guardar:
                                     try:

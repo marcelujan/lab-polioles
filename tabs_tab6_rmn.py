@@ -1682,6 +1682,7 @@ def render_rmn_1h_d(df_tipo, db):
                             if not isinstance(st.session_state[key_tabla], pd.DataFrame):
                                 st.session_state[key_tabla] = pd.DataFrame(st.session_state[key_tabla])
 
+                            widget_key = f"{key_tabla}_widget"
                             df_editable = st.data_editor(
                                 st.session_state[key_tabla],
                                 column_config={
@@ -1695,7 +1696,7 @@ def render_rmn_1h_d(df_tipo, db):
                                 hide_index=True,
                                 use_container_width=True,
                                 num_rows="dynamic",
-                                key=key_tabla
+                                key=widget_key
                             )
 
                             # Recalcular y actualizar session_state

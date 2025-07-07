@@ -1598,6 +1598,9 @@ def render_rmn_1h_d(df_tipo, db):
                         y_raw = df.iloc[:, 0].astype(float)
                         z = df.iloc[:, 1:len(x)+1].values
 
+                        # calcular proyección 1D y eje x del espectro completo para exH
+                        proy1d_ex = np.sum(z, axis=0)
+                        x_ex = x
                         # recorrer zonas definidas
                         for idx_zona, zona in enumerate(zonas):
                             x_min = zona["x_min"]
@@ -1721,10 +1724,10 @@ def render_rmn_1h_d(df_tipo, db):
                                     else:
                                         df_editable.at[i, "🔴H*"] = None
                                     # --- cálculo exH (sin filtro de zona) ---
-                                    mask_integral_ex = (x >= x_min_i) & (x <= x_max_i) if x_min_i is not None and x_max_i is not None else None
-                                    mask_as_ex = (x >= xas_min_i) & (x <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
-                                    area_ex = np.trapz(proy1d[mask_integral_ex], x[mask_integral_ex]) if mask_integral_ex is not None and mask_integral_ex.any() else None
-                                    area_as_ex = np.trapz(proy1d[mask_as_ex], x[mask_as_ex]) if mask_as_ex is not None and mask_as_ex.any() else None
+                                    mask_integral_ex = (x_ex >= x_min_i) & (x_ex <= x_max_i) if x_min_i is not None and x_max_i is not None else None
+                                    mask_as_ex = (x_ex >= xas_min_i) & (x_ex <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
+                                    area_ex = np.trapz(proy1d_ex[mask_integral_ex], x_ex[mask_integral_ex]) if mask_integral_ex is not None and mask_integral_ex.any() else None
+                                    area_as_ex = np.trapz(proy1d_ex[mask_as_ex], x_ex[mask_as_ex]) if mask_as_ex is not None and mask_as_ex.any() else None
                                     if area_ex is not None and area_as_ex not in [None, 0] and has not in [None, ""] and area_as_ex != 0:
                                         exh_val = (area_ex * has) / area_as_ex
                                         df_editable.at[i, "🔴exH"] = round(exh_val, 2)

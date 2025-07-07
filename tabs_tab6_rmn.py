@@ -1598,9 +1598,9 @@ def render_rmn_1h_d(df_tipo, db):
                         y_raw = df.iloc[:, 0].astype(float)
                         z = df.iloc[:, 1:len(x)+1].values
 
-                        # calcular proyección 1D y eje x del espectro completo para exH
-                        proy1d_ex = np.sum(z, axis=0)
-                        x_ex = x
+                        # calcular proyección 1D y eje x del espectro completo para exH (sin filtro de Y)
+                        proy1d_ex = np.sum(z, axis=0)  # Suma sobre TODO el eje Y
+                        x_ex = x  # Eje X completo
                         # recorrer zonas definidas
                         for idx_zona, zona in enumerate(zonas):
                             x_min = zona["x_min"]
@@ -1723,7 +1723,7 @@ def render_rmn_1h_d(df_tipo, db):
                                         df_editable.at[i, "🔴H*"] = round(df_editable.at[i, "H"] * factor_hc, 2)
                                     else:
                                         df_editable.at[i, "🔴H*"] = None
-                                    # --- cálculo exH (sin filtro de zona) ---
+                                    # --- cálculo exH (sin filtro de zona en Y) ---
                                     mask_integral_ex = (x_ex >= x_min_i) & (x_ex <= x_max_i) if x_min_i is not None and x_max_i is not None else None
                                     mask_as_ex = (x_ex >= xas_min_i) & (x_ex <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
                                     area_ex = np.trapz(proy1d_ex[mask_integral_ex], x_ex[mask_integral_ex]) if mask_integral_ex is not None and mask_integral_ex.any() else None

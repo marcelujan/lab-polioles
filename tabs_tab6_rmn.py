@@ -1635,7 +1635,7 @@ def render_rmn_1h_d(df_tipo, db):
                             # --- NUEVA TABLA DE INTEGRALES DE ZONA (igual a RMN 1H, sin D ni T2) ---
                             columnas_zona = [
                                 "Muestra", "Grupo funcional", "X min", "X max", "Área",
-                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴H*", "🔴exH", "Observaciones", "Archivo"
+                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴exH", "Observaciones", "Archivo"
                             ]
                             try:
                                 muestra_base = nombre_archivo.split("_RMN")[0]
@@ -1761,7 +1761,7 @@ def render_rmn_1h_d(df_tipo, db):
 
                             columnas_zona = [
                                 "Muestra", "Grupo funcional", "X min", "X max", "Área",
-                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴H*", "🔴exH", "Observaciones", "Archivo"
+                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴exH", "Observaciones", "Archivo"
                             ]
                             for col in columnas_zona:
                                 if col not in st.session_state[key_tabla].columns:
@@ -1783,7 +1783,6 @@ def render_rmn_1h_d(df_tipo, db):
                                 "Has": st.column_config.NumberColumn(format="%.2f"),
                                 "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
                                 "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
-                                "🔴H*": st.column_config.NumberColumn(format="%.2f", label="🔴H*", disabled=True),
                                 "🔴exH": st.column_config.NumberColumn(format="%.2f", label="🔴exH", disabled=True),
                                 "Observaciones": st.column_config.TextColumn(),
                                 "Archivo": st.column_config.TextColumn(disabled=True),
@@ -1809,7 +1808,6 @@ def render_rmn_1h_d(df_tipo, db):
                                     df_editable["Muestra"] = muestra_base
                                     df_editable["Archivo"] = nombre_archivo
                                     df_zona_actualizada = recalcular_tabla_zona(df_editable, x, proy1d, x_ex, proy1d_ex)
-                                    df_zona_actualizada["🔴H*"] = df_zona_actualizada["H"].apply(lambda h: round(h * factor_hc, 2) if pd.notna(h) else None)
                                     # Mantener el orden de columnas
                                     df_zona_actualizada = df_zona_actualizada[columnas_zona]
                                     st.session_state[key_tabla] = df_zona_actualizada

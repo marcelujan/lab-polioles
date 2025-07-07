@@ -1761,6 +1761,10 @@ def render_rmn_1h_d(df_tipo, db):
                                     st.session_state[key_tabla][col] = "" if col in ["Grupo funcional", "Observaciones"] else None
                             st.session_state[key_tabla] = st.session_state[key_tabla][columnas_zona]
 
+                            # Rellenar automáticamente 'Muestra' y 'Archivo' en todas las filas
+                            st.session_state[key_tabla]["Muestra"] = muestra_base
+                            st.session_state[key_tabla]["Archivo"] = nombre_archivo
+
                             col_config = {
                                 "Muestra": st.column_config.TextColumn(disabled=True),
                                 "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),

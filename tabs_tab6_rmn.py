@@ -1752,6 +1752,24 @@ def render_rmn_1h_d(df_tipo, db):
                             st.markdown(f"**📈 Tabla de integrales para Zona {idx_zona+1}**")
                             factor_hc = st.number_input("Factor H*", value=1.00, format="%.2f", step=0.01, key=f"factor_h_zona_{nombre_archivo}_{idx_zona}")
 
+                            # Definir col_config antes de cualquier uso
+                            col_config = {
+                                "Muestra": st.column_config.TextColumn(disabled=True),
+                                "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                                "X min": st.column_config.NumberColumn(format="%.2f"),
+                                "X max": st.column_config.NumberColumn(format="%.2f"),
+                                "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
+                                "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                                "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                                "Has": st.column_config.NumberColumn(format="%.2f"),
+                                "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
+                                "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
+                                "🔴H*": st.column_config.NumberColumn(format="%.2f", label="🔴H*", disabled=True),
+                                "🔴exH": st.column_config.NumberColumn(format="%.2f", label="🔴exH", disabled=True),
+                                "Observaciones": st.column_config.TextColumn(),
+                                "Archivo": st.column_config.TextColumn(disabled=True),
+                            }
+
                             with st.form(f"form_zona_{nombre_archivo}_{idx_zona}"):
                                 df_editable = st.data_editor(
                                     st.session_state[key_tabla],

@@ -1751,49 +1751,44 @@ def render_rmn_1h_d(df_tipo, db):
                             
                             st.markdown(f"**📈 Tabla de integrales para Zona {idx_zona+1}**")
                             factor_hc = st.number_input("Factor H*", value=1.00, format="%.2f", step=0.01, key=f"factor_h_zona_{nombre_archivo}_{idx_zona}")
-                            
-                            # Aplicar factor H* después del recálculo
-                            df_zona_actualizada["🔴H*"] = df_zona_actualizada["H"].apply(lambda h: round(h * factor_hc, 2) if pd.notna(h) else None)
-                            
-                            col_config = {
-                                "Muestra": st.column_config.TextColumn(disabled=True),
-                                "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                                "X min": st.column_config.NumberColumn(format="%.2f"),
-                                "X max": st.column_config.NumberColumn(format="%.2f"),
-                                "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
-                                "Xas min": st.column_config.NumberColumn(format="%.2f"),
-                                "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                                "Has": st.column_config.NumberColumn(format="%.2f"),
-                                "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                                "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
-                                "🔴H*": st.column_config.NumberColumn(format="%.2f", label="🔴H*", disabled=True),
-                                "🔴exH": st.column_config.NumberColumn(format="%.2f", label="🔴exH", disabled=True),
-                                "Observaciones": st.column_config.TextColumn(),
-                                "Archivo": st.column_config.TextColumn(disabled=True),
-                            }
-                            
-                            df_editable = st.data_editor(
-                                df_zona_actualizada,
+
+                            with st.form(f"form_zona_{nombre_archivo}_{idx_zona}"):
+                                df_editable = st.data_editor(
+                                    st.session_state[key_tabla],
+                                    column_config=col_config,
+                                    hide_index=True,
+                                    use_container_width=True,
+                                    num_rows="dynamic",
+                                    key=f"tabla_zona_widget_{nombre_archivo}_{idx_zona}"
+                                )
+                                recalcular = st.form_submit_button("🔴 Recalcular integrales")
+
+                            if recalcular:
+                                # Recalcular usando los valores actuales de la tabla y los rangos
+                                df_zona_actualizada = recalcular_tabla_zona(df_editable, x, proy1d, x_ex, proy1d_ex)
+                                df_zona_actualizada["🔴H*"] = df_zona_actualizada["H"].apply(lambda h: round(h * factor_hc, 2) if pd.notna(h) else None)
+                                st.session_state[key_tabla] = df_zona_actualizada
+                                df_editable = df_zona_actualizada
+
+                            # Mostrar la tabla actualizada fuera del form (solo lectura)
+                            st.data_editor(
+                                st.session_state[key_tabla],
                                 column_config=col_config,
                                 hide_index=True,
                                 use_container_width=True,
                                 num_rows="dynamic",
-                                key=f"tabla_zona_widget_{nombre_archivo}_{idx_zona}"
+                                key=f"tabla_zona_widget_vista_{nombre_archivo}_{idx_zona}"
                             )
-                            
-                            # Actualizar session state con los datos editados
-                            st.session_state[key_tabla] = df_editable
-                            
+
                             guardar = st.button("💾 Guardar integrales de Zona", key=f"guardar_zona_{nombre_archivo}_{idx_zona}")
                             if guardar:
                                 try:
                                     # Solo guardar campos manuales, no los calculados
-                                    df_para_guardar = df_editable.copy()
+                                    df_para_guardar = st.session_state[key_tabla].copy()
                                     campos_calculados = ["Área", "Área as", "H", "🔴H*", "🔴exH"]
                                     for campo in campos_calculados:
                                         if campo in df_para_guardar.columns:
                                             df_para_guardar[campo] = None
-                                    
                                     muestra_base = nombre_archivo.split("_RMN")[0]
                                     nombre_doc = f"{nombre_archivo}_zona_{idx_zona+1}"
                                     doc_ref = db.collection("muestras").document(muestra_base).collection("zonas").document(nombre_doc)

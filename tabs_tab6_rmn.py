@@ -1643,7 +1643,7 @@ def render_rmn_1h_d(df_tipo, db):
                             # --- NUEVA TABLA DE INTEGRALES DE ZONA (igual a RMN 1H, sin D ni T2) ---
                             columnas_zona = [
                                 "Grupo funcional", "δ pico", "X min", "X max", "Área",
-                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴H*", "Observaciones"
+                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴H*", "🔴exH", "Observaciones"
                             ]
                             try:
                                 muestra_base = nombre_archivo.split("_RMN")[0]
@@ -1682,6 +1682,7 @@ def render_rmn_1h_d(df_tipo, db):
                                     "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
                                     "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
                                     "🔴H*": st.column_config.NumberColumn(format="%.2f", label="🔴H*", disabled=True),
+                                    "🔴exH": st.column_config.NumberColumn(format="%.2f", label="🔴exH", disabled=True),
                                     "Observaciones": st.column_config.TextColumn(),
                                 }
                                 df_editable = st.data_editor(
@@ -1703,6 +1704,7 @@ def render_rmn_1h_d(df_tipo, db):
                                     xas_min_i = fila.get("Xas min")
                                     xas_max_i = fila.get("Xas max")
                                     has = fila.get("Has")
+                                    # --- cálculo filtrado (zona) ---
                                     mask_integral = (x[idx_x] >= x_min_i) & (x[idx_x] <= x_max_i) if x_min_i is not None and x_max_i is not None else None
                                     mask_as = (x[idx_x] >= xas_min_i) & (x[idx_x] <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
                                     area = np.trapz(proy1d[mask_integral], x[idx_x][mask_integral]) if mask_integral is not None and mask_integral.any() else None
@@ -1718,6 +1720,16 @@ def render_rmn_1h_d(df_tipo, db):
                                         df_editable.at[i, "🔴H*"] = round(df_editable.at[i, "H"] * factor_hc, 2)
                                     else:
                                         df_editable.at[i, "🔴H*"] = None
+                                    # --- cálculo exH (sin filtro de zona) ---
+                                    mask_integral_ex = (x >= x_min_i) & (x <= x_max_i) if x_min_i is not None and x_max_i is not None else None
+                                    mask_as_ex = (x >= xas_min_i) & (x <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
+                                    area_ex = np.trapz(proy1d, x)[mask_integral_ex] if mask_integral_ex is not None and mask_integral_ex.any() else None
+                                    area_as_ex = np.trapz(proy1d, x)[mask_as_ex] if mask_as_ex is not None and mask_as_ex.any() else None
+                                    if area_ex is not None and area_as_ex not in [None, 0] and has not in [None, ""] and area_as_ex != 0:
+                                        exh_val = (area_ex * has) / area_as_ex
+                                        df_editable.at[i, "🔴exH"] = round(exh_val, 2)
+                                    else:
+                                        df_editable.at[i, "🔴exH"] = None
                                 st.session_state[key_tabla] = df_editable
                                 st.success(f"✅ Áreas y H recalculadas en Zona {idx_zona+1}")
 

@@ -1556,6 +1556,7 @@ def render_rmn_1h_d(df_tipo):
 
     # Cuantificar zonas
     for nombre_archivo in espectros_seleccionados:
+        st.write("Archivos seleccionados:", espectros_seleccionados)
         with st.expander(f"🧮 Cuantificar zonas en {nombre_archivo}"):
             cuantificar = st.checkbox(
                 f"Activar cuantificación de zonas para {nombre_archivo}",

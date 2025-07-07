@@ -1611,7 +1611,7 @@ def render_rmn_1h_d(df_tipo, db):
                             # máscara para X (ppm)
                             mask_x = (x >= x_min) & (x <= x_max)
                             # máscara para Y (difusión / eje vertical)
-                            y_scaled = y_min * (y_max / y_min) ** y_raw  # mismo escalado que en render
+                            y_scaled = y_min_scale * (y_max_scale / y_min_scale) ** y_raw  # mismo escalado que en render
                             mask_y = (y_scaled >= y_min) & (y_scaled <= y_max)
 
                             # aplicar la máscara
@@ -1622,33 +1622,13 @@ def render_rmn_1h_d(df_tipo, db):
                                 continue
 
                             z_recorte = z[np.ix_(idx_y, idx_x)]
-
-                            # proyección sobre el eje Y (sumar vertical)
                             proy1d = np.sum(z_recorte, axis=0)
-
-                            # graficar
-                            fig_proy = go.Figure()
-                            fig_proy.add_trace(go.Scatter(
-                                x=x[idx_x],
-                                y=proy1d,
-                                mode="lines",
-                                name=f"Zona {idx_zona+1}"
-                            ))
-                            fig_proy.update_layout(
-                                title=f"Proyección 1D de Zona {idx_zona+1} en {nombre_archivo}",
-                                xaxis_title="ppm",
-                                yaxis_title="Intensidad integrada",
-                                height=300
-                            )
-                            fig_proy.update_xaxes(autorange="reversed")
-                            st.plotly_chart(fig_proy, use_container_width=True)
 
                             # --- NUEVA TABLA DE INTEGRALES DE ZONA (igual a RMN 1H, sin D ni T2) ---
                             columnas_zona = [
                                 "Grupo funcional", "δ pico", "X min", "X max", "Área",
                                 "Xas min", "Xas max", "Has", "Área as", "H", "🔴H*", "🔴exH", "Observaciones"
                             ]
-                            # Reubicar exH entre H* y Observaciones
                             columnas_zona.remove("🔴exH")
                             columnas_zona.insert(columnas_zona.index("🔴H*")+1, "🔴exH")
                             try:
@@ -1671,74 +1651,68 @@ def render_rmn_1h_d(df_tipo, db):
                                 st.session_state[key_tabla] = pd.DataFrame(st.session_state[key_tabla])
 
                             st.markdown(f"**📈 Tabla de integrales para Zona {idx_zona+1}**")
-                            with st.form(f"form_zona_{nombre_archivo}_{idx_zona}"):
-                                factor_hc = st.number_input("Factor H*", value=1.00, format="%.2f", step=0.01, key=f"factor_h_zona_{nombre_archivo}_{idx_zona}")
-                                df_zona = st.session_state[key_tabla].copy()
-                                if "H" in df_zona.columns:
-                                    df_zona["🔴H*"] = df_zona["H"].apply(lambda h: round(h * factor_hc, 2) if pd.notna(h) else None)
-                                col_config = {
-                                    "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
-                                    "δ pico": st.column_config.NumberColumn(format="%.2f"),
-                                    "X min": st.column_config.NumberColumn(format="%.2f"),
-                                    "X max": st.column_config.NumberColumn(format="%.2f"),
-                                    "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
-                                    "Xas min": st.column_config.NumberColumn(format="%.2f"),
-                                    "Xas max": st.column_config.NumberColumn(format="%.2f"),
-                                    "Has": st.column_config.NumberColumn(format="%.2f"),
-                                    "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
-                                    "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
-                                    "🔴H*": st.column_config.NumberColumn(format="%.2f", label="🔴H*", disabled=True),
-                                    "🔴exH": st.column_config.NumberColumn(format="%.2f", label="🔴exH", disabled=True),
-                                    "Observaciones": st.column_config.TextColumn(),
-                                }
-                                df_editable = st.data_editor(
-                                    df_zona,
-                                    column_config=col_config,
-                                    hide_index=True,
-                                    use_container_width=True,
-                                    num_rows="dynamic",
-                                    key=f"tabla_zona_widget_{nombre_archivo}_{idx_zona}"
-                                )
-                                recalcular = st.form_submit_button("🔴 Recalcular áreas y H")
-                                guardar = st.form_submit_button("💾 Guardar integrales de Zona")
-
-                            if recalcular:
-                                # Cálculo igual a RMN 1H, pero usando proy1d y x[idx_x] de la zona
-                                for i, fila in df_editable.iterrows():
-                                    x_min_i = fila.get("X min")
-                                    x_max_i = fila.get("X max")
-                                    xas_min_i = fila.get("Xas min")
-                                    xas_max_i = fila.get("Xas max")
-                                    has = fila.get("Has")
-                                    # --- cálculo filtrado (zona) ---
-                                    mask_integral = (x[idx_x] >= x_min_i) & (x[idx_x] <= x_max_i) if x_min_i is not None and x_max_i is not None else None
-                                    mask_as = (x[idx_x] >= xas_min_i) & (x[idx_x] <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
-                                    area = np.trapz(proy1d[mask_integral], x[idx_x][mask_integral]) if mask_integral is not None and mask_integral.any() else None
-                                    area_as = np.trapz(proy1d[mask_as], x[idx_x][mask_as]) if mask_as is not None and mask_as.any() else None
-                                    df_editable.at[i, "Área"] = round(area, 2) if area is not None else None
-                                    df_editable.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
-                                    if area is not None and area_as not in [None, 0] and has not in [None, ""] and area_as != 0:
-                                        h_val = (area * has) / area_as
-                                        df_editable.at[i, "H"] = round(h_val, 2)
-                                    else:
-                                        df_editable.at[i, "H"] = None
-                                    if df_editable.at[i, "H"] is not None:
-                                        df_editable.at[i, "🔴H*"] = round(df_editable.at[i, "H"] * factor_hc, 2)
-                                    else:
-                                        df_editable.at[i, "🔴H*"] = None
-                                    # --- cálculo exH (sin filtro de zona en Y) ---
-                                    mask_integral_ex = (x_ex >= x_min_i) & (x_ex <= x_max_i) if x_min_i is not None and x_max_i is not None else None
-                                    mask_as_ex = (x_ex >= xas_min_i) & (x_ex <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
-                                    area_ex = np.trapz(proy1d_ex[mask_integral_ex], x_ex[mask_integral_ex]) if mask_integral_ex is not None and mask_integral_ex.any() else None
-                                    area_as_ex = np.trapz(proy1d_ex[mask_as_ex], x_ex[mask_as_ex]) if mask_as_ex is not None and mask_as_ex.any() else None
-                                    if area_ex is not None and area_as_ex not in [None, 0] and has not in [None, ""] and area_as_ex != 0:
-                                        exh_val = (area_ex * has) / area_as_ex
-                                        df_editable.at[i, "🔴exH"] = round(exh_val, 2)
-                                    else:
-                                        df_editable.at[i, "🔴exH"] = None
-                                st.session_state[key_tabla] = df_editable
-                                st.success(f"✅ Áreas y H recalculadas en Zona {idx_zona+1}")
-
+                            factor_hc = st.number_input("Factor H*", value=1.00, format="%.2f", step=0.01, key=f"factor_h_zona_{nombre_archivo}_{idx_zona}")
+                            df_zona = st.session_state[key_tabla].copy()
+                            if "H" in df_zona.columns:
+                                df_zona["🔴H*"] = df_zona["H"].apply(lambda h: round(h * factor_hc, 2) if pd.notna(h) else None)
+                            col_config = {
+                                "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                                "δ pico": st.column_config.NumberColumn(format="%.2f"),
+                                "X min": st.column_config.NumberColumn(format="%.2f"),
+                                "X max": st.column_config.NumberColumn(format="%.2f"),
+                                "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
+                                "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                                "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                                "Has": st.column_config.NumberColumn(format="%.2f"),
+                                "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
+                                "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
+                                "🔴H*": st.column_config.NumberColumn(format="%.2f", label="🔴H*", disabled=True),
+                                "🔴exH": st.column_config.NumberColumn(format="%.2f", label="🔴exH", disabled=True),
+                                "Observaciones": st.column_config.TextColumn(),
+                            }
+                            # --- Recalcular automáticamente áreas y H al cambiar límites ---
+                            for i, fila in df_zona.iterrows():
+                                x_min_i = fila.get("X min")
+                                x_max_i = fila.get("X max")
+                                xas_min_i = fila.get("Xas min")
+                                xas_max_i = fila.get("Xas max")
+                                has = fila.get("Has")
+                                # --- cálculo filtrado (zona) ---
+                                mask_integral = (x[idx_x] >= x_min_i) & (x[idx_x] <= x_max_i) if x_min_i is not None and x_max_i is not None else None
+                                mask_as = (x[idx_x] >= xas_min_i) & (x[idx_x] <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
+                                area = np.trapz(proy1d[mask_integral], x[idx_x][mask_integral]) if mask_integral is not None and mask_integral.any() else None
+                                area_as = np.trapz(proy1d[mask_as], x[idx_x][mask_as]) if mask_as is not None and mask_as.any() else None
+                                df_zona.at[i, "Área"] = round(area, 2) if area is not None else None
+                                df_zona.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
+                                if area is not None and area_as not in [None, 0] and has not in [None, ""] and area_as != 0:
+                                    h_val = (area * has) / area_as
+                                    df_zona.at[i, "H"] = round(h_val, 2)
+                                else:
+                                    df_zona.at[i, "H"] = None
+                                if df_zona.at[i, "H"] is not None:
+                                    df_zona.at[i, "🔴H*"] = round(df_zona.at[i, "H"] * factor_hc, 2)
+                                else:
+                                    df_zona.at[i, "🔴H*"] = None
+                                # --- cálculo exH (sin filtro de zona en Y) ---
+                                mask_integral_ex = (x_ex >= x_min_i) & (x_ex <= x_max_i) if x_min_i is not None and x_max_i is not None else None
+                                mask_as_ex = (x_ex >= xas_min_i) & (x_ex <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
+                                area_ex = np.trapz(proy1d_ex[mask_integral_ex], x_ex[mask_integral_ex]) if mask_integral_ex is not None and mask_integral_ex.any() else None
+                                area_as_ex = np.trapz(proy1d_ex[mask_as_ex], x_ex[mask_as_ex]) if mask_as_ex is not None and mask_as_ex.any() else None
+                                if area_ex is not None and area_as_ex not in [None, 0] and has not in [None, ""] and area_as_ex != 0:
+                                    exh_val = (area_ex * has) / area_as_ex
+                                    df_zona.at[i, "🔴exH"] = round(exh_val, 2)
+                                else:
+                                    df_zona.at[i, "🔴exH"] = None
+                            df_editable = st.data_editor(
+                                df_zona,
+                                column_config=col_config,
+                                hide_index=True,
+                                use_container_width=True,
+                                num_rows="dynamic",
+                                key=f"tabla_zona_widget_{nombre_archivo}_{idx_zona}"
+                            )
+                            st.session_state[key_tabla] = df_editable
+                            guardar = st.button("💾 Guardar integrales de Zona", key=f"guardar_zona_{nombre_archivo}_{idx_zona}")
                             if guardar:
                                 try:
                                     muestra_base = nombre_archivo.split("_RMN")[0]

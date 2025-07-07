@@ -1723,8 +1723,8 @@ def render_rmn_1h_d(df_tipo, db):
                                     # --- cálculo exH (sin filtro de zona) ---
                                     mask_integral_ex = (x >= x_min_i) & (x <= x_max_i) if x_min_i is not None and x_max_i is not None else None
                                     mask_as_ex = (x >= xas_min_i) & (x <= xas_max_i) if xas_min_i is not None and xas_max_i is not None else None
-                                    area_ex = np.trapz(proy1d, x)[mask_integral_ex] if mask_integral_ex is not None and mask_integral_ex.any() else None
-                                    area_as_ex = np.trapz(proy1d, x)[mask_as_ex] if mask_as_ex is not None and mask_as_ex.any() else None
+                                    area_ex = np.trapz(proy1d[mask_integral_ex], x[mask_integral_ex]) if mask_integral_ex is not None and mask_integral_ex.any() else None
+                                    area_as_ex = np.trapz(proy1d[mask_as_ex], x[mask_as_ex]) if mask_as_ex is not None and mask_as_ex.any() else None
                                     if area_ex is not None and area_as_ex not in [None, 0] and has not in [None, ""] and area_as_ex != 0:
                                         exh_val = (area_ex * has) / area_as_ex
                                         df_editable.at[i, "🔴exH"] = round(exh_val, 2)

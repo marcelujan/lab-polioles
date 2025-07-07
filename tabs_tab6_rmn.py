@@ -1723,7 +1723,7 @@ def render_rmn_1h_d(df_tipo, db):
                                 except Exception as e:
                                     st.error(f"❌ Error al guardar: {e}")
 
-                            # graficar proyección 1D de la zona antes de la tabla
+                            # graficar proyección 1D de la zona ANTES de la tabla
                             fig_proy = go.Figure()
                             # Línea negra fina: espectro completo
                             fig_proy.add_trace(go.Scatter(
@@ -1750,6 +1750,7 @@ def render_rmn_1h_d(df_tipo, db):
                             )
                             fig_proy.update_xaxes(autorange="reversed")
                             st.plotly_chart(fig_proy, use_container_width=True)
+                            # --- tabla editable de integrales de zona ---
 
 
 

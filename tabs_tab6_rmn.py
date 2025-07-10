@@ -1554,7 +1554,7 @@ def render_rmn_1h_d(df_tipo, db):
                             proy1d_ex = np.array(proy1d_ex)[:n_ex]
                             columnas_zona = [
                                 "Muestra", "Grupo funcional", "X min", "X max", "Área",
-                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴ex1dH", "🔴ex2dH", "Observaciones", "Archivo"
+                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴ex2dH", "🔴ex1dH", "Observaciones", "Archivo"
                             ]
                             try:
                                 muestra_base = nombre_archivo.split("_RMN")[0]
@@ -1622,8 +1622,8 @@ def render_rmn_1h_d(df_tipo, db):
                                             df_calc.at[i, "Área"] = None
                                             df_calc.at[i, "Área as"] = None
                                             df_calc.at[i, "H"] = None
-                                            df_calc.at[i, "🔴ex1dH"] = None
                                             df_calc.at[i, "🔴ex2dH"] = None
+                                            df_calc.at[i, "🔴ex1dH"] = None
                                             continue
                                         # Calcular denominador una sola vez: área de referencia en 1D puro
                                         if x_1d is not None and y_1d is not None:
@@ -1665,8 +1665,8 @@ def render_rmn_1h_d(df_tipo, db):
                                         df_calc.at[i, "Área"] = None
                                         df_calc.at[i, "Área as"] = None
                                         df_calc.at[i, "H"] = None
-                                        df_calc.at[i, "🔴ex1dH"] = None
                                         df_calc.at[i, "🔴ex2dH"] = None
+                                        df_calc.at[i, "🔴ex1dH"] = None
                                 return df_calc
                             df_zona_actualizada = recalcular_tabla_zona(st.session_state[key_tabla], x, proy1d, x_ex, proy1d_ex, x_1d, y_1d)
                             st.session_state[key_tabla] = df_zona_actualizada
@@ -1712,8 +1712,8 @@ def render_rmn_1h_d(df_tipo, db):
                                 "Has": st.column_config.NumberColumn(format="%.2f"),
                                 "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
                                 "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
-                                "🔴ex1dH": st.column_config.NumberColumn(format="%.2f", label="🔴ex1dH", disabled=True),
                                 "🔴ex2dH": st.column_config.NumberColumn(format="%.2f", label="🔴ex2dH", disabled=True),
+                                "🔴ex1dH": st.column_config.NumberColumn(format="%.2f", label="🔴ex1dH", disabled=True),
                                 "Observaciones": st.column_config.TextColumn(),
                                 "Archivo": st.column_config.TextColumn(disabled=True),
                             }

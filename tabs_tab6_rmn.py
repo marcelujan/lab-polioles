@@ -1451,6 +1451,16 @@ def render_rmn_1h_d(df_tipo, db):
     for nombre_archivo in espectros_seleccionados:
         zonas_por_archivo[nombre_archivo] = []
         with st.expander(f"🧮 Cuantificar zonas en {nombre_archivo}"):
+            # --- Leer valores previos de Firestore ---
+            doc_zonas = db.collection("zonas_rmn").document(nombre_archivo).get()
+            if doc_zonas.exists:
+                data_zonas = doc_zonas.to_dict()
+                n_zonas_default = data_zonas.get("n_zonas", 1)
+                zonas_default = data_zonas.get("zonas", [])
+            else:
+                n_zonas_default = 1
+                zonas_default = []
+
             cuantificar = st.checkbox(
                 f"Activar cuantificación de zonas para {nombre_archivo}",
                 key=f"chk_cuant_{nombre_archivo}"
@@ -1460,7 +1470,7 @@ def render_rmn_1h_d(df_tipo, db):
                     "Cantidad de zonas a definir",
                     min_value=1,
                     max_value=10,
-                    value=1,
+                    value=n_zonas_default,
                     step=1,
                     key=f"nzonas_{nombre_archivo}"
                 )
@@ -1468,14 +1478,15 @@ def render_rmn_1h_d(df_tipo, db):
                 for i in range(int(n_zonas)):
                     st.markdown(f"**Zona {i+1}**")
                     col1, col2, col3, col4 = st.columns(4)
+                    zona_prev = zonas_default[i] if i < len(zonas_default) else {}
                     with col1:
-                        x_min_z = st.number_input("X min", value=0.0, key=f"xmin_{nombre_archivo}_{i}")
+                        x_min_z = st.number_input("X min", value=float(zona_prev.get("x_min", 0.0)), key=f"xmin_{nombre_archivo}_{i}")
                     with col2:
-                        x_max_z = st.number_input("X max", value=9.0, key=f"xmax_{nombre_archivo}_{i}")
+                        x_max_z = st.number_input("X max", value=float(zona_prev.get("x_max", 9.0)), key=f"xmax_{nombre_archivo}_{i}")
                     with col3:
-                        y_min_z = st.number_input("Y min", value=1e-13, format="%.1e", key=f"ymin_{nombre_archivo}_{i}")
+                        y_min_z = st.number_input("Y min", value=float(zona_prev.get("y_min", 1e-13)), format="%.1e", key=f"ymin_{nombre_archivo}_{i}")
                     with col4:
-                        y_max_z = st.number_input("Y max", value=1e-9, format="%.1e", key=f"ymax_{nombre_archivo}_{i}")
+                        y_max_z = st.number_input("Y max", value=float(zona_prev.get("y_max", 1e-9)), format="%.1e", key=f"ymax_{nombre_archivo}_{i}")
                     zonas.append({
                         "x_min": x_min_z,
                         "x_max": x_max_z,
@@ -1483,6 +1494,15 @@ def render_rmn_1h_d(df_tipo, db):
                         "y_max": y_max_z
                     })
                 zonas_por_archivo[nombre_archivo] = zonas
+
+                # --- Guardado automático si hay cambios ---
+                key_guardado = f"zonas_guardadas_{nombre_archivo}"
+                zonas_guardadas = st.session_state.get(key_guardado, None)
+                datos_actuales = {"n_zonas": int(n_zonas), "zonas": zonas}
+                if zonas_guardadas != datos_actuales:
+                    db.collection("zonas_rmn").document(nombre_archivo).set(datos_actuales)
+                    st.session_state[key_guardado] = datos_actuales
+                    st.info("Zonas guardadas automáticamente.", icon="💾")
 
     # --- Graficar espectros y agregar shapes de zonas ---
     for nombre_archivo in espectros_seleccionados:

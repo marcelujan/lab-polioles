@@ -1583,13 +1583,12 @@ def render_rmn_1h_d(df_tipo, db):
                             # Obtener espectro 1D puro para comparación
                             try:
                                 df_espectros_muestra = precargar_espectros_rmn(db, [{"nombre": muestra_base}])
-                                # Buscar espectro 1D puro: tipo contiene '1H' y NO contiene 'D' ni 'T2'
                                 df_1d_candidates = df_espectros_muestra[
                                     (df_espectros_muestra["tipo"].str.contains("1H")) &
                                     (~df_espectros_muestra["tipo"].str.contains("D|T2"))
                                 ]
                                 if not df_1d_candidates.empty:
-                                    row_espectro_1d = df_1d_candidates.iloc[0]  # O elegir el más reciente si hay varios
+                                    row_espectro_1d = df_1d_candidates.iloc[0]
                                     df_1d_puro = decodificar_csv_o_excel(row_espectro_1d["contenido"], row_espectro_1d["archivo"])
                                     if df_1d_puro is not None:
                                         x_1d = df_1d_puro["x"].values
@@ -1626,40 +1625,39 @@ def render_rmn_1h_d(df_tipo, db):
                                             df_calc.at[i, "🔴ex1dH"] = None
                                             df_calc.at[i, "🔴ex2dH"] = None
                                             continue
-                                        
-                                        # Cálculo usando proyección 1D del 2D (ex2dH)
+                                        # Calcular denominador una sola vez: área de referencia en 1D puro
+                                        if x_1d is not None and y_1d is not None:
+                                            mask_xas_1d = (x_1d >= xas_min) & (x_1d <= xas_max)
+                                            area_as_1d = np.trapz(y_1d[mask_xas_1d], x_1d[mask_xas_1d]) if np.any(mask_xas_1d) else None
+                                        else:
+                                            area_as_1d = None
+                                        # Cálculo usando proyección 1D del 2D (recortada) para H
                                         mask_x = (x >= x_min) & (x <= x_max)
                                         area = np.trapz(proy1d[mask_x], x[mask_x]) if np.any(mask_x) else None
                                         df_calc.at[i, "Área"] = round(float(area), 2) if area is not None else None
-                                        mask_xas_ex = (x_ex >= xas_min) & (x_ex <= xas_max)
-                                        area_as = np.trapz(proy1d_ex[mask_xas_ex], x_ex[mask_xas_ex]) if np.any(mask_xas_ex) else None
-                                        df_calc.at[i, "Área as"] = round(float(area_as), 2) if area_as is not None else None
-                                        if area is not None and area_as not in [None, 0] and not np.isnan(has):
-                                            h = (float(area) * has) / float(area_as)
+                                        # Cálculo usando proyección 1D del 2D (completa) para ex2dH
+                                        mask_x_ex = (x_ex >= x_min) & (x_ex <= x_max)
+                                        area_ex = np.trapz(proy1d_ex[mask_x_ex], x_ex[mask_x_ex]) if np.any(mask_x_ex) else None
+                                        # Cálculo usando espectro 1D puro para ex1dH
+                                        if x_1d is not None and y_1d is not None:
+                                            mask_x_1d = (x_1d >= x_min) & (x_1d <= x_max)
+                                            area_1d = np.trapz(y_1d[mask_x_1d], x_1d[mask_x_1d]) if np.any(mask_x_1d) else None
+                                        else:
+                                            area_1d = None
+                                        # Ahora, todos usan el mismo denominador area_as_1d
+                                        df_calc.at[i, "Área as"] = round(float(area_as_1d), 2) if area_as_1d is not None else None
+                                        if area is not None and area_as_1d not in [None, 0] and not np.isnan(has):
+                                            h = (float(area) * has) / float(area_as_1d)
                                             df_calc.at[i, "H"] = round(h, 2)
                                         else:
                                             df_calc.at[i, "H"] = None
-                                        
-                                        # Cálculo usando espectro 1D puro (ex1dH)
-                                        if x_1d is not None and y_1d is not None:
-                                            mask_x_1d = (x_1d >= x_min) & (x_1d <= x_max)
-                                            mask_xas_1d = (x_1d >= xas_min) & (x_1d <= xas_max)
-                                            area_1d = np.trapz(y_1d[mask_x_1d], x_1d[mask_x_1d]) if np.any(mask_x_1d) else None
-                                            area_as_1d = np.trapz(y_1d[mask_xas_1d], x_1d[mask_xas_1d]) if np.any(mask_xas_1d) else None
-                                            if area_1d is not None and area_as_1d not in [None, 0] and not np.isnan(has):
-                                                ex1dH = (float(area_1d) * has) / float(area_as_1d)
-                                                df_calc.at[i, "🔴ex1dH"] = round(ex1dH, 2)
-                                            else:
-                                                df_calc.at[i, "🔴ex1dH"] = None
+                                        if area_1d is not None and area_as_1d not in [None, 0] and not np.isnan(has):
+                                            ex1dH = (float(area_1d) * has) / float(area_as_1d)
+                                            df_calc.at[i, "🔴ex1dH"] = round(ex1dH, 2)
                                         else:
                                             df_calc.at[i, "🔴ex1dH"] = None
-                                        
-                                        # Cálculo usando proyección 1D del 2D (ex2dH)
-                                        mask_x_ex = (x_ex >= x_min) & (x_ex <= x_max)
-                                        area_ex = np.trapz(proy1d_ex[mask_x_ex], x_ex[mask_x_ex]) if np.any(mask_x_ex) else None
-                                        area_as_ex = np.trapz(proy1d_ex[mask_xas_ex], x_ex[mask_xas_ex]) if np.any(mask_xas_ex) else None
-                                        if area_ex is not None and area_as_ex not in [None, 0] and not np.isnan(has):
-                                            ex2dH = (float(area_ex) * has) / float(area_as_ex)
+                                        if area_ex is not None and area_as_1d not in [None, 0] and not np.isnan(has):
+                                            ex2dH = (float(area_ex) * has) / float(area_as_1d)
                                             df_calc.at[i, "🔴ex2dH"] = round(ex2dH, 2)
                                         else:
                                             df_calc.at[i, "🔴ex2dH"] = None

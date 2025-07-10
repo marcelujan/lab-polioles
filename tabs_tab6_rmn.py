@@ -25,6 +25,12 @@ def decodificar_csv_o_excel(contenido_base64, archivo):
     clave_cache = f"{archivo}__{hash(contenido_base64)}"
     if clave_cache in session_cache:
         return session_cache[clave_cache]
+    
+    # Validar que el contenido no sea None
+    if contenido_base64 is None:
+        st.warning(f"Error: contenido es None para el archivo {archivo}")
+        return None
+    
     try:
         contenido = BytesIO(base64.b64decode(contenido_base64))
         ext = os.path.splitext(archivo)[1].lower()

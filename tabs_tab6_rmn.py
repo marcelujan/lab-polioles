@@ -1445,9 +1445,46 @@ def render_rmn_1h_d(df_tipo, db):
             niveles_contorno[nombre] = nivel
 
     fig = go.Figure()
-    
     color_idx = 0
-    zonas_por_archivo = {}  # NUEVO: para guardar zonas por archivo
+    zonas_por_archivo = {}
+    # --- Cuantificar zonas primero y guardar para cada archivo ---
+    for nombre_archivo in espectros_seleccionados:
+        zonas_por_archivo[nombre_archivo] = []
+        with st.expander(f"🧮 Cuantificar zonas en {nombre_archivo}"):
+            cuantificar = st.checkbox(
+                f"Activar cuantificación de zonas para {nombre_archivo}",
+                key=f"chk_cuant_{nombre_archivo}"
+            )
+            if cuantificar:
+                n_zonas = st.number_input(
+                    "Cantidad de zonas a definir",
+                    min_value=1,
+                    max_value=10,
+                    value=1,
+                    step=1,
+                    key=f"nzonas_{nombre_archivo}"
+                )
+                zonas = []
+                for i in range(int(n_zonas)):
+                    st.markdown(f"**Zona {i+1}**")
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        x_min_z = st.number_input("X min", value=0.0, key=f"xmin_{nombre_archivo}_{i}")
+                    with col2:
+                        x_max_z = st.number_input("X max", value=9.0, key=f"xmax_{nombre_archivo}_{i}")
+                    with col3:
+                        y_min_z = st.number_input("Y min", value=1e-13, format="%.1e", key=f"ymin_{nombre_archivo}_{i}")
+                    with col4:
+                        y_max_z = st.number_input("Y max", value=1e-9, format="%.1e", key=f"ymax_{nombre_archivo}_{i}")
+                    zonas.append({
+                        "x_min": x_min_z,
+                        "x_max": x_max_z,
+                        "y_min": y_min_z,
+                        "y_max": y_max_z
+                    })
+                zonas_por_archivo[nombre_archivo] = zonas
+
+    # --- Graficar espectros y agregar shapes de zonas ---
     for nombre_archivo in espectros_seleccionados:
         color = colores[color_idx % len(colores)]
         fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
@@ -1455,7 +1492,6 @@ def render_rmn_1h_d(df_tipo, db):
         if not url:
             st.warning(f"No se encontró la URL de {nombre_archivo}")
             continue
-
         try:
             response = requests.get(url)
             if response.status_code == 200:
@@ -1466,15 +1502,12 @@ def render_rmn_1h_d(df_tipo, db):
         except Exception as e:
             st.warning(f"Error leyendo {nombre_archivo}: {e}")
             continue
-
         x = pd.to_numeric(df.columns[1:], errors="coerce")
-        x = x[~pd.notna(x)]
+        x = x[~pd.isna(x)]
         y_raw = df.iloc[:, 0].astype(float)
         z = df.iloc[:, 1:len(x)+1].values
-
         y_scaled = y_min_scale * (y_max_scale / y_min_scale) ** y_raw
         nivel_contorno = niveles_contorno.get(nombre_archivo, 0.10)
-
         fig.add_trace(go.Contour(
             x=x,
             y=y_scaled,
@@ -1492,8 +1525,17 @@ def render_rmn_1h_d(df_tipo, db):
             hoverinfo="x+y+name",
             colorscale=[[0, color],[1, color]],
         ))
-
-        zonas_por_archivo[nombre_archivo] = []  # Inicializa lista de zonas para este archivo
+        # Agregar shapes de zonas para este archivo
+        for zona in zonas_por_archivo.get(nombre_archivo, []):
+            fig.add_shape(
+                type="rect",
+                x0=zona["x_min"], x1=zona["x_max"],
+                y0=zona["y_min"], y1=zona["y_max"],
+                xref="x", yref="y",
+                fillcolor="rgba(255,0,0,0.2)",
+                line_width=0,
+                layer="above"
+            )
         color_idx += 1
 
     fig.update_layout(
@@ -1525,19 +1567,6 @@ def render_rmn_1h_d(df_tipo, db):
         )
     )
 
-    # --- AGREGAR SOMBREADO DE ZONAS EN EL GRÁFICO PRINCIPAL ---
-    for nombre_archivo, zonas in zonas_por_archivo.items():
-        for zona in zonas:
-            fig.add_shape(
-                type="rect",
-                x0=zona["x_min"], x1=zona["x_max"],
-                y0=zona["y_min"], y1=zona["y_max"],
-                xref="x", yref="y",
-                fillcolor="rgba(255,0,0,0.2)",
-                line_width=0,
-                layer="above"
-            )
-
     st.plotly_chart(fig, use_container_width=True)
 
     # leyenda en 4 columnas
@@ -1552,57 +1581,6 @@ def render_rmn_1h_d(df_tipo, db):
     for i, ref in enumerate(referencias):
         col = cols[i % 4]
         col.markdown(ref, unsafe_allow_html=True)
-
-    # Cuantificar zonas
-    for nombre_archivo in espectros_seleccionados:
-        with st.expander(f"🧮 Cuantificar zonas en {nombre_archivo}"):
-            cuantificar = st.checkbox(
-                f"Activar cuantificación de zonas para {nombre_archivo}",
-                key=f"chk_cuant_{nombre_archivo}"
-            )
-            if cuantificar:
-                n_zonas = st.number_input(
-                    "Cantidad de zonas a definir",
-                    min_value=1,
-                    max_value=10,
-                    value=1,
-                    step=1,
-                    key=f"nzonas_{nombre_archivo}"
-                )
-                zonas = []
-                for i in range(int(n_zonas)):
-                    st.markdown(f"**Zona {i+1}**")
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        x_min = st.number_input("X min", value=0.0, key=f"xmin_{nombre_archivo}_{i}")
-                    with col2:
-                        x_max = st.number_input("X max", value=9.0, key=f"xmax_{nombre_archivo}_{i}")
-                    with col3:
-                        y_min = st.number_input("Y min", value=1e-13, format="%.1e", key=f"ymin_{nombre_archivo}_{i}")
-                    with col4:
-                        y_max = st.number_input("Y max", value=1e-9, format="%.1e", key=f"ymax_{nombre_archivo}_{i}")
-                    zonas.append({
-                        "x_min": x_min,
-                        "x_max": x_max,
-                        "y_min": y_min,
-                        "y_max": y_max
-                    })
-                zonas_por_archivo[nombre_archivo] = zonas  # Guarda zonas para sombrear
-
-    # --- AGREGAR SOMBREADO DE ZONAS EN EL GRÁFICO PRINCIPAL ---
-    for nombre_archivo, zonas in zonas_por_archivo.items():
-        for zona in zonas:
-            fig.add_shape(
-                type="rect",
-                x0=zona["x_min"], x1=zona["x_max"],
-                y0=zona["y_min"], y1=zona["y_max"],
-                xref="x", yref="y",
-                fillcolor="rgba(255,0,0,0.2)",
-                line_width=0,
-                layer="above"
-            )
-
-    st.plotly_chart(fig, use_container_width=True)
 
 
 

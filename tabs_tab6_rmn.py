@@ -1504,6 +1504,202 @@ def render_rmn_1h_d(df_tipo, db):
                     st.session_state[key_guardado] = datos_actuales
                     st.info("Zonas guardadas automáticamente.", icon="💾")
 
+                # --- Gráficos individuales y tabla de cálculos para cada zona ---
+                fila = df_tipo[df_tipo["archivo"] == nombre_archivo].iloc[0]
+                url = fila.get("url_archivo")
+                if url:
+                    try:
+                        response = requests.get(url)
+                        if response.status_code == 200:
+                            df = pd.read_csv(io.StringIO(response.text), sep="\t")
+                        else:
+                            st.error(f"No se pudo leer el archivo en {url}")
+                            df = None
+                    except Exception as e:
+                        st.warning(f"Error leyendo {nombre_archivo}: {e}")
+                        df = None
+                    if df is not None:
+                        x = pd.to_numeric(df.columns[1:], errors="coerce")
+                        x = x[~pd.isna(x)]
+                        y_raw = df.iloc[:, 0].astype(float)
+                        z = df.iloc[:, 1:len(x)+1].values
+                        proy1d_ex = np.sum(z, axis=0)
+                        x_ex = x
+                        for idx_zona, zona in enumerate(zonas):
+                            x_min = zona["x_min"]
+                            x_max = zona["x_max"]
+                            y_min = zona["y_min"]
+                            y_max = zona["y_max"]
+                            mask_x = (x >= x_min) & (x <= x_max)
+                            y_scaled = y_min_scale * (y_max_scale / y_min_scale) ** y_raw
+                            mask_y = (y_scaled >= y_min) & (y_scaled <= y_max)
+                            idx_x = np.where(mask_x)[0]
+                            idx_y = np.where(mask_y)[0]
+                            if len(idx_x) == 0 or len(idx_y) == 0:
+                                st.warning(f"⚠️ Zona {idx_zona+1} no tiene datos en rango")
+                                continue
+                            z_recorte = z[np.ix_(idx_y, idx_x)]
+                            proy1d = np.sum(z_recorte, axis=0)
+                            n = min(len(x), len(proy1d))
+                            x = np.array(x)[:n]
+                            proy1d = np.array(proy1d)[:n]
+                            n_ex = min(len(x_ex), len(proy1d_ex))
+                            x_ex = np.array(x_ex)[:n_ex]
+                            proy1d_ex = np.array(proy1d_ex)[:n_ex]
+                            columnas_zona = [
+                                "Muestra", "Grupo funcional", "X min", "X max", "Área",
+                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴exH", "Observaciones", "Archivo"
+                            ]
+                            try:
+                                muestra_base = nombre_archivo.split("_RMN")[0]
+                                nombre_doc = f"{nombre_archivo}_zona_{idx_zona+1}"
+                                doc_ref = db.collection("muestras").document(muestra_base).collection("zonas").document(nombre_doc)
+                                datos = doc_ref.get().to_dict()
+                                if datos and "filas" in datos:
+                                    df_zona = pd.DataFrame(datos["filas"])
+                                else:
+                                    df_zona = pd.DataFrame([{col: None for col in columnas_zona}])
+                            except Exception as e:
+                                st.warning(f"No se pudo recuperar tabla previa: {e}")
+                                df_zona = pd.DataFrame([{col: None for col in columnas_zona}])
+                            for col in columnas_zona:
+                                if col not in df_zona.columns:
+                                    df_zona[col] = "" if col in ["Grupo funcional", "Observaciones"] else None
+                            df_zona = df_zona[columnas_zona]
+                            df_zona["Muestra"] = muestra_base
+                            df_zona["Archivo"] = nombre_archivo
+                            key_tabla = f"tabla_zona_{nombre_archivo}_{idx_zona}"
+                            if key_tabla not in st.session_state:
+                                st.session_state[key_tabla] = df_zona.copy()
+                            if not isinstance(st.session_state[key_tabla], pd.DataFrame):
+                                st.session_state[key_tabla] = pd.DataFrame(st.session_state[key_tabla])
+                            def recalcular_tabla_zona(df_zona, x, proy1d, x_ex, proy1d_ex):
+                                df_calc = df_zona.copy()
+                                for i, row in df_calc.iterrows():
+                                    try:
+                                        def to_float(val):
+                                            try:
+                                                return float(pd.to_numeric(val, errors="coerce"))
+                                            except Exception:
+                                                return float('nan')
+                                        x_min = to_float(row.get("X min"))
+                                        x_max = to_float(row.get("X max"))
+                                        xas_min = to_float(row.get("Xas min"))
+                                        xas_max = to_float(row.get("Xas max"))
+                                        has = to_float(row.get("Has"))
+                                        if np.isnan(x_min) or np.isnan(x_max) or np.isnan(xas_min) or np.isnan(xas_max) or np.isnan(has):
+                                            df_calc.at[i, "Área"] = None
+                                            df_calc.at[i, "Área as"] = None
+                                            df_calc.at[i, "H"] = None
+                                            df_calc.at[i, "🔴exH"] = None
+                                            continue
+                                        mask_x = (x >= x_min) & (x <= x_max)
+                                        area = np.trapz(proy1d[mask_x], x[mask_x]) if np.any(mask_x) else None
+                                        df_calc.at[i, "Área"] = round(float(area), 2) if area is not None else None
+                                        mask_xas = (x >= xas_min) & (x <= xas_max)
+                                        area_as = np.trapz(proy1d[mask_xas], x[mask_xas]) if np.any(mask_xas) else None
+                                        df_calc.at[i, "Área as"] = round(float(area_as), 2) if area_as is not None else None
+                                        if area is not None and area_as not in [None, 0] and not np.isnan(has):
+                                            h = (float(area) * has) / float(area_as)
+                                            df_calc.at[i, "H"] = round(h, 2)
+                                        else:
+                                            df_calc.at[i, "H"] = None
+                                        mask_x_ex = (x_ex >= x_min) & (x_ex <= x_max)
+                                        mask_xas_ex = (x_ex >= xas_min) & (x_ex <= xas_max)
+                                        area_ex = np.trapz(proy1d_ex[mask_x_ex], x_ex[mask_x_ex]) if np.any(mask_x_ex) else None
+                                        area_as_ex = np.trapz(proy1d_ex[mask_xas_ex], x_ex[mask_xas_ex]) if np.any(mask_xas_ex) else None
+                                        if area_ex is not None and area_as_ex not in [None, 0] and not np.isnan(has):
+                                            exH = (float(area_ex) * has) / float(area_as_ex)
+                                            df_calc.at[i, "🔴exH"] = round(exH, 2)
+                                        else:
+                                            df_calc.at[i, "🔴exH"] = None
+                                    except Exception as e:
+                                        df_calc.at[i, "Área"] = None
+                                        df_calc.at[i, "Área as"] = None
+                                        df_calc.at[i, "H"] = None
+                                        df_calc.at[i, "🔴exH"] = None
+                                return df_calc
+                            df_zona_actualizada = recalcular_tabla_zona(st.session_state[key_tabla], x, proy1d, x_ex, proy1d_ex)
+                            st.session_state[key_tabla] = df_zona_actualizada
+                            fig_proy = go.Figure()
+                            fig_proy.add_trace(go.Scatter(
+                                x=x_ex,
+                                y=proy1d_ex,
+                                mode="lines",
+                                name="Espectro completo",
+                                line=dict(color="black", width=1, dash="solid"),
+                                opacity=0.5
+                            ))
+                            fig_proy.add_trace(go.Scatter(
+                                x=x[idx_x],
+                                y=proy1d,
+                                mode="lines",
+                                name=f"Zona {idx_zona+1}",
+                                line=dict(width=2)
+                            ))
+                            fig_proy.update_layout(
+                                title=f"Proyección 1D de Zona {idx_zona+1} en {nombre_archivo}",
+                                xaxis_title="ppm",
+                                yaxis_title="Intensidad integrada",
+                                height=300
+                            )
+                            fig_proy.update_xaxes(autorange="reversed")
+                            st.plotly_chart(fig_proy, use_container_width=True)
+                            st.markdown(f"**📈 Tabla de integrales para Zona {idx_zona+1}**")
+                            for col in columnas_zona:
+                                if col not in st.session_state[key_tabla].columns:
+                                    st.session_state[key_tabla][col] = "" if col in ["Grupo funcional", "Observaciones"] else None
+                            st.session_state[key_tabla] = st.session_state[key_tabla][columnas_zona]
+                            st.session_state[key_tabla]["Muestra"] = muestra_base
+                            st.session_state[key_tabla]["Archivo"] = nombre_archivo
+                            col_config = {
+                                "Muestra": st.column_config.TextColumn(disabled=True),
+                                "Grupo funcional": st.column_config.SelectboxColumn(options=GRUPOS_FUNCIONALES),
+                                "X min": st.column_config.NumberColumn(format="%.2f"),
+                                "X max": st.column_config.NumberColumn(format="%.2f"),
+                                "Área": st.column_config.NumberColumn(format="%.2f", label="🔴Área", disabled=True),
+                                "Xas min": st.column_config.NumberColumn(format="%.2f"),
+                                "Xas max": st.column_config.NumberColumn(format="%.2f"),
+                                "Has": st.column_config.NumberColumn(format="%.2f"),
+                                "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
+                                "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
+                                "🔴exH": st.column_config.NumberColumn(format="%.2f", label="🔴exH", disabled=True),
+                                "Observaciones": st.column_config.TextColumn(),
+                                "Archivo": st.column_config.TextColumn(disabled=True),
+                            }
+                            with st.form(f"form_zona_{nombre_archivo}_{idx_zona}"):
+                                df_editable = st.data_editor(
+                                    st.session_state[key_tabla],
+                                    column_config=col_config,
+                                    hide_index=True,
+                                    use_container_width=True,
+                                    num_rows="dynamic",
+                                    key=f"tabla_zona_widget_{nombre_archivo}_{idx_zona}"
+                                )
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    recalcular = st.form_submit_button("🔴 Recalcular integrales")
+                                with col2:
+                                    guardar = st.form_submit_button("💾 Guardar integrales")
+                                if recalcular:
+                                    df_editable["Muestra"] = muestra_base
+                                    df_editable["Archivo"] = nombre_archivo
+                                    df_zona_actualizada = recalcular_tabla_zona(df_editable, x, proy1d, x_ex, proy1d_ex)
+                                    df_zona_actualizada = df_zona_actualizada[columnas_zona]
+                                    st.session_state[key_tabla] = df_zona_actualizada
+                                if guardar:
+                                    try:
+                                        df_editable["Muestra"] = muestra_base
+                                        df_editable["Archivo"] = nombre_archivo
+                                        df_para_guardar = df_editable[columnas_zona].copy()
+                                        muestra_base = nombre_archivo.split("_RMN")[0]
+                                        nombre_doc = f"{nombre_archivo}_zona_{idx_zona+1}"
+                                        doc_ref = db.collection("muestras").document(muestra_base).collection("zonas").document(nombre_doc)
+                                        doc_ref.set({"filas": df_para_guardar.to_dict(orient="records")})
+                                        st.success(f"✅ Guardado correcto para {nombre_doc}")
+                                    except Exception as e:
+                                        st.error(f"❌ Error al guardar: {e}")
+
     # --- Graficar espectros y agregar shapes de zonas ---
     for nombre_archivo in espectros_seleccionados:
         color = colores[color_idx % len(colores)]

@@ -1583,11 +1583,20 @@ def render_rmn_1h_d(df_tipo, db):
                             # Obtener espectro 1D puro para comparación
                             try:
                                 df_espectros_muestra = precargar_espectros_rmn(db, [{"nombre": muestra_base}])
-                                row_espectro_1d = df_espectros_muestra[df_espectros_muestra["archivo"] == nombre_archivo].iloc[0]
-                                df_1d_puro = decodificar_csv_o_excel(row_espectro_1d["contenido"], nombre_archivo)
-                                if df_1d_puro is not None:
-                                    x_1d = df_1d_puro["x"].values
-                                    y_1d = df_1d_puro["y"].values
+                                # Buscar espectro 1D puro: tipo contiene '1H' y NO contiene 'D' ni 'T2'
+                                df_1d_candidates = df_espectros_muestra[
+                                    (df_espectros_muestra["tipo"].str.contains("1H")) &
+                                    (~df_espectros_muestra["tipo"].str.contains("D|T2"))
+                                ]
+                                if not df_1d_candidates.empty:
+                                    row_espectro_1d = df_1d_candidates.iloc[0]  # O elegir el más reciente si hay varios
+                                    df_1d_puro = decodificar_csv_o_excel(row_espectro_1d["contenido"], row_espectro_1d["archivo"])
+                                    if df_1d_puro is not None:
+                                        x_1d = df_1d_puro["x"].values
+                                        y_1d = df_1d_puro["y"].values
+                                    else:
+                                        x_1d = None
+                                        y_1d = None
                                 else:
                                     x_1d = None
                                     y_1d = None

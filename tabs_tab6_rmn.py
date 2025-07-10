@@ -1596,8 +1596,8 @@ def render_rmn_1h_d(df_tipo, db):
                                         mask_x = (x >= x_min) & (x <= x_max)
                                         area = np.trapz(proy1d[mask_x], x[mask_x]) if np.any(mask_x) else None
                                         df_calc.at[i, "Área"] = round(float(area), 2) if area is not None else None
-                                        mask_xas = (x >= xas_min) & (x <= xas_max)
-                                        area_as = np.trapz(proy1d[mask_xas], x[mask_xas]) if np.any(mask_xas) else None
+                                        mask_xas_ex = (x_ex >= xas_min) & (x_ex <= xas_max)
+                                        area_as = np.trapz(proy1d_ex[mask_xas_ex], x_ex[mask_xas_ex]) if np.any(mask_xas_ex) else None
                                         df_calc.at[i, "Área as"] = round(float(area_as), 2) if area_as is not None else None
                                         if area is not None and area_as not in [None, 0] and not np.isnan(has):
                                             h = (float(area) * has) / float(area_as)

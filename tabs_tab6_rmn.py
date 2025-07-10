@@ -1548,7 +1548,7 @@ def render_rmn_1h_d(df_tipo, db):
                             proy1d_ex = np.array(proy1d_ex)[:n_ex]
                             columnas_zona = [
                                 "Muestra", "Grupo funcional", "X min", "X max", "Área",
-                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴exH", "Observaciones", "Archivo"
+                                "Xas min", "Xas max", "Has", "Área as", "H", "🔴ex1dH", "🔴ex2dH", "Observaciones", "Archivo"
                             ]
                             try:
                                 muestra_base = nombre_archivo.split("_RMN")[0]
@@ -1573,7 +1573,24 @@ def render_rmn_1h_d(df_tipo, db):
                                 st.session_state[key_tabla] = df_zona.copy()
                             if not isinstance(st.session_state[key_tabla], pd.DataFrame):
                                 st.session_state[key_tabla] = pd.DataFrame(st.session_state[key_tabla])
-                            def recalcular_tabla_zona(df_zona, x, proy1d, x_ex, proy1d_ex):
+                            
+                            # Obtener espectro 1D puro para comparación
+                            try:
+                                df_espectros_muestra = precargar_espectros_rmn(db, [{"nombre": muestra_base}])
+                                row_espectro_1d = df_espectros_muestra[df_espectros_muestra["archivo"] == nombre_archivo].iloc[0]
+                                df_1d_puro = decodificar_csv_o_excel(row_espectro_1d["contenido"], nombre_archivo)
+                                if df_1d_puro is not None:
+                                    x_1d = df_1d_puro["x"].values
+                                    y_1d = df_1d_puro["y"].values
+                                else:
+                                    x_1d = None
+                                    y_1d = None
+                            except Exception as e:
+                                st.warning(f"No se pudo obtener espectro 1D puro: {e}")
+                                x_1d = None
+                                y_1d = None
+                            
+                            def recalcular_tabla_zona(df_zona, x, proy1d, x_ex, proy1d_ex, x_1d=None, y_1d=None):
                                 df_calc = df_zona.copy()
                                 for i, row in df_calc.iterrows():
                                     try:
@@ -1591,8 +1608,11 @@ def render_rmn_1h_d(df_tipo, db):
                                             df_calc.at[i, "Área"] = None
                                             df_calc.at[i, "Área as"] = None
                                             df_calc.at[i, "H"] = None
-                                            df_calc.at[i, "🔴exH"] = None
+                                            df_calc.at[i, "🔴ex1dH"] = None
+                                            df_calc.at[i, "🔴ex2dH"] = None
                                             continue
+                                        
+                                        # Cálculo usando proyección 1D del 2D (ex2dH)
                                         mask_x = (x >= x_min) & (x <= x_max)
                                         area = np.trapz(proy1d[mask_x], x[mask_x]) if np.any(mask_x) else None
                                         df_calc.at[i, "Área"] = round(float(area), 2) if area is not None else None
@@ -1604,22 +1624,38 @@ def render_rmn_1h_d(df_tipo, db):
                                             df_calc.at[i, "H"] = round(h, 2)
                                         else:
                                             df_calc.at[i, "H"] = None
+                                        
+                                        # Cálculo usando espectro 1D puro (ex1dH)
+                                        if x_1d is not None and y_1d is not None:
+                                            mask_x_1d = (x_1d >= x_min) & (x_1d <= x_max)
+                                            mask_xas_1d = (x_1d >= xas_min) & (x_1d <= xas_max)
+                                            area_1d = np.trapz(y_1d[mask_x_1d], x_1d[mask_x_1d]) if np.any(mask_x_1d) else None
+                                            area_as_1d = np.trapz(y_1d[mask_xas_1d], x_1d[mask_xas_1d]) if np.any(mask_xas_1d) else None
+                                            if area_1d is not None and area_as_1d not in [None, 0] and not np.isnan(has):
+                                                ex1dH = (float(area_1d) * has) / float(area_as_1d)
+                                                df_calc.at[i, "🔴ex1dH"] = round(ex1dH, 2)
+                                            else:
+                                                df_calc.at[i, "🔴ex1dH"] = None
+                                        else:
+                                            df_calc.at[i, "🔴ex1dH"] = None
+                                        
+                                        # Cálculo usando proyección 1D del 2D (ex2dH)
                                         mask_x_ex = (x_ex >= x_min) & (x_ex <= x_max)
-                                        mask_xas_ex = (x_ex >= xas_min) & (x_ex <= xas_max)
                                         area_ex = np.trapz(proy1d_ex[mask_x_ex], x_ex[mask_x_ex]) if np.any(mask_x_ex) else None
                                         area_as_ex = np.trapz(proy1d_ex[mask_xas_ex], x_ex[mask_xas_ex]) if np.any(mask_xas_ex) else None
                                         if area_ex is not None and area_as_ex not in [None, 0] and not np.isnan(has):
-                                            exH = (float(area_ex) * has) / float(area_as_ex)
-                                            df_calc.at[i, "🔴exH"] = round(exH, 2)
+                                            ex2dH = (float(area_ex) * has) / float(area_as_ex)
+                                            df_calc.at[i, "🔴ex2dH"] = round(ex2dH, 2)
                                         else:
-                                            df_calc.at[i, "🔴exH"] = None
+                                            df_calc.at[i, "🔴ex2dH"] = None
                                     except Exception as e:
                                         df_calc.at[i, "Área"] = None
                                         df_calc.at[i, "Área as"] = None
                                         df_calc.at[i, "H"] = None
-                                        df_calc.at[i, "🔴exH"] = None
+                                        df_calc.at[i, "🔴ex1dH"] = None
+                                        df_calc.at[i, "🔴ex2dH"] = None
                                 return df_calc
-                            df_zona_actualizada = recalcular_tabla_zona(st.session_state[key_tabla], x, proy1d, x_ex, proy1d_ex)
+                            df_zona_actualizada = recalcular_tabla_zona(st.session_state[key_tabla], x, proy1d, x_ex, proy1d_ex, x_1d, y_1d)
                             st.session_state[key_tabla] = df_zona_actualizada
                             fig_proy = go.Figure()
                             fig_proy.add_trace(go.Scatter(
@@ -1663,7 +1699,8 @@ def render_rmn_1h_d(df_tipo, db):
                                 "Has": st.column_config.NumberColumn(format="%.2f"),
                                 "Área as": st.column_config.NumberColumn(format="%.2f", label="🔴Área as", disabled=True),
                                 "H": st.column_config.NumberColumn(format="%.2f", label="🔴H", disabled=True),
-                                "🔴exH": st.column_config.NumberColumn(format="%.2f", label="🔴exH", disabled=True),
+                                "🔴ex1dH": st.column_config.NumberColumn(format="%.2f", label="🔴ex1dH", disabled=True),
+                                "🔴ex2dH": st.column_config.NumberColumn(format="%.2f", label="🔴ex2dH", disabled=True),
                                 "Observaciones": st.column_config.TextColumn(),
                                 "Archivo": st.column_config.TextColumn(disabled=True),
                             }
@@ -1684,7 +1721,7 @@ def render_rmn_1h_d(df_tipo, db):
                                 if recalcular:
                                     df_editable["Muestra"] = muestra_base
                                     df_editable["Archivo"] = nombre_archivo
-                                    df_zona_actualizada = recalcular_tabla_zona(df_editable, x, proy1d, x_ex, proy1d_ex)
+                                    df_zona_actualizada = recalcular_tabla_zona(df_editable, x, proy1d, x_ex, proy1d_ex, x_1d, y_1d)
                                     df_zona_actualizada = df_zona_actualizada[columnas_zona]
                                     st.session_state[key_tabla] = df_zona_actualizada
                                 if guardar:

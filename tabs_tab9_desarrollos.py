@@ -52,6 +52,10 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     st.header("03 SÍNTESIS")
 
+    # Subtítulo y campo para tiempo de síntesis
+    st.markdown('Tiempo de síntesis')
+    tiempo_sintesis = st.text_input(' ', value=st.session_state.get('tiempo_sintesis', ''), key='tiempo_sintesis', on_change=guardar_en_firestore)
+
     st.markdown('Perfil de temperatura')
     columnas = ['t [hora]', 't [hh:mm:ss]', 'T [°C]']
     import pandas as pd
@@ -77,6 +81,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "observaciones": st.session_state['observaciones'],
             "downstream": st.session_state['downstream'],
             "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
+            "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
             "perfil_temperatura": st.session_state['perfil_temp_manual'].astype(str).to_dict('records')
         }
         guardar_sintesis_global(db, datos)

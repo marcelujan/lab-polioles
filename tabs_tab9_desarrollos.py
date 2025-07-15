@@ -73,8 +73,8 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     from datetime import datetime, timedelta
     tabla_resultado = []
     for idx, row in perfil_temp_manual.iterrows():
-        t_ini = row['t inicial']
-        tf_ti = row['tf-ti']
+        t_ini = row.get('t inicial', '')
+        tf_ti = row.get('tf-ti', '')
         t_ini_str = t_ini.strip() if isinstance(t_ini, str) else ''
         tf_ti_str = tf_ti.strip() if isinstance(tf_ti, str) else ''
         t_final = ''
@@ -93,8 +93,8 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             't inicial': t_ini_str,
             'tf-ti': tf_ti_str,
             't final': t_final,
-            'T [°C] inicial': row['T [°C] inicial'],
-            'T [°C] final': row['T [°C] final']
+            'T [°C] inicial': row.get('T [°C] inicial', ''),
+            'T [°C] final': row.get('T [°C] final', '')
         })
     st.markdown("**Tabla con t final calculado automáticamente:**")
     st.dataframe(pd.DataFrame(tabla_resultado, columns=columnas_finales), use_container_width=True)

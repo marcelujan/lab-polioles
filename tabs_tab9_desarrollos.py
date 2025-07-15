@@ -54,6 +54,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     # Subtítulo visual para la tabla de perfil de temperatura, igual a 'Condiciones experimentales...'
     st.markdown('#### Perfil de temperatura')
+    st.text_area("Perfil de temperatura", value="", key="perfil_temp_dummy", disabled=True)
     columnas = ['t [hora]', 't [hh:mm:ss]', 'T [°C]']
     import pandas as pd
     if 'perfil_temp_manual' not in st.session_state or list(st.session_state['perfil_temp_manual'].columns) != columnas:

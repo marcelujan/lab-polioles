@@ -52,10 +52,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     st.header("03 SÍNTESIS")
 
-    # Subtítulo y campo para tiempo de síntesis
-    st.markdown('Tiempo de síntesis')
-    tiempo_sintesis = st.text_input('Tiempo de síntesis', value=st.session_state.get('tiempo_sintesis', ''), key='tiempo_sintesis', on_change=guardar_en_firestore)
-
+    # Subtítulo 
     st.markdown('Perfil de temperatura')
     columnas = ['t [hora]', 't [hh:mm:ss]', 'T [°C]']
     import pandas as pd

@@ -52,8 +52,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     st.header("03 SÍNTESIS")
 
+    st.text_area("Perfil de T", value="", key="perfil_t_dummy", disabled=True)
     # Tabla manual de perfil de temperatura
-    columnas = ['t [hora]', 't [hh:mm:ss]', 'T [°C] inicial', 'T [°C] final']
+    columnas = ['t [hora]', 't [hh:mm:ss]', 'T [°C]']
     import pandas as pd
     if 'perfil_temp_manual' not in st.session_state or list(st.session_state['perfil_temp_manual'].columns) != columnas:
         st.session_state['perfil_temp_manual'] = pd.DataFrame(

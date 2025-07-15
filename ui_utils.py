@@ -42,10 +42,16 @@ def mostrar_sector_flotante(db, key_suffix=""):
 
 def get_caracteristicas_mp():
     return [
-        'Índice OH', 'Índice de yodo', 'Índice ácido', 'Índice de peróxidos', 'Humedad', 'Color', 'Viscosidad'
+        "Índice de yodo [% p/p I2 abs]", "Índice OH [mg KHO/g]",
+        "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/100g]",
+        "Humedad [%]", "PM [g/mol]", "Funcionalidad [#]",
+        "Viscosidad dinámica [cP]", "Densidad [g/mL]", "Otro análisis"
     ]
 
 def get_caracteristicas_pt():
     return [
-        'Densidad', 'Viscosidad', 'Índice OH', 'Índice de yodo', 'Índice ácido', 'Color', 'Estabilidad', 'Solubilidad'
+        "Índice de yodo [% p/p I2 abs]", "Índice OH [mg KHO/g]",
+        "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/100g]",
+        "Humedad [%]", "PM [g/mol]", "Funcionalidad [#]",
+        "Viscosidad dinámica [cP]", "Densidad [g/mL]", "Otro análisis"
     ]

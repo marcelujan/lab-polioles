@@ -53,9 +53,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.header("03 SÍNTESIS")
 
     # Tabla manual de perfil de temperatura
-    columnas = ['t inicial', 'tf-ti', 't final', 'T [°C] inicial', 'T [°C] final']
+    columnas = ['t [hora]', 't [hh:mm:ss]', 'T [°C] inicial', 'T [°C] final']
     import pandas as pd
-    if 'perfil_temp_manual' not in st.session_state:
+    if 'perfil_temp_manual' not in st.session_state or list(st.session_state['perfil_temp_manual'].columns) != columnas:
         st.session_state['perfil_temp_manual'] = pd.DataFrame(
             [['' for _ in columnas] for _ in range(6)], columns=columnas
         )

@@ -35,6 +35,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         }
         guardar_sintesis_global(db, datos)
 
+    # Muevo el campo de objetivo de la síntesis al principio
+    st.text_area("Objetivo de la síntesis", value=st.session_state.get('objetivo', ''), key="objetivo", on_change=guardar_en_firestore)
+
     st.header("01 MP")
     st.text_input("Aceite de soja", value=st.session_state.get('aceite_soja', ''), key="aceite_soja", on_change=guardar_en_firestore, placeholder="Especificar tipo o marca de aceite de soja...")
 
@@ -47,15 +50,14 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     observaciones_mp = st.text_area("Observaciones", value=st.session_state.get('observaciones_mp', ''), key="observaciones_mp", on_change=guardar_en_firestore)
 
-    st.header("3. Síntesis")
-    st.text_area("Objetivo de la síntesis", value=st.session_state.get('objetivo', ''), key="objetivo", on_change=guardar_en_firestore)
+    st.header("03 SÍNTESIS")
     st.text_area("Condiciones experimentales (temperatura, tiempo, catalizador, etc.)", value=st.session_state.get('condiciones', ''), key="condiciones", on_change=guardar_en_firestore)
     st.text_area("Observaciones adicionales", value=st.session_state.get('observaciones', ''), key="observaciones", on_change=guardar_en_firestore)
 
-    st.header("4. Downstream (Procesos posteriores)")
+    st.header("DOWNSTREAM")
     st.text_area("Descripción de procesos downstream (purificación, separación, etc.)", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore)
 
-    st.header("5. Caracterización del Producto (PT)")
+    st.header("09 CARACT PT")
     st.markdown("Selecciona las características a determinar en el producto terminado:")
     cols_pt = st.columns(4)
     for idx, c in enumerate(CARACTERISTICAS_PT):

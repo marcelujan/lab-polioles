@@ -72,7 +72,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     perfil_temp_df = st.data_editor(
         perfil_temp_df,
         num_rows="dynamic",
-        columns={"t_hora": "t [hora]", "T_C": "T [°C]"},
         use_container_width=True,
         key="perfil_temp_editor"
     )

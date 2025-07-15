@@ -77,6 +77,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     # Sección Muestreo
     st.markdown('Muestreo')
+    tiempo_sintesis = st.text_input('Tiempo de síntesis', value=st.session_state.get('tiempo_sintesis', ''), key='tiempo_sintesis', on_change=guardar_en_firestore)
     tiempo_muestreo = st.text_input('Tiempo de muestreo', value=st.session_state.get('tiempo_muestreo', ''), key='tiempo_muestreo', on_change=guardar_en_firestore)
     tratamiento_muestras = st.text_area('Tratamiento de muestras', value=st.session_state.get('tratamiento_muestras', ''), key='tratamiento_muestras', on_change=guardar_en_firestore, height=220)
 

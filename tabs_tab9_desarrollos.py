@@ -36,7 +36,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         guardar_sintesis_global(db, datos)
 
     # Muevo el campo de objetivo de la síntesis al principio
-    st.text_area("Objetivo de la síntesis", value=st.session_state.get('objetivo', ''), key="objetivo", on_change=guardar_en_firestore)
+    st.text_area("Objetivo de la síntesis", key="objetivo", on_change=guardar_en_firestore)
 
     st.header("01 MP")
     st.text_input("Aceite de soja", value=st.session_state.get('aceite_soja', ''), key="aceite_soja", on_change=guardar_en_firestore, placeholder="Especificar tipo o marca de aceite de soja...")
@@ -77,7 +77,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     # Sección Muestreo
     st.markdown('Muestreo')
-    tiempo_sintesis = st.text_input('Tiempo de síntesis', value=st.session_state.get('tiempo_sintesis', ''), key='tiempo_sintesis', on_change=guardar_en_firestore)
+    tiempo_sintesis = st.text_input('Tiempo de síntesis', key='tiempo_sintesis', on_change=guardar_en_firestore)
     tiempo_muestreo = st.text_input('Tiempo de muestreo', value=st.session_state.get('tiempo_muestreo', ''), key='tiempo_muestreo', on_change=guardar_en_firestore)
     tratamiento_muestras = st.text_area('Tratamiento de muestras', value=st.session_state.get('tratamiento_muestras', ''), key='tratamiento_muestras', on_change=guardar_en_firestore, height=220)
 

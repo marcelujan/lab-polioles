@@ -53,14 +53,12 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.header("03 SÍNTESIS")
 
     # Tabla manual de perfil de temperatura
-    columnas_editables = ['t inicial', 'tf-ti', 'T [°C] inicial', 'T [°C] final']
-    columnas_finales = ['t inicial', 'tf-ti', 't final', 'T [°C] inicial', 'T [°C] final']
+    columnas = ['t inicial', 'tf-ti', 't final', 'T [°C] inicial', 'T [°C] final']
     import pandas as pd
     if 'perfil_temp_manual' not in st.session_state:
         st.session_state['perfil_temp_manual'] = pd.DataFrame(
-            [['' for _ in columnas_editables] for _ in range(6)], columns=columnas_editables
+            [['' for _ in columnas] for _ in range(6)], columns=columnas
         )
-    # Editor solo para columnas editables
     perfil_temp_manual = st.data_editor(
         st.session_state['perfil_temp_manual'],
         num_rows=6,
@@ -68,36 +66,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         key="perfil_temp_manual_editor"
     )
     st.session_state['perfil_temp_manual'] = perfil_temp_manual
-
-    # Calcular t final
-    from datetime import datetime, timedelta
-    tabla_resultado = []
-    for idx, row in perfil_temp_manual.iterrows():
-        t_ini = row.get('t inicial', '')
-        tf_ti = row.get('tf-ti', '')
-        t_ini_str = t_ini.strip() if isinstance(t_ini, str) else ''
-        tf_ti_str = tf_ti.strip() if isinstance(tf_ti, str) else ''
-        t_final = ''
-        error = False
-        if t_ini_str and tf_ti_str:
-            try:
-                t_ini_dt = datetime.strptime(t_ini_str, "%H:%M:%S")
-                tf_ti_dt = datetime.strptime(tf_ti_str, "%H:%M:%S")
-                delta = timedelta(hours=tf_ti_dt.hour, minutes=tf_ti_dt.minute, seconds=tf_ti_dt.second)
-                t_final_dt = t_ini_dt + delta
-                t_final = t_final_dt.strftime("%H:%M:%S")
-            except Exception:
-                t_final = '⚠️ Error formato'
-                error = True
-        tabla_resultado.append({
-            't inicial': t_ini_str,
-            'tf-ti': tf_ti_str,
-            't final': t_final,
-            'T [°C] inicial': row.get('T [°C] inicial', ''),
-            'T [°C] final': row.get('T [°C] final', '')
-        })
-    st.markdown("**Tabla con t final calculado automáticamente:**")
-    st.dataframe(pd.DataFrame(tabla_resultado, columns=columnas_finales), use_container_width=True)
 
     # Guardar en Firestore al modificar
     def guardar_en_firestore():
@@ -109,7 +77,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "observaciones": st.session_state['observaciones'],
             "downstream": st.session_state['downstream'],
             "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
-            "perfil_temperatura": tabla_resultado
+            "perfil_temperatura": st.session_state['perfil_temp_manual'].astype(str).to_dict('records')
         }
         guardar_sintesis_global(db, datos)
 

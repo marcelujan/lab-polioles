@@ -46,3 +46,20 @@ def eliminar_muestra(db, nombre):
             print(f"⚠ La muestra '{nombre}' no existe en Firestore.")
     except Exception as e:
         print(f"❌ Error al eliminar muestra '{nombre}': {e}")
+
+# Guardar la selección global de síntesis
+def guardar_sintesis_global(db, datos):
+    # Solo un documento global, id fijo 'seleccion'
+    db.collection("sintesis_global").document("seleccion").set(datos)
+
+# Cargar la selección global de síntesis
+def cargar_sintesis_global(db):
+    try:
+        doc = db.collection("sintesis_global").document("seleccion").get()
+        if doc.exists:
+            return doc.to_dict()
+        else:
+            return None
+    except Exception as e:
+        print(f"❌ Error al cargar síntesis global: {e}")
+        return None

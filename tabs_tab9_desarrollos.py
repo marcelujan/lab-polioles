@@ -37,10 +37,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         }
         guardar_sintesis_global(db, datos)
 
-    st.header("1. Materia Prima (MP)")
-    st.text_input("Nombre de la materia prima", value=st.session_state.get('nombre_mp', ''), key="nombre_mp", on_change=guardar_en_firestore)
-    st.text_input("Proveedor", value=st.session_state.get('proveedor_mp', ''), key="proveedor_mp", on_change=guardar_en_firestore)
-    st.text_input("Lote", value=st.session_state.get('lote_mp', ''), key="lote_mp", on_change=guardar_en_firestore)
+    st.header("01 MP")
+    st.markdown("**Aceite de soja**")
+    st.text_input("", value=st.session_state.get('aceite_soja', ''), key="aceite_soja", on_change=guardar_en_firestore, placeholder="Especificar tipo o marca de aceite de soja...")
     st.number_input("Cantidad (g)", min_value=0.0, step=0.1, value=st.session_state.get('cantidad_mp', 0.0), key="cantidad_mp", on_change=guardar_en_firestore)
 
     st.header("2. Caracterización de MP")

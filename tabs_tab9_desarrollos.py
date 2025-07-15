@@ -62,14 +62,22 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             {"t_hora": "00:30:00", "T_C": 35},
             {"t_hora": "01:00:00", "T_C": 45},
         ]
+    import pandas as pd
+    # Asegura que siempre sea DataFrame al editar
+    if isinstance(st.session_state['perfil_temp_edit'], list):
+        perfil_temp_df = pd.DataFrame(st.session_state['perfil_temp_edit'])
+    else:
+        perfil_temp_df = st.session_state['perfil_temp_edit']
+
     perfil_temp_df = st.data_editor(
-        st.session_state['perfil_temp_edit'],
+        perfil_temp_df,
         num_rows="dynamic",
         columns={"t_hora": "t [hora]", "T_C": "T [°C]"},
         use_container_width=True,
         key="perfil_temp_editor"
     )
-    st.session_state['perfil_temp_edit'] = perfil_temp_df.to_dict("records") if hasattr(perfil_temp_df, 'to_dict') else perfil_temp_df
+    # Guarda siempre como lista de dicts
+    st.session_state['perfil_temp_edit'] = perfil_temp_df.to_dict("records")
 
     # Calcular tabla resultante
     from datetime import datetime, timedelta
@@ -97,7 +105,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             })
             temp_anterior = T_C
     st.markdown("**Tabla calculada de perfil de temperatura:**")
-    import pandas as pd
     st.dataframe(pd.DataFrame(tabla_resultado), use_container_width=True)
 
     # Guardar en Firestore al modificar

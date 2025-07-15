@@ -27,8 +27,10 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         st.header("2. Caracterización de MP")
         st.markdown("Selecciona las características a determinar:")
         caract_mp = {}
-        for c in CARACTERISTICAS_MP:
-            caract_mp[c] = st.checkbox(c, key=f"caract_mp_{c}")
+        cols_mp = st.columns(4)
+        for idx, c in enumerate(CARACTERISTICAS_MP):
+            with cols_mp[idx % 4]:
+                caract_mp[c] = st.checkbox(c, key=f"caract_mp_{c}")
 
         st.header("3. Síntesis")
         objetivo = st.text_area("Objetivo de la síntesis")
@@ -41,8 +43,10 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         st.header("5. Caracterización del Producto (PT)")
         st.markdown("Selecciona las características a determinar en el producto terminado:")
         caract_pt = {}
-        for c in CARACTERISTICAS_PT:
-            caract_pt[c] = st.checkbox(c, key=f"caract_pt_{c}")
+        cols_pt = st.columns(4)
+        for idx, c in enumerate(CARACTERISTICAS_PT):
+            with cols_pt[idx % 4]:
+                caract_pt[c] = st.checkbox(c, key=f"caract_pt_{c}")
 
         submitted = st.form_submit_button("Guardar síntesis")
 

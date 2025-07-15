@@ -26,6 +26,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         datos = {
             # Elimino los campos de materia prima que ya no se usan
             "caract_mp": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
+            "observaciones_mp": st.session_state.get('observaciones_mp', ''),
             "objetivo": st.session_state['objetivo'],
             "condiciones": st.session_state['condiciones'],
             "observaciones": st.session_state['observaciones'],
@@ -43,6 +44,8 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS_MP):
         with cols_mp[idx % 4]:
             st.checkbox(c, value=st.session_state.get(f"caract_mp_{c}", False), key=f"caract_mp_{c}", on_change=guardar_en_firestore)
+
+    observaciones_mp = st.text_area("Observaciones", value=st.session_state.get('observaciones_mp', ''), key="observaciones_mp", on_change=guardar_en_firestore)
 
     st.header("3. Síntesis")
     st.text_area("Objetivo de la síntesis", value=st.session_state.get('objetivo', ''), key="objetivo", on_change=guardar_en_firestore)
@@ -63,6 +66,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.write({
         # Elimino la sección de Materia Prima
         "Características MP": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
+        "Observaciones MP": st.session_state.get('observaciones_mp', ''),
         "Síntesis": {
             "Objetivo": st.session_state.get('objetivo', ''),
             "Condiciones": st.session_state.get('condiciones', ''),

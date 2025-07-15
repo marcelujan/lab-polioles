@@ -52,59 +52,20 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     st.header("03 SÍNTESIS")
 
-    # Campo para hora de inicio
-    hora_inicio = st.time_input("Hora de inicio", value=st.session_state.get('hora_inicio', None) or None, key="hora_inicio", help="Hora de inicio del perfil de temperatura")
-
-    # Tabla editable tipo Excel
-    if 'perfil_temp_edit' not in st.session_state:
-        st.session_state['perfil_temp_edit'] = [
-            {"t_hora": "00:00:00", "T_C": 25},
-            {"t_hora": "00:30:00", "T_C": 35},
-            {"t_hora": "01:00:00", "T_C": 45},
-        ]
+    # Tabla manual de perfil de temperatura
     import pandas as pd
-    # Asegura que siempre sea DataFrame al editar
-    if isinstance(st.session_state['perfil_temp_edit'], list):
-        perfil_temp_df = pd.DataFrame(st.session_state['perfil_temp_edit'])
-    else:
-        perfil_temp_df = st.session_state['perfil_temp_edit']
-
-    perfil_temp_df = st.data_editor(
-        perfil_temp_df,
-        num_rows="dynamic",
+    columnas = ['t inicial', 't final', 'T [°C] inicial', 'T [°C] final']
+    if 'perfil_temp_manual' not in st.session_state:
+        st.session_state['perfil_temp_manual'] = pd.DataFrame(
+            [['' for _ in columnas] for _ in range(6)], columns=columnas
+        )
+    perfil_temp_manual = st.data_editor(
+        st.session_state['perfil_temp_manual'],
+        num_rows=6,
         use_container_width=True,
-        key="perfil_temp_editor"
+        key="perfil_temp_manual_editor"
     )
-    # Guarda siempre como lista de dicts
-    st.session_state['perfil_temp_edit'] = perfil_temp_df.to_dict("records")
-
-    # Calcular tabla resultante
-    from datetime import datetime, timedelta
-    def sumar_horas(hora_base, delta_str):
-        h, m, s = map(int, delta_str.split(":"))
-        return (hora_base + timedelta(hours=h, minutes=m, seconds=s)).strftime("%H:%M:%S")
-
-    tabla_resultado = []
-    if hora_inicio is not None and st.session_state['perfil_temp_edit']:
-        hora_base = datetime.strptime(str(hora_inicio), "%H:%M:%S")
-        temp_anterior = None
-        hora_actual = hora_base
-        for idx, fila in enumerate(st.session_state['perfil_temp_edit']):
-            t_hora = fila.get("t_hora", "00:00:00")
-            T_C = fila.get("T_C", "")
-            if idx == 0:
-                rango_temp = str(T_C)
-            else:
-                rango_temp = f"{temp_anterior} --> {T_C}"
-            hora_absoluta = sumar_horas(hora_base, t_hora)
-            tabla_resultado.append({
-                "t [hora]": t_hora,
-                "t [hh:mm:ss]": hora_absoluta,
-                "T [°C]": rango_temp
-            })
-            temp_anterior = T_C
-    st.markdown("**Tabla calculada de perfil de temperatura:**")
-    st.dataframe(pd.DataFrame(tabla_resultado), use_container_width=True)
+    st.session_state['perfil_temp_manual'] = perfil_temp_manual
 
     # Guardar en Firestore al modificar
     def guardar_en_firestore():
@@ -116,10 +77,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "observaciones": st.session_state['observaciones'],
             "downstream": st.session_state['downstream'],
             "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
-            "perfil_temperatura": {
-                "hora_inicio": str(hora_inicio) if hora_inicio else None,
-                "tabla": st.session_state['perfil_temp_edit']
-            }
+            "perfil_temperatura": st.session_state['perfil_temp_manual'].astype(str).to_dict('records')
         }
         guardar_sintesis_global(db, datos)
 

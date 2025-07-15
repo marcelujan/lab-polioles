@@ -39,3 +39,13 @@ def mostrar_sector_flotante(db, key_suffix=""):
             observaciones.append(nueva_entrada)
             obs_ref.set({"observaciones": observaciones})
             st.success("Observación guardada correctamente.")
+
+def get_caracteristicas_mp():
+    return [
+        'Índice OH', 'Índice de yodo', 'Índice ácido', 'Índice de peróxidos', 'Humedad', 'Color', 'Viscosidad'
+    ]
+
+def get_caracteristicas_pt():
+    return [
+        'Densidad', 'Viscosidad', 'Índice OH', 'Índice de yodo', 'Índice ácido', 'Color', 'Estabilidad', 'Solubilidad'
+    ]

@@ -1,13 +1,6 @@
 import streamlit as st
 from firestore_utils import cargar_sintesis_global, guardar_sintesis_global
-
-# Opciones de características para checkboxes
-CARACTERISTICAS_MP = [
-    'Índice OH', 'Índice de yodo', 'Índice ácido', 'Índice de peróxidos', 'Humedad', 'Color', 'Viscosidad'
-]
-CARACTERISTICAS_PT = [
-    'Densidad', 'Viscosidad', 'Índice OH', 'Índice de yodo', 'Índice ácido', 'Color', 'Estabilidad', 'Solubilidad'
-]
+from ui_utils import get_caracteristicas_mp, get_caracteristicas_pt
 
 
 def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
@@ -27,7 +20,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         st.session_state['lote_mp'] = ''
     if 'cantidad_mp' not in st.session_state:
         st.session_state['cantidad_mp'] = 0.0
-    for c in CARACTERISTICAS_MP:
+    for c in get_caracteristicas_mp():
         if f"caract_mp_{c}" not in st.session_state:
             st.session_state[f"caract_mp_{c}"] = False
     if 'objetivo' not in st.session_state:
@@ -38,7 +31,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         st.session_state['observaciones'] = ''
     if 'downstream' not in st.session_state:
         st.session_state['downstream'] = ''
-    for c in CARACTERISTICAS_PT:
+    for c in get_caracteristicas_pt():
         if f"caract_pt_{c}" not in st.session_state:
             st.session_state[f"caract_pt_{c}"] = False
 
@@ -52,11 +45,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                     st.session_state[campo] = datos_cargados[campo]
             # Cargar checkboxes MP
             if 'caract_mp' in datos_cargados:
-                for c in CARACTERISTICAS_MP:
+                for c in get_caracteristicas_mp():
                     st.session_state[f"caract_mp_{c}"] = c in datos_cargados['caract_mp']
             # Cargar checkboxes PT
             if 'caract_pt' in datos_cargados:
-                for c in CARACTERISTICAS_PT:
+                for c in get_caracteristicas_pt():
                     st.session_state[f"caract_pt_{c}"] = c in datos_cargados['caract_pt']
         st.session_state['sintesis_global_cargada'] = True
 
@@ -67,12 +60,12 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "proveedor_mp": st.session_state['proveedor_mp'],
             "lote_mp": st.session_state['lote_mp'],
             "cantidad_mp": st.session_state['cantidad_mp'],
-            "caract_mp": [c for c in CARACTERISTICAS_MP if st.session_state[f"caract_mp_{c}"]],
+            "caract_mp": [c for c in get_caracteristicas_mp() if st.session_state[f"caract_mp_{c}"]],
             "objetivo": st.session_state['objetivo'],
             "condiciones": st.session_state['condiciones'],
             "observaciones": st.session_state['observaciones'],
             "downstream": st.session_state['downstream'],
-            "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state[f"caract_pt_{c}"]]
+            "caract_pt": [c for c in get_caracteristicas_pt() if st.session_state[f"caract_pt_{c}"]]
         }
         guardar_sintesis_global(db, datos)
 
@@ -86,7 +79,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.header("2. Caracterización de MP")
     st.markdown("Selecciona las características a determinar:")
     cols_mp = st.columns(4)
-    for idx, c in enumerate(CARACTERISTICAS_MP):
+    for idx, c in enumerate(get_caracteristicas_mp()):
         with cols_mp[idx % 4]:
             st.checkbox(c, value=st.session_state[f"caract_mp_{c}"], key=f"caract_mp_{c}", on_change=guardar_en_firestore)
 
@@ -101,7 +94,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.header("5. Caracterización del Producto (PT)")
     st.markdown("Selecciona las características a determinar en el producto terminado:")
     cols_pt = st.columns(4)
-    for idx, c in enumerate(CARACTERISTICAS_PT):
+    for idx, c in enumerate(get_caracteristicas_pt()):
         with cols_pt[idx % 4]:
             st.checkbox(c, value=st.session_state[f"caract_pt_{c}"], key=f"caract_pt_{c}", on_change=guardar_en_firestore)
 
@@ -114,13 +107,13 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "Lote": st.session_state['lote_mp'],
             "Cantidad": st.session_state['cantidad_mp']
         },
-        "Características MP": [c for c in CARACTERISTICAS_MP if st.session_state[f"caract_mp_{c}"]],
+        "Características MP": [c for c in get_caracteristicas_mp() if st.session_state[f"caract_mp_{c}"]],
         "Síntesis": {
             "Objetivo": st.session_state['objetivo'],
             "Condiciones": st.session_state['condiciones'],
             "Observaciones": st.session_state['observaciones']
         },
         "Downstream": st.session_state['downstream'],
-        "Características PT": [c for c in CARACTERISTICAS_PT if st.session_state[f"caract_pt_{c}"]]
+        "Características PT": [c for c in get_caracteristicas_pt() if st.session_state[f"caract_pt_{c}"]]
     })
     

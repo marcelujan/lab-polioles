@@ -71,6 +71,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     )
     st.session_state['perfil_temp_manual'] = perfil_temp_manual
 
+    # Sección Muestreo
+    st.markdown('Muestreo')
+    tiempo_muestreo = st.text_input('Tiempo de muestreo', value=st.session_state.get('tiempo_muestreo', ''), key='tiempo_muestreo', on_change=guardar_en_firestore)
+    tratamiento_muestras = st.text_input('Tratamiento de muestras', value=st.session_state.get('tratamiento_muestras', ''), key='tratamiento_muestras', on_change=guardar_en_firestore)
+
     # Guardar en Firestore al modificar
     def guardar_en_firestore():
         datos = {
@@ -82,7 +87,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "downstream": st.session_state['downstream'],
             "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
             "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
-            "perfil_temperatura": st.session_state['perfil_temp_manual'].astype(str).to_dict('records')
+            "perfil_temperatura": st.session_state['perfil_temp_manual'].astype(str).to_dict('records'),
+            "tiempo_muestreo": st.session_state.get('tiempo_muestreo', ''),
+            "tratamiento_muestras": st.session_state.get('tratamiento_muestras', ''),
         }
         guardar_sintesis_global(db, datos)
 

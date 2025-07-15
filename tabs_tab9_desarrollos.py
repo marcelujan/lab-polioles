@@ -81,8 +81,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         }
         guardar_sintesis_global(db, datos)
 
-    st.text_area("Condiciones experimentales (temperatura, tiempo, catalizador, etc.)", value=st.session_state.get('condiciones', ''), key="condiciones", on_change=guardar_en_firestore)
-    st.text_area("Observaciones adicionales", value=st.session_state.get('observaciones', ''), key="observaciones", on_change=guardar_en_firestore)
+    # Elimino la sección de condiciones experimentales
+    # st.text_area("Condiciones experimentales (temperatura, tiempo, catalizador, etc.)", ...)
+    st.text_area("Observaciones", value=st.session_state.get('observaciones', ''), key="observaciones", on_change=guardar_en_firestore)
 
     st.header("DOWNSTREAM")
     st.text_area("Descripción de procesos downstream (purificación, separación, etc.)", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore)

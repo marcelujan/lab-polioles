@@ -53,7 +53,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.header("03 SÍNTESIS")
 
     # Subtítulo visual para la tabla de perfil de temperatura, igual a 'Condiciones experimentales...'
-    st.markdown('#### Perfil de temperatura')
     st.text_area("Perfil de temperatura", value="", key="perfil_temp_dummy", disabled=True)
     columnas = ['t [hora]', 't [hh:mm:ss]', 'T [°C]']
     import pandas as pd
@@ -63,7 +62,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         )
     perfil_temp_manual = st.data_editor(
         st.session_state['perfil_temp_manual'],
-        num_rows=6,
+        num_rows='fixed',
         use_container_width=True,
         key="perfil_temp_manual_editor"
     )

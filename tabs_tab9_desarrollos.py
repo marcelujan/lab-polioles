@@ -24,10 +24,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     def guardar_en_firestore():
         datos = {
-            "nombre_mp": st.session_state['nombre_mp'],
-            "proveedor_mp": st.session_state['proveedor_mp'],
-            "lote_mp": st.session_state['lote_mp'],
-            "cantidad_mp": st.session_state['cantidad_mp'],
+            # Elimino los campos de materia prima que ya no se usan
             "caract_mp": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
             "objetivo": st.session_state['objetivo'],
             "condiciones": st.session_state['condiciones'],
@@ -41,7 +38,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.text_input("Aceite de soja", value=st.session_state.get('aceite_soja', ''), key="aceite_soja", on_change=guardar_en_firestore, placeholder="Especificar tipo o marca de aceite de soja...")
 
     st.header("02 CARACT MP")
-    st.markdown("Selecciona las características a determinar:")
+    st.markdown("Aceite de soja")
     cols_mp = st.columns(4)
     for idx, c in enumerate(CARACTERISTICAS_MP):
         with cols_mp[idx % 4]:
@@ -64,12 +61,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     st.write("**Resumen de la síntesis:**")
     st.write({
-        "Materia Prima": {
-            "Nombre": st.session_state.get('nombre_mp', ''),
-            "Proveedor": st.session_state.get('proveedor_mp', ''),
-            "Lote": st.session_state.get('lote_mp', ''),
-            "Cantidad": st.session_state.get('cantidad_mp', 0.0)
-        },
+        # Elimino la sección de Materia Prima
         "Características MP": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
         "Síntesis": {
             "Objetivo": st.session_state.get('objetivo', ''),

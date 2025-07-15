@@ -40,7 +40,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.header("01 MP")
     st.text_input("Aceite de soja", value=st.session_state.get('aceite_soja', ''), key="aceite_soja", on_change=guardar_en_firestore, placeholder="Especificar tipo o marca de aceite de soja...")
 
-    st.header("2. Caracterización de MP")
+    st.header("02 CARACT MP")
     st.markdown("Selecciona las características a determinar:")
     cols_mp = st.columns(4)
     for idx, c in enumerate(CARACTERISTICAS_MP):

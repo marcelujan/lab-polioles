@@ -38,9 +38,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         guardar_sintesis_global(db, datos)
 
     st.header("01 MP")
-    st.markdown("**Aceite de soja**")
-    st.text_input("", value=st.session_state.get('aceite_soja', ''), key="aceite_soja", on_change=guardar_en_firestore, placeholder="Especificar tipo o marca de aceite de soja...")
-    st.number_input("Cantidad (g)", min_value=0.0, step=0.1, value=st.session_state.get('cantidad_mp', 0.0), key="cantidad_mp", on_change=guardar_en_firestore)
+    st.text_input("Aceite de soja", value=st.session_state.get('aceite_soja', ''), key="aceite_soja", on_change=guardar_en_firestore, placeholder="Especificar tipo o marca de aceite de soja...")
 
     st.header("2. Caracterización de MP")
     st.markdown("Selecciona las características a determinar:")

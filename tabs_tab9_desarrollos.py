@@ -181,15 +181,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     )
     st.session_state['perfil_temp_manual'] = perfil_temp_manual
 
-    # Botón para guardar manualmente el perfil de temperatura (opcional)
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        if st.button('💾 Guardar perfil de temperatura'):
-            guardar_perfil_temp()
-            st.success("Perfil de temperatura guardado!")
-    with col2:
-        st.info("💡 La tabla se guarda automáticamente al editar. El botón es opcional.")
-
     # Sección Muestreo
     st.markdown('Muestreo')
     # Solo una vez el campo 'Tiempo de síntesis', dentro de Muestreo

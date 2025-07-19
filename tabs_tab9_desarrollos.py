@@ -49,25 +49,21 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             
             # Perfil de temperatura
             if 'perfil_temperatura' in datos_cargados:
-                st.write("🔍 Debug - Cargando perfil de temperatura desde Firestore:")
-                st.write(f"Datos cargados: {datos_cargados['perfil_temperatura']}")
-                
                 try:
                     # Intentar cargar el DataFrame desde los datos guardados
                     perfil_data = datos_cargados['perfil_temperatura']
                     if perfil_data and len(perfil_data) > 0:
                         # Convertir de vuelta a DataFrame
                         df_temp = pd.DataFrame(perfil_data)
-                        st.write(f"🔍 Debug - DataFrame cargado: {df_temp}")
-                        st.write(f"🔍 Debug - Columnas del DataFrame: {list(df_temp.columns)}")
-                        st.write(f"🔍 Debug - Columnas esperadas: {['t [hora]', 't [hh:mm:ss]', 'T [°C]']}")
                         
                         # Verificar si las columnas coinciden (ignorando el orden)
                         columnas_esperadas = set(['t [hora]', 't [hh:mm:ss]', 'T [°C]'])
                         columnas_actuales = set(df_temp.columns)
                         
                         if columnas_actuales == columnas_esperadas:
-                            st.session_state['perfil_temp_manual'] = df_temp
+                            # Reordenar las columnas al orden correcto
+                            df_reordenado = df_temp[['t [hora]', 't [hh:mm:ss]', 'T [°C]']]
+                            st.session_state['perfil_temp_manual'] = df_reordenado
                             st.success("✅ Perfil de temperatura cargado correctamente")
                         else:
                             # Si las columnas no coinciden, intentar reordenar
@@ -154,11 +150,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     # Función para guardar automáticamente cuando cambie la tabla
     def guardar_perfil_temp():
         if 'perfil_temp_manual' in st.session_state:
-            # Debug: mostrar qué se está guardando
-            st.write("🔍 Debug - Guardando perfil de temperatura:")
-            st.write(f"Datos de la tabla: {st.session_state['perfil_temp_manual'].to_dict('records')}")
-            st.write(f"Columnas de la tabla: {list(st.session_state['perfil_temp_manual'].columns)}")
-            
             try:
                 datos = {
                     "caract_mp": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
@@ -189,10 +180,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         on_change=guardar_perfil_temp
     )
     st.session_state['perfil_temp_manual'] = perfil_temp_manual
-    
-    # Debug para ver si la tabla cambió
-    if 'perfil_temp_manual_editor' in st.session_state:
-        st.write("🔍 Debug - Tabla actualizada en session_state")
 
     # Botón para guardar manualmente el perfil de temperatura (opcional)
     col1, col2 = st.columns([1, 3])

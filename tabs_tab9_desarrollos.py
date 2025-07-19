@@ -144,11 +144,12 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.header("03 SÍNTESIS")
 
     # Selector de volumen de reactor
-    volumen_reactor = st.selectbox(
+    volumen_reactor = st.radio(
         "Volumen de reactor",
-        options=["1 L", "2 L", "3 L", "4 L", "5 L"],
+        options=["1 L", "5 L"],
         key="volumen_reactor",
-        on_change=guardar_en_firestore
+        on_change=guardar_en_firestore,
+        horizontal=True
     )
 
     # Subtítulo 

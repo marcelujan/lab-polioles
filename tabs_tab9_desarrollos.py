@@ -49,9 +49,37 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             
             # Perfil de temperatura
             if 'perfil_temperatura' in datos_cargados:
+                st.write("🔍 Debug - Cargando perfil de temperatura desde Firestore:")
+                st.write(f"Datos cargados: {datos_cargados['perfil_temperatura']}")
+                
                 try:
-                    st.session_state['perfil_temp_manual'] = pd.DataFrame(datos_cargados['perfil_temperatura'])
-                except:
+                    # Intentar cargar el DataFrame desde los datos guardados
+                    perfil_data = datos_cargados['perfil_temperatura']
+                    if perfil_data and len(perfil_data) > 0:
+                        # Convertir de vuelta a DataFrame
+                        df_temp = pd.DataFrame(perfil_data)
+                        # Asegurar que tenga las columnas correctas
+                        if list(df_temp.columns) == ['t [hora]', 't [hh:mm:ss]', 'T [°C]']:
+                            st.session_state['perfil_temp_manual'] = df_temp
+                            st.success("✅ Perfil de temperatura cargado correctamente")
+                        else:
+                            # Si las columnas no coinciden, crear DataFrame vacío
+                            data = [['', '', ''] for _ in range(6)]
+                            st.session_state['perfil_temp_manual'] = pd.DataFrame(
+                                data, 
+                                columns=['t [hora]', 't [hh:mm:ss]', 'T [°C]']
+                            )
+                            st.warning("⚠️ Columnas no coinciden, creando tabla vacía")
+                    else:
+                        # Si no hay datos, crear DataFrame vacío
+                        data = [['', '', ''] for _ in range(6)]
+                        st.session_state['perfil_temp_manual'] = pd.DataFrame(
+                            data, 
+                            columns=['t [hora]', 't [hh:mm:ss]', 'T [°C]']
+                        )
+                        st.info("ℹ️ No hay datos de perfil guardados, creando tabla vacía")
+                except Exception as e:
+                    st.error(f"❌ Error al cargar perfil de temperatura: {e}")
                     # Si hay error, crear DataFrame vacío
                     data = [['', '', ''] for _ in range(6)]
                     st.session_state['perfil_temp_manual'] = pd.DataFrame(
@@ -109,17 +137,48 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             data, 
             columns=['t [hora]', 't [hh:mm:ss]', 'T [°C]']
         )
+    
+    # Función para guardar automáticamente cuando cambie la tabla
+    def guardar_perfil_temp():
+        if 'perfil_temp_manual' in st.session_state:
+            # Debug: mostrar qué se está guardando
+            st.write("🔍 Debug - Guardando perfil de temperatura:")
+            st.write(f"Datos de la tabla: {st.session_state['perfil_temp_manual'].to_dict('records')}")
+            
+            datos = {
+                "caract_mp": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
+                "observaciones_mp": st.session_state.get('observaciones_mp', ''),
+                "objetivo": st.session_state.get('objetivo', ''),
+                "condiciones": st.session_state.get('condiciones', ''),
+                "observaciones": st.session_state.get('observaciones', ''),
+                "downstream": st.session_state.get('downstream', ''),
+                "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
+                "aceite_soja": st.session_state.get('aceite_soja', ''),
+                "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
+                "tiempo_muestreo": st.session_state.get('tiempo_muestreo', ''),
+                "tratamiento_muestras": st.session_state.get('tratamiento_muestras', ''),
+                "perfil_temperatura": st.session_state['perfil_temp_manual'].astype(str).to_dict('records')
+            }
+            guardar_sintesis_global(db, datos)
+            st.success("✅ Perfil guardado en Firestore")
+    
     perfil_temp_manual = st.data_editor(
         st.session_state['perfil_temp_manual'],
         num_rows='fixed',
         use_container_width=True,
-        key="perfil_temp_manual_editor"
+        key="perfil_temp_manual_editor",
+        on_change=guardar_perfil_temp
     )
     st.session_state['perfil_temp_manual'] = perfil_temp_manual
 
-    # Botón para guardar manualmente el perfil de temperatura
-    if st.button('Guardar perfil de temperatura'):
-        guardar_en_firestore()
+    # Botón para guardar manualmente el perfil de temperatura (opcional)
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        if st.button('💾 Guardar perfil de temperatura'):
+            guardar_perfil_temp()
+            st.success("Perfil de temperatura guardado!")
+    with col2:
+        st.info("💡 La tabla se guarda automáticamente al editar. El botón es opcional.")
 
     # Sección Muestreo
     st.markdown('Muestreo')

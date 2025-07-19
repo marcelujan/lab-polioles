@@ -73,7 +73,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                             try:
                                 df_reordenado = df_temp[['t [hora]', 't [hh:mm:ss]', 'T [°C]']]
                                 st.session_state['perfil_temp_manual'] = df_reordenado
-                                st.success("✅ Perfil de temperatura cargado y reordenado correctamente")
                             except:
                                 # Si no se puede reordenar, crear DataFrame vacío
                                 data = [['', '', ''] for _ in range(6)]

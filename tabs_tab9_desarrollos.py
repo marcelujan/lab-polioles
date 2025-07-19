@@ -37,6 +37,10 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             if 'tratamiento_muestras' in datos_cargados:
                 st.session_state['tratamiento_muestras'] = datos_cargados['tratamiento_muestras']
             
+            # Campo volumen_reactor
+            if 'volumen_reactor' in datos_cargados:
+                st.session_state['volumen_reactor'] = datos_cargados['volumen_reactor']
+            
             # Características MP
             if 'caract_mp' in datos_cargados:
                 for c in CARACTERISTICAS_MP:
@@ -113,6 +117,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
             "tiempo_muestreo": st.session_state.get('tiempo_muestreo', ''),
             "tratamiento_muestras": st.session_state.get('tratamiento_muestras', ''),
+            "volumen_reactor": st.session_state.get('volumen_reactor', ''),
         }
         
         # Agregar perfil de temperatura si existe
@@ -137,6 +142,14 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     observaciones_mp = st.text_area("Observaciones", value=st.session_state.get('observaciones_mp', ''), key="observaciones_mp", on_change=guardar_en_firestore)
 
     st.header("03 SÍNTESIS")
+
+    # Selector de volumen de reactor
+    volumen_reactor = st.selectbox(
+        "Volumen de reactor",
+        options=["1 L", "2 L", "3 L", "4 L", "5 L"],
+        key="volumen_reactor",
+        on_change=guardar_en_firestore
+    )
 
     # Subtítulo 
     st.markdown('Perfil de temperatura')
@@ -163,6 +176,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                     "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
                     "tiempo_muestreo": st.session_state.get('tiempo_muestreo', ''),
                     "tratamiento_muestras": st.session_state.get('tratamiento_muestras', ''),
+                    "volumen_reactor": st.session_state.get('volumen_reactor', ''),
                     "perfil_temperatura": st.session_state['perfil_temp_manual'].astype(str).to_dict('records')
                 }
                 guardar_sintesis_global(db, datos)

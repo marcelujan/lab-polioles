@@ -237,47 +237,43 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "Downstream": st.session_state.get('downstream', ''),
             "Características PT": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)]
         })
-    
-# --- Botón de backup PDF al final de la hoja ---
-def generar_pdf(datos):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Backup de la hoja de desarrollo", ln=True, align='C')
-    pdf.ln(10)
-    for key, value in datos.items():
-        if isinstance(value, list):
-            pdf.multi_cell(0, 10, f"{key}: {', '.join(str(v) for v in value)}")
-        else:
-            pdf.multi_cell(0, 10, f"{key}: {value}")
-        pdf.ln(2)
-    return pdf.output(dest='S').encode('latin-1')
 
-# Recolecta los datos que quieras respaldar
-CARACTERISTICAS_MP = get_caracteristicas_mp()
-CARACTERISTICAS_PT = get_caracteristicas_pt()
-datos_backup = {
-    "Objetivo": st.session_state.get("objetivo", ""),
-    "Condiciones": st.session_state.get("condiciones", ""),
-    "Observaciones MP": st.session_state.get("observaciones_mp", ""),
-    "CARACT MP": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
-    "Observaciones síntesis": st.session_state.get("observaciones_tiempo", ""),
-    "Tiempo de síntesis": st.session_state.get("tiempo_sintesis", ""),
-    "Tiempo de muestreo": st.session_state.get("tiempo_muestreo", ""),
-    "Tratamiento de muestras": st.session_state.get("tratamiento_muestras", ""),
-    "Observaciones muestreo": st.session_state.get("observaciones", ""),
-    "Downstream": st.session_state.get("downstream", ""),
-    "Observaciones downstream": st.session_state.get("observaciones_downstream", ""),
-    "CARACT PT": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
-    "Observaciones PT": st.session_state.get("observaciones_pt", ""),
-    # Puedes agregar más campos si lo deseas
-}
+    # --- Botón de backup PDF al final de la hoja ---
+    def generar_pdf(datos):
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+        pdf.cell(200, 10, txt="Backup de la hoja de desarrollo", ln=True, align='C')
+        pdf.ln(10)
+        for key, value in datos.items():
+            if isinstance(value, list):
+                pdf.multi_cell(0, 10, f"{key}: {', '.join(str(v) for v in value)}")
+            else:
+                pdf.multi_cell(0, 10, f"{key}: {value}")
+            pdf.ln(2)
+        return pdf.output(dest='S').encode('latin-1')
 
-pdf_bytes = generar_pdf(datos_backup)
-st.download_button(
-    label="Descargar backup en PDF",
-    data=pdf_bytes,
-    file_name="backup_hoja_desarrollo.pdf",
-    mime="application/pdf"
-)
+    datos_backup = {
+        "Objetivo": st.session_state.get("objetivo", ""),
+        "Condiciones": st.session_state.get("condiciones", ""),
+        "Observaciones MP": st.session_state.get("observaciones_mp", ""),
+        "CARACT MP": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
+        "Observaciones síntesis": st.session_state.get("observaciones_tiempo", ""),
+        "Tiempo de síntesis": st.session_state.get("tiempo_sintesis", ""),
+        "Tiempo de muestreo": st.session_state.get("tiempo_muestreo", ""),
+        "Tratamiento de muestras": st.session_state.get("tratamiento_muestras", ""),
+        "Observaciones muestreo": st.session_state.get("observaciones", ""),
+        "Downstream": st.session_state.get("downstream", ""),
+        "Observaciones downstream": st.session_state.get("observaciones_downstream", ""),
+        "CARACT PT": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
+        "Observaciones PT": st.session_state.get("observaciones_pt", ""),
+    }
+
+    pdf_bytes = generar_pdf(datos_backup)
+    st.download_button(
+        label="Descargar backup en PDF",
+        data=pdf_bytes,
+        file_name="backup_hoja_desarrollo.pdf",
+        mime="application/pdf"
+    )
     

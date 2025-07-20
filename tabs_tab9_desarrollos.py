@@ -133,6 +133,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         st.session_state['sintesis_global_cargada'] = True
 
     def guardar_en_firestore():
+        print("CALLBACK GUARDAR EN FIRESTORE")
         datos = {
             # Campos básicos
             "caract_mp": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
@@ -144,7 +145,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "observaciones_downstream": st.session_state.get('observaciones_downstream', ''),
             "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
             "observaciones_pt": st.session_state.get('observaciones_pt', ''),
-            
             # Campos adicionales
             "aceite_soja": st.session_state.get('aceite_soja', ''),
             "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
@@ -153,14 +153,12 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "tratamiento_muestras": st.session_state.get('tratamiento_muestras', ''),
             "volumen_reactor": st.session_state.get('volumen_reactor', ''),
         }
-        
         # Debug print para ver qué se guarda en caract_mp y caract_pt
         print("GUARDANDO caract_mp:", datos["caract_mp"])
         print("GUARDANDO caract_pt:", datos["caract_pt"])
         # Agregar perfil de temperatura si existe
         if 'perfil_temp_manual' in st.session_state:
             datos["perfil_temperatura"] = st.session_state['perfil_temp_manual'].astype(str).to_dict('records')
-        
         guardar_sintesis_global(db, datos)
 
     # Muevo el campo de objetivo de la síntesis al principio

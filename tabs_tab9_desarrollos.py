@@ -166,7 +166,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     cols_mp = st.columns(4)
     for idx, c in enumerate(CARACTERISTICAS_MP):
         with cols_mp[idx % 4]:
-            st.checkbox(c, value=st.session_state.get(f"caract_mp_{c}", False), key=f"caract_mp_{c}", on_change=guardar_en_firestore)
+            st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
 
     observaciones_mp = st.text_area("Observaciones", value=st.session_state.get('observaciones_mp', ''), key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
@@ -218,7 +218,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     cols_pt = st.columns(4)
     for idx, c in enumerate(CARACTERISTICAS_PT):
         with cols_pt[idx % 4]:
-            st.checkbox(c, value=st.session_state.get(f"caract_pt_{c}", False), key=f"caract_pt_{c}", on_change=guardar_en_firestore)
+            st.checkbox(c, key=f"caract_pt_{c}", on_change=guardar_en_firestore)
     
     st.text_area("Observaciones", value=st.session_state.get('observaciones_pt', ''), key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
 

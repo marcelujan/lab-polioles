@@ -261,10 +261,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             guardar_en_firestore()
             st.rerun()
     
-    # Mostrar el texto final (solo para referencia, no editable)
-    if st.session_state['downstream']:
-        st.write("**Descripción final de downstream:**")
-        st.text_area("Descripción final", value=st.session_state['downstream'], key="downstream_display", disabled=True, height=100, label_visibility="collapsed")
+
 
     st.header("09 CARACT PT")
     st.markdown("Selecciona las características a determinar en el producto terminado:")

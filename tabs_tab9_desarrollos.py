@@ -247,9 +247,10 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         pdf.ln(10)
         for key, value in datos.items():
             if isinstance(value, list):
-                pdf.multi_cell(0, 10, f"{key}: {', '.join(str(v) for v in value)}")
+                contenido = f"{key}: {', '.join(str(v) for v in value)}"
             else:
-                pdf.multi_cell(0, 10, f"{key}: {value}")
+                contenido = f"{key}: {value}"
+            pdf.multi_cell(0, 10, contenido)
             pdf.ln(2)
         return pdf.output(dest='S')
 
@@ -275,7 +276,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     else:
         pdf_bytes = pdf_data
     st.download_button(
-        label="Descargar backup en PDF",
+        label="Descargar PDF",
         data=pdf_bytes,
         file_name="backup_hoja_desarrollo.pdf",
         mime="application/pdf"

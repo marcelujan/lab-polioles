@@ -215,26 +215,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     
     # Lista de opciones de downstream
     OPCIONES_DOWNSTREAM = [
-        "Filtración",
-        "Decantación",
-        "Centrifugación", 
-        "Evaporación",
-        "Destilación",
-        "Cristalización",
-        "Secado",
-        "Liofilización",
-        "Cromatografía",
-        "Extracción líquido-líquido",
-        "Extracción sólido-líquido",
-        "Neutralización",
-        "Lavado",
-        "Purificación por recristalización",
-        "Secado al vacío",
-        "Filtración al vacío",
-        "Filtración por gravedad",
-        "Separación por membranas",
-        "Ultrafiltración",
-        "Nanofiltración"
+        "Reducción sulfito 5%",
+        "Neutralización Bicarbonato 5%",
+        "Neutralización Soda 0,1 N",
+        "Agua destilada",
+        "Separación de fases"
     ]
     
     # Inicializar lista de pasos seleccionados si no existe

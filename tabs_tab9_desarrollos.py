@@ -170,7 +170,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         with cols_mp[idx % 4]:
             st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
 
-    observaciones_mp = st.text_area("Observaciones", value=st.session_state.get('observaciones_mp', ''), key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
+    observaciones_mp = st.text_area("Observaciones", key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
     st.header("03 SÍNTESIS")
 
@@ -203,15 +203,15 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     # Solo una vez el campo 'Tiempo de síntesis', dentro de Muestreo
     tiempo_sintesis = st.text_input('Tiempo de síntesis', key='tiempo_sintesis', on_change=guardar_en_firestore)
-    st.text_area("Observaciones", value=st.session_state.get('observaciones_tiempo', ''), key="observaciones_tiempo", on_change=guardar_en_firestore, placeholder="Observaciones sobre la síntesis")
-    tiempo_muestreo = st.text_input('Tiempo de muestreo', value=st.session_state.get('tiempo_muestreo', ''), key='tiempo_muestreo', on_change=guardar_en_firestore)
-    tratamiento_muestras = st.text_area('Tratamiento de muestras', value=st.session_state.get('tratamiento_muestras', ''), key='tratamiento_muestras', on_change=guardar_en_firestore, height=250)
+    st.text_area("Observaciones", key="observaciones_tiempo", on_change=guardar_en_firestore, placeholder="Observaciones sobre la síntesis")
+    tiempo_muestreo = st.text_input('Tiempo de muestreo', key='tiempo_muestreo', on_change=guardar_en_firestore)
+    tratamiento_muestras = st.text_area('Tratamiento de muestras', key='tratamiento_muestras', on_change=guardar_en_firestore, height=250)
 
-    st.text_area("Observaciones", value=st.session_state.get('observaciones', ''), key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre el muestreo")
+    st.text_area("Observaciones", key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre el muestreo")
 
     st.header("DOWNSTREAM")
-    st.text_area("Descripción de pasos del downstream", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore, height=220)
-    st.text_area("Observaciones", value=st.session_state.get('observaciones_downstream', ''), key="observaciones_downstream", on_change=guardar_en_firestore, placeholder="Observaciones sobre el downstream")
+    st.text_area("Descripción de pasos del downstream", key="downstream", on_change=guardar_en_firestore, height=220)
+    st.text_area("Observaciones", key="observaciones_downstream", on_change=guardar_en_firestore, placeholder="Observaciones sobre el downstream")
     
 
 
@@ -222,7 +222,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         with cols_pt[idx % 4]:
             st.checkbox(c, key=f"caract_pt_{c}", on_change=guardar_en_firestore)
     
-    st.text_area("Observaciones", value=st.session_state.get('observaciones_pt', ''), key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
+    st.text_area("Observaciones", key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
 
     with st.expander("**Resumen**", expanded=False):
         st.write({

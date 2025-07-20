@@ -39,7 +39,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         datos_cargados = cargar_sintesis_global(db)
         if datos_cargados:
             # Campos básicos
-            for campo in ['nombre_mp', 'proveedor_mp', 'lote_mp', 'cantidad_mp', 'objetivo', 'condiciones', 'observaciones', 'downstream', 'observaciones_downstream', 'observaciones_pt']:
+            for campo in ['nombre_mp', 'proveedor_mp', 'lote_mp', 'cantidad_mp', 'objetivo', 'condiciones', 'observaciones', 'downstream', 'observaciones_downstream', 'observaciones_pt', 'observaciones_tiempo']:
                 if campo in datos_cargados:
                     st.session_state[campo] = datos_cargados[campo]
             
@@ -143,6 +143,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             # Campos adicionales
             "aceite_soja": st.session_state.get('aceite_soja', ''),
             "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
+            "observaciones_tiempo": st.session_state.get('observaciones_tiempo', ''),
             "tiempo_muestreo": st.session_state.get('tiempo_muestreo', ''),
             "tratamiento_muestras": st.session_state.get('tratamiento_muestras', ''),
             "volumen_reactor": st.session_state.get('volumen_reactor', ''),
@@ -200,6 +201,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     # Solo una vez el campo 'Tiempo de síntesis', dentro de Muestreo
     tiempo_sintesis = st.text_input('Tiempo de síntesis', key='tiempo_sintesis', on_change=guardar_en_firestore)
+    st.text_area("Observaciones", value=st.session_state.get('observaciones_tiempo', ''), key="observaciones_tiempo", on_change=guardar_en_firestore, placeholder="Observaciones sobre los tiempos de síntesis y muestreo")
     tiempo_muestreo = st.text_input('Tiempo de muestreo', value=st.session_state.get('tiempo_muestreo', ''), key='tiempo_muestreo', on_change=guardar_en_firestore)
     tratamiento_muestras = st.text_area('Tratamiento de muestras', value=st.session_state.get('tratamiento_muestras', ''), key='tratamiento_muestras', on_change=guardar_en_firestore, height=250)
 

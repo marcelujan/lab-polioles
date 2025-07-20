@@ -240,19 +240,29 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     # --- Botón de backup PDF al final de la hoja ---
     def generar_pdf(datos):
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, "Backup de la hoja de desarrollo", ln=1, align='C')
-        pdf.ln(10)
-        for key, value in datos.items():
-            if isinstance(value, list):
-                contenido = f"{key}: {', '.join(str(v) for v in value)}"
-            else:
-                contenido = f"{key}: {value}"
-            pdf.multi_cell(0, 10, contenido)
-            pdf.ln(2)
-        return pdf.output(dest='S')
+        try:
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            
+            # Título
+            pdf.cell(0, 10, "Backup de la hoja de desarrollo", ln=True, align='C')
+            pdf.ln(5)
+            
+            # Contenido
+            for key, value in datos.items():
+                if value:  # Solo agregar campos que no estén vacíos
+                    if isinstance(value, list):
+                        texto = f"{key}: {', '.join(str(v) for v in value)}"
+                    else:
+                        texto = f"{key}: {value}"
+                    pdf.multi_cell(0, 10, texto)
+                    pdf.ln(2)
+            
+            return pdf.output(dest='S')
+        except Exception as e:
+            st.error(f"Error generando PDF: {e}")
+            return None
 
     datos_backup = {
         "Objetivo": st.session_state.get("objetivo", ""),
@@ -270,15 +280,21 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         "Observaciones PT": st.session_state.get("observaciones_pt", ""),
     }
 
+    # Debug: mostrar los datos que se van a incluir en el PDF
+    st.write("Datos para el PDF:", datos_backup)
+
     pdf_data = generar_pdf(datos_backup)
-    if isinstance(pdf_data, bytearray):
-        pdf_bytes = bytes(pdf_data)
+    if pdf_data is not None:
+        if isinstance(pdf_data, bytearray):
+            pdf_bytes = bytes(pdf_data)
+        else:
+            pdf_bytes = pdf_data
+        st.download_button(
+            label="Descargar PDF",
+            data=pdf_bytes,
+            file_name="backup_hoja_desarrollo.pdf",
+            mime="application/pdf"
+        )
     else:
-        pdf_bytes = pdf_data
-    st.download_button(
-        label="Descargar PDF",
-        data=pdf_bytes,
-        file_name="backup_hoja_desarrollo.pdf",
-        mime="application/pdf"
-    )
+        st.error("No se pudo generar el PDF")
     

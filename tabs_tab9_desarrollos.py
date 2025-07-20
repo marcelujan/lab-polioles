@@ -162,7 +162,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.text_area("Objetivo de la síntesis", key="objetivo", on_change=guardar_en_firestore)
 
     st.header("01 MP")
-    st.text_input("Aceite de soja", value=st.session_state.get('aceite_soja', ''), key="aceite_soja", on_change=guardar_en_firestore, placeholder="Especificar tipo o marca de aceite de soja...")
+    st.text_input("Aceite de soja", key="aceite_soja", on_change=guardar_en_firestore, placeholder="Especificar tipo o marca de aceite de soja...")
 
     st.header("02 CARACT MP")
     st.markdown("Aceite de soja")
@@ -270,7 +270,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         with cols_pt[idx % 4]:
             st.checkbox(c, value=st.session_state.get(f"caract_pt_{c}", False), key=f"caract_pt_{c}", on_change=guardar_en_firestore)
 
-    with st.expander("**Resumen de la síntesis:**", expanded=False):
+    with st.expander("**Resumen**", expanded=False):
         st.write({
             "Características MP": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
             "Observaciones MP": st.session_state.get('observaciones_mp', ''),

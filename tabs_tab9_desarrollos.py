@@ -199,9 +199,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     # Solo una vez el campo 'Tiempo de síntesis', dentro de Muestreo
     tiempo_sintesis = st.text_input('Tiempo de síntesis', key='tiempo_sintesis', on_change=guardar_en_firestore)
     tiempo_muestreo = st.text_input('Tiempo de muestreo', value=st.session_state.get('tiempo_muestreo', ''), key='tiempo_muestreo', on_change=guardar_en_firestore)
-    tratamiento_muestras = st.text_area('Tratamiento de muestras', value=st.session_state.get('tratamiento_muestras', ''), key='tratamiento_muestras', on_change=guardar_en_firestore, height=220)
+    tratamiento_muestras = st.text_area('Tratamiento de muestras', value=st.session_state.get('tratamiento_muestras', ''), key='tratamiento_muestras', on_change=guardar_en_firestore, height=250)
 
-    st.text_area("Observaciones", value=st.session_state.get('observaciones', ''), key="observaciones", on_change=guardar_en_firestore)
+    st.text_area("Observaciones", value=st.session_state.get('observaciones', ''), key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre la síntesis")
 
     st.header("DOWNSTREAM")
     st.text_area("Descripción de pasos del downstream", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore, height=220)

@@ -43,6 +43,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                 if campo in datos_cargados:
                     st.session_state[campo] = datos_cargados[campo]
             
+            # Debug print para ver qué se carga en caract_mp y caract_pt
+            if 'caract_mp' in datos_cargados:
+                print("CARGANDO caract_mp:", datos_cargados['caract_mp'])
+            if 'caract_pt' in datos_cargados:
+                print("CARGANDO caract_pt:", datos_cargados['caract_pt'])
 
             
             # Campo aceite_soja
@@ -149,6 +154,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "volumen_reactor": st.session_state.get('volumen_reactor', ''),
         }
         
+        # Debug print para ver qué se guarda en caract_mp y caract_pt
+        print("GUARDANDO caract_mp:", datos["caract_mp"])
+        print("GUARDANDO caract_pt:", datos["caract_pt"])
         # Agregar perfil de temperatura si existe
         if 'perfil_temp_manual' in st.session_state:
             datos["perfil_temperatura"] = st.session_state['perfil_temp_manual'].astype(str).to_dict('records')

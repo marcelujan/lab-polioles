@@ -209,7 +209,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     st.header("DOWNSTREAM")
     st.text_area("Descripción de pasos del downstream", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore, height=220)
-    st.text_area("Observaciones", value=st.session_state.get('observaciones_downstream', ''), key="observaciones_downstream", on_change=guardar_en_firestore, placeholder="Observaciones sobre los procesos downstream")
+    st.text_area("Observaciones", value=st.session_state.get('observaciones_downstream', ''), key="observaciones_downstream", on_change=guardar_en_firestore, placeholder="Observaciones sobre el downstream")
     
 
 

@@ -5,7 +5,7 @@ from io import BytesIO
 import json
 from firestore_utils import cargar_muestras, guardar_muestra
 from firestore_utils import eliminar_muestra  # asegurate de tener esta línea al inicio
-from ui_utils import get_caracteristicas_mp, get_caracteristicas_pt
+from ui_utils import get_caracteristicas
 
 def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     st.title("Laboratorio de Polioles")

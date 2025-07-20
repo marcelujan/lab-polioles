@@ -84,6 +84,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                 for c in CARACTERISTICAS:
                     st.session_state[f"caract_pt_{c}"] = c in datos_cargados['caract_pt']
             
+            # Características de muestreo
+            if 'caract_muestreo' in datos_cargados:
+                for c in CARACTERISTICAS:
+                    st.session_state[f"caract_muestreo_{c}"] = c in datos_cargados['caract_muestreo']
+            
             # Perfil de temperatura
             if 'perfil_temperatura' in datos_cargados:
                 try:
@@ -144,6 +149,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "observaciones_downstream": st.session_state.get('observaciones_downstream', ''),
             "caract_pt": [c for c in CARACTERISTICAS if st.session_state.get(f"caract_pt_{c}", False)],
             "observaciones_pt": st.session_state.get('observaciones_pt', ''),
+            "caract_muestreo": [c for c in CARACTERISTICAS if st.session_state.get(f"caract_muestreo_{c}", False)],
             # Campos adicionales
             "aceite_soja": st.session_state.get('aceite_soja', ''),
             "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
@@ -207,6 +213,12 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     tiempo_muestreo = st.text_input('Tiempo de muestreo', key='tiempo_muestreo', on_change=guardar_en_firestore)
     tratamiento_muestras = st.text_area('Tratamiento de muestras', key='tratamiento_muestras', on_change=guardar_en_firestore, height=250)
 
+    st.markdown('Selecciona las características a determinar en el muestreo:')
+    cols_muestreo = st.columns(4)
+    for idx, c in enumerate(CARACTERISTICAS):
+        with cols_muestreo[idx % 4]:
+            st.checkbox(c, key=f"caract_muestreo_{c}", on_change=guardar_en_firestore)
+
     st.text_area("Observaciones", key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre el muestreo")
 
     st.header("DOWNSTREAM")
@@ -252,6 +264,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         "Tiempo de síntesis": st.session_state.get("tiempo_sintesis", ""),
         "Tiempo de muestreo": st.session_state.get("tiempo_muestreo", ""),
         "Tratamiento de muestras": st.session_state.get("tratamiento_muestras", ""),
+        "CARACT MUESTREO": [c for c in CARACTERISTICAS if st.session_state.get(f"caract_muestreo_{c}", False)],
         "Observaciones muestreo": st.session_state.get("observaciones", ""),
         "Downstream": st.session_state.get("downstream", ""),
         "Observaciones downstream": st.session_state.get("observaciones_downstream", ""),

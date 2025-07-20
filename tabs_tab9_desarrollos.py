@@ -8,6 +8,32 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     CARACTERISTICAS_MP = get_caracteristicas_mp()
     CARACTERISTICAS_PT = get_caracteristicas_pt()
 
+    # Función para guardar automáticamente cuando cambie la tabla
+    def guardar_perfil_temp():
+        if 'perfil_temp_manual' in st.session_state:
+            try:
+                datos = {
+                    "caract_mp": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
+                    "observaciones_mp": st.session_state.get('observaciones_mp', ''),
+                    "objetivo": st.session_state.get('objetivo', ''),
+                    "condiciones": st.session_state.get('condiciones', ''),
+                    "observaciones": st.session_state.get('observaciones', ''),
+                    "downstream": st.session_state.get('downstream', ''),
+                    "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
+                    "aceite_soja": st.session_state.get('aceite_soja', ''),
+                    "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
+                    "tiempo_muestreo": st.session_state.get('tiempo_muestreo', ''),
+                    "tratamiento_muestras": st.session_state.get('tratamiento_muestras', ''),
+                    "volumen_reactor": st.session_state.get('volumen_reactor', ''),
+                    "perfil_temperatura": st.session_state['perfil_temp_manual'].astype(str).to_dict('records')
+                }
+                guardar_sintesis_global(db, datos)
+                st.success("✅ Perfil guardado en Firestore")
+            except Exception as e:
+                st.error(f"❌ Error al guardar perfil: {e}")
+        else:
+            st.error("❌ No se encontró la tabla de perfil de temperatura en session_state")
+
     # --- Cargar datos globales de síntesis al iniciar (solo una vez por sesión) ---
     if 'sintesis_global_cargada' not in st.session_state:
         datos_cargados = cargar_sintesis_global(db)
@@ -16,6 +42,14 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             for campo in ['nombre_mp', 'proveedor_mp', 'lote_mp', 'cantidad_mp', 'objetivo', 'condiciones', 'observaciones', 'downstream']:
                 if campo in datos_cargados:
                     st.session_state[campo] = datos_cargados[campo]
+            
+            # Procesar downstream para convertir a lista de pasos
+            if 'downstream' in datos_cargados and datos_cargados['downstream']:
+                # Dividir por saltos de línea y filtrar líneas vacías
+                pasos = [paso.strip() for paso in datos_cargados['downstream'].split('\n') if paso.strip()]
+                st.session_state['downstream_pasos'] = pasos
+            else:
+                st.session_state['downstream_pasos'] = []
             
             # Campo aceite_soja
             if 'aceite_soja' in datos_cargados:
@@ -73,7 +107,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                             try:
                                 df_reordenado = df_temp[['t [hora]', 't [hh:mm:ss]', 'T [°C]']]
                                 st.session_state['perfil_temp_manual'] = df_reordenado
-                            except:
+                            except Exception as reorder_error:
                                 # Si no se puede reordenar, crear DataFrame vacío
                                 data = [['', '', ''] for _ in range(6)]
                                 st.session_state['perfil_temp_manual'] = pd.DataFrame(
@@ -142,7 +176,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.header("03 SÍNTESIS")
 
     # Selector de volumen de reactor
-    volumen_reactor = st.radio(
+    st.radio(
         "Volumen de reactor",
         options=["1 L", "5 L"],
         key="volumen_reactor",
@@ -158,32 +192,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             data, 
             columns=['t [hora]', 't [hh:mm:ss]', 'T [°C]']
         )
-    
-    # Función para guardar automáticamente cuando cambie la tabla
-    def guardar_perfil_temp():
-        if 'perfil_temp_manual' in st.session_state:
-            try:
-                datos = {
-                    "caract_mp": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
-                    "observaciones_mp": st.session_state.get('observaciones_mp', ''),
-                    "objetivo": st.session_state.get('objetivo', ''),
-                    "condiciones": st.session_state.get('condiciones', ''),
-                    "observaciones": st.session_state.get('observaciones', ''),
-                    "downstream": st.session_state.get('downstream', ''),
-                    "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
-                    "aceite_soja": st.session_state.get('aceite_soja', ''),
-                    "tiempo_sintesis": st.session_state.get('tiempo_sintesis', ''),
-                    "tiempo_muestreo": st.session_state.get('tiempo_muestreo', ''),
-                    "tratamiento_muestras": st.session_state.get('tratamiento_muestras', ''),
-                    "volumen_reactor": st.session_state.get('volumen_reactor', ''),
-                    "perfil_temperatura": st.session_state['perfil_temp_manual'].astype(str).to_dict('records')
-                }
-                guardar_sintesis_global(db, datos)
-                st.success("✅ Perfil guardado en Firestore")
-            except Exception as e:
-                st.error(f"❌ Error al guardar perfil: {e}")
-        else:
-            st.error("❌ No se encontró la tabla de perfil de temperatura en session_state")
     
     perfil_temp_manual = st.data_editor(
         st.session_state['perfil_temp_manual'],
@@ -201,12 +209,77 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     tiempo_muestreo = st.text_input('Tiempo de muestreo', value=st.session_state.get('tiempo_muestreo', ''), key='tiempo_muestreo', on_change=guardar_en_firestore)
     tratamiento_muestras = st.text_area('Tratamiento de muestras', value=st.session_state.get('tratamiento_muestras', ''), key='tratamiento_muestras', on_change=guardar_en_firestore, height=220)
 
-    # Elimino la sección de condiciones experimentales
-    # st.text_area("Condiciones experimentales (temperatura, tiempo, catalizador, etc.)", ...)
     st.text_area("Observaciones", value=st.session_state.get('observaciones', ''), key="observaciones", on_change=guardar_en_firestore)
 
     st.header("DOWNSTREAM")
-    st.text_area("Descripción de procesos downstream (purificación, separación, etc.)", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore)
+    
+    # Lista de opciones de downstream
+    OPCIONES_DOWNSTREAM = [
+        "Filtración",
+        "Decantación",
+        "Centrifugación", 
+        "Evaporación",
+        "Destilación",
+        "Cristalización",
+        "Secado",
+        "Liofilización",
+        "Cromatografía",
+        "Extracción líquido-líquido",
+        "Extracción sólido-líquido",
+        "Neutralización",
+        "Lavado",
+        "Purificación por recristalización",
+        "Secado al vacío",
+        "Filtración al vacío",
+        "Filtración por gravedad",
+        "Separación por membranas",
+        "Ultrafiltración",
+        "Nanofiltración"
+    ]
+    
+    # Inicializar lista de pasos seleccionados si no existe
+    if 'downstream_pasos' not in st.session_state:
+        st.session_state['downstream_pasos'] = []
+    
+    # Inicializar texto de downstream si no existe
+    if 'downstream' not in st.session_state:
+        st.session_state['downstream'] = ''
+    
+    # Mostrar pasos ya seleccionados
+    if st.session_state['downstream_pasos']:
+        st.write("**Pasos de downstream seleccionados:**")
+        for i, paso in enumerate(st.session_state['downstream_pasos']):
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"{i+1}. {paso}")
+            with col2:
+                if st.button(f"❌ Eliminar", key=f"eliminar_paso_{i}"):
+                    st.session_state['downstream_pasos'].pop(i)
+                    # Actualizar el texto de downstream
+                    st.session_state['downstream'] = '\n'.join(st.session_state['downstream_pasos'])
+                    guardar_en_firestore()
+                    st.rerun()
+    
+    # Selector para agregar nuevo paso
+    st.write("**Agregar paso de downstream:**")
+    paso_seleccionado = st.selectbox(
+        "Selecciona el siguiente paso:",
+        options=[""] + [op for op in OPCIONES_DOWNSTREAM if op not in st.session_state['downstream_pasos']],
+        key="selector_downstream"
+    )
+    
+    if paso_seleccionado:
+        if st.button("➕ Agregar paso"):
+            st.session_state['downstream_pasos'].append(paso_seleccionado)
+            # Actualizar el texto de downstream
+            st.session_state['downstream'] = '\n'.join(st.session_state['downstream_pasos'])
+            guardar_en_firestore()
+            st.rerun()
+    
+    # Mostrar el texto final (solo para referencia, no editable)
+    if st.session_state['downstream']:
+        st.write("**Descripción final de downstream:**")
+        st.text_area("", value=st.session_state['downstream'], key="downstream_display", disabled=True, height=100)
 
     st.header("09 CARACT PT")
     st.markdown("Selecciona las características a determinar en el producto terminado:")
@@ -217,7 +290,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     st.write("**Resumen de la síntesis:**")
     st.write({
-        # Elimino la sección de Materia Prima
         "Características MP": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
         "Observaciones MP": st.session_state.get('observaciones_mp', ''),
         "Síntesis": {

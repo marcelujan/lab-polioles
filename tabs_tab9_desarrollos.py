@@ -202,8 +202,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     )
     st.session_state['perfil_temp_manual'] = perfil_temp_manual
 
-    # Sección Muestreo
-    st.markdown('Muestreo')
     # Solo una vez el campo 'Tiempo de síntesis', dentro de Muestreo
     tiempo_sintesis = st.text_input('Tiempo de síntesis', key='tiempo_sintesis', on_change=guardar_en_firestore)
     tiempo_muestreo = st.text_input('Tiempo de muestreo', value=st.session_state.get('tiempo_muestreo', ''), key='tiempo_muestreo', on_change=guardar_en_firestore)
@@ -243,7 +241,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                     # Actualizar el texto de downstream
                     st.session_state['downstream'] = '\n'.join(st.session_state['downstream_pasos'])
                     guardar_en_firestore()
-                    st.rerun()
     
     # Selector para agregar nuevo paso
     st.write("**Agregar paso de downstream:**")
@@ -259,7 +256,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             # Actualizar el texto de downstream
             st.session_state['downstream'] = '\n'.join(st.session_state['downstream_pasos'])
             guardar_en_firestore()
-            st.rerun()
     
 
 

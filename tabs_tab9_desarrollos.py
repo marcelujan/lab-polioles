@@ -249,7 +249,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.write("**Agregar paso de downstream:**")
     paso_seleccionado = st.selectbox(
         "Selecciona el siguiente paso:",
-        options=[""] + [op for op in OPCIONES_DOWNSTREAM if op not in st.session_state['downstream_pasos']],
+        options=[""] + OPCIONES_DOWNSTREAM,
         key="selector_downstream"
     )
     
@@ -264,7 +264,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     # Mostrar el texto final (solo para referencia, no editable)
     if st.session_state['downstream']:
         st.write("**Descripción final de downstream:**")
-        st.text_area("", value=st.session_state['downstream'], key="downstream_display", disabled=True, height=100)
+        st.text_area("Descripción final", value=st.session_state['downstream'], key="downstream_display", disabled=True, height=100, label_visibility="collapsed")
 
     st.header("09 CARACT PT")
     st.markdown("Selecciona las características a determinar en el producto terminado:")

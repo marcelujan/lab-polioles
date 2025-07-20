@@ -165,7 +165,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         with cols_mp[idx % 4]:
             st.checkbox(c, value=st.session_state.get(f"caract_mp_{c}", False), key=f"caract_mp_{c}", on_change=guardar_en_firestore)
 
-    observaciones_mp = st.text_area("Observaciones", value=st.session_state.get('observaciones_mp', ''), key="observaciones_mp", on_change=guardar_en_firestore)
+    observaciones_mp = st.text_area("Observaciones", value=st.session_state.get('observaciones_mp', ''), key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
     st.header("03 SÍNTESIS")
 
@@ -204,7 +204,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.text_area("Observaciones", value=st.session_state.get('observaciones', ''), key="observaciones", on_change=guardar_en_firestore)
 
     st.header("DOWNSTREAM")
-    st.text_area("Descripción de procesos downstream (purificación, separación, etc.)", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore, height=220)
+    st.text_area("Descripción de pasos del downstream", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore, height=220)
     
 
 

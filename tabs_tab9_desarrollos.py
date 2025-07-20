@@ -270,16 +270,16 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         with cols_pt[idx % 4]:
             st.checkbox(c, value=st.session_state.get(f"caract_pt_{c}", False), key=f"caract_pt_{c}", on_change=guardar_en_firestore)
 
-    st.write("**Resumen de la síntesis:**")
-    st.write({
-        "Características MP": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
-        "Observaciones MP": st.session_state.get('observaciones_mp', ''),
-        "Síntesis": {
-            "Objetivo": st.session_state.get('objetivo', ''),
-            "Condiciones": st.session_state.get('condiciones', ''),
-            "Observaciones": st.session_state.get('observaciones', '')
-        },
-        "Downstream": st.session_state.get('downstream', ''),
-        "Características PT": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)]
-    })
+    with st.expander("**Resumen de la síntesis:**", expanded=False):
+        st.write({
+            "Características MP": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
+            "Observaciones MP": st.session_state.get('observaciones_mp', ''),
+            "Síntesis": {
+                "Objetivo": st.session_state.get('objetivo', ''),
+                "Condiciones": st.session_state.get('condiciones', ''),
+                "Observaciones": st.session_state.get('observaciones', '')
+            },
+            "Downstream": st.session_state.get('downstream', ''),
+            "Características PT": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)]
+        })
     

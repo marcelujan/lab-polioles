@@ -225,19 +225,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     
     st.text_area("Observaciones", key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
 
-    with st.expander("**Resumen**", expanded=False):
-        st.write({
-            "Características MP": [c for c in CARACTERISTICAS_MP if st.session_state.get(f"caract_mp_{c}", False)],
-            "Observaciones MP": st.session_state.get('observaciones_mp', ''),
-            "Síntesis": {
-                "Objetivo": st.session_state.get('objetivo', ''),
-                "Condiciones": st.session_state.get('condiciones', ''),
-                "Observaciones": st.session_state.get('observaciones', '')
-            },
-            "Downstream": st.session_state.get('downstream', ''),
-            "Características PT": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)]
-        })
-
     # --- Botón de backup al final de la hoja ---
     def generar_txt(datos):
         try:
@@ -272,9 +259,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         "CARACT PT": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
         "Observaciones PT": st.session_state.get("observaciones_pt", ""),
     }
-
-    # Debug: mostrar los datos que se van a incluir en el archivo
-    st.write("Datos para el archivo:", datos_backup)
 
     txt_data = generar_txt(datos_backup)
     if txt_data is not None:

@@ -269,7 +269,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         "Observaciones PT": st.session_state.get("observaciones_pt", ""),
     }
 
-    pdf_bytes = bytes(generar_pdf(datos_backup))
+    pdf_data = generar_pdf(datos_backup)
+    if isinstance(pdf_data, bytearray):
+        pdf_bytes = bytes(pdf_data)
+    else:
+        pdf_bytes = pdf_data
     st.download_button(
         label="Descargar backup en PDF",
         data=pdf_bytes,

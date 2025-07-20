@@ -86,12 +86,7 @@ def render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     observacion = st.text_area("Observaciones", value=muestra_existente["observacion"] if muestra_existente else "", height=150)
 
     st.subheader("Nuevo análisis")
-    tipos = [
-        "Índice de yodo [% p/p I2 abs]", "Índice OH [mg KHO/g]",
-        "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/100g]",
-        "Humedad [%]", "PM [g/mol]", "Funcionalidad [#]",
-        "Viscosidad dinámica [cP]", "Densidad [g/mL]", "Otro análisis"
-    ]
+    tipos = get_caracteristicas()
     df = pd.DataFrame([{"Tipo": "", "Valor": 0.0, "Fecha": date.today(), "Observaciones": ""}])
     nuevos_analisis = st.data_editor(df, num_rows="dynamic", use_container_width=True,
         column_config={"Tipo": st.column_config.SelectboxColumn("Tipo", options=tipos)})

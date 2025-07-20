@@ -111,7 +111,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                                 data = [['', '', ''] for _ in range(6)]
                                 st.session_state['perfil_temp_manual'] = pd.DataFrame(
                                     data, 
-                                    columns=['t [hora]', 't [hh:mm:ss]', 'T [°C]']
+                                    columns=pd.Index(['t [hora]', 't [hh:mm:ss]', 'T [°C]'])
                                 )
                                 st.warning("⚠️ No se pudo reordenar las columnas, creando tabla vacía")
                     else:
@@ -119,7 +119,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                         data = [['', '', ''] for _ in range(6)]
                         st.session_state['perfil_temp_manual'] = pd.DataFrame(
                             data, 
-                            columns=['t [hora]', 't [hh:mm:ss]', 'T [°C]']
+                            columns=pd.Index(['t [hora]', 't [hh:mm:ss]', 'T [°C]'])
                         )
                         st.info("ℹ️ No hay datos de perfil guardados, creando tabla vacía")
                 except Exception as e:
@@ -128,7 +128,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                     data = [['', '', ''] for _ in range(6)]
                     st.session_state['perfil_temp_manual'] = pd.DataFrame(
                         data, 
-                        columns=['t [hora]', 't [hh:mm:ss]', 'T [°C]']
+                        columns=pd.Index(['t [hora]', 't [hh:mm:ss]', 'T [°C]'])
                     )
         st.session_state['sintesis_global_cargada'] = True
 
@@ -193,7 +193,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         data = [['', '', ''] for _ in range(6)]
         st.session_state['perfil_temp_manual'] = pd.DataFrame(
             data, 
-            columns=['t [hora]', 't [hh:mm:ss]', 'T [°C]']
+            columns=pd.Index(['t [hora]', 't [hh:mm:ss]', 'T [°C]'])
         )
     
     perfil_temp_manual = st.data_editor(

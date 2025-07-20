@@ -39,7 +39,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         datos_cargados = cargar_sintesis_global(db)
         if datos_cargados:
             # Campos básicos
-            for campo in ['nombre_mp', 'proveedor_mp', 'lote_mp', 'cantidad_mp', 'objetivo', 'condiciones', 'observaciones', 'downstream']:
+            for campo in ['nombre_mp', 'proveedor_mp', 'lote_mp', 'cantidad_mp', 'objetivo', 'condiciones', 'observaciones', 'downstream', 'observaciones_downstream', 'observaciones_pt']:
                 if campo in datos_cargados:
                     st.session_state[campo] = datos_cargados[campo]
             
@@ -136,7 +136,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "condiciones": st.session_state.get('condiciones', ''),
             "observaciones": st.session_state.get('observaciones', ''),
             "downstream": st.session_state.get('downstream', ''),
+            "observaciones_downstream": st.session_state.get('observaciones_downstream', ''),
             "caract_pt": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)],
+            "observaciones_pt": st.session_state.get('observaciones_pt', ''),
             
             # Campos adicionales
             "aceite_soja": st.session_state.get('aceite_soja', ''),
@@ -205,6 +207,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     st.header("DOWNSTREAM")
     st.text_area("Descripción de pasos del downstream", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore, height=220)
+    st.text_area("Observaciones", value=st.session_state.get('observaciones_downstream', ''), key="observaciones_downstream", on_change=guardar_en_firestore, placeholder="Observaciones sobre los procesos downstream")
     
 
 
@@ -214,6 +217,8 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS_PT):
         with cols_pt[idx % 4]:
             st.checkbox(c, value=st.session_state.get(f"caract_pt_{c}", False), key=f"caract_pt_{c}", on_change=guardar_en_firestore)
+    
+    st.text_area("Observaciones", value=st.session_state.get('observaciones_pt', ''), key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
 
     with st.expander("**Resumen**", expanded=False):
         st.write({

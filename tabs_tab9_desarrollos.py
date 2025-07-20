@@ -228,7 +228,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     # --- Botón de backup al final de la hoja ---
     def generar_txt(datos):
         try:
-            contenido = "BACKUP DE LA HOJA DE DESARROLLO\n"
+            contenido = "DESARROLLO\n"
             contenido += "=" * 50 + "\n\n"
             
             for key, value in datos.items():

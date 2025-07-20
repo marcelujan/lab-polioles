@@ -40,16 +40,7 @@ def mostrar_sector_flotante(db, key_suffix=""):
             obs_ref.set({"observaciones": observaciones})
             st.success("Observación guardada correctamente.")
 
-def get_caracteristicas_mp():
-    return [
-        "Índice de yodo [% p/p I2 abs]", "Índice OH [mg KHO/g]",
-        "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/100g]",
-        "Humedad [%]", "PM [g/mol]", "Funcionalidad [#]",
-        "Viscosidad dinámica [cP]", "Densidad [g/mL]",
-        "PCV [%]", "Otro análisis"
-    ]
-
-def get_caracteristicas_pt():
+def get_caracteristicas():
     return [
         "Índice de yodo [% p/p I2 abs]", "Índice OH [mg KHO/g]",
         "Índice de acidez [mg KOH/g]", "Índice de epóxido [mol/100g]",

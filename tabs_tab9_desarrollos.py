@@ -43,13 +43,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
                 if campo in datos_cargados:
                     st.session_state[campo] = datos_cargados[campo]
             
-            # Procesar downstream para convertir a lista de pasos
-            if 'downstream' in datos_cargados and datos_cargados['downstream']:
-                # Dividir por saltos de línea y filtrar líneas vacías
-                pasos = [paso.strip() for paso in datos_cargados['downstream'].split('\n') if paso.strip()]
-                st.session_state['downstream_pasos'] = pasos
-            else:
-                st.session_state['downstream_pasos'] = []
+
             
             # Campo aceite_soja
             if 'aceite_soja' in datos_cargados:
@@ -210,52 +204,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.text_area("Observaciones", value=st.session_state.get('observaciones', ''), key="observaciones", on_change=guardar_en_firestore)
 
     st.header("DOWNSTREAM")
-    
-    # Lista de opciones de downstream
-    OPCIONES_DOWNSTREAM = [
-        "Reducción sulfito 5%",
-        "Neutralización Bicarbonato 5%",
-        "Neutralización Soda 0,1 N",
-        "Agua destilada",
-        "Separación de fases"
-    ]
-    
-    # Inicializar lista de pasos seleccionados si no existe
-    if 'downstream_pasos' not in st.session_state:
-        st.session_state['downstream_pasos'] = []
-    
-    # Inicializar texto de downstream si no existe
-    if 'downstream' not in st.session_state:
-        st.session_state['downstream'] = ''
-    
-    # Mostrar pasos ya seleccionados
-    if st.session_state['downstream_pasos']:
-        st.write("**Pasos de downstream seleccionados:**")
-        for i, paso in enumerate(st.session_state['downstream_pasos']):
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.write(f"{i+1}. {paso}")
-            with col2:
-                if st.button(f"❌ Eliminar", key=f"eliminar_paso_{i}"):
-                    st.session_state['downstream_pasos'].pop(i)
-                    # Actualizar el texto de downstream
-                    st.session_state['downstream'] = '\n'.join(st.session_state['downstream_pasos'])
-                    guardar_en_firestore()
-    
-    # Selector para agregar nuevo paso
-    st.write("**Agregar paso de downstream:**")
-    paso_seleccionado = st.selectbox(
-        "Selecciona el siguiente paso:",
-        options=[""] + OPCIONES_DOWNSTREAM,
-        key="selector_downstream"
-    )
-    
-    if paso_seleccionado:
-        if st.button("➕ Agregar paso"):
-            st.session_state['downstream_pasos'].append(paso_seleccionado)
-            # Actualizar el texto de downstream
-            st.session_state['downstream'] = '\n'.join(st.session_state['downstream_pasos'])
-            guardar_en_firestore()
+    st.text_area("Descripción de procesos downstream (purificación, separación, etc.)", value=st.session_state.get('downstream', ''), key="downstream", on_change=guardar_en_firestore, height=220)
     
 
 

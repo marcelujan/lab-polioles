@@ -243,7 +243,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt="Backup de la hoja de desarrollo", ln=True, align='C')
+        pdf.cell(200, 10, "Backup de la hoja de desarrollo", ln=1, align='C')
         pdf.ln(10)
         for key, value in datos.items():
             if isinstance(value, list):
@@ -251,7 +251,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             else:
                 pdf.multi_cell(0, 10, f"{key}: {value}")
             pdf.ln(2)
-        return pdf.output(dest='S').encode('latin-1')
+        return pdf.output(dest='S')
 
     datos_backup = {
         "Objetivo": st.session_state.get("objetivo", ""),
@@ -269,7 +269,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         "Observaciones PT": st.session_state.get("observaciones_pt", ""),
     }
 
-    pdf_bytes = generar_pdf(datos_backup)
+    pdf_bytes = bytes(generar_pdf(datos_backup))
     st.download_button(
         label="Descargar backup en PDF",
         data=pdf_bytes,

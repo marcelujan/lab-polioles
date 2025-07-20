@@ -238,30 +238,23 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             "Características PT": [c for c in CARACTERISTICAS_PT if st.session_state.get(f"caract_pt_{c}", False)]
         })
 
-    # --- Botón de backup PDF al final de la hoja ---
-    def generar_pdf(datos):
+    # --- Botón de backup al final de la hoja ---
+    def generar_txt(datos):
         try:
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=12)
+            contenido = "BACKUP DE LA HOJA DE DESARROLLO\n"
+            contenido += "=" * 50 + "\n\n"
             
-            # Título
-            pdf.cell(0, 10, "Backup de la hoja de desarrollo", ln=True, align='C')
-            pdf.ln(5)
-            
-            # Contenido
             for key, value in datos.items():
                 if value:  # Solo agregar campos que no estén vacíos
                     if isinstance(value, list):
-                        texto = f"{key}: {', '.join(str(v) for v in value)}"
+                        contenido += f"{key}: {', '.join(str(v) for v in value)}\n"
                     else:
-                        texto = f"{key}: {value}"
-                    pdf.multi_cell(0, 10, texto)
-                    pdf.ln(2)
+                        contenido += f"{key}: {value}\n"
+                    contenido += "\n"
             
-            return pdf.output(dest='S')
+            return contenido.encode('utf-8')
         except Exception as e:
-            st.error(f"Error generando PDF: {e}")
+            st.error(f"Error generando archivo: {e}")
             return None
 
     datos_backup = {
@@ -280,21 +273,17 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         "Observaciones PT": st.session_state.get("observaciones_pt", ""),
     }
 
-    # Debug: mostrar los datos que se van a incluir en el PDF
-    st.write("Datos para el PDF:", datos_backup)
+    # Debug: mostrar los datos que se van a incluir en el archivo
+    st.write("Datos para el archivo:", datos_backup)
 
-    pdf_data = generar_pdf(datos_backup)
-    if pdf_data is not None:
-        if isinstance(pdf_data, bytearray):
-            pdf_bytes = bytes(pdf_data)
-        else:
-            pdf_bytes = pdf_data
+    txt_data = generar_txt(datos_backup)
+    if txt_data is not None:
         st.download_button(
-            label="Descargar PDF",
-            data=pdf_bytes,
-            file_name="backup_hoja_desarrollo.pdf",
-            mime="application/pdf"
+            label="Descargar TXT",
+            data=txt_data,
+            file_name="backup_hoja_desarrollo.txt",
+            mime="text/plain"
         )
     else:
-        st.error("No se pudo generar el PDF")
+        st.error("No se pudo generar el archivo")
     

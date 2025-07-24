@@ -1639,8 +1639,11 @@ def render_rmn_1h_d(df_tipo, db):
                                         if x_1d is not None and y_1d is not None:
                                             mask_x_1d = (x_1d >= x_min) & (x_1d <= x_max)
                                             area_1d = np.trapz(y_1d[mask_x_1d], x_1d[mask_x_1d]) if np.any(mask_x_1d) else None
+                                            mask_xas_1d = (x_1d >= xas_min) & (x_1d <= xas_max)
+                                            area_as_1d = np.trapz(y_1d[mask_xas_1d], x_1d[mask_xas_1d]) if np.any(mask_xas_1d) else None
                                         else:
                                             area_1d = None
+                                            area_as_1d = None
                                         # Ahora, todos usan el mismo denominador area_as
                                         df_calc.at[i, "Área as"] = round(float(area_as), 2) if area_as is not None else None
                                         if area is not None and area_as not in [None, 0] and not np.isnan(has):

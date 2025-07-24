@@ -1625,9 +1625,9 @@ def render_rmn_1h_d(df_tipo, db):
                                             df_calc.at[i, "🔴ex2dH"] = None
                                             df_calc.at[i, "🔴ex1dH"] = None
                                             continue
-                                        # Calcular denominador: área de referencia usando proyección 1D de la zona (no el espectro 1D puro)
-                                        mask_xas = (x >= xas_min) & (x <= xas_max)
-                                        area_as = np.trapz(proy1d[mask_xas], x[mask_xas]) if np.any(mask_xas) else None
+                                        # Calcular denominador: área de referencia usando proyección 1D del 2D completo (no recortado por zona)
+                                        mask_xas_ex = (x_ex >= xas_min) & (x_ex <= xas_max)
+                                        area_as = np.trapz(proy1d_ex[mask_xas_ex], x_ex[mask_xas_ex]) if np.any(mask_xas_ex) else None
                                         # Cálculo usando proyección 1D del 2D (recortada) para H
                                         mask_x = (x >= x_min) & (x <= x_max)
                                         area = np.trapz(proy1d[mask_x], x[mask_x]) if np.any(mask_x) else None
@@ -1651,8 +1651,8 @@ def render_rmn_1h_d(df_tipo, db):
                                             df_calc.at[i, "H"] = round(h, 2)
                                         else:
                                             df_calc.at[i, "H"] = None
-                                        if area_1d is not None and area_as not in [None, 0] and not np.isnan(has):
-                                            ex1dH = (float(area_1d) * has) / float(area_as)
+                                        if area_1d is not None and area_as_1d not in [None, 0] and not np.isnan(has):
+                                            ex1dH = (float(area_1d) * has) / float(area_as_1d)
                                             df_calc.at[i, "🔴ex1dH"] = round(ex1dH, 2)
                                         else:
                                             df_calc.at[i, "🔴ex1dH"] = None

@@ -1625,12 +1625,9 @@ def render_rmn_1h_d(df_tipo, db):
                                             df_calc.at[i, "🔴ex2dH"] = None
                                             df_calc.at[i, "🔴ex1dH"] = None
                                             continue
-                                        # Calcular denominador una sola vez: área de referencia en 1D puro
-                                        if x_1d is not None and y_1d is not None:
-                                            mask_xas_1d = (x_1d >= xas_min) & (x_1d <= xas_max)
-                                            area_as_1d = np.trapz(y_1d[mask_xas_1d], x_1d[mask_xas_1d]) if np.any(mask_xas_1d) else None
-                                        else:
-                                            area_as_1d = None
+                                        # Calcular denominador: área de referencia usando proyección 1D de la zona (no el espectro 1D puro)
+                                        mask_xas = (x >= xas_min) & (x <= xas_max)
+                                        area_as = np.trapz(proy1d[mask_xas], x[mask_xas]) if np.any(mask_xas) else None
                                         # Cálculo usando proyección 1D del 2D (recortada) para H
                                         mask_x = (x >= x_min) & (x <= x_max)
                                         area = np.trapz(proy1d[mask_x], x[mask_x]) if np.any(mask_x) else None
@@ -1644,20 +1641,20 @@ def render_rmn_1h_d(df_tipo, db):
                                             area_1d = np.trapz(y_1d[mask_x_1d], x_1d[mask_x_1d]) if np.any(mask_x_1d) else None
                                         else:
                                             area_1d = None
-                                        # Ahora, todos usan el mismo denominador area_as_1d
-                                        df_calc.at[i, "Área as"] = round(float(area_as_1d), 2) if area_as_1d is not None else None
-                                        if area is not None and area_as_1d not in [None, 0] and not np.isnan(has):
-                                            h = (float(area) * has) / float(area_as_1d)
+                                        # Ahora, todos usan el mismo denominador area_as
+                                        df_calc.at[i, "Área as"] = round(float(area_as), 2) if area_as is not None else None
+                                        if area is not None and area_as not in [None, 0] and not np.isnan(has):
+                                            h = (float(area) * has) / float(area_as)
                                             df_calc.at[i, "H"] = round(h, 2)
                                         else:
                                             df_calc.at[i, "H"] = None
-                                        if area_1d is not None and area_as_1d not in [None, 0] and not np.isnan(has):
-                                            ex1dH = (float(area_1d) * has) / float(area_as_1d)
+                                        if area_1d is not None and area_as not in [None, 0] and not np.isnan(has):
+                                            ex1dH = (float(area_1d) * has) / float(area_as)
                                             df_calc.at[i, "🔴ex1dH"] = round(ex1dH, 2)
                                         else:
                                             df_calc.at[i, "🔴ex1dH"] = None
-                                        if area_ex is not None and area_as_1d not in [None, 0] and not np.isnan(has):
-                                            ex2dH = (float(area_ex) * has) / float(area_as_1d)
+                                        if area_ex is not None and area_as not in [None, 0] and not np.isnan(has):
+                                            ex2dH = (float(area_ex) * has) / float(area_as)
                                             df_calc.at[i, "🔴ex2dH"] = round(ex2dH, 2)
                                         else:
                                             df_calc.at[i, "🔴ex2dH"] = None

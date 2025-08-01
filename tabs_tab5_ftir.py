@@ -916,10 +916,18 @@ def render_comparacion_espectros_ftir(db, muestras):
         "Fechas", fechas_unicas, default=fechas_unicas, key="fechas_global"
     )
     if pesos_validos:
+        peso_min_val = float(min(pesos_validos))
+        peso_max_val = float(max(pesos_validos))
+        
+        # Evitar que min_value y max_value sean iguales
+        if peso_min_val == peso_max_val:
+            peso_max_val = peso_min_val + 0.01  # Agregar un pequeño incremento
+            
         peso_min, peso_max = st.slider(
-            "Peso muestra", min_value=float(min(pesos_validos)),
-            max_value=float(max(pesos_validos)),
-            value=(float(min(pesos_validos)), float(max(pesos_validos))),
+            "Peso muestra", 
+            min_value=peso_min_val,
+            max_value=peso_max_val,
+            value=(peso_min_val, peso_max_val),
             step=0.01,
             key="peso_global"
         )

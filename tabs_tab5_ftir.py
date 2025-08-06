@@ -1320,7 +1320,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     height=600,
                     margin=dict(l=20, r=20, t=40, b=20)
                 )
-                st.plotly_chart(fig_plotly2, use_container_width=True)
+                # Usar una clave única para evitar errores de StreamlitDuplicateElementId
+                st.plotly_chart(fig_plotly2, use_container_width=True, key=f"plotly2_{'_'.join([str(c) for c in claves_curvas])}")
 
 
 

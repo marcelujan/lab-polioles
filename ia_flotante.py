@@ -232,7 +232,12 @@ def mostrar_panel_ia():
                         "etiqueta": etiqueta,
                     }
                     if archivo:
-                        contenido["archivo_nombre"] = archivo.name
-                        contenido["archivo_base64"] = base64.b64encode(archivo.getvalue()).decode("utf-8")
+                        try:
+                            contenido["archivo_nombre"] = archivo.name
+                            contenido["archivo_base64"] = base64.b64encode(archivo.getvalue()).decode("utf-8")
+                        except Exception as e:
+                            st.error(f"Error al procesar el archivo: {e}")
+                            st.info("Por favor, vuelve a subir el archivo.")
+                            st.stop()
                     ref.add(contenido)
                     st.success("Referencia guardada.")

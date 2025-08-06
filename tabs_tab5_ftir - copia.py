@@ -1155,12 +1155,19 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
     # 3. Índice OH espectroscópico
     if st.checkbox("Índice OH espectroscópico", value=False):
-        # Siempre recalcula al entrar, sin importar si hay datos guardados
-        df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
-        if not df_resultado.empty:
-            df_resultado["X"] = None
-            df_resultado["Curva"] = ""
-            st.session_state["df_oh_editado"] = df_resultado
+        doc_ref = db.document("tablas_indice_oh/manual")
+        doc = doc_ref.get()
+        
+        # leer solo al iniciar
+        if doc.exists and "df_oh_editado" not in st.session_state:
+            filas_guardadas = doc.to_dict().get("filas", [])
+            st.session_state["df_oh_editado"] = pd.DataFrame(filas_guardadas)
+        elif "df_oh_editado" not in st.session_state:
+            df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
+            if not df_resultado.empty:
+                df_resultado["X"] = None
+                df_resultado["Curva"] = ""
+                st.session_state["df_oh_editado"] = df_resultado
 
         df_editado = st.data_editor(
             st.session_state.get("df_oh_editado", pd.DataFrame()),
@@ -1181,13 +1188,14 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
         if st.button("Guardar curvas"):
             st.session_state["df_oh_editado"] = df_editado
-            db.document("tablas_indice_oh/manual").set({"filas": df_editado.to_dict(orient="records")})
+            doc_ref.set({"filas": df_editado.to_dict(orient="records")})
             st.success("Datos guardados")
 
         # filtrar datos válidos
         df_filtrado = df_editado[
             df_editado["X"].notna() & df_editado["Índice OH"].notna()
         ]
+
 
         if not df_filtrado.empty:
             # generar un checkbox para cada curva

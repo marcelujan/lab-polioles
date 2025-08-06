@@ -78,6 +78,8 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         if ppmAxis_file and T2axis_file and T2_proy_file and ILT2D_file:
             try:
+                # Verificar que los archivos sean accesibles
+                _ = ppmAxis_file.name, T2axis_file.name, T2_proy_file.name, ILT2D_file.name
                 ppmAxis = np.loadtxt(ppmAxis_file)
                 T2axis = np.loadtxt(T2axis_file)
                 T2_proy = np.loadtxt(T2_proy_file)
@@ -85,9 +87,8 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 z = ILT2D.T
                 fecha_espectro = st.date_input("Fecha del espectro", value=date.today(), key="fecha_rmn1h_t2")
                 observaciones = st.text_area("Observaciones", key="obs_rmn1h_t2")
-
                 st.markdown("### Vista previa ILT2D")
-
+                
                 nivel = st.number_input("Nivel de contorno para vista previa", min_value=0.01, max_value=1.0, value=0.1, format="%.2f")
 
                 fig2d = go.Figure()
@@ -141,6 +142,10 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 )
                 st.plotly_chart(fig1d, use_container_width=True)
 
+            except AttributeError as e:
+                st.error(f"Error al acceder a los archivos: {e}")
+                st.info("Por favor, vuelve a subir todos los archivos.")
+                st.stop()
             except Exception as e:
                 st.warning(f"Error generando vista previa: {e}")
 
@@ -193,12 +198,21 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     archivo = st.file_uploader("Archivo del espectro", type=["xlsx", "csv", "txt", "png", "jpg", "jpeg"])
 
     if archivo:
-        nombre_archivo = archivo.name
-        extension = os.path.splitext(nombre_archivo)[1].lower()
-        es_imagen = extension in [".png", ".jpg", ".jpeg"]
-        st.markdown("### Vista previa")
+        try:
+            nombre_archivo = archivo.name
+            extension = os.path.splitext(nombre_archivo)[1].lower()
+            es_imagen = extension in [".png", ".jpg", ".jpeg"]
+            st.markdown("### Vista previa")
+        except Exception as e:
+            st.error(f"Error al procesar el archivo: {e}")
+            st.info("Por favor, vuelve a subir el archivo.")
+            st.stop()
         if es_imagen:
-            st.image(archivo, use_container_width=True)
+            try:
+                st.image(archivo, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error al mostrar la imagen: {e}")
+                st.info("Por favor, vuelve a subir el archivo.")
         else:
             try:
                 if extension == ".xlsx":
@@ -240,11 +254,16 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         if tipo_espectro == "RMN 1H D":
             # subir SOLO RMN 1H D a storage
-            bucket = storage.bucket()
-            blob = bucket.blob(f"espectros/{nombre_generado}")
-            blob.upload_from_string(archivo.getvalue(), content_type=archivo.type)
-            blob.make_public()
-            url_publica = blob.public_url
+            try:
+                bucket = storage.bucket()
+                blob = bucket.blob(f"espectros/{nombre_generado}")
+                blob.upload_from_string(archivo.getvalue(), content_type=archivo.type)
+                blob.make_public()
+                url_publica = blob.public_url
+            except Exception as e:
+                st.error(f"Error al subir el archivo: {e}")
+                st.info("Por favor, vuelve a subir el archivo.")
+                st.stop()
 
             nuevo = {
                 "tipo": tipo_espectro,
@@ -260,19 +279,25 @@ def render_tab3(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
         else:
             # resto de tipos va como siempre a Firestore con base64
-            nuevo = {
-                "tipo": tipo_espectro,
-                "observaciones": observaciones.strip(), 
-                "archivo_original": archivo.name, 
-                "nombre_archivo": nombre_generado,
-                "contenido": base64.b64encode(archivo.getvalue()).decode("utf-8"),
-                "es_imagen": archivo.type.startswith("image/"),
-                "fecha": str(fecha_espectro),
-                "senal_3548": senal_3548,
-                "senal_3611": senal_3611,
-                "peso_muestra": peso_muestra,
-                "mascaras": mascaras_rmn1h if tipo_espectro == "RMN 1H" else []
-            }
+            try:
+                contenido_base64 = base64.b64encode(archivo.getvalue()).decode("utf-8")
+                nuevo = {
+                    "tipo": tipo_espectro,
+                    "observaciones": observaciones.strip(), 
+                    "archivo_original": archivo.name, 
+                    "nombre_archivo": nombre_generado,
+                    "contenido": contenido_base64,
+                    "es_imagen": archivo.type.startswith("image/"),
+                    "fecha": str(fecha_espectro),
+                    "senal_3548": senal_3548,
+                    "senal_3611": senal_3611,
+                    "peso_muestra": peso_muestra,
+                    "mascaras": mascaras_rmn1h if tipo_espectro == "RMN 1H" else []
+                }
+            except Exception as e:
+                st.error(f"Error al procesar el archivo: {e}")
+                st.info("Por favor, vuelve a subir el archivo.")
+                st.stop()
 
         ref = db.collection("muestras").document(nombre_sel).collection("espectros")
         ref.document().set(nuevo)

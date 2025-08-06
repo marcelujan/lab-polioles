@@ -1157,30 +1157,17 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     if st.checkbox("Índice OH espectroscópico", value=False):
         doc_ref = db.document("tablas_indice_oh/manual")
         doc = doc_ref.get()
-
-        # --- SIEMPRE ACTUALIZAR Y MERGEAR ---
-        df_nuevo = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
-        if not df_nuevo.empty:
-            df_nuevo["X"] = None
-            df_nuevo["Curva"] = ""
-            # Si hay datos previos guardados, hacer merge
-            filas_prev = []
-            if "df_oh_editado" in st.session_state:
-                filas_prev = st.session_state["df_oh_editado"].to_dict(orient="records")
-            elif doc.exists:
-                filas_prev = doc.to_dict().get("filas", [])
-            df_prev = pd.DataFrame(filas_prev) if filas_prev else pd.DataFrame()
-            if not df_prev.empty:
-                claves = ["Muestra", "Tipo", "Observaciones", "Fecha"]
-                df_merged = pd.merge(df_nuevo, df_prev[[*claves, "X", "Curva"]], on=claves, how="left")
-                df_merged["X"] = df_merged["X_y"].combine_first(df_merged["X_x"])
-                df_merged["Curva"] = df_merged["Curva_y"].combine_first(df_merged["Curva_x"])
-                df_merged = df_merged.drop(columns=[c for c in df_merged.columns if c.endswith("_x") or c.endswith("_y")])
-                st.session_state["df_oh_editado"] = df_merged
-            else:
-                st.session_state["df_oh_editado"] = df_nuevo
-        else:
-            st.session_state["df_oh_editado"] = pd.DataFrame()
+        
+        # leer solo al iniciar
+        if doc.exists and "df_oh_editado" not in st.session_state:
+            filas_guardadas = doc.to_dict().get("filas", [])
+            st.session_state["df_oh_editado"] = pd.DataFrame(filas_guardadas)
+        elif "df_oh_editado" not in st.session_state:
+            df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
+            if not df_resultado.empty:
+                df_resultado["X"] = None
+                df_resultado["Curva"] = ""
+                st.session_state["df_oh_editado"] = df_resultado
 
         df_editado = st.data_editor(
             st.session_state.get("df_oh_editado", pd.DataFrame()),
@@ -1320,8 +1307,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     height=600,
                     margin=dict(l=20, r=20, t=40, b=20)
                 )
-                # Usar una clave única para evitar errores de StreamlitDuplicateElementId
-                st.plotly_chart(fig_plotly2, use_container_width=True, key=f"plotly2_{'_'.join([str(c) for c in claves_curvas])}")
+                st.plotly_chart(fig_plotly2, use_container_width=True)
 
 
 

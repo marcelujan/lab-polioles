@@ -1157,34 +1157,30 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     if st.checkbox("Índice OH espectroscópico", value=False):
         doc_ref = db.document("tablas_indice_oh/manual")
         doc = doc_ref.get()
-        
-        # leer solo al iniciar
-        if doc.exists and "df_oh_editado" not in st.session_state:
-            filas_guardadas = doc.to_dict().get("filas", [])
-            st.session_state["df_oh_editado"] = pd.DataFrame(filas_guardadas)
-        elif "df_oh_editado" not in st.session_state:
-            # --- MERGE AUTOMÁTICO ---
-            df_nuevo = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
-            if not df_nuevo.empty:
-                df_nuevo["X"] = None
-                df_nuevo["Curva"] = ""
-                # Si hay datos previos guardados, hacer merge
-                doc_ref_prev = db.document("tablas_indice_oh/manual")
-                doc_prev = doc_ref_prev.get()
-                if doc_prev.exists:
-                    filas_prev = doc_prev.to_dict().get("filas", [])
-                    df_prev = pd.DataFrame(filas_prev)
-                    # Merge por claves principales
-                    claves = ["Muestra", "Tipo", "Observaciones", "Fecha"]
-                    df_merged = pd.merge(df_nuevo, df_prev[[*claves, "X", "Curva"]], on=claves, how="left")
-                    # Si hay valores previos, conservarlos
-                    df_merged["X"] = df_merged["X_y"].combine_first(df_merged["X_x"])
-                    df_merged["Curva"] = df_merged["Curva_y"].combine_first(df_merged["Curva_x"])
-                    # Limpiar columnas extra
-                    df_merged = df_merged.drop(columns=[c for c in df_merged.columns if c.endswith("_x") or c.endswith("_y")])
-                    st.session_state["df_oh_editado"] = df_merged
-                else:
-                    st.session_state["df_oh_editado"] = df_nuevo
+
+        # --- SIEMPRE ACTUALIZAR Y MERGEAR ---
+        df_nuevo = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
+        if not df_nuevo.empty:
+            df_nuevo["X"] = None
+            df_nuevo["Curva"] = ""
+            # Si hay datos previos guardados, hacer merge
+            filas_prev = []
+            if "df_oh_editado" in st.session_state:
+                filas_prev = st.session_state["df_oh_editado"].to_dict(orient="records")
+            elif doc.exists:
+                filas_prev = doc.to_dict().get("filas", [])
+            df_prev = pd.DataFrame(filas_prev) if filas_prev else pd.DataFrame()
+            if not df_prev.empty:
+                claves = ["Muestra", "Tipo", "Observaciones", "Fecha"]
+                df_merged = pd.merge(df_nuevo, df_prev[[*claves, "X", "Curva"]], on=claves, how="left")
+                df_merged["X"] = df_merged["X_y"].combine_first(df_merged["X_x"])
+                df_merged["Curva"] = df_merged["Curva_y"].combine_first(df_merged["Curva_x"])
+                df_merged = df_merged.drop(columns=[c for c in df_merged.columns if c.endswith("_x") or c.endswith("_y")])
+                st.session_state["df_oh_editado"] = df_merged
+            else:
+                st.session_state["df_oh_editado"] = df_nuevo
+        else:
+            st.session_state["df_oh_editado"] = pd.DataFrame()
 
         df_editado = st.data_editor(
             st.session_state.get("df_oh_editado", pd.DataFrame()),

@@ -1546,12 +1546,11 @@ def render_rmn_1h_d(df_tipo, db):
                                 continue
                             z_recorte = z[np.ix_(idx_y, idx_x)]
                             proy1d = np.sum(z_recorte, axis=0)
-                            n = min(len(x), len(proy1d))
-                            x = np.array(x)[:n]
-                            proy1d = np.array(proy1d)[:n]
-                            n_ex = min(len(x_ex), len(proy1d_ex))
-                            x_ex = np.array(x_ex)[:n_ex]
-                            proy1d_ex = np.array(proy1d_ex)[:n_ex]
+                            # Usar variables locales para cada zona
+                            x_zona = np.array(x)[:min(len(x), len(proy1d))]
+                            proy1d_zona = np.array(proy1d)[:min(len(x), len(proy1d))]
+                            x_ex_zona = np.array(x_ex)[:min(len(x_ex), len(proy1d_ex))]
+                            proy1d_ex_zona = np.array(proy1d_ex)[:min(len(x_ex), len(proy1d_ex))]
                             columnas_zona = [
                                 "Muestra", "Grupo funcional", "X min", "X max", "Área",
                                 "Xas min", "Xas max", "Has", "Área as", "H", "🔴ex2dH", "🔴ex1dH", "Observaciones", "Archivo"
@@ -1668,12 +1667,15 @@ def render_rmn_1h_d(df_tipo, db):
                                         df_calc.at[i, "🔴ex2dH"] = None
                                         df_calc.at[i, "🔴ex1dH"] = None
                                 return df_calc
-                            df_zona_actualizada = recalcular_tabla_zona(st.session_state[key_tabla], x, proy1d, x_ex, proy1d_ex, x_1d, y_1d)
+                            df_zona_actualizada = recalcular_tabla_zona(
+                                st.session_state[key_tabla],
+                                x_zona, proy1d_zona, x_ex_zona, proy1d_ex_zona, x_1d, y_1d
+                            )
                             st.session_state[key_tabla] = df_zona_actualizada
                             fig_proy = go.Figure()
                             fig_proy.add_trace(go.Scatter(
-                                x=x_ex,
-                                y=proy1d_ex,
+                                x=x_ex_zona,
+                                y=proy1d_ex_zona,
                                 mode="lines",
                                 name="Espectro completo",
                                 line=dict(color="black", width=1, dash="solid"),
@@ -1681,8 +1683,8 @@ def render_rmn_1h_d(df_tipo, db):
                             ))
                             if len(idx_x) > 0:
                                 fig_proy.add_trace(go.Scatter(
-                                    x=x[idx_x],
-                                    y=proy1d,
+                                    x=x_zona[idx_x],
+                                    y=proy1d_zona,
                                     mode="lines",
                                     name=f"Zona {idx_zona+1}",
                                     line=dict(width=2)

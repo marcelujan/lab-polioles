@@ -1681,10 +1681,11 @@ def render_rmn_1h_d(df_tipo, db):
                                 line=dict(color="black", width=1, dash="solid"),
                                 opacity=0.5
                             ))
+                            # Usar la máscara booleana para graficar la zona
                             if len(idx_x) > 0:
                                 fig_proy.add_trace(go.Scatter(
-                                    x=x_zona[idx_x],
-                                    y=proy1d_zona,
+                                    x=x[mask_x],
+                                    y=proy1d,
                                     mode="lines",
                                     name=f"Zona {idx_zona+1}",
                                     line=dict(width=2)

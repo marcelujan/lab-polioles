@@ -334,7 +334,7 @@ def recalcular_areas_y_guardar(
                     xas_min = float(row_dict.get("Xas min"))
                     xas_max = float(row_dict.get("Xas max"))
                     has_or_cas = float(row_dict.get(campo_has)) if row_dict.get(campo_has) not in [None, ""] else None
-                    df_as = df_transformado[(df_transformado["x"] >= min(xas_min, xasMax) - tolerancia) & (df_transformado["x"] <= max(xasMin, xas_max) + tolerancia)]
+                    df_as = df_transformado[(df_transformado["x"] >= min(xas_min, xas_max) - tolerancia) & (df_transformado["x"] <= max(xas_min, xas_max) + tolerancia)]
                     area_as = np.trapz(df_as["y"], df_as["x"]) if not df_as.empty else None
                     df_edicion.at[i, "Área as"] = round(area_as, 2) if area_as is not None else None
 
@@ -1646,17 +1646,17 @@ def render_rmn_1h_d(df_tipo, db):
                                             area_as_1d = None
                                         # Ahora, todos usan el mismo denominador area_as
                                         df_calc.at[i, "Área as"] = round(float(area_as), 2) if area_as is not None else None
-                                        if area is not None and area_as is not None and area_as != 0 and not np.isnan(has):
+                                        if area is not None and area_as not in [None, 0] and not np.isnan(has):
                                             h = (float(area) * has) / float(area_as)
                                             df_calc.at[i, "H"] = round(h, 2)
                                         else:
                                             df_calc.at[i, "H"] = None
-                                        if area_1d is not None and area_as_1d is not None and area_as_1d != 0 and not np.isnan(has):
+                                        if area_1d is not None and area_as_1d not in [None, 0] and not np.isnan(has):
                                             ex1dH = (float(area_1d) * has) / float(area_as_1d)
                                             df_calc.at[i, "🔴ex1dH"] = round(ex1dH, 2)
                                         else:
                                             df_calc.at[i, "🔴ex1dH"] = None
-                                        if area_ex is not None and area_as is not None and area_as != 0 and not np.isnan(has):
+                                        if area_ex is not None and area_as not in [None, 0] and not np.isnan(has):
                                             ex2dH = (float(area_ex) * has) / float(area_as)
                                             df_calc.at[i, "🔴ex2dH"] = round(ex2dH, 2)
                                         else:
@@ -1679,16 +1679,13 @@ def render_rmn_1h_d(df_tipo, db):
                                 line=dict(color="black", width=1, dash="solid"),
                                 opacity=0.5
                             ))
-                            if len(idx_x) > 0:
-                                fig_proy.add_trace(go.Scatter(
-                                    x=x[idx_x],
-                                    y=proy1d,
-                                    mode="lines",
-                                    name=f"Zona {idx_zona+1}",
-                                    line=dict(width=2)
-                                ))
-                            else:
-                                st.warning(f"⚠️ Zona {idx_zona+1} no tiene datos en el rango seleccionado para X")
+                            fig_proy.add_trace(go.Scatter(
+                                x=x[idx_x],
+                                y=proy1d,
+                                mode="lines",
+                                name=f"Zona {idx_zona+1}",
+                                line=dict(width=2)
+                            ))
                             fig_proy.update_layout(
                                 title=f"Proyección 1D de Zona {idx_zona+1} en {nombre_archivo}",
                                 xaxis_title="ppm",
@@ -2189,7 +2186,7 @@ def render_tab6(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             st.markdown("""
             <span style="font-size: 0.85rem;">
             <b>RMN 1H T2 (ILT2D):</b> gráfico 2D que muestra contornos de T2 vs. desplazamiento químico. Ideal para separar señales que se solapan en un gráfico 1D. Combina selectividad química (ppm) con la dinámica molecular (T2) para resolver estructuras complejas.<br>
-            <b>RMN 1H T2 (Decaimiento):</b> gráfico 1D intensidad vs tiempo de relajación T2. Cada pico indica cuántos protones tienen un cierto T2, reflejando cuan 'rígidos' o 'móviles' son. Mayor T2 indica mayor movilidad molecular (aceites) y un T2 corto indica estructuras más rígidas (polioles).<br><br>
+            <b>RMN 1H T2 (Decaimiento):</b> gráfico 1D intensidad vs tiempo de relajación T2. Cada pico indica cuántos protones tienen un cierto T2, reflejando cuán 'rígidos' o 'móviles' son. Mayor T2 indica mayor movilidad molecular (aceites) y un T2 corto indica estructuras más rígidas (polioles).<br><br>
             </span>
             """, unsafe_allow_html=True)
 

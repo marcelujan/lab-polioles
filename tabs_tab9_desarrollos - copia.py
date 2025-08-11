@@ -190,11 +190,13 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_mp[idx % 4]:
             st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
-    # Mostrar aclaraciones debajo de los checkboxes activos
-    for idx, c in enumerate(CARACTERISTICAS):
-        if st.session_state.get(f"caract_mp_{c}", False):
-            with cols_mp[idx % 4]:
-                st.markdown(f"<div style='color:gray;font-size:0.95em;margin-bottom:8px'>{c}: {ACLARACIONES_CARACTERISTICAS[c]}</div>", unsafe_allow_html=True)
+    # Mostrar aclaraciones debajo del último checkbox activo, en una nueva sección sin subtítulo
+    aclaraciones_mp = [
+        f"{c}: {ACLARACIONES_CARACTERISTICAS[c]}"
+        for c in CARACTERISTICAS if st.session_state.get(f"caract_mp_{c}", False)
+    ]
+    if aclaraciones_mp:
+        st.markdown("<br>".join(aclaraciones_mp), unsafe_allow_html=True)
 
     observaciones_mp = st.text_area("Observaciones", key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
@@ -238,11 +240,12 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_muestreo[idx % 4]:
             st.checkbox(c, key=f"caract_muestreo_{c}", on_change=guardar_en_firestore)
-    # Mostrar aclaraciones debajo de los checkboxes activos
-    for idx, c in enumerate(CARACTERISTICAS):
-        if st.session_state.get(f"caract_muestreo_{c}", False):
-            with cols_muestreo[idx % 4]:
-                st.markdown(f"<div style='color:gray;font-size:0.95em;margin-bottom:8px'>{c}: {ACLARACIONES_CARACTERISTICAS[c]}</div>", unsafe_allow_html=True)
+    aclaraciones_muestreo = [
+        f"{c}: {ACLARACIONES_CARACTERISTICAS[c]}"
+        for c in CARACTERISTICAS if st.session_state.get(f"caract_muestreo_{c}", False)
+    ]
+    if aclaraciones_muestreo:
+        st.markdown("<br>".join(aclaraciones_muestreo), unsafe_allow_html=True)
 
     st.text_area("Observaciones", key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre el muestreo")
 
@@ -258,11 +261,12 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_pt[idx % 4]:
             st.checkbox(c, key=f"caract_pt_{c}", on_change=guardar_en_firestore)
-    # Mostrar aclaraciones debajo de los checkboxes activos
-    for idx, c in enumerate(CARACTERISTICAS):
-        if st.session_state.get(f"caract_pt_{c}", False):
-            with cols_pt[idx % 4]:
-                st.markdown(f"<div style='color:gray;font-size:0.95em;margin-bottom:8px'>{c}: {ACLARACIONES_CARACTERISTICAS[c]}</div>", unsafe_allow_html=True)
+    aclaraciones_pt = [
+        f"{c}: {ACLARACIONES_CARACTERISTICAS[c]}"
+        for c in CARACTERISTICAS if st.session_state.get(f"caract_pt_{c}", False)
+    ]
+    if aclaraciones_pt:
+        st.markdown("<br>".join(aclaraciones_pt), unsafe_allow_html=True)
 
     st.text_area("Observaciones", key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
 

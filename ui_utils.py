@@ -51,7 +51,7 @@ def get_caracteristicas():
 
 # Aclaraciones por característica
 ACLARACIONES_CARACTERISTICAS = {
-    "Índice de yodo [% p/p I2 abs]": "Estimar IY y colocar Pm (o blanco) con 5 mL de ciclohexano en erlenmeyer de 250 mL. Añadir 10-25 mL Wijs, tapar con algodon embebido en KI 15% p/v y dejar en oscuridad 1-2 h. Añadir 10-20 mL KI 15% p/v y 50-100 mL agua destilada. Titular con tiosulfato de sodio 0,1 N hasta desaparecer el amarillo. Añadir indicador de almidón 0,5% y seguir titulando hasta desaparecer el azul. Blanco = 18-19 mL. <br>"
+    "Índice de yodo [% p/p I2 abs]": "Estimar IY esperado, colocar Pm (o blanco) con 5 mL de ciclohexano en erlenmeyer de 250 mL. Añadir 10-25 mL Wijs, tapar con algodon embebido en KI 15% p/v y dejar en oscuridad 1-2 h. Añadir 10-20 mL KI 15% p/v y 50-100 mL agua destilada. Titular con tiosulfato de sodio 0,1 N hasta desaparecer el amarillo. Añadir indicador de almidón 0,5% y seguir titulando hasta desaparecer el azul. Blanco = 18-19 mL. <br>"
     "Pm en función del índice esperado (problema en resultados). *Pm = 1g para IY = 20. Pm = 0,2 g para IY = 130.* Problemas con dobles enlaces conjugados.",
     "Índice OH [mg KHO/g]": "En 'Observaciones' indicar si se utiliza método espectroscopía FTIR o acetilación.",
     "Índice de acidez [mg KOH/g]": "1 g muestra + 50 mL solvente (etanol/tolueno) + fenolftaleína 1%. Titular con KOH 0,1 N etanólico<br>"

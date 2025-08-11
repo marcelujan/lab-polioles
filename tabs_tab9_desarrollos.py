@@ -195,8 +195,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_mp[idx % 4]:
             st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
-    # Mostrar aclaraciones debajo de todos los checkboxes
-    st.markdown("**Aclaraciones de las características:**")
+    # Quitar el subtítulo, dejar solo aclaraciones
     for c in CARACTERISTICAS:
         aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
         st.caption(f"{c}: {aclaracion}")
@@ -243,8 +242,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_muestreo[idx % 4]:
             st.checkbox(c, key=f"caract_muestreo_{c}", on_change=guardar_en_firestore)
-    # Mostrar aclaraciones debajo de todos los checkboxes
-    st.markdown("**Aclaraciones de las características:**")
+    # Quitar el subtítulo, dejar solo aclaraciones
     for c in CARACTERISTICAS:
         aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
         st.caption(f"{c}: {aclaracion}")
@@ -263,8 +261,7 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_pt[idx % 4]:
             st.checkbox(c, key=f"caract_pt_{c}", on_change=guardar_en_firestore)
-    # Mostrar aclaraciones debajo de todos los checkboxes
-    st.markdown("**Aclaraciones de las características:**")
+    # Quitar el subtítulo, dejar solo aclaraciones
     for c in CARACTERISTICAS:
         aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
         st.caption(f"{c}: {aclaracion}")
@@ -312,6 +309,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
             data=txt_data,
             file_name="backup_hoja_desarrollo.txt",
             mime="text/plain"
+        )
+    else:
+        st.error("No se pudo generar el archivo")
         )
     else:
         st.error("No se pudo generar el archivo")

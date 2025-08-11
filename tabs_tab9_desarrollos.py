@@ -195,9 +195,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_mp[idx % 4]:
             st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
-            if mostrar_aclaraciones and st.session_state.get(f"caract_mp_{c}", False):
-                aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
-                st.caption(aclaracion)
+    # Mostrar aclaraciones debajo de todos los checkboxes
+    st.markdown("**Aclaraciones de las características:**")
+    for c in CARACTERISTICAS:
+        aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
+        st.caption(f"{c}: {aclaracion}")
 
     observaciones_mp = st.text_area("Observaciones", key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
@@ -241,9 +243,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_muestreo[idx % 4]:
             st.checkbox(c, key=f"caract_muestreo_{c}", on_change=guardar_en_firestore)
-            if mostrar_aclaraciones and st.session_state.get(f"caract_muestreo_{c}", False):
-                aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
-                st.caption(aclaracion)
+    # Mostrar aclaraciones debajo de todos los checkboxes
+    st.markdown("**Aclaraciones de las características:**")
+    for c in CARACTERISTICAS:
+        aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
+        st.caption(f"{c}: {aclaracion}")
 
     st.text_area("Observaciones", key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre el muestreo")
 
@@ -259,9 +263,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_pt[idx % 4]:
             st.checkbox(c, key=f"caract_pt_{c}", on_change=guardar_en_firestore)
-            if mostrar_aclaraciones and st.session_state.get(f"caract_pt_{c}", False):
-                aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
-                st.caption(aclaracion)
+    # Mostrar aclaraciones debajo de todos los checkboxes
+    st.markdown("**Aclaraciones de las características:**")
+    for c in CARACTERISTICAS:
+        aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
+        st.caption(f"{c}: {aclaracion}")
 
     # --- Botón de backup al final de la hoja ---
     def generar_txt(datos):

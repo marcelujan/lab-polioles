@@ -54,7 +54,7 @@ ACLARACIONES_CARACTERISTICAS = {
     "Índice de yodo [% p/p I2 abs]": "Estimar IY esperado, colocar Pm (o blanco) con 5 mL de ciclohexano en erlenmeyer de 250 mL. Añadir 10-25 mL Wijs, tapar con algodon embebido en KI 15% p/v y dejar en oscuridad 1-2 h. Añadir 10-20 mL KI 15% p/v y 50-100 mL agua destilada. Titular con tiosulfato de sodio 0,1 N hasta desaparecer el amarillo. Añadir indicador de almidón 0,5% y seguir titulando hasta desaparecer el azul. Blanco = 18-19 mL. <br>"
     "Pm en función del índice esperado (problema en resultados). *Pm = 1g para IY = 20. Pm = 0,2 g para IY = 130.* Problemas con dobles enlaces conjugados.",
     "Índice OH [mg KHO/g]": "En 'Observaciones' indicar si se utiliza método espectroscopía FTIR o acetilación.<br>"
-    "*Preparación de muestra FTIR-Cloroformo: colocar 0,45 g muestra en un balon aforado de 10 mL. Enrasar con cloroformo seco con NaSO4 anhídro. Almacenar en botellas 10 mL bien tapadas y refrigerar. El cloroforma se evapora muy fácilmente.*",
+    "*Preparación de muestra FTIR-Cloroformo: colocar 0,45 g muestra en un balon aforado de 10 mL. Enrasar con cloroformo seco (secado con NaSO4 anhídro). Almacenar en botellas 10 mL bien tapadas y refrigerar. El cloroforma se evapora muy fácilmente.*",
     "Índice de acidez [mg KOH/g]": "1 g muestra + 50 mL solvente (etanol/tolueno) + fenolftaleína 1%. Titular con KOH 0,1 N etanólico<br>"
     "*Valoración de KOH 0,1 N etanólico con biftalato ácido de potasio (KHP, patrón primario): secar KHP por 2 h a 120 °C y enfriar en desecador. Disolver 0,40 g KHP con 50 mL de agua y añadir fenolftaleína. Titular con aproximadamente 20 mL de KOH 0,1 N etanólico.*",
     "Índice de epóxido [mol/100g]": "sin aclaraciones",

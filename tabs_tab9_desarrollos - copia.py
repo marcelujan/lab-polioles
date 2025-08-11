@@ -8,15 +8,6 @@ from fpdf import FPDF
 def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     CARACTERISTICAS = get_caracteristicas()
 
-    # Diccionario de aclaraciones por característica
-    ACLARACIONES = {
-        "Acidez": "La acidez se determina mediante titulación y expresa la cantidad de ácidos grasos libres.",
-        "Color": "El color se mide con el método estándar y puede indicar oxidación o impurezas.",
-        "Humedad": "La humedad afecta la estabilidad del producto y se mide por secado.",
-        "Índice de yodo": "El índice de yodo indica el grado de insaturación de los aceites.",
-        # ...agrega aclaraciones para todas las características...
-    }
-
     # Función para guardar automáticamente cuando cambie la tabla
     def guardar_perfil_temp():
         if 'perfil_temp_manual' in st.session_state:
@@ -184,9 +175,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_mp[idx % 4]:
             st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
-            if st.session_state.get(f"caract_mp_{c}", False):
-                aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
-                st.info(aclaracion)
 
     observaciones_mp = st.text_area("Observaciones", key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
@@ -230,9 +218,6 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_muestreo[idx % 4]:
             st.checkbox(c, key=f"caract_muestreo_{c}", on_change=guardar_en_firestore)
-            if st.session_state.get(f"caract_muestreo_{c}", False):
-                aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
-                st.info(aclaracion)
 
     st.text_area("Observaciones", key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre el muestreo")
 
@@ -248,9 +233,8 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_pt[idx % 4]:
             st.checkbox(c, key=f"caract_pt_{c}", on_change=guardar_en_firestore)
-            if st.session_state.get(f"caract_pt_{c}", False):
-                aclaracion = ACLARACIONES.get(c, "Sin aclaración disponible para esta característica.")
-                st.info(aclaracion)
+    
+    st.text_area("Observaciones", key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
 
     # --- Botón de backup al final de la hoja ---
     def generar_txt(datos):
@@ -298,3 +282,4 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         )
     else:
         st.error("No se pudo generar el archivo")
+    

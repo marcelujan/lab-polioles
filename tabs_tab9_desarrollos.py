@@ -21,12 +21,12 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         "Densidad [g/mL]": "La densidad se determina por picnómetro o balanza.",
         "Funcionalidad [#]": "La funcionalidad indica el número de grupos reactivos.",
         "Otro análisis": "Indique cualquier otro análisis relevante.",
-        # ...agrega más si es necesario...
     }
 
     # Obtener email del usuario
-    user_email = getattr(st.experimental_user, "email", None)
-    mostrar_aclaraciones = user_email == "mlujan1863@gmail.com"
+    # user_email = getattr(st.experimental_user, "email", None)
+    # mostrar_aclaraciones = user_email == "mlujan1863@gmail.com"
+    mostrar_aclaraciones = True
 
     # Función para guardar automáticamente cuando cambie la tabla
     def guardar_perfil_temp():

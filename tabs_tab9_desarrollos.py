@@ -171,16 +171,25 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
 
     st.header("02 CARACT MP")
     st.markdown("Selecciona las características a determinar en el aceite de soja:")
+
     cols_mp = st.columns(4)
-
     for idx, c in enumerate(CARACTERISTICAS):
-        key = f"caract_mp_{c}"  # misma key => misma persistencia en Firestore
         with cols_mp[idx % 4]:
-            st.checkbox(c, key=key, on_change=guardar_en_firestore)
+            st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
 
-            # Mostrar aclaración SOLO si el checkbox está activo
-            if st.session_state.get(key, False):
-                st.caption(get_aclaracion(c))
+    # === Aclaraciones (debajo de los checkboxes) ===
+    seleccionadas_mp = [c for c in CARACTERISTICAS if st.session_state.get(f"caract_mp_{c}", False)]
+    if seleccionadas_mp:
+        st.divider()
+        st.subheader("Aclaraciones de las características seleccionadas (MP)")
+        for c in seleccionadas_mp:
+            st.markdown(f"**{c}**")
+            st.caption(get_aclaracion(c))   # muestra incluso "sin aclaraciones"
+            # Si querés ocultar cuando sea "sin aclaraciones", usá:
+            # txt = get_aclaracion(c)
+            # if txt.strip().lower() != "sin aclaraciones":
+            #     st.caption(txt)
+  
     observaciones_mp = st.text_area("Observaciones", key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
     st.header("03 SÍNTESIS")

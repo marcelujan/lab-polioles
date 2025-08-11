@@ -48,3 +48,21 @@ def get_caracteristicas():
         "Viscosidad dinámica [cP]", "Densidad [g/mL]",
         "PCV [%]", "Otro análisis"
     ]
+
+# Aclaraciones por característica
+ACLARACIONES_CARACTERISTICAS = {
+    "Índice de yodo [% p/p I2 abs]": "sin aclaraciones",
+    "Índice OH [mg KHO/g]": "sin aclaraciones",
+    "Índice de acidez [mg KOH/g]": "sin aclaraciones",
+    "Índice de epóxido [mol/100g]": "sin aclaraciones",
+    "Humedad [%]": "sin aclaraciones",
+    "PM [g/mol]": "sin aclaraciones",
+    "Funcionalidad [#]": "sin aclaraciones",
+    "Viscosidad dinámica [cP]": "sin aclaraciones",
+    "Densidad [g/mL]": "sin aclaraciones",
+    "PCV [%]": "sin aclaraciones",
+    "Otro análisis": "sin aclaraciones",
+}
+
+def get_aclaracion(caracteristica: str) -> str:
+    return ACLARACIONES_CARACTERISTICAS.get(caracteristica, "sin aclaraciones")

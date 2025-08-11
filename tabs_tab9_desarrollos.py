@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from firestore_utils import cargar_sintesis_global, guardar_sintesis_global
-from ui_utils import get_caracteristicas
+from ui_utils import get_caracteristicas, get_aclaracion
 from fpdf import FPDF
 
 
@@ -172,10 +172,15 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     st.header("02 CARACT MP")
     st.markdown("Selecciona las características a determinar en el aceite de soja:")
     cols_mp = st.columns(4)
-    for idx, c in enumerate(CARACTERISTICAS):
-        with cols_mp[idx % 4]:
-            st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
 
+    for idx, c in enumerate(CARACTERISTICAS):
+        key = f"caract_mp_{c}"  # misma key => misma persistencia en Firestore
+        with cols_mp[idx % 4]:
+            st.checkbox(c, key=key, on_change=guardar_en_firestore)
+
+            # Mostrar aclaración SOLO si el checkbox está activo
+            if st.session_state.get(key, False):
+                st.caption(get_aclaracion(c))
     observaciones_mp = st.text_area("Observaciones", key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
     st.header("03 SÍNTESIS")

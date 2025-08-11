@@ -8,6 +8,21 @@ from fpdf import FPDF
 def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     CARACTERISTICAS = get_caracteristicas()
 
+    # Diccionario de aclaraciones por característica
+    ACLARACIONES_CARACTERISTICAS = {
+        "Índice de yodo [% p/p I2 abs]": "sin aclaraciones",
+        "Índice OH [mg KHO/g]": "sin aclaraciones",
+        "Índice de acidez [mg KOH/g]": "sin aclaraciones",
+        "Índice de epóxido [mol/100g]": "sin aclaraciones",
+        "Humedad [%]": "sin aclaraciones",
+        "PM [g/mol]": "sin aclaraciones",
+        "Funcionalidad [#]": "sin aclaraciones",
+        "Viscosidad dinámica [cP]": "sin aclaraciones",
+        "Densidad [g/mL]": "sin aclaraciones",
+        "PCV [%]": "sin aclaraciones",
+        "Otro análisis": "sin aclaraciones"
+    }
+
     # Función para guardar automáticamente cuando cambie la tabla
     def guardar_perfil_temp():
         if 'perfil_temp_manual' in st.session_state:
@@ -175,9 +190,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_mp[idx % 4]:
             st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
-            # Mostrar texto no editable si el checkbox está activo
-            if st.session_state.get(f"caract_mp_{c}", False):
-                st.markdown(f"**{c} sin aclaraciones**")
+    # Mostrar aclaraciones debajo de los checkboxes activos
+    for idx, c in enumerate(CARACTERISTICAS):
+        if st.session_state.get(f"caract_mp_{c}", False):
+            with cols_mp[idx % 4]:
+                st.markdown(f"<div style='color:gray;font-size:0.95em;margin-bottom:8px'>{c}: {ACLARACIONES_CARACTERISTICAS[c]}</div>", unsafe_allow_html=True)
 
     observaciones_mp = st.text_area("Observaciones", key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
@@ -221,9 +238,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_muestreo[idx % 4]:
             st.checkbox(c, key=f"caract_muestreo_{c}", on_change=guardar_en_firestore)
-            # Mostrar texto no editable si el checkbox está activo
-            if st.session_state.get(f"caract_muestreo_{c}", False):
-                st.markdown(f"**{c} sin aclaraciones**")
+    # Mostrar aclaraciones debajo de los checkboxes activos
+    for idx, c in enumerate(CARACTERISTICAS):
+        if st.session_state.get(f"caract_muestreo_{c}", False):
+            with cols_muestreo[idx % 4]:
+                st.markdown(f"<div style='color:gray;font-size:0.95em;margin-bottom:8px'>{c}: {ACLARACIONES_CARACTERISTICAS[c]}</div>", unsafe_allow_html=True)
 
     st.text_area("Observaciones", key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre el muestreo")
 
@@ -239,9 +258,11 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_pt[idx % 4]:
             st.checkbox(c, key=f"caract_pt_{c}", on_change=guardar_en_firestore)
-            # Mostrar texto no editable si el checkbox está activo
-            if st.session_state.get(f"caract_pt_{c}", False):
-                st.markdown(f"**{c} sin aclaraciones**")
+    # Mostrar aclaraciones debajo de los checkboxes activos
+    for idx, c in enumerate(CARACTERISTICAS):
+        if st.session_state.get(f"caract_pt_{c}", False):
+            with cols_pt[idx % 4]:
+                st.markdown(f"<div style='color:gray;font-size:0.95em;margin-bottom:8px'>{c}: {ACLARACIONES_CARACTERISTICAS[c]}</div>", unsafe_allow_html=True)
 
     st.text_area("Observaciones", key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
 

@@ -175,6 +175,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_mp[idx % 4]:
             st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
+            # Mostrar texto no editable si el checkbox está activo
+            if st.session_state.get(f"caract_mp_{c}", False):
+                st.markdown(f"**{c} sin aclaraciones**")
 
     observaciones_mp = st.text_area("Observaciones", key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
@@ -218,6 +221,9 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_muestreo[idx % 4]:
             st.checkbox(c, key=f"caract_muestreo_{c}", on_change=guardar_en_firestore)
+            # Mostrar texto no editable si el checkbox está activo
+            if st.session_state.get(f"caract_muestreo_{c}", False):
+                st.markdown(f"**{c} sin aclaraciones**")
 
     st.text_area("Observaciones", key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre el muestreo")
 
@@ -233,7 +239,10 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
     for idx, c in enumerate(CARACTERISTICAS):
         with cols_pt[idx % 4]:
             st.checkbox(c, key=f"caract_pt_{c}", on_change=guardar_en_firestore)
-    
+            # Mostrar texto no editable si el checkbox está activo
+            if st.session_state.get(f"caract_pt_{c}", False):
+                st.markdown(f"**{c} sin aclaraciones**")
+
     st.text_area("Observaciones", key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
 
     # --- Botón de backup al final de la hoja ---
@@ -282,4 +291,3 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         )
     else:
         st.error("No se pudo generar el archivo")
-    

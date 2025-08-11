@@ -51,9 +51,9 @@ def get_caracteristicas():
 
 # Aclaraciones por característica
 ACLARACIONES_CARACTERISTICAS = {
-    "Índice de yodo [% p/p I2 abs]": "sin aclaracion",
-    "Índice OH [mg KHO/g]": "sin aclaracion",
-    "Índice de acidez [mg KOH/g]": "1 g muestra + 50 mL solvente (etanol/tolueno) + fenolftaleína 1%. Titular con NaOH 0,1 N etanólico<br> NaOH 0,1 N se valora con biftalato de potasio (patrón primario)",
+    "Índice de yodo [% p/p I2 abs]": "sin aclaraciones",
+    "Índice OH [mg KHO/g]": "sin aclaraciones",
+    "Índice de acidez [mg KOH/g]": "<br>1 g muestra + 50 mL solvente (etanol/tolueno) + fenolftaleína 1%. Titular con NaOH 0,1 N etanólico<br> Valorar NaOH 0,1 N etanólico con biftalato de potasio (patrón primario)",
     "Índice de epóxido [mol/100g]": "sin aclaraciones",
     "Humedad [%]": "sin aclaraciones",
     "PM [g/mol]": "sin aclaraciones",

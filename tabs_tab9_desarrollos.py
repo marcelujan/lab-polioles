@@ -177,12 +177,15 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         with cols_mp[idx % 4]:
             st.checkbox(c, key=f"caract_mp_{c}", on_change=guardar_en_firestore)
 
-    # (después del loop de checkboxes MP)
     seleccionadas_mp = [c for c in CARACTERISTICAS if st.session_state.get(f"caract_mp_{c}", False)]
-    if seleccionadas_mp:
-        html_mp = "<br>".join([f"<strong>{c}</strong>: {get_aclaracion(c)}" for c in seleccionadas_mp])
-        st.markdown(html_mp, unsafe_allow_html=True)
-
+    lineas_mp = []
+    for c in seleccionadas_mp:
+        txt = get_aclaracion(c).strip()
+        if txt and txt.lower() != "sin aclaraciones":
+            lineas_mp.append(f"<strong>{c}</strong>: {txt}")
+    if lineas_mp:
+        st.markdown("<br>".join(lineas_mp), unsafe_allow_html=True)
+        
     observaciones_mp = st.text_area("Observaciones", key="observaciones_mp", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del aceite de soja")
 
     st.header("03 SÍNTESIS")
@@ -226,6 +229,16 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         with cols_muestreo[idx % 4]:
             st.checkbox(c, key=f"caract_muestreo_{c}", on_change=guardar_en_firestore)
 
+    # (después del loop de checkboxes MUESTREO)
+    seleccionadas_muestreo = [c for c in CARACTERISTICAS if st.session_state.get(f"caract_muestreo_{c}", False)]
+    lineas_muestreo = []
+    for c in seleccionadas_muestreo:
+        txt = get_aclaracion(c).strip()
+        if txt and txt.lower() != "sin aclaraciones":
+            lineas_muestreo.append(f"<strong>{c}</strong>: {txt}")
+    if lineas_muestreo:
+        st.markdown("<br>".join(lineas_muestreo), unsafe_allow_html=True)
+
     st.text_area("Observaciones", key="observaciones", on_change=guardar_en_firestore, placeholder="Observaciones sobre el muestreo")
 
     st.header("DOWNSTREAM")
@@ -241,6 +254,16 @@ def render_tab9(db, cargar_muestras, mostrar_sector_flotante):
         with cols_pt[idx % 4]:
             st.checkbox(c, key=f"caract_pt_{c}", on_change=guardar_en_firestore)
     
+    # (después del loop de checkboxes PT)
+    seleccionadas_pt = [c for c in CARACTERISTICAS if st.session_state.get(f"caract_pt_{c}", False)]
+    lineas_pt = []
+    for c in seleccionadas_pt:
+        txt = get_aclaracion(c).strip()
+        if txt and txt.lower() != "sin aclaraciones":
+            lineas_pt.append(f"<strong>{c}</strong>: {txt}")
+    if lineas_pt:
+        st.markdown("<br>".join(lineas_pt), unsafe_allow_html=True)
+
     st.text_area("Observaciones", key="observaciones_pt", on_change=guardar_en_firestore, placeholder="Observaciones sobre la caracterización del producto terminado")
 
     # --- Botón de backup al final de la hoja ---

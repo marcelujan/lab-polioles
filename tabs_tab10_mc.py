@@ -359,36 +359,20 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
         # 2) Controles de visualización (siempre presentes)
         st.subheader("Visualización")
-        colu1 = st.columns([1.6,1])
+        colu1 = st.columns([1.6])
         unidad = colu1[0].radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
 
-        # Calcular valores automáticos iniciales
-        t_end_h = float(prm["t_h"])
-        all_vals = np.concatenate([sol1.y.flatten(), sol2.y.flatten()])
-        y_max_auto = float(np.max(all_vals))
-        if y_max_auto == 0:  
-            y_max_auto = 1.0
-
-        # Mostrar boxes siempre
-        cax1, cax2, cax3, cax4 = st.columns(4)
-        x_min = cax1.number_input("x min [h]", value=0.0, step=0.5)
-        x_max = cax2.number_input("x max [h]", value=t_end_h, step=0.5)
-        y_min = cax3.number_input("y min", value=0.0)
-        y_max = cax4.number_input("y max", value=y_max_auto)
-
-        # 3) Conversión según unidad elegida
+        # Conversión según unidad
         if unidad == "Moles de lote":
             conv1    = lambda c: c*par_1fase.Vaq
             conv_aq  = lambda c: c*par_2fases.Vaq
             conv_org = lambda c: c*par_2fases.Vorg
             ylab = "Cantidad (moles)"
         else:
-            conv1    = lambda c: c
-            conv_aq  = lambda c: c
-            conv_org = lambda c: c
+            conv1 = conv_aq = conv_org = (lambda c: c)
             ylab = "Concentración (mol/L)"
 
-        # 4) Curvas (después de definir conversión)
+        # Curvas convertidas
         curves1 = {
             "H₂O₂":     conv1(sol1.y[0]),
             "PFA":      conv1(sol1.y[2]),
@@ -410,7 +394,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             "H₂O (org)":      conv_org(sol2.y[10]),
         }
 
-        # 5) Filtros de series
+        # Filtros de series (primero se elige, luego auto-limites)
         all_keys_1 = list(curves1.keys())
         sel_keys_1 = st.multiselect("Series (Modelo 1-fase)", options=all_keys_1, default=all_keys_1, key="sel_1fase")
 
@@ -420,16 +404,38 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         curves1_f = {k: v for k, v in curves1.items() if k in sel_keys_1}
         curves2_f = {k: v for k, v in curves2.items() if k in sel_keys_2}
 
-        # 6) Graficar (siempre con rangos de los box)
-        fig1 = _plot_all_one_figure(times_h, curves1_f, "Modelo 1-fase", ylab)
-        fig2 = _plot_all_one_figure(times_h, curves2_f, "Modelo 2-fases (con TM)", ylab)
+        # Auto-límites a partir de las series seleccionadas (ignorando H2O si hay otras)
+        pool = {**curves1_f, **curves2_f}
+        pool_sin_agua = {k: v for k, v in pool.items() if "H₂O" not in k}
+        if pool_sin_agua:
+            pool = pool_sin_agua
+
+        if pool:
+            y_max_auto = float(max(np.nanmax(np.asarray(y)) for y in pool.values()))
+            y_min_auto = float(min(np.nanmin(np.asarray(y)) for y in pool.values()))
+        else:
+            y_min_auto, y_max_auto = 0.0, 1.0
+
+        # pequeño padding
+        pad = 0.05 * (y_max_auto - y_min_auto if y_max_auto > y_min_auto else 1.0)
+        t_end_h = float(prm["t_h"])
+
+        # 4 boxes SIEMPRE visibles, inicializados con los autos
+        cax1, cax2, cax3, cax4 = st.columns(4)
+        x_min = cax1.number_input("x min [h]", value=0.0, step=0.5)
+        x_max = cax2.number_input("x max [h]", value=t_end_h, step=0.5)
+        y_min = cax3.number_input("y min", value=max(0.0, y_min_auto - pad))
+        y_max = cax4.number_input("y max", value=y_max_auto + pad)
+
+        # Graficar
+        fig1 = _plot_all_one_figure(sol1.t/3600.0, curves1_f, "Modelo 1-fase", ylab)
+        fig2 = _plot_all_one_figure(sol2.t/3600.0, curves2_f, "Modelo 2-fases (con TM)", ylab)
 
         fig1 = _apply_axes(fig1, False, x_min, x_max, y_min, y_max)
         fig2 = _apply_axes(fig2, False, x_min, x_max, y_min, y_max)
 
         st.plotly_chart(fig1, use_container_width=True)
         st.plotly_chart(fig2, use_container_width=True)
-
 
     # Pie: simplificaciones
     st.markdown("""

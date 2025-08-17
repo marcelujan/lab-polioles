@@ -255,7 +255,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # ======================= UI: TRANSFERENCIA DE MASA ======================
     st.markdown("**Parámetros de transferencia de masa**")
-    tmc1, tmc2, tmc3, tmc4, tmc5, tmc6, tmc7 = st.columns(7)
+    tmc1, tmc2, tmc3, tmc4, tmc5, tmc6, tmc7, tmc8, tmc9 = st.columns(9)
 
     with tmc1:
         prm["frac_aq"] = st.slider("Vaq/V (fracción acuosa)", 0.05, 0.60, value=float(prm["frac_aq"]), step=0.05)
@@ -271,12 +271,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         prm["kla_HCOOH"] = st.number_input("kLa HCOOH [1/s]", value=float(prm["kla_HCOOH"]), format="%.2e")
     with tmc7:
         prm["Kp_HCOOH"] = st.number_input("Koq HCOOH", value=float(prm["Kp_HCOOH"]), step=0.01, format="%.2f")
-
-    # Segunda fila para H2O (si preferís todo en una sola fila, cambiá a 9 columnas)
-    tmh1, tmh2 = st.columns(2)
-    with tmh1:
+    with tmh8:
         prm["kla_H2O"] = st.number_input("kLa H₂O [1/s]", value=float(prm["kla_H2O"]), format="%.2e")
-    with tmh2:
+    with tmh9:
         prm["Kp_H2O"] = st.number_input("Koq H₂O", value=float(prm["Kp_H2O"]), step=0.01, format="%.2f")
 
     # ======================= UI: TIEMPO =====================================

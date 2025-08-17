@@ -420,22 +420,41 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         pad = 0.05 * (y_max_auto - y_min_auto if y_max_auto > y_min_auto else 1.0)
         t_end_h = float(prm["t_h"])
 
-        # 4 boxes SIEMPRE visibles, inicializados con los autos
+        # ── 4 boxes SIEMPRE visibles, inicializados con autos ──
+        t_min_h, t_max_h = 0.0, float(prm["t_h"])
         cax1, cax2, cax3, cax4 = st.columns(4)
-        x_min = cax1.number_input("x min [h]", value=0.0, step=0.5)
-        x_max = cax2.number_input("x max [h]", value=t_end_h, step=0.5)
+        x_min = cax1.number_input("x min [h]", value=t_min_h, step=0.5)
+        x_max = cax2.number_input("x max [h]", value=t_max_h, step=0.5)
         y_min = cax3.number_input("y min", value=max(0.0, y_min_auto - pad))
         y_max = cax4.number_input("y max", value=y_max_auto + pad)
 
-        # Graficar
+        # ── Saneamiento de rangos para que nunca colapsen ──
+        EPSX, EPSY = 1e-6, 1e-12
+
+        # clamp dentro del dominio simulado
+        x_min = max(t_min_h, min(x_min, t_max_h - EPSX))
+        x_max = max(x_min + EPSX, min(x_max, t_max_h))
+
+        # evitar y-span ≤ 0 y NaN/inf
+        def _isfinite(v): 
+            return np.isfinite(v) and not np.isnan(v)
+
+        if not _isfinite(y_min): y_min = 0.0
+        if not _isfinite(y_max): y_max = y_min + 1.0
+        if y_max <= y_min + EPSY:
+            y_max = y_min + max(EPSY, 0.05*max(1.0, abs(y_min)))
+
+        # ── Graficar ──
         fig1 = _plot_all_one_figure(sol1.t/3600.0, curves1_f, "Modelo 1-fase", ylab)
         fig2 = _plot_all_one_figure(sol2.t/3600.0, curves2_f, "Modelo 2-fases (con TM)", ylab)
 
-        fig1 = _apply_axes(fig1, False, x_min, x_max, y_min, y_max)
-        fig2 = _apply_axes(fig2, False, x_min, x_max, y_min, y_max)
+        # aplicar SIEMPRE los límites saneados
+        fig1.update_xaxes(range=[x_min, x_max]); fig1.update_yaxes(range=[y_min, y_max])
+        fig2.update_xaxes(range=[x_min, x_max]); fig2.update_yaxes(range=[y_min, y_max])
 
         st.plotly_chart(fig1, use_container_width=True)
         st.plotly_chart(fig2, use_container_width=True)
+
 
     # Pie: simplificaciones
     st.markdown("""

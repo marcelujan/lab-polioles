@@ -46,7 +46,7 @@ def _defaults():
         # Transferencia de masa
         usar_TM=False, frac_aq=0.25, kla_PFA=5e-3, Kp_PFA=5.0, kla_H2O2=1e-3, Kp_H2O2=0.05,
         # Simulación
-        t_h=4.0, npts=400
+        t_h=12.0, npts=400
     )
 
 @dataclass
@@ -90,14 +90,14 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     \end{aligned}
     """)
 
-    st.markdown("**Transferencia de masa (opcional, dos fases)**")
+    st.markdown("**Transferencia de masa (dos-películas)**")
     st.latex(r"\dot n_i^{TM} = k_L a \left(C_{i,aq} - \frac{C_{i,org}}{K_{oq}}\right)")
     st.markdown("""
-    Para cada especie **i** con TM (PFA, H₂O₂):
-    - En **acuosa**: **+** \( \dot n_i^{TM}/V_{aq} \)
-    - En **orgánica**: **−** \( \dot n_i^{TM}/V_{org} \)
+    Términos en los balances de concentración:
+    - Fase **acuosa**: \\(\\displaystyle \\frac{dC_{i,aq}}{dt}\\big|_{TM} = -\\, \\dot n_i^{TM}/V_{aq}\\)
+    - Fase **orgánica**: \\(\\displaystyle \\frac{dC_{i,org}}{dt}\\big|_{TM} = +\\, \\dot n_i^{TM}/V_{org}\\)
 
-    Interpretación: si \(C_{i,aq} > C_{i,org}/K_{oq}\), fluye de **aq → org**.
+    Si \\(C_{i,aq} > C_{i,org}/K_{oq}\\) ⇒ flujo **aq → org** (se resta en aq y se suma en org).
     """)
 
     # ======================= UI: IMPORTAR JSON ===============================
@@ -259,68 +259,85 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         fig = go.Figure()
         for name, y in curves.items():
             fig.add_trace(go.Scatter(x=times_h, y=y, mode="lines", name=name))
-        fig.update_layout(
-            title=title, xaxis_title="Tiempo [h]", yaxis_title=y_label,
-            legend_title="Especie", hovermode="x unified"
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(title=title, xaxis_title="Tiempo [h]", yaxis_title=y_label,
+                        legend_title="Especie", hovermode="x unified")
+        return fig
+
+    def _apply_axes(fig, auto_axes, x_min, x_max, y_min, y_max):
+        if not auto_axes:
+            fig.update_xaxes(range=[x_min, x_max])
+            fig.update_yaxes(range=[y_min, y_max])
+        return fig
 
     # Simulación
+    # Selector de unidad
     u1, u2, u3 = st.columns([1.2,1,1])
     unidad = u1.radio("Unidad del gráfico", ["Moles de lote", "Concentración (mol/L)"], index=0)
+
+    # Controles de ejes en una sola fila
+    cax1, cax2, cax3, cax4 = st.columns(4)
+    auto_axes = cax1.checkbox("Ejes automáticos", value=True)
+    x_min = cax2.number_input("x min [h]", value=0.0, step=0.5)
+    x_max = cax3.number_input("x max [h]", value=float(prm["t_h"]), step=0.5)
+    y_min = cax4.number_input("y min", value=0.0)
+    
+    # Como no sabemos el máximo a priori, seteamos después de simular (y_max_auto); pero podés poner un valor semilla:
+    y_max_user = st.number_input("y max", value=1.0)
+
     if run_clicked:
+        # ---- correr siempre 1-fase ----
         t_end = float(prm["t_h"])*3600.0
         t_eval = np.linspace(0, t_end, int(prm["npts"]))
+        sol1 = solve_ivp(lambda t,Y: rhs_1phase(t,Y,par_1fase), [0,t_end], y0_1fase, t_eval=t_eval,
+                        method="LSODA", rtol=1e-7, atol=1e-9)
+        times_h = sol1.t/3600.0
 
-        if prm["usar_TM"]:
-            sol = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par), [0,t_end], y0, t_eval=t_eval,
-                            method="LSODA", rtol=1e-7, atol=1e-9)
-            times_h = sol.t/3600.0
-
-            # Elegir conversión según unidad
-            if unidad == "Moles de lote":
-                conv_aq  = lambda c: c*par.Vaq
-                conv_org = lambda c: c*par.Vorg
-                ylab = "Cantidad (moles)"
-            else:
-                conv_aq  = lambda c: c          # ya está en mol/L
-                conv_org = lambda c: c
-                ylab = "Concentración (mol/L)"
-
-            curves = {
-                "H₂O₂ (aq)":      conv_aq(sol.y[0]),
-                "PFA (aq)":       conv_aq(sol.y[2]),
-                "PFA (org)":      conv_org(sol.y[3]),
-                "C=C (org)":      conv_org(sol.y[4]),
-                "Epóxido (org)":  conv_org(sol.y[5]),
-                "Apertura (org)": conv_org(sol.y[6]),
-            }
-            titulo = "Modelo 2-fases (con TM)"
-            _plot_all_one_figure(times_h, curves, titulo, ylab)
-
+        # conversión según unidad
+        if unidad == "Moles de lote":
+            conv1 = lambda c: c*par_1fase.Vaq   # en 1-fase guardamos V_total en Vaq
+            ylab = "Cantidad (moles)"
         else:
-            sol = solve_ivp(lambda t,Y: rhs_1phase(t,Y,par), [0,t_end], y0, t_eval=t_eval,
-                            method="LSODA", rtol=1e-7, atol=1e-9)
-            times_h = sol.t/3600.0
+            conv1 = lambda c: c
+            ylab = "Concentración (mol/L)"
 
-            # En 1-fase guardé V_total en par.Vaq
-            if unidad == "Moles de lote":
-                conv = lambda c: c*par.Vaq
-                ylab = "Cantidad (moles)"
-            else:
-                conv = lambda c: c              # mol/L
-                ylab = "Concentración (mol/L)"
+        curves1 = {
+            "H₂O₂":     conv1(sol1.y[0]),
+            "PFA":      conv1(sol1.y[2]),
+            "C=C":      conv1(sol1.y[3]),
+            "Epóxido":  conv1(sol1.y[4]),
+            "Apertura": conv1(sol1.y[5]),
+        }
+        fig1 = _plot_all_one_figure(times_h, curves1, "Modelo 1-fase", ylab)
 
-            curves = {
-                "H₂O₂":     conv(sol.y[0]),
-                "PFA":      conv(sol.y[2]),
-                "C=C":      conv(sol.y[3]),
-                "Epóxido":  conv(sol.y[4]),
-                "Apertura": conv(sol.y[5]),
-            }
-            titulo = "Modelo 1-fase"
-            _plot_all_one_figure(times_h, curves, titulo, ylab)
+        # ---- correr siempre 2-fases (usar tus parámetros TM en par_2fases) ----
+        sol2 = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par_2fases), [0,t_end], y0_2fases, t_eval=t_eval,
+                        method="LSODA", rtol=1e-7, atol=1e-9)
 
+        if unidad == "Moles de lote":
+            conv_aq  = lambda c: c*par_2fases.Vaq
+            conv_org = lambda c: c*par_2fases.Vorg
+        else:
+            conv_aq  = lambda c: c
+            conv_org = lambda c: c
+
+        curves2 = {
+            "H₂O₂ (aq)":      conv_aq(sol2.y[0]),
+            "PFA (aq)":       conv_aq(sol2.y[2]),
+            "PFA (org)":      conv_org(sol2.y[3]),
+            "C=C (org)":      conv_org(sol2.y[4]),
+            "Epóxido (org)":  conv_org(sol2.y[5]),
+            "Apertura (org)": conv_org(sol2.y[6]),
+        }
+        fig2 = _plot_all_one_figure(times_h, curves2, "Modelo 2-fases (con TM)", ylab)
+
+        # Rango de ejes: si el usuario pone “auto”, dejamos que Plotly ajuste;
+        # si no, aplicamos los límites manuales (mismos para ambos gráficos)
+        if not auto_axes:
+            fig1 = _apply_axes(fig1, False, x_min, x_max, y_min, y_max_user)
+            fig2 = _apply_axes(fig2, False, x_min, x_max, y_min, y_max_user)
+
+        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig2, use_container_width=True)
 
     # Pie: simplificaciones
     st.markdown("""

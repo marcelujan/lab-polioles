@@ -91,14 +91,49 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     """)
 
     st.markdown("**Transferencia de masa (dos-películas)**")
-    st.latex(r"\dot n_i^{TM} = k_L a \left(C_{i,aq} - \frac{C_{i,org}}{K_{oq}}\right)")
-    st.markdown("""
-    Términos en los balances de concentración:
-    - Fase **acuosa**: \\(\\displaystyle \\frac{dC_{i,aq}}{dt}\\big|_{TM} = -\\, \\dot n_i^{TM}/V_{aq}\\)
-    - Fase **orgánica**: \\(\\displaystyle \\frac{dC_{i,org}}{dt}\\big|_{TM} = +\\, \\dot n_i^{TM}/V_{org}\\)
+    # ───────── Bloque: TM y balances 2-fases con ecuaciones numeradas ─────────
+    st.subheader("Transferencia de masa (dos-películas)")
 
-    Si \\(C_{i,aq} > C_{i,org}/K_{oq}\\) ⇒ flujo **aq → org** (se resta en aq y se suma en org).
+    # Flujo por TM
+    st.latex(r"\dot n_i^{TM} = k_L a\!\left( C_{i,aq} - \frac{C_{i,org}}{K_{oq}} \right)")
+
+    st.markdown("### Ecuaciones de balance (modelo 2-fases)")
+
+    # H2O2
+    st.latex(r"\frac{dC_{H_2O_2,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} - k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O_2}^{TM}}{V_{aq}}\tag{R6}")
+    st.latex(r"\frac{dC_{H_2O_2,org}}{dt} = +\,\frac{\dot n_{H_2O_2}^{TM}}{V_{org}}\tag{R7}")
+
+    # HCOOH
+    st.latex(r"\frac{dC_{HCOOH,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} + k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{HCOOH}^{TM}}{V_{aq}}\tag{R8}")
+    st.latex(r"\frac{dC_{HCOOH,org}}{dt} = +\,\frac{\dot n_{HCOOH}^{TM}}{V_{org}}\tag{R9}")
+
+    # PFA
+    st.latex(r"\frac{dC_{PFA,aq}}{dt} = +\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} - k_{1r}\,C_{PFA,aq} - k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{PFA}^{TM}}{V_{aq}}\tag{R10}")
+    st.latex(r"\frac{dC_{PFA,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} \;+\; \frac{\dot n_{PFA}^{TM}}{V_{org}}\tag{R11}")
+
+    # C=C (solo orgánico)
+    st.latex(r"\frac{dC_{C{=}C,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org}\tag{R12}")
+
+    # Epóxido (solo orgánico)
+    st.latex(r"\frac{dC_{Ep,org}}{dt} = +\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} - k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R13}")
+
+    # Agua
+    st.latex(r"\frac{dC_{H_2O,aq}}{dt} = +\,k_{1r}\,C_{PFA,aq} + k_{4}\,C_{H_2O_2,aq}\tag{R14}")
+    st.latex(r"\frac{dC_{H_2O,org}}{dt} = +\,k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R15}")
+
+    st.markdown("""
+    **Referencia (modelo 2-fases)**  
+    - **(R6–R7)**: peróxido de hidrógeno (H₂O₂) en acuosa/orgánica  
+    - **(R8–R9)**: ácido fórmico (HCOOH) en acuosa/orgánica  
+    - **(R10–R11)**: perfórmico (PFA) en acuosa/orgánica  
+    - **(R12)**: dobles enlaces (C=C) en orgánica  
+    - **(R13)**: epóxido en orgánica  
+    - **(R14–R15)**: agua en acuosa/orgánica  
+
+    > Signo de TM: \( \dot n_i^{TM}>0 \Rightarrow \) flujo **aq → org**.  
+    > En balances: resta en **aq** (− \( \dot n_i^{TM}/V_{aq} \)) y suma en **org** (+ \( \dot n_i^{TM}/V_{org} \)).
     """)
+
 
     # ======================= UI: IMPORTAR JSON ===============================
     st.subheader("Importar parámetros (JSON)")

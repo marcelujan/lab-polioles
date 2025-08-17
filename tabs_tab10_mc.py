@@ -83,9 +83,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.markdown("""
     **Referencias**  
     **(R1)** Formación del ácido perfórmico (PFA)  
-    **(R2)** Epoxidación en fase orgánica. 
-    **(R3)** Descomposición del PFA
-    **(R4)** Descomposición del H₂O₂
+    **(R2)** Epoxidación en fase orgánica  
+    **(R3)** Descomposición del PFA  
+    **(R4)** Descomposición del H₂O₂  
     **(R5)** Apertura del epóxido por agua
     """)
 

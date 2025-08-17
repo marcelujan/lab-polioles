@@ -120,7 +120,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.latex(r"\frac{dC_{H_2O,org}}{dt} = +\,\frac{\dot n_{H_2O}^{TM}}{V_{org}} \;-\; k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R15}")
 
     # ======================= UI: IMPORTAR JSON ===============================
-    st.subheader("**Importar parámetros (JSON)**")
+    st.markdown("**Importar parámetros (JSON)**")
     up = st.file_uploader("Cargar JSON de escenario", type=["json"])
     if "mc_params" not in st.session_state:
         st.session_state["mc_params"] = _defaults()
@@ -135,7 +135,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     prm = _apply_params_to_widgets(st.session_state["mc_params"])
 
     # ======================= UI: COMPOSICIÓN ================================
-    st.subheader("**Composición inicial**")
+    st.markdown("**Composición inicial**")
     c1, c2, c3 = st.columns(3)
     with c1:
         prm["V_soy"]   = st.number_input("Aceite de soja [mL]",  value=prm["V_soy"], step=1.0)
@@ -153,7 +153,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         prm["rho_H2O2"]  = st.number_input("ρ H₂O₂ 30% p/v [g/mL]", value=prm["rho_H2O2"], step=0.01)
 
     # ======================= UI: CINÉTICA ===================================
-    st.subheader("**Constantes cinéticas y factor ácido**")
+    st.markdown("**Constantes cinéticas y factor ácido**")
     kcols = st.columns(7)
     keys = ["k1f","k1r","k2","k3","k4","k5","alpha"]
     labels= ["k1f [L/mol/s]","k1r [1/s]","k2 [L/mol/s]","k3 [1/s]","k4 [1/s]","k5 [L/mol/s]","α (ácido)"]
@@ -162,7 +162,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         prm[k] = kcols[i].number_input(lab, value=prm[k], format=fmt)
 
     # ======================= UI: TRANSFERENCIA DE MASA ======================
-    st.subheader("**Parámetros de transferencia de masa**")
+    st.markdown("**Parámetros de transferencia de masa**")
     with st.expander("Ajustes de TM (modelo 2-fases)"):
         cols_tm1, cols_tm2 = st.columns(2)
         with cols_tm1:

@@ -1,4 +1,3 @@
-import json
 from dataclasses import dataclass
 import numpy as np
 import streamlit as st
@@ -348,12 +347,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             fig.add_trace(go.Scatter(x=times_h, y=y, mode="lines", name=name))
         fig.update_layout(title=title, xaxis_title="Tiempo [h]", yaxis_title=y_label,
                         legend_title="Especie", hovermode="x unified")
-        return fig
-
-    def _apply_axes(fig, auto_axes, x_min, x_max, y_min, y_max):
-        if not auto_axes:
-            fig.update_xaxes(range=[x_min, x_max])
-            fig.update_yaxes(range=[y_min, y_max])
         return fig
 
     # Simulación

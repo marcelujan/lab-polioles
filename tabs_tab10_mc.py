@@ -44,7 +44,7 @@ def _defaults():
         # Cinética
         k1f=2.0e-2, k1r=1.0e-3, k2=1.0e-2, k3=1.0e-4, k4=2.0e-5, k5=5.0e-5, alpha=1.0,
         # Transferencia de masa
-        usar_TM=False, frac_aq=0.25, kla_PFA=5e-3, Kp_PFA=5.0, kla_H2O2=1e-3, Kp_H2O2=0.05,
+        usar_TM=False, frac_aq=0.25, kla_PFA=5e-3, Kp_PFA=5.0, kla_H2O2=1e-3, Kp_H2O2=0.05, kla_HCOOH=3e-3, Kp_HCOOH=0.20,
         # Simulación
         t_h=12.0, npts=400
     )
@@ -52,8 +52,11 @@ def _defaults():
 @dataclass
 class P:
     k1f: float; k1r: float; k2: float; k3: float; k4: float; k5: float; alpha: float
-    Vaq: float; Vorg: float; kla_PFA: float; kla_H2O2: float; Kp_PFA: float; Kp_H2O2: float
+    Vaq: float; Vorg: float
+    kla_PFA: float; kla_H2O2: float; Kp_PFA: float; Kp_H2O2: float
     usar_TM: bool
+    kla_HCOOH: float = 0.0
+    Kp_HCOOH: float  = 0.2
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.title("Modelo cinético – Mi PoliOL")
@@ -181,12 +184,14 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.subheader("Transferencia de masa (opcional)")
     prm["usar_TM"] = st.checkbox("Activar dos fases con TM", value=prm["usar_TM"])
     if prm["usar_TM"]:
-        t1,t2,t3 = st.columns(3)
+        t1,t2,t3,t4 = st.columns(4)
         prm["frac_aq"]  = t1.slider("Fracción acuosa Vaq/V", 0.05, 0.60, value=float(prm["frac_aq"]), step=0.05)
         prm["kla_PFA"]  = t2.number_input("kLa_PFA [1/s]", value=prm["kla_PFA"], format="%.2e")
         prm["Kp_PFA"]   = t2.number_input("Koq PFA (=Corg/Caq)", value=prm["Kp_PFA"], step=0.5)
         prm["kla_H2O2"] = t3.number_input("kLa_H2O2 [1/s]", value=prm["kla_H2O2"], format="%.2e")
         prm["Kp_H2O2"]  = t3.number_input("Koq H2O2", value=prm["Kp_H2O2"], step=0.01)
+        prm["kla_HCOOH"] = t4.number_input("kLa_HCOOH [1/s]", value=prm.get("kla_HCOOH", 3e-3), format="%.2e")
+        prm["Kp_HCOOH"] =  t4.number_input("Koq HCOOH (=Corg/Caq)", value=prm.get("Kp_HCOOH", 0.20), step=0.01)
 
     # ======================= UI: TIEMPO =====================================
     st.subheader("Simulación")
@@ -345,6 +350,28 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         fig1 = _plot_all_one_figure(times_h, curves1, "Modelo 1-fase", ylab)
 
         # ---- correr siempre 2-fases (usar tus parámetros TM en par_2fases) ----
+        y0_2fases = np.array([
+            n_H2O2/Vaq,            # Ca_H2O2
+            n_HCOOH/Vaq,           # Ca_HCOOH
+            0.0,                   # Ca_PFA
+            0.0,                   # Co_H2O2
+            0.0,                   # Co_HCOOH
+            0.0,                   # Co_PFA
+            prm["moles_CdC"]/Vorg, # Co_CdC
+            0.0, 0.0,              # Co_Ep, Co_Open
+            n_H2O/Vaq              # Ca_H2O
+        ])
+        
+        par_2fases = P(
+            prm["k1f"],prm["k1r"],prm["k2"],prm["k3"],prm["k4"],prm["k5"],prm["alpha"],
+            Vaq,Vorg,
+            prm["kla_PFA"],prm["kla_H2O2"],prm["Kp_PFA"],prm["Kp_H2O2"],
+            True
+        )
+        # Guarda también en 'par_2fases' los nuevos KLa/K de HCOOH (si tu clase P no los tiene, agrégalos):
+        par_2fases.kla_HCOOH = prm["kla_HCOOH"]
+        par_2fases.Kp_HCOOH  = prm["Kp_HCOOH"]
+
         sol2 = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par_2fases), [0,t_end], y0_2fases, t_eval=t_eval,
                         method="LSODA", rtol=1e-7, atol=1e-9)
 

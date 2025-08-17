@@ -161,24 +161,20 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
 
     # ======================= UI: COMPOSICIÓN ================================
-    st.subheader("Composición inicial")
+    st.markdown("**Composición inicial**")
 
     # === Tabla de referencia: densidades, PM y moles ===
 
     # Volúmenes (mL)
     V_soy, V_H2SO4, V_H2O, V_HCOOH, V_H2O2 = prm["V_soy"], prm["V_H2SO4"], prm["V_H2O"], prm["V_HCOOH"], prm["V_H2O2"]
 
-    # Moles de cada componente del lote (según definición de cada solución)
+    # Moles de cada componente del lote 
     n_soy   = (densidades["ACEITE"] * V_soy)   / MW["ACEITE"]
     n_H2SO4 = (0.98 * densidades["H2SO4"] * V_H2SO4) / MW["H2SO4"]
     n_H2O   = (densidades["H2O"] * V_H2O) / MW["H2O"]
     n_HCOOH = (0.85 * densidades["HCOOH"] * V_HCOOH) / MW["HCOOH"]
     g_H2O2  = 0.30 * V_H2O2   # 30 g H2O2 / 100 mL (p/v)
     n_H2O2  = g_H2O2 / MW["H2O2"]
-
-    # Componentes no dosificados en “Composición inicial” → moles = 0
-    n_ETER = 0.0
-    n_NaHCO3 = 0.0
     n_HCOOOH = 0.0
 
     df_ref = pd.DataFrame([
@@ -196,7 +192,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     )
 
 
-    st.subheader("Relaciones molares")
+    st.markdown("**Relaciones molares**")
 
     m_soy   = densidades["ACEITE"] * prm["V_soy"]
     m_H2SO4 = densidades["H2SO4"]  * prm["V_H2SO4"]

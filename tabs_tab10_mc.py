@@ -72,7 +72,7 @@ def _params_hash(prm: dict) -> str:
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
-    st.subheader("Esquema y ecuaciones")
+    #st.subheader("Esquema y ecuaciones")
 
     st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1}")
     st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2}")

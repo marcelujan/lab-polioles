@@ -357,21 +357,24 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
         times_h = sol1.t/3600.0  # mismo grid para ambos
 
-        # 2) Controles de visualización (solo ahora)
+        # 2) Controles de visualización (siempre presentes)
         st.subheader("Visualización")
-        colu1 = st.columns([1.6,1,1])
-        unidad    = colu1[0].radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
-        auto_axes = colu1[1].checkbox("Ejes automáticos", value=True)
-        xylim_on  = colu1[2].checkbox("Fijar rangos XY", value=False)
+        colu1 = st.columns([1.6,1])
+        unidad = colu1[0].radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
 
-        if xylim_on:
-            cax1, cax2, cax3, cax4 = st.columns(4)
-            x_min = cax1.number_input("x min [h]", value=0.0, step=0.5)
-            x_max = cax2.number_input("x max [h]", value=float(prm["t_h"]), step=0.5)
-            y_min = cax3.number_input("y min", value=0.0)
-            y_max = cax4.number_input("y max", value=1.0)
-        else:
-            x_min = x_max = y_min = y_max = None
+        # Calcular valores automáticos iniciales
+        t_end_h = float(prm["t_h"])
+        all_vals = np.concatenate([sol1.y.flatten(), sol2.y.flatten()])
+        y_max_auto = float(np.max(all_vals))
+        if y_max_auto == 0:  
+            y_max_auto = 1.0
+
+        # Mostrar boxes siempre
+        cax1, cax2, cax3, cax4 = st.columns(4)
+        x_min = cax1.number_input("x min [h]", value=0.0, step=0.5)
+        x_max = cax2.number_input("x max [h]", value=t_end_h, step=0.5)
+        y_min = cax3.number_input("y min", value=0.0)
+        y_max = cax4.number_input("y max", value=y_max_auto)
 
         # 3) Conversión según unidad elegida
         if unidad == "Moles de lote":
@@ -417,16 +420,16 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         curves1_f = {k: v for k, v in curves1.items() if k in sel_keys_1}
         curves2_f = {k: v for k, v in curves2.items() if k in sel_keys_2}
 
-        # 6) Graficar
+        # 6) Graficar (siempre con rangos de los box)
         fig1 = _plot_all_one_figure(times_h, curves1_f, "Modelo 1-fase", ylab)
         fig2 = _plot_all_one_figure(times_h, curves2_f, "Modelo 2-fases (con TM)", ylab)
 
-        if (not auto_axes) and xylim_on:
-            fig1 = _apply_axes(fig1, False, x_min, x_max, y_min, y_max)
-            fig2 = _apply_axes(fig2, False, x_min, x_max, y_min, y_max)
+        fig1 = _apply_axes(fig1, False, x_min, x_max, y_min, y_max)
+        fig2 = _apply_axes(fig2, False, x_min, x_max, y_min, y_max)
 
         st.plotly_chart(fig1, use_container_width=True)
         st.plotly_chart(fig2, use_container_width=True)
+
 
     # Pie: simplificaciones
     st.markdown("""

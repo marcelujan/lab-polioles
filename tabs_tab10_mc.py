@@ -255,17 +255,19 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         except Exception as e:
             st.warning(f"No se pudo guardar en Firestore: {e}")
 
-    def _plot_all_one_figure(times_h, curves, title):
+    def _plot_all_one_figure(times_h, curves, title, y_label):
         fig = go.Figure()
         for name, y in curves.items():
             fig.add_trace(go.Scatter(x=times_h, y=y, mode="lines", name=name))
         fig.update_layout(
-            title=title, xaxis_title="Tiempo [h]", yaxis_title="Cantidad (moles de lote)",
+            title=title, xaxis_title="Tiempo [h]", yaxis_title=y_label,
             legend_title="Especie", hovermode="x unified"
         )
         st.plotly_chart(fig, use_container_width=True)
-        
+
     # Simulación
+    u1, u2, u3 = st.columns([1.2,1,1])
+    unidad = u1.radio("Unidad del gráfico", ["Moles de lote", "Concentración (mol/L)"], index=0)
     if run_clicked:
         t_end = float(prm["t_h"])*3600.0
         t_eval = np.linspace(0, t_end, int(prm["npts"]))
@@ -273,36 +275,52 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         if prm["usar_TM"]:
             sol = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par), [0,t_end], y0, t_eval=t_eval,
                             method="LSODA", rtol=1e-7, atol=1e-9)
-
-            # conv a moles de lote por fase
-            aqmol  = lambda c: c*par.Vaq
-            orgmol = lambda c: c*par.Vorg
-
             times_h = sol.t/3600.0
+
+            # Elegir conversión según unidad
+            if unidad == "Moles de lote":
+                conv_aq  = lambda c: c*par.Vaq
+                conv_org = lambda c: c*par.Vorg
+                ylab = "Cantidad (moles)"
+            else:
+                conv_aq  = lambda c: c          # ya está en mol/L
+                conv_org = lambda c: c
+                ylab = "Concentración (mol/L)"
+
             curves = {
-                "H₂O₂ (aq)":  aqmol(sol.y[0]),
-                "PFA (aq)":   aqmol(sol.y[2]),
-                "PFA (org)":  orgmol(sol.y[3]),
-                "C=C (org)":  orgmol(sol.y[4]),
-                "Epóxido (org)": orgmol(sol.y[5]),
-                "Apertura (org)": orgmol(sol.y[6]),
+                "H₂O₂ (aq)":      conv_aq(sol.y[0]),
+                "PFA (aq)":       conv_aq(sol.y[2]),
+                "PFA (org)":      conv_org(sol.y[3]),
+                "C=C (org)":      conv_org(sol.y[4]),
+                "Epóxido (org)":  conv_org(sol.y[5]),
+                "Apertura (org)": conv_org(sol.y[6]),
             }
-            _plot_all_one_figure(times_h, curves, "Modelo 2-fases (con TM) – moles en el lote")
+            titulo = "Modelo 2-fases (con TM)"
+            _plot_all_one_figure(times_h, curves, titulo, ylab)
 
         else:
             sol = solve_ivp(lambda t,Y: rhs_1phase(t,Y,par), [0,t_end], y0, t_eval=t_eval,
                             method="LSODA", rtol=1e-7, atol=1e-9)
-
-            mol = lambda c: c*par.Vaq   # en 1-fase guardé V_total en par.Vaq
             times_h = sol.t/3600.0
+
+            # En 1-fase guardé V_total en par.Vaq
+            if unidad == "Moles de lote":
+                conv = lambda c: c*par.Vaq
+                ylab = "Cantidad (moles)"
+            else:
+                conv = lambda c: c              # mol/L
+                ylab = "Concentración (mol/L)"
+
             curves = {
-                "H₂O₂":   mol(sol.y[0]),
-                "PFA":    mol(sol.y[2]),
-                "C=C":    mol(sol.y[3]),
-                "Epóxido":mol(sol.y[4]),
-                "Apertura":mol(sol.y[5]),
+                "H₂O₂":     conv(sol.y[0]),
+                "PFA":      conv(sol.y[2]),
+                "C=C":      conv(sol.y[3]),
+                "Epóxido":  conv(sol.y[4]),
+                "Apertura": conv(sol.y[5]),
             }
-            _plot_all_one_figure(times_h, curves, "Modelo 1-fase – moles en el lote")
+            titulo = "Modelo 1-fase"
+            _plot_all_one_figure(times_h, curves, titulo, ylab)
+
 
     # Pie: simplificaciones
     st.markdown("""

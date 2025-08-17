@@ -72,14 +72,13 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
     #st.subheader("Esquema y ecuaciones")
 
-    st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1}")
+    st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1 Formación del ácido perfórmico (PFA)}")
     st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2}")
     st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3}")
     st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4}")
     st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5}")
 
     st.markdown("""
-    **Referencias**  
     **(R1)** Formación del ácido perfórmico (PFA)  
     **(R2)** Epoxidación en fase orgánica  
     **(R3)** Descomposición del PFA  

@@ -32,15 +32,19 @@ def _apply_params_to_widgets(d):
 
 def _defaults():
     return dict(
-        # Composición Mi PoliOL (volúmenes por lote)
+        # Composición Mi PoliOL
         V_soy=400.00, V_H2SO4=3.64, V_H2O=32.73, V_HCOOH=80.00, V_H2O2=204.36,
         moles_CdC=2.00,
         # Densidades
         rho_soy=0.92, rho_HCOOH=1.215, rho_H2O2=1.00,
         # Cinética
         k1f=2.0e-2, k1r=1.0e-3, k2=1.0e-2, k3=1.0e-4, k4=2.0e-5, k5=5.0e-5, alpha=1.0,
-        # Transferencia de masa
-        usar_TM=False, frac_aq=0.25, kla_PFA=5e-3, Kp_PFA=5.0, kla_H2O2=1e-3, Kp_H2O2=0.05, kla_HCOOH=3e-3, Kp_HCOOH=0.20, kla_H2O=3e-3,  Kp_H2O=0.02,
+        # Transferencia de masa (PFA, H2O2, HCOOH, H2O)
+        frac_aq=0.25,
+        kla_PFA=5e-3,  Kp_PFA=5.0,
+        kla_H2O2=1e-3, Kp_H2O2=0.05,
+        kla_HCOOH=3e-3, Kp_HCOOH=0.20,
+        kla_H2O=3e-3,  Kp_H2O=0.02,
         # Simulación
         t_h=12.0, npts=400
     )
@@ -50,11 +54,10 @@ class P:
     k1f: float; k1r: float; k2: float; k3: float; k4: float; k5: float; alpha: float
     Vaq: float; Vorg: float
     kla_PFA: float; kla_H2O2: float; Kp_PFA: float; Kp_H2O2: float
-    usar_TM: bool
     kla_HCOOH: float = 0.0
-    Kp_HCOOH: float  = 0.2
-    kla_H2O: float   = 0.0 
-    Kp_H2O: float    = 0.02 
+    Kp_HCOOH: float  = 0.20
+    kla_H2O: float   = 0.0
+    Kp_H2O: float    = 0.02
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
@@ -211,11 +214,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     ])
     par_1fase = P(
         prm["k1f"], prm["k1r"], prm["k2"], prm["k3"], prm["k4"], prm["k5"], prm["alpha"],
-        V_total_L, 0.0,            # Vaq=V_total, Vorg=0
-        0.0, 0.0, 5.0, 0.05,       # kla_PFA, kla_H2O2, Kp_PFA, Kp_H2O2 (no usados en 1-fase)
-        False,                     # usar_TM = False
-        kla_HCOOH=0.0,             # sin TM en 1-fase
-        Kp_HCOOH=0.20
+        V_total_L, 0.0,
+        0.0, 0.0, 5.0, 0.05,
+        kla_HCOOH=0.0, Kp_HCOOH=0.20, kla_H2O=0.0, Kp_H2O=0.02
     )
 
     # ---- MODELO 2-FASES (11 vars) ----
@@ -240,7 +241,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         prm["k1f"], prm["k1r"], prm["k2"], prm["k3"], prm["k4"], prm["k5"], prm["alpha"],
         Vaq, Vorg,
         prm["kla_PFA"], prm["kla_H2O2"], prm["Kp_PFA"], prm["Kp_H2O2"],
-        True,
         kla_HCOOH=prm["kla_HCOOH"], Kp_HCOOH=prm["Kp_HCOOH"],
         kla_H2O=prm["kla_H2O"],     Kp_H2O=prm["Kp_H2O"]
     )
@@ -346,9 +346,21 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # Simulación
     if run_clicked:
-        # Controles compactos SOLO ahora:
-        colu1 = st.columns([1.2,1,1])
-        unidad = colu1[0].radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
+        # 1) Resolver ODEs (siempre ambos modelos)
+        t_end  = float(prm["t_h"])*3600.0
+        t_eval = np.linspace(0, t_end, int(prm["npts"]))
+
+        sol1 = solve_ivp(lambda t,Y: rhs_1phase(t,Y,par_1fase), [0,t_end], y0_1fase, t_eval=t_eval,
+                        method="LSODA", rtol=1e-7, atol=1e-9)
+        sol2 = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par_2fases), [0,t_end], y0_2fases, t_eval=t_eval,
+                        method="LSODA", rtol=1e-7, atol=1e-9)
+
+        times_h = sol1.t/3600.0  # mismo grid para ambos
+
+        # 2) Controles de visualización (solo ahora)
+        st.subheader("Visualización")
+        colu1 = st.columns([1.6,1,1])
+        unidad    = colu1[0].radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
         auto_axes = colu1[1].checkbox("Ejes automáticos", value=True)
         xylim_on  = colu1[2].checkbox("Fijar rangos XY", value=False)
 
@@ -361,21 +373,19 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         else:
             x_min = x_max = y_min = y_max = None
 
-        # ---- correr siempre 1-fase ----
-        t_end = float(prm["t_h"])*3600.0
-        t_eval = np.linspace(0, t_end, int(prm["npts"]))
-        sol1 = solve_ivp(lambda t,Y: rhs_1phase(t,Y,par_1fase), [0,t_end], y0_1fase, t_eval=t_eval,
-                        method="LSODA", rtol=1e-7, atol=1e-9)
-        times_h = sol1.t/3600.0
-
-        # conversión según unidad
+        # 3) Conversión según unidad elegida
         if unidad == "Moles de lote":
-            conv1 = lambda c: c*par_1fase.Vaq   # en 1-fase guardamos V_total en Vaq
+            conv1    = lambda c: c*par_1fase.Vaq
+            conv_aq  = lambda c: c*par_2fases.Vaq
+            conv_org = lambda c: c*par_2fases.Vorg
             ylab = "Cantidad (moles)"
         else:
-            conv1 = lambda c: c
+            conv1    = lambda c: c
+            conv_aq  = lambda c: c
+            conv_org = lambda c: c
             ylab = "Concentración (mol/L)"
 
+        # 4) Curvas (después de definir conversión)
         curves1 = {
             "H₂O₂":     conv1(sol1.y[0]),
             "PFA":      conv1(sol1.y[2]),
@@ -383,19 +393,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             "Epóxido":  conv1(sol1.y[4]),
             "Apertura": conv1(sol1.y[5]),
         }
-        fig1 = _plot_all_one_figure(times_h, curves1, "Modelo 1-fase", ylab)
-
-
-        sol2 = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par_2fases), [0,t_end], y0_2fases, t_eval=t_eval,
-                        method="LSODA", rtol=1e-7, atol=1e-9)
-
-        if unidad == "Moles de lote":
-            conv_aq  = lambda c: c*par_2fases.Vaq
-            conv_org = lambda c: c*par_2fases.Vorg
-        else:
-            conv_aq  = lambda c: c
-            conv_org = lambda c: c
-
         curves2 = {
             "H₂O₂ (aq)":      conv_aq(sol2.y[0]),
             "H₂O₂ (org)":     conv_org(sol2.y[3]),
@@ -406,18 +403,28 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             "C=C (org)":      conv_org(sol2.y[6]),
             "Epóxido (org)":  conv_org(sol2.y[7]),
             "Apertura (org)": conv_org(sol2.y[8]),
-
-            "H2O (aq)":     conv_aq(sol2.y[9]),
-            "H2O (org)":    conv_org(sol2.y[10]),
+            "H₂O (aq)":       conv_aq(sol2.y[9]),
+            "H₂O (org)":      conv_org(sol2.y[10]),
         }
 
+        # 5) Filtros de series
+        all_keys_1 = list(curves1.keys())
+        sel_keys_1 = st.multiselect("Series (Modelo 1-fase)", options=all_keys_1, default=all_keys_1, key="sel_1fase")
 
-        fig2 = _plot_all_one_figure(times_h, curves2, "Modelo 2-fases (con TM)", ylab)
+        all_keys_2 = list(curves2.keys())
+        sel_keys_2 = st.multiselect("Series (Modelo 2-fases)", options=all_keys_2, default=all_keys_2, key="sel_2fases")
+
+        curves1_f = {k: v for k, v in curves1.items() if k in sel_keys_1}
+        curves2_f = {k: v for k, v in curves2.items() if k in sel_keys_2}
+
+        # 6) Graficar
+        fig1 = _plot_all_one_figure(times_h, curves1_f, "Modelo 1-fase", ylab)
+        fig2 = _plot_all_one_figure(times_h, curves2_f, "Modelo 2-fases (con TM)", ylab)
 
         if (not auto_axes) and xylim_on:
             fig1 = _apply_axes(fig1, False, x_min, x_max, y_min, y_max)
             fig2 = _apply_axes(fig2, False, x_min, x_max, y_min, y_max)
-            
+
         st.plotly_chart(fig1, use_container_width=True)
         st.plotly_chart(fig2, use_container_width=True)
 

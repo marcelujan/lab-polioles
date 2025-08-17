@@ -2,8 +2,8 @@ import json
 from dataclasses import dataclass
 import numpy as np
 import streamlit as st
-import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+import plotly.graph_objects as go
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Pestaña: Modelo cinético – Mi PoliOL (explícito + persistencia + JSON I/O)
@@ -62,20 +62,20 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
     st.subheader("Esquema y ecuaciones")
 
-    st.markdown("**(R1) Formación perácido (PFA)**")
-    st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}")
+    st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1}")
+    st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2}")
+    st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3}")
+    st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4}")
+    st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5}")
 
-    st.markdown("**(R2) Epoxidación (fase orgánica)**")
-    st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}")
-
-    st.markdown("**(R3) Decaimiento del PFA**")
-    st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}")
-
-    st.markdown("**(R4) Decaimiento del H_2O_2**")
-    st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}")
-
-    st.markdown("**(R5) Apertura del epóxido por agua**")
-    st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}")
+    st.markdown("""
+    **Referencias**  
+    **(R1)** Formación del ácido perfórmico (PFA) / retroceso.  
+    **(R2)** Epoxidación en fase orgánica.  
+    **(R3)** Decaimiento del PFA.  
+    **(R4)** Descomposición del H₂O₂.  
+    **(R5)** Apertura del epóxido por agua.
+    """)
 
     st.markdown("**Modelo 1-fase (concentraciones \(C\) en mol·L⁻¹)**")
     st.latex(r"""
@@ -91,11 +91,14 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     """)
 
     st.markdown("**Transferencia de masa (opcional, dos fases)**")
-    st.latex(r"""
-    \dot n_i^{TM} = k_L a \left(C_{i,aq} - \frac{C_{i,org}}{K_{oq}}\right), \qquad
-    i \in \{ \mathrm{PFA}, \mathrm{H_2O_2} \}
+    st.latex(r"\dot n_i^{TM} = k_L a \left(C_{i,aq} - \frac{C_{i,org}}{K_{oq}}\right)")
+    st.markdown("""
+    Para cada especie **i** con TM (PFA, H₂O₂):
+    - En **acuosa**: **+** \( \dot n_i^{TM}/V_{aq} \)
+    - En **orgánica**: **−** \( \dot n_i^{TM}/V_{org} \)
+
+    Interpretación: si \(C_{i,aq} > C_{i,org}/K_{oq}\), fluye de **aq → org**.
     """)
-    st.markdown("Se suma \(+\dot n_i^{TM}/V_{aq}\) en acuosa y \(-\dot n_i^{TM}/V_{org}\) en orgánica.")
 
     # ======================= UI: IMPORTAR JSON ===============================
     st.subheader("Importar parámetros (JSON)")
@@ -252,62 +255,54 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         except Exception as e:
             st.warning(f"No se pudo guardar en Firestore: {e}")
 
+    def _plot_all_one_figure(times_h, curves, title):
+        fig = go.Figure()
+        for name, y in curves.items():
+            fig.add_trace(go.Scatter(x=times_h, y=y, mode="lines", name=name))
+        fig.update_layout(
+            title=title, xaxis_title="Tiempo [h]", yaxis_title="Cantidad (moles de lote)",
+            legend_title="Especie", hovermode="x unified"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        
     # Simulación
     if run_clicked:
         t_end = float(prm["t_h"])*3600.0
-        t_eval= np.linspace(0, t_end, int(prm["npts"]))
+        t_eval = np.linspace(0, t_end, int(prm["npts"]))
+
         if prm["usar_TM"]:
             sol = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par), [0,t_end], y0, t_eval=t_eval,
                             method="LSODA", rtol=1e-7, atol=1e-9)
-            def aqmol(c):  return c*par.Vaq
-            def orgmol(c): return c*par.Vorg
 
-            plt.figure()
-            plt.plot(sol.t/3600, aqmol(sol.y[0]), label="H₂O₂ (aq)")
-            plt.plot(sol.t/3600, aqmol(sol.y[2]), label="PFA (aq)")
-            plt.xlabel("Tiempo [h]"); plt.ylabel("moles"); plt.title("Oxidantes – fase acuosa")
-            plt.legend(); st.pyplot(plt.gcf())
+            # conv a moles de lote por fase
+            aqmol  = lambda c: c*par.Vaq
+            orgmol = lambda c: c*par.Vorg
 
-            plt.figure()
-            plt.plot(sol.t/3600, orgmol(sol.y[3]), label="PFA (org)")
-            plt.plot(sol.t/3600, orgmol(sol.y[4]), label="C=C (org)")
-            plt.plot(sol.t/3600, orgmol(sol.y[5]), label="Epóxido (org)")
-            plt.plot(sol.t/3600, orgmol(sol.y[6]), label="Apertura (org)")
-            plt.xlabel("Tiempo [h]"); plt.ylabel("moles"); plt.title("Orgánico – PFA, C=C, Ep, Open")
-            plt.legend(); st.pyplot(plt.gcf())
-
-            st.json({
-                "H2O2_aq_final_mol": float(aqmol(sol.y[0,-1])),
-                "PFA_aq_final_mol": float(aqmol(sol.y[2,-1])),
-                "PFA_org_final_mol": float(orgmol(sol.y[3,-1])),
-                "Epox_org_final_mol": float(orgmol(sol.y[5,-1])),
-                "Open_org_final_mol": float(orgmol(sol.y[6,-1]))
-            })
+            times_h = sol.t/3600.0
+            curves = {
+                "H₂O₂ (aq)":  aqmol(sol.y[0]),
+                "PFA (aq)":   aqmol(sol.y[2]),
+                "PFA (org)":  orgmol(sol.y[3]),
+                "C=C (org)":  orgmol(sol.y[4]),
+                "Epóxido (org)": orgmol(sol.y[5]),
+                "Apertura (org)": orgmol(sol.y[6]),
+            }
+            _plot_all_one_figure(times_h, curves, "Modelo 2-fases (con TM) – moles en el lote")
 
         else:
             sol = solve_ivp(lambda t,Y: rhs_1phase(t,Y,par), [0,t_end], y0, t_eval=t_eval,
                             method="LSODA", rtol=1e-7, atol=1e-9)
 
-            def mol(c): return c*par.Vaq  # en 1-fase usamos V_total en par.Vaq
-            plt.figure()
-            plt.plot(sol.t/3600, mol(sol.y[0]), label="H₂O₂")
-            plt.plot(sol.t/3600, mol(sol.y[2]), label="PFA")
-            plt.xlabel("Tiempo [h]"); plt.ylabel("moles"); plt.title("Oxidantes – 1 fase")
-            plt.legend(); st.pyplot(plt.gcf())
-
-            plt.figure()
-            plt.plot(sol.t/3600, mol(sol.y[3]), label="C=C")
-            plt.plot(sol.t/3600, mol(sol.y[4]), label="Epóxido")
-            plt.plot(sol.t/3600, mol(sol.y[5]), label="Apertura")
-            plt.xlabel("Tiempo [h]"); plt.ylabel("moles"); plt.title("C=C / Epóxido / Apertura – 1 fase")
-            plt.legend(); st.pyplot(plt.gcf())
-
-            st.json({
-                "H2O2_final_mol":  float(mol(sol.y[0,-1])),
-                "PFA_final_mol":   float(mol(sol.y[2,-1])),
-                "Epox_final_mol":  float(mol(sol.y[4,-1])),
-                "Open_final_mol":  float(mol(sol.y[5,-1]))
-            })
+            mol = lambda c: c*par.Vaq   # en 1-fase guardé V_total en par.Vaq
+            times_h = sol.t/3600.0
+            curves = {
+                "H₂O₂":   mol(sol.y[0]),
+                "PFA":    mol(sol.y[2]),
+                "C=C":    mol(sol.y[3]),
+                "Epóxido":mol(sol.y[4]),
+                "Apertura":mol(sol.y[5]),
+            }
+            _plot_all_one_figure(times_h, curves, "Modelo 1-fase – moles en el lote")
 
     # Pie: simplificaciones
     st.markdown("""

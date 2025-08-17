@@ -135,36 +135,37 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # ======================= UI: COMPOSICIÓN ================================
     st.subheader("Composición inicial")
 
-    st.subheader("Densidad y PM")
+    # === Tabla de referencia: densidades, PM y moles ===
 
-    densidades = {
-        "ACEITE": 0.910,
-        "H2SO4":  1.83,
-        "H2O":    1.00,
-        "HCOOH":  1.195,
-        "H2O2":   1.11,
-        "HCOOOH": 1.18,
-    }
+    # Volúmenes (mL)
+    V_soy, V_H2SO4, V_H2O, V_HCOOH, V_H2O2 = prm["V_soy"], prm["V_H2SO4"], prm["V_H2O"], prm["V_HCOOH"], prm["V_H2O2"]
 
-    MW = {
-        "ACEITE":  873.64,
-        "H2SO4":    98.08,
-        "H2O":      18.02,
-        "HCOOH":    46.03,
-        "H2O2":     34.01,
-        "HCOOOH":   62.02,
-    }
+    # Moles de cada componente del lote (según definición de cada solución)
+    n_soy   = (densidades["ACEITE"] * V_soy)   / MW["ACEITE"]
+    n_H2SO4 = (0.98 * densidades["H2SO4"] * V_H2SO4) / MW["H2SO4"]
+    n_H2O   = (densidades["H2O"] * V_H2O) / MW["H2O"]
+    n_HCOOH = (0.85 * densidades["HCOOH"] * V_HCOOH) / MW["HCOOH"]
+    g_H2O2  = 0.30 * V_H2O2   # 30 g H2O2 / 100 mL (p/v)
+    n_H2O2  = g_H2O2 / MW["H2O2"]
+
+    # Componentes no dosificados en “Composición inicial” → moles = 0
+    n_ETER = 0.0
+    n_NaHCO3 = 0.0
+    n_HCOOOH = 0.0
 
     df_ref = pd.DataFrame([
-        ("Aceite de soja crudo",     densidades["ACEITE"], MW["ACEITE"]),
-        ("Ácido sulfúrico 98% p/p",  densidades["H2SO4"],  MW["H2SO4"]),
-        ("Agua",                     densidades["H2O"],    MW["H2O"]),
-        ("Ácido fórmico 85%",        densidades["HCOOH"],  MW["HCOOH"]),
-        ("Peróxido H₂O₂ 30% p/v",    densidades["H2O2"],   MW["H2O2"]),
-        ("Ácido perfórmico",         densidades["HCOOOH"], MW["HCOOOH"]),
-    ], columns=["Componente","d [g/mL]","PM [g/mol]"])
-    st.dataframe(df_ref.style.format({"d [g/mL]": "{:.3f}", "PM [g/mol]": "{:.2f}"}),
-                use_container_width=True, hide_index=True)
+        ("Aceite de soja crudo",     densidades["ACEITE"],  MW["ACEITE"],  n_soy),
+        ("Ácido sulfúrico 98% p/p",  densidades["H2SO4"],   MW["H2SO4"],   n_H2SO4),
+        ("Agua",                     densidades["H2O"],     MW["H2O"],     n_H2O),
+        ("Ácido fórmico 85%",        densidades["HCOOH"],   MW["HCOOH"],   n_HCOOH),
+        ("Peróxido H₂O₂ 30% p/v",    densidades["H2O2"],    MW["H2O2"],    n_H2O2),
+        ("Ácido perfórmico",         densidades["HCOOOH"],  MW["HCOOOH"],  n_HCOOOH),
+    ], columns=["Componente","d [g/mL]","PM [g/mol]","n [mol]"])
+
+    st.dataframe(
+        df_ref.style.format({"d [g/mL]": "{:.3f}", "PM [g/mol]": "{:.2f}", "n [mol]": "{:,.6g}"}),
+        use_container_width=True, hide_index=True
+    )
 
 
     st.subheader("Relaciones molares")
@@ -210,18 +211,11 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # tabla resumen (no editable)
     rows = [
-        ("Aceite de soja crudo [mol]",        n_soy),
-        ("Ácido sulfúrico 98% [mol]",         n_H2SO4),
-        ("Agua destilada [mol]",              (prm["V_H2O"]*1.0)/MW["H2O"]),
-        ("Ácido fórmico 85% [mol]",           n_HCOOH),
-        ("Peróxido de hidrógeno 30% p/v [mol]", n_H2O2),
-        ("—", None),
         ("Agua de reactivos [mol]",           n_H2O_react),
         ("Agua total [mol]",                  n_H2O_total),
         ("Protones H₂SO₄ [mol H⁺]",           Hplus_H2SO4),
         ("Protones HCOOH [mol H⁺]",           Hplus_HCOOH),
         ("Protones totales [mol H⁺]",         Hplus_total),
-        ("—", None),
         ("C=C (dobles enlaces) [mol]",        n_CdC),
         ("Relación H₂O₂/C=C [mol/mol]",       rel_H2O2_CdC),
         ("Relación H₂SO₄/C=C [mol/mol]",      rel_H2SO4_CdC),

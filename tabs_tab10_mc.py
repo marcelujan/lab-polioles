@@ -132,6 +132,34 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     prm = _apply_params_to_widgets(st.session_state["mc_params"])
 
+    # === Constantes físico-químicas (fijas) ===
+    densidades = {
+        "ACEITE": 0.910,  # Aceite de soja crudo [g/mL]
+        "H2SO4":  1.83,   # Ácido sulfúrico 98% [g/mL]
+        "H2O":    1.00,   # Agua [g/mL]
+        "HCOOH":  1.195,  # Ácido fórmico 85% [g/mL]
+        "H2O2":   1.11,   # Peróxido 30% p/v [g/mL]
+        "ETER":   0.713,  # Éter etílico [g/mL]
+        "HCOOOH": 1.18,   # Ácido perfórmico [g/mL]
+    }
+
+    MW = {
+        "ACEITE":  873.64,
+        "H2SO4":    98.08,
+        "H2O":      18.02,
+        "HCOOH":    46.03,
+        "H2O2":     34.01,
+        "ETER":     74.12,
+        "NaHCO3":   84.01,
+        "HCOOOH":   62.02,
+    }
+
+    # (opcional) Aliases si en el resto del archivo usás variables sueltas:
+    MW_H2O2  = MW["H2O2"]
+    MW_H2O   = MW["H2O"]
+    MW_HCOOH = MW["HCOOH"]
+
+
     # ======================= UI: COMPOSICIÓN ================================
     st.subheader("Composición inicial")
 

@@ -59,9 +59,6 @@ class P:
     Kp_HCOOH: float  = 0.2
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
-    st.title("Modelo cinético – Mi PoliOL")
-    st.caption("Ecuaciones explícitas, 1-fase o 2-fases con transferencia de masa, guardado automático en Firebase y exportación/importación JSON.")
-
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
     st.subheader("Esquema y ecuaciones")
 
@@ -93,50 +90,31 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     \end{aligned}
     """)
 
-    st.markdown("**Transferencia de masa (dos-películas)**")
     # ───────── Bloque: TM y balances 2-fases con ecuaciones numeradas ─────────
-    st.subheader("Transferencia de masa (dos-películas)")
-
-    # Flujo por TM
-    st.latex(r"\dot n_i^{TM} = k_L a\!\left( C_{i,aq} - \frac{C_{i,org}}{K_{oq}} \right)")
-
+    # ——— Ecuaciones de balance (modelo 2-fases) ———
     st.markdown("### Ecuaciones de balance (modelo 2-fases)")
-
-    # H2O2
     st.latex(r"\frac{dC_{H_2O_2,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} - k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O_2}^{TM}}{V_{aq}}\tag{R6}")
-    st.latex(r"\frac{dC_{H_2O_2,org}}{dt} = +\,\frac{\dot n_{H_2O_2}^{TM}}{V_{org}}\tag{R7}")
+    st.latex(r"\frac{dC_{H_2O_2,org}}{dt} = +\,\frac{\dot n_{H_2O_2}^{TM}}{V_{org}} - k_{4}\,C_{H_2O_2,org}\tag{R7}")
 
-    # HCOOH
     st.latex(r"\frac{dC_{HCOOH,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} + k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{HCOOH}^{TM}}{V_{aq}}\tag{R8}")
     st.latex(r"\frac{dC_{HCOOH,org}}{dt} = +\,\frac{\dot n_{HCOOH}^{TM}}{V_{org}}\tag{R9}")
 
-    # PFA
     st.latex(r"\frac{dC_{PFA,aq}}{dt} = +\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} - k_{1r}\,C_{PFA,aq} - k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{PFA}^{TM}}{V_{aq}}\tag{R10}")
     st.latex(r"\frac{dC_{PFA,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} \;+\; \frac{\dot n_{PFA}^{TM}}{V_{org}}\tag{R11}")
 
-    # C=C (solo orgánico)
     st.latex(r"\frac{dC_{C{=}C,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org}\tag{R12}")
-
-    # Epóxido (solo orgánico)
     st.latex(r"\frac{dC_{Ep,org}}{dt} = +\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} - k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R13}")
 
-    # Agua
     st.latex(r"\frac{dC_{H_2O,aq}}{dt} = +\,k_{1r}\,C_{PFA,aq} + k_{4}\,C_{H_2O_2,aq}\tag{R14}")
     st.latex(r"\frac{dC_{H_2O,org}}{dt} = +\,k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R15}")
 
     st.markdown("""
     **Referencia (modelo 2-fases)**  
-    - **(R6–R7)**: peróxido de hidrógeno (H₂O₂) en acuosa/orgánica  
-    - **(R8–R9)**: ácido fórmico (HCOOH) en acuosa/orgánica  
-    - **(R10–R11)**: perfórmico (PFA) en acuosa/orgánica  
-    - **(R12)**: dobles enlaces (C=C) en orgánica  
-    - **(R13)**: epóxido en orgánica  
-    - **(R14–R15)**: agua en acuosa/orgánica  
-
-    > Signo de TM: \( \dot n_i^{TM}>0 \Rightarrow \) flujo **aq → org**.  
-    > En balances: resta en **aq** (− \( \dot n_i^{TM}/V_{aq} \)) y suma en **org** (+ \( \dot n_i^{TM}/V_{org} \)).
+    (R6–R7) H₂O₂ en acuosa/orgánica · (R8–R9) HCOOH en acuosa/orgánica ·
+    (R10–R11) PFA en acuosa/orgánica · (R12) C=C orgánica · (R13) Epóxido orgánica ·
+    (R14–R15) Agua en acuosa/orgánica.  
+    **Signo de TM:** \( \dot n_i^{TM}>0 \Rightarrow \) flujo **aq → org** (− en aq, + en org).
     """)
-
 
     # ======================= UI: IMPORTAR JSON ===============================
     st.subheader("Importar parámetros (JSON)")
@@ -255,21 +233,45 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         ]
 
     def rhs_2phase(t, y, p: P):
-        Ca_H2O2, Ca_HCOOH, Ca_PFA, Co_PFA, Co_CdC, Co_Ep, Co_Open, Ca_H2O = y
-        r1f = p.k1f*Ca_HCOOH*Ca_H2O2*p.alpha; r1r=p.k1r*Ca_PFA; r3=p.k3*Ca_PFA; r4=p.k4*Ca_H2O2
-        r2  = p.k2*Co_PFA*Co_CdC*p.alpha;     r5=p.k5*Co_Ep*Ca_H2O*p.alpha
-        TM_PFA  = p.kla_PFA*(Ca_PFA - Co_PFA/p.Kp_PFA)
-        TM_H2O2 = p.kla_H2O2*(Ca_H2O2 - 0.0/p.Kp_H2O2)
-        return [
-            -r1f + r1r - r4 - TM_H2O2,     # dCa_H2O2
-            -r1f + r1r + r3,               # dCa_HCOOH
-             r1f - r1r - r3 - TM_PFA,      # dCa_PFA
-             TM_PFA - r2,                  # dCo_PFA
-            -r2,                           # dCo_CdC
-             r2 - r5,                      # dCo_Ep
-             r5,                           # dCo_Open
-             r1r + r4                      # dCa_H2O
-        ]
+        (Ca_H2O2, Ca_HCOOH, Ca_PFA,
+        Co_H2O2, Co_HCOOH, Co_PFA,
+        Co_CdC,  Co_Ep,    Co_Open,
+        Ca_H2O) = y
+
+        # Reacciones en acuosa
+        r1f = p.k1f*Ca_HCOOH*Ca_H2O2*p.alpha
+        r1r = p.k1r*Ca_PFA
+        r3  = p.k3*Ca_PFA
+        r4a = p.k4*Ca_H2O2   # decaimiento H2O2 en acuosa
+
+        # Reacciones en orgánica
+        r2  = p.k2*Co_PFA*Co_CdC*p.alpha
+        r5  = p.k5*Co_Ep*Ca_H2O*p.alpha
+        r4o = p.k4*Co_H2O2   # opcional: decaimiento en orgánica (suele ser menor, pero lo incluimos)
+
+        # Transferencias
+        TM_H2O2  = p.kla_H2O2*(Ca_H2O2 - Co_H2O2/p.Kp_H2O2)
+        TM_HCOOH = p.kla_HCOOH*(Ca_HCOOH - Co_HCOOH/p.Kp_HCOOH)
+        TM_PFA   = p.kla_PFA*(Ca_PFA - Co_PFA/p.Kp_PFA)
+
+        dCa_H2O2  = -r1f + r1r - r4a - TM_H2O2
+        dCa_HCOOH = -r1f + r1r + r3  - TM_HCOOH
+        dCa_PFA   =  r1f - r1r - r3  - TM_PFA
+
+        dCo_H2O2  = +TM_H2O2 - r4o
+        dCo_HCOOH = +TM_HCOOH
+        dCo_PFA   = +TM_PFA - r2
+
+        dCo_CdC   = -r2
+        dCo_Ep    =  r2 - r5
+        dCo_Open  =  r5
+
+        dCa_H2O   =  r1r + r4a  # agua formada en acuosa (puedes sumar +r5 a org si modelas agua orgánica explícita)
+
+        return [dCa_H2O2, dCa_HCOOH, dCa_PFA,
+                dCo_H2O2, dCo_HCOOH, dCo_PFA,
+                dCo_CdC,  dCo_Ep,    dCo_Open,
+                dCa_H2O]
 
     # ========================= BOTONES: SIM, GUARDAR, EXPORT =================
     cbtn = st.columns([1,1,1,1.2])
@@ -384,12 +386,16 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
         curves2 = {
             "H₂O₂ (aq)":      conv_aq(sol2.y[0]),
+            "H₂O₂ (org)":     conv_org(sol2.y[3]), 
+            "HCOOH (aq)":     conv_aq(sol2.y[1]),  
+            "HCOOH (org)":    conv_org(sol2.y[4]),
             "PFA (aq)":       conv_aq(sol2.y[2]),
-            "PFA (org)":      conv_org(sol2.y[3]),
-            "C=C (org)":      conv_org(sol2.y[4]),
-            "Epóxido (org)":  conv_org(sol2.y[5]),
-            "Apertura (org)": conv_org(sol2.y[6]),
+            "PFA (org)":      conv_org(sol2.y[5]),
+            "C=C (org)":      conv_org(sol2.y[6]),
+            "Epóxido (org)":  conv_org(sol2.y[7]),
+            "Apertura (org)": conv_org(sol2.y[8]),
         }
+
         fig2 = _plot_all_one_figure(times_h, curves2, "Modelo 2-fases (con TM)", ylab)
 
         # Rango de ejes: si el usuario pone “auto”, dejamos que Plotly ajuste;

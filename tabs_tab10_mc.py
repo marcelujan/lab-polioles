@@ -4,6 +4,7 @@ import numpy as np
 import streamlit as st
 from scipy.integrate import solve_ivp
 import plotly.graph_objects as go
+import hashlib, json
 
 MW_H2O2  = 34.0147
 MW_HCOOH = 46.0254
@@ -58,6 +59,17 @@ class P:
     Kp_HCOOH: float  = 0.20
     kla_H2O: float   = 0.0
     Kp_H2O: float    = 0.02
+
+def _params_hash(prm: dict) -> str:
+    # Solo cosas que cambian la simulación (no sliders de ejes, ni selección de series)
+    keys = ["V_soy","V_H2SO4","V_H2O","V_HCOOH","V_H2O2","moles_CdC",
+            "rho_soy","rho_HCOOH","rho_H2O2",
+            "k1f","k1r","k2","k3","k4","k5","alpha",
+            "frac_aq","kla_PFA","Kp_PFA","kla_H2O2","Kp_H2O2","kla_HCOOH","Kp_HCOOH","kla_H2O","Kp_H2O",
+            "t_h","npts"]
+    subset = {k: float(prm[k]) for k in keys}
+    s = json.dumps(subset, sort_keys=True)
+    return hashlib.md5(s.encode()).hexdigest()
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
@@ -346,17 +358,23 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # Simulación
     if run_clicked:
-        # 1) Resolver ODEs (siempre ambos modelos)
+       # 1) Resolver ODEs (siempre ambos modelos)
+        st.session_state["mc_last_hash"] = _params_hash(prm)
         t_end  = float(prm["t_h"])*3600.0
         t_eval = np.linspace(0, t_end, int(prm["npts"]))
-
         sol1 = solve_ivp(lambda t,Y: rhs_1phase(t,Y,par_1fase), [0,t_end], y0_1fase, t_eval=t_eval,
                         method="LSODA", rtol=1e-7, atol=1e-9)
         sol2 = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par_2fases), [0,t_end], y0_2fases, t_eval=t_eval,
                         method="LSODA", rtol=1e-7, atol=1e-9)
+        st.session_state["mc_sol1"] = sol1
+        st.session_state["mc_sol2"] = sol2    
 
-        times_h = sol1.t/3600.0  # mismo grid para ambos
-
+    have_cache = ("mc_sol1" in st.session_state) and ("mc_sol2" in st.session_state)
+    same_hash  = (st.session_state.get("mc_last_hash") == _params_hash(prm))
+    if have_cache and same_hash:
+        sol1 = st.session_state["mc_sol1"]
+        sol2 = st.session_state["mc_sol2"]
+    
         # 2) Controles de visualización (siempre presentes)
         st.subheader("Visualización")
         colu1 = st.columns([1.6])

@@ -108,13 +108,18 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.latex(r"\frac{dC_{H_2O,aq}}{dt} = +\,k_{1r}\,C_{PFA,aq} + k_{4}\,C_{H_2O_2,aq}\tag{R14}")
     st.latex(r"\frac{dC_{H_2O,org}}{dt} = +\,k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R15}")
 
-    st.markdown("""
+    st.markdown(r"""
     **Referencia (modelo 2-fases)**  
-    (R6–R7) H₂O₂ en acuosa/orgánica · (R8–R9) HCOOH en acuosa/orgánica ·
-    (R10–R11) PFA en acuosa/orgánica · (R12) C=C orgánica · (R13) Epóxido orgánica ·
-    (R14–R15) Agua en acuosa/orgánica.  
-    **Signo de TM:** \( \dot n_i^{TM}>0 \Rightarrow \) flujo **aq → org** (− en aq, + en org).
+    (R6–R7): H₂O₂ en acuosa / orgánica  
+    (R8–R9): HCOOH en acuosa / orgánica  
+    (R10–R11): PFA en acuosa / orgánica  
+    (R12): C=C en orgánica  
+    (R13): Epóxido en orgánica  
+    (R14–R15): Agua en acuosa / orgánica  
+
+    **Signo de TM:** \( \dot n_i^{TM} > 0 \Rightarrow \) flujo **aq → org** (− en aq, + en org).
     """)
+
 
     # ======================= UI: IMPORTAR JSON ===============================
     st.subheader("Importar parámetros (JSON)")
@@ -159,17 +164,18 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         prm[k] = kcols[i].number_input(lab, value=prm[k], format=fmt)
 
     # ======================= UI: TRANSFERENCIA DE MASA ======================
-    st.subheader("Transferencia de masa (opcional)")
-    prm["usar_TM"] = st.checkbox("Activar dos fases con TM", value=prm["usar_TM"])
-    if prm["usar_TM"]:
-        t1,t2,t3,t4 = st.columns(4)
-        prm["frac_aq"]  = t1.slider("Fracción acuosa Vaq/V", 0.05, 0.60, value=float(prm["frac_aq"]), step=0.05)
-        prm["kla_PFA"]  = t2.number_input("kLa_PFA [1/s]", value=prm["kla_PFA"], format="%.2e")
-        prm["Kp_PFA"]   = t2.number_input("Koq PFA (=Corg/Caq)", value=prm["Kp_PFA"], step=0.5)
-        prm["kla_H2O2"] = t3.number_input("kLa_H2O2 [1/s]", value=prm["kla_H2O2"], format="%.2e")
-        prm["Kp_H2O2"]  = t3.number_input("Koq H2O2", value=prm["Kp_H2O2"], step=0.01)
-        prm["kla_HCOOH"] = t4.number_input("kLa_HCOOH [1/s]", value=prm.get("kla_HCOOH", 3e-3), format="%.2e")
-        prm["Kp_HCOOH"] =  t4.number_input("Koq HCOOH (=Corg/Caq)", value=prm.get("Kp_HCOOH", 0.20), step=0.01)
+    st.subheader("Parámetros de transferencia de masa")
+    with st.expander("Ajustes de TM (modelo 2-fases)"):
+        cols_tm1, cols_tm2 = st.columns(2)
+        with cols_tm1:
+            prm["frac_aq"]   = st.slider("Fracción acuosa Vaq/V", 0.05, 0.60, value=float(prm["frac_aq"]), step=0.05)
+            prm["kla_PFA"]   = st.number_input("kLa_PFA [1/s]",  value=prm["kla_PFA"], format="%.2e")
+            prm["Kp_PFA"]    = st.number_input("Koq PFA (=Corg/Caq)", value=prm["Kp_PFA"], step=0.1)
+            prm["kla_HCOOH"] = st.number_input("kLa_HCOOH [1/s]", value=prm["kla_HCOOH"], format="%.2e")
+            prm["Kp_HCOOH"]  = st.number_input("Koq HCOOH", value=prm["Kp_HCOOH"], step=0.01)
+        with cols_tm2:
+            prm["kla_H2O2"]  = st.number_input("kLa_H2O₂ [1/s]", value=prm["kla_H2O2"], format="%.2e")
+            prm["Kp_H2O2"]   = st.number_input("Koq H2O₂", value=prm["Kp_H2O2"], step=0.01)
 
     # ======================= UI: TIEMPO =====================================
     st.subheader("Simulación")
@@ -335,21 +341,30 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         return fig
 
     # Simulación
-    # Selector de unidad
-    u1, u2, u3 = st.columns([1.2,1,1])
-    unidad = u1.radio("Unidad del gráfico", ["Moles de lote", "Concentración (mol/L)"], index=0)
-
-    # Controles de ejes en una sola fila
-    cax1, cax2, cax3, cax4 = st.columns(4)
-    auto_axes = cax1.checkbox("Ejes automáticos", value=True)
-    x_min = cax2.number_input("x min [h]", value=0.0, step=0.5)
-    x_max = cax3.number_input("x max [h]", value=float(prm["t_h"]), step=0.5)
-    y_min = cax4.number_input("y min", value=0.0)
-    
-    # Como no sabemos el máximo a priori, seteamos después de simular (y_max_auto); pero podés poner un valor semilla:
-    y_max_user = st.number_input("y max", value=1.0)
-
     if run_clicked:
+        # Controles compactos SOLO ahora:
+        colu1, colu2, colu3 = st.columns([1.2,1,1])
+        unidad = colu1.radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
+        auto_axes = colu2.checkbox("Ejes automáticos", value=True)
+        x_lim_box = colu3.checkbox("Fijar límites XY", value=False)
+
+        # Rango XY compacto en una fila (visible solo si el usuario quiere fijarlos)
+        y_max_user = st.number_input("y max", value=1.0)
+        if x_lim_box:
+            cax1, cax2, cax3, cax4 = st.columns(4)
+            x_min = cax1.number_input("x min [h]", value=0.0, step=0.5)
+            x_max = cax2.number_input("x max [h]", value=float(prm["t_h"]), step=0.5)
+            y_min = cax3.number_input("y min", value=0.0)
+            y_max = cax4.number_input("y max", value=1.0)
+        else:
+            x_min = x_max = y_min = y_max = None  # no se usan
+
+        def _apply_axes(fig, auto_axes, x_min, x_max, y_min, y_max):
+            if (not auto_axes) and (x_min is not None) and (x_max is not None) and (y_min is not None) and (y_max is not None):
+                fig.update_xaxes(range=[x_min, x_max])
+                fig.update_yaxes(range=[y_min, y_max])
+            return fig
+
         # ---- correr siempre 1-fase ----
         t_end = float(prm["t_h"])*3600.0
         t_eval = np.linspace(0, t_end, int(prm["npts"]))
@@ -435,9 +450,3 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 ---
 **Simplificaciones:** isoterma, volumen constante, cinética de orden potencia, α catalítico lumped; en 2-fases, \(k_L a\) y \(K_{oq}\) constantes.
 """)
-
-    # Botón flotante (si lo tenés)
-    try:
-        mostrar_sector_flotante(st.session_state.get("db"), key_suffix="mc")
-    except Exception:
-        pass

@@ -181,40 +181,63 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.session_state["mc_params"] = prm
 
     # =============== CÁLCULOS INICIALES (moles y estados) ===================
-    g_H2O2   = 0.30 * prm["V_H2O2"]                        # p/v
-    n_H2O2   = g_H2O2 / MW_H2O2
-    g_HCOOH  = 0.85 * prm["rho_HCOOH"] * prm["V_HCOOH"]
-    n_HCOOH  = g_HCOOH / MW_HCOOH
-    g_H2O_ini= (prm["V_H2O"]*1.0) + 0.15*(prm["rho_HCOOH"]*prm["V_HCOOH"]) + \
-               max(prm["rho_H2O2"]*prm["V_H2O2"] - g_H2O2, 0.0)
-    n_H2O    = g_H2O_ini / MW_H2O
-    V_total_L= (prm["V_soy"] + prm["V_H2SO4"] + prm["V_H2O"] + prm["V_HCOOH"] + prm["V_H2O2"])/1000.0
+    g_H2O2    = 0.30 * prm["V_H2O2"]              # p/v: 30 g por 100 mL
+    n_H2O2    = g_H2O2 / MW_H2O2
+    g_HCOOH   = 0.85 * prm["rho_HCOOH"] * prm["V_HCOOH"]
+    n_HCOOH   = g_HCOOH / MW_HCOOH
+    g_H2O_ini = (prm["V_H2O"]*1.0) + 0.15*(prm["rho_HCOOH"]*prm["V_HCOOH"]) + \
+                max(prm["rho_H2O2"]*prm["V_H2O2"] - g_H2O2, 0.0)
+    n_H2O     = g_H2O_ini / MW_H2O
 
-    if prm["usar_TM"]:
-        Vaq  = float(prm["frac_aq"])*V_total_L
-        Vorg = V_total_L - Vaq
-        y0 = np.array([
-            n_H2O2/Vaq,               # Ca_H2O2
-            n_HCOOH/Vaq,              # Ca_HCOOH
-            0.0,                      # Ca_PFA
-            0.0,                      # Co_PFA
-            prm["moles_CdC"]/Vorg,    # Co_CdC
-            0.0, 0.0,                 # Co_Ep, Co_Open
-            n_H2O/Vaq                 # Ca_H2O
-        ])
-        par = P(prm["k1f"],prm["k1r"],prm["k2"],prm["k3"],prm["k4"],prm["k5"],prm["alpha"],
-                Vaq,Vorg, prm["kla_PFA"],prm["kla_H2O2"],prm["Kp_PFA"],prm["Kp_H2O2"], True)
-    else:
-        y0 = np.array([
-            n_H2O2/V_total_L,
-            n_HCOOH/V_total_L,
-            0.0,
-            prm["moles_CdC"]/V_total_L,
-            0.0, 0.0,
-            n_H2O/V_total_L
-        ])
-        par = P(prm["k1f"],prm["k1r"],prm["k2"],prm["k3"],prm["k4"],prm["k5"],prm["alpha"],
-                V_total_L,0.0, 0.0,0.0,5.0,0.05, False)
+    V_total_L = (prm["V_soy"] + prm["V_H2SO4"] + prm["V_H2O"] + prm["V_HCOOH"] + prm["V_H2O2"]) / 1000.0
+    # 2-fases: usar frac_aq para partición de volumen
+    Vaq       = float(prm["frac_aq"]) * V_total_L
+    Vorg      = V_total_L - Vaq
+
+    # ---- MODELO 1-FASE (7 vars) ----
+    # y1 = [H2O2, HCOOH, PFA, C=C, Ep, Open, H2O]
+    y0_1fase = np.array([
+        n_H2O2 / V_total_L,
+        n_HCOOH / V_total_L,
+        0.0,
+        prm["moles_CdC"] / V_total_L,
+        0.0, 0.0,
+        n_H2O / V_total_L
+    ])
+    par_1fase = P(
+        prm["k1f"], prm["k1r"], prm["k2"], prm["k3"], prm["k4"], prm["k5"], prm["alpha"],
+        V_total_L, 0.0,            # Vaq=V_total, Vorg=0
+        0.0, 0.0, 5.0, 0.05,       # kla_PFA, kla_H2O2, Kp_PFA, Kp_H2O2 (no usados en 1-fase)
+        False,                     # usar_TM = False
+        kla_HCOOH=0.0,             # sin TM en 1-fase
+        Kp_HCOOH=0.20
+    )
+
+    # ---- MODELO 2-FASES (10 vars) ----
+    # Orden en y2 y en rhs_2phase:
+    # [0] Ca_H2O2, [1] Ca_HCOOH, [2] Ca_PFA,
+    # [3] Co_H2O2, [4] Co_HCOOH, [5] Co_PFA,
+    # [6] Co_CdC,  [7] Co_Ep,    [8] Co_Open,
+    # [9] Ca_H2O
+    y0_2fases = np.array([
+        n_H2O2 / Vaq,           # Ca_H2O2
+        n_HCOOH / Vaq,          # Ca_HCOOH
+        0.0,                    # Ca_PFA
+        0.0,                    # Co_H2O2 (explícito)
+        0.0,                    # Co_HCOOH (explícito)
+        0.0,                    # Co_PFA
+        prm["moles_CdC"] / Vorg,# Co_CdC
+        0.0, 0.0,               # Co_Ep, Co_Open
+        n_H2O / Vaq             # Ca_H2O
+    ])
+    par_2fases = P(
+        prm["k1f"], prm["k1r"], prm["k2"], prm["k3"], prm["k4"], prm["k5"], prm["alpha"],
+        Vaq, Vorg,
+        prm["kla_PFA"], prm["kla_H2O2"], prm["Kp_PFA"], prm["Kp_H2O2"],
+        True,                              # usar_TM = True
+        kla_HCOOH=prm["kla_HCOOH"],        # TM para HCOOH activado
+        Kp_HCOOH=prm["Kp_HCOOH"]
+    )
 
     # ========================= RHS (1-fase y 2-fases) =======================
     def rhs_1phase(t, y, p: P):

@@ -59,43 +59,43 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.title("Modelo cinético – Mi PoliOL")
     st.caption("Ecuaciones explícitas, 1-fase o 2-fases con transferencia de masa, guardado automático en Firebase y exportación/importación JSON.")
 
-# ───────── Esquema y ecuaciones (render LaTeX) ─────────
-st.subheader("Esquema y ecuaciones")
+    # ───────── Esquema y ecuaciones (render LaTeX) ─────────
+    st.subheader("Esquema y ecuaciones")
 
-st.markdown("**(R1) Formación perácido (PFA)**")
-st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}")
+    st.markdown("**(R1) Formación perácido (PFA)**")
+    st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}")
 
-st.markdown("**(R2) Epoxidación (fase orgánica)**")
-st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}")
+    st.markdown("**(R2) Epoxidación (fase orgánica)**")
+    st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}")
 
-st.markdown("**(R3) Decaimiento del PFA**")
-st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}")
+    st.markdown("**(R3) Decaimiento del PFA**")
+    st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}")
 
-st.markdown("**(R4) Decaimiento del H_2O_2**")
-st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}")
+    st.markdown("**(R4) Decaimiento del H_2O_2**")
+    st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}")
 
-st.markdown("**(R5) Apertura del epóxido por agua**")
-st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}")
+    st.markdown("**(R5) Apertura del epóxido por agua**")
+    st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}")
 
-st.markdown("**Modelo 1-fase (concentraciones \(C\) en mol·L⁻¹)**")
-st.latex(r"""
-\begin{aligned}
-\dot C_{H_2O_2} &= -k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha + k_{1r} C_{PFA} - k_4 C_{H_2O_2}\\
-\dot C_{HCOOH} &= -k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha + k_{1r} C_{PFA} + k_2 C_{PFA} C_{C{=}C}\,\alpha + k_3 C_{PFA}\\
-\dot C_{PFA}   &= \phantom{-}k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha - k_{1r} C_{PFA} - k_2 C_{PFA} C_{C{=}C}\,\alpha - k_3 C_{PFA}\\
-\dot C_{C{=}C} &= -k_{2} C_{PFA} C_{C{=}C}\,\alpha\\
-\dot C_{Ep}    &= \phantom{-}k_{2} C_{PFA} C_{C{=}C}\,\alpha - k_{5} C_{Ep} C_{H_2O}\,\alpha\\
-\dot C_{Open}  &= \phantom{-}k_{5} C_{Ep} C_{H_2O}\,\alpha\\
-\dot C_{H_2O}  &= \phantom{-}k_{1r} C_{PFA} + k_{4} C_{H_2O_2}
-\end{aligned}
-""")
+    st.markdown("**Modelo 1-fase (concentraciones \(C\) en mol·L⁻¹)**")
+    st.latex(r"""
+    \begin{aligned}
+    \dot C_{H_2O_2} &= -k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha + k_{1r} C_{PFA} - k_4 C_{H_2O_2}\\
+    \dot C_{HCOOH} &= -k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha + k_{1r} C_{PFA} + k_2 C_{PFA} C_{C{=}C}\,\alpha + k_3 C_{PFA}\\
+    \dot C_{PFA}   &= \phantom{-}k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha - k_{1r} C_{PFA} - k_2 C_{PFA} C_{C{=}C}\,\alpha - k_3 C_{PFA}\\
+    \dot C_{C{=}C} &= -k_{2} C_{PFA} C_{C{=}C}\,\alpha\\
+    \dot C_{Ep}    &= \phantom{-}k_{2} C_{PFA} C_{C{=}C}\,\alpha - k_{5} C_{Ep} C_{H_2O}\,\alpha\\
+    \dot C_{Open}  &= \phantom{-}k_{5} C_{Ep} C_{H_2O}\,\alpha\\
+    \dot C_{H_2O}  &= \phantom{-}k_{1r} C_{PFA} + k_{4} C_{H_2O_2}
+    \end{aligned}
+    """)
 
-st.markdown("**Transferencia de masa (opcional, dos fases)**")
-st.latex(r"""
-\dot n_i^{TM} = k_L a \left(C_{i,aq} - \frac{C_{i,org}}{K_{oq}}\right), \qquad
-i \in \{ \mathrm{PFA}, \mathrm{H_2O_2} \}
-""")
-st.markdown("Se suma \(+\dot n_i^{TM}/V_{aq}\) en acuosa y \(-\dot n_i^{TM}/V_{org}\) en orgánica.")
+    st.markdown("**Transferencia de masa (opcional, dos fases)**")
+    st.latex(r"""
+    \dot n_i^{TM} = k_L a \left(C_{i,aq} - \frac{C_{i,org}}{K_{oq}}\right), \qquad
+    i \in \{ \mathrm{PFA}, \mathrm{H_2O_2} \}
+    """)
+    st.markdown("Se suma \(+\dot n_i^{TM}/V_{aq}\) en acuosa y \(-\dot n_i^{TM}/V_{org}\) en orgánica.")
 
     # ======================= UI: IMPORTAR JSON ===============================
     st.subheader("Importar parámetros (JSON)")

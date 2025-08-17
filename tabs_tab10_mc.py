@@ -5,10 +5,6 @@ import streamlit as st
 from scipy.integrate import solve_ivp
 import plotly.graph_objects as go
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Pestaña: Modelo cinético – Mi PoliOL (explícito + persistencia + JSON I/O)
-# ─────────────────────────────────────────────────────────────────────────────
-
 MW_H2O2  = 34.0147
 MW_HCOOH = 46.0254
 MW_H2O   = 18.0153
@@ -44,7 +40,7 @@ def _defaults():
         # Cinética
         k1f=2.0e-2, k1r=1.0e-3, k2=1.0e-2, k3=1.0e-4, k4=2.0e-5, k5=5.0e-5, alpha=1.0,
         # Transferencia de masa
-        usar_TM=False, frac_aq=0.25, kla_PFA=5e-3, Kp_PFA=5.0, kla_H2O2=1e-3, Kp_H2O2=0.05, kla_HCOOH=3e-3, Kp_HCOOH=0.20,
+        usar_TM=False, frac_aq=0.25, kla_PFA=5e-3, Kp_PFA=5.0, kla_H2O2=1e-3, Kp_H2O2=0.05, kla_HCOOH=3e-3, Kp_HCOOH=0.20, kla_H2O=3e-3,  Kp_H2O=0.02,
         # Simulación
         t_h=12.0, npts=400
     )
@@ -57,6 +53,8 @@ class P:
     usar_TM: bool
     kla_HCOOH: float = 0.0
     Kp_HCOOH: float  = 0.2
+    kla_H2O: float   = 0.0 
+    Kp_H2O: float    = 0.02 
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
@@ -105,8 +103,8 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.latex(r"\frac{dC_{C{=}C,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org}\tag{R12}")
     st.latex(r"\frac{dC_{Ep,org}}{dt} = +\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} - k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R13}")
 
-    st.latex(r"\frac{dC_{H_2O,aq}}{dt} = +\,k_{1r}\,C_{PFA,aq} + k_{4}\,C_{H_2O_2,aq}\tag{R14}")
-    st.latex(r"\frac{dC_{H_2O,org}}{dt} = +\,k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R15}")
+    st.latex(r"\frac{dC_{H_2O,aq}}{dt} = +\,k_{1r}\,C_{PFA,aq} + k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O}^{TM}}{V_{aq}}\tag{R14}")
+    st.latex(r"\frac{dC_{H_2O,org}}{dt} = +\,\frac{\dot n_{H_2O}^{TM}}{V_{org}} \;-\; k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R15}")
 
     st.markdown(r"""
     **Referencia (modelo 2-fases)**  
@@ -119,7 +117,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     **Signo de TM:** \( \dot n_i^{TM} > 0 \Rightarrow \) flujo **aq → org** (− en aq, + en org).
     """)
-
 
     # ======================= UI: IMPORTAR JSON ===============================
     st.subheader("Importar parámetros (JSON)")
@@ -168,14 +165,16 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     with st.expander("Ajustes de TM (modelo 2-fases)"):
         cols_tm1, cols_tm2 = st.columns(2)
         with cols_tm1:
-            prm["frac_aq"]   = st.slider("Fracción acuosa Vaq/V", 0.05, 0.60, value=float(prm["frac_aq"]), step=0.05)
-            prm["kla_PFA"]   = st.number_input("kLa_PFA [1/s]",  value=prm["kla_PFA"], format="%.2e")
-            prm["Kp_PFA"]    = st.number_input("Koq PFA (=Corg/Caq)", value=prm["Kp_PFA"], step=0.1)
-            prm["kla_HCOOH"] = st.number_input("kLa_HCOOH [1/s]", value=prm["kla_HCOOH"], format="%.2e")
-            prm["Kp_HCOOH"]  = st.number_input("Koq HCOOH", value=prm["Kp_HCOOH"], step=0.01)
+            prm["frac_aq"]    = st.slider("Fracción acuosa Vaq/V", 0.05, 0.60, value=float(prm["frac_aq"]), step=0.05)
+            prm["kla_PFA"]    = st.number_input("kLa_PFA [1/s]",   value=prm["kla_PFA"],   format="%.2e")
+            prm["Kp_PFA"]     = st.number_input("Koq PFA (=Corg/Caq)", value=prm["Kp_PFA"], step=0.1)
+            prm["kla_HCOOH"]  = st.number_input("kLa_HCOOH [1/s]", value=prm["kla_HCOOH"], format="%.2e")
+            prm["Kp_HCOOH"]   = st.number_input("Koq HCOOH",       value=prm["Kp_HCOOH"],  step=0.01)
         with cols_tm2:
-            prm["kla_H2O2"]  = st.number_input("kLa_H2O₂ [1/s]", value=prm["kla_H2O2"], format="%.2e")
-            prm["Kp_H2O2"]   = st.number_input("Koq H2O₂", value=prm["Kp_H2O2"], step=0.01)
+            prm["kla_H2O2"]   = st.number_input("kLa H₂O₂ [1/s]",  value=prm["kla_H2O2"],  format="%.2e")
+            prm["Kp_H2O2"]    = st.number_input("Koq H₂O₂",        value=prm["Kp_H2O2"],   step=0.01)
+            prm["kla_H2O"]    = st.number_input("kLa H₂O [1/s]",   value=prm["kla_H2O"],   format="%.2e")  # NUEVO
+            prm["Kp_H2O"]     = st.number_input("Koq H₂O",         value=prm["Kp_H2O"],    step=0.01)      # NUEVO
 
     # ======================= UI: TIEMPO =====================================
     st.subheader("Simulación")
@@ -219,30 +218,31 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         Kp_HCOOH=0.20
     )
 
-    # ---- MODELO 2-FASES (10 vars) ----
+    # ---- MODELO 2-FASES (11 vars) ----
     # Orden en y2 y en rhs_2phase:
     # [0] Ca_H2O2, [1] Ca_HCOOH, [2] Ca_PFA,
     # [3] Co_H2O2, [4] Co_HCOOH, [5] Co_PFA,
     # [6] Co_CdC,  [7] Co_Ep,    [8] Co_Open,
-    # [9] Ca_H2O
+    # [9] Ca_H2O,  [10] Co_H2O   << NUEVO
     y0_2fases = np.array([
-        n_H2O2 / Vaq,           # Ca_H2O2
-        n_HCOOH / Vaq,          # Ca_HCOOH
-        0.0,                    # Ca_PFA
-        0.0,                    # Co_H2O2 (explícito)
-        0.0,                    # Co_HCOOH (explícito)
-        0.0,                    # Co_PFA
-        prm["moles_CdC"] / Vorg,# Co_CdC
-        0.0, 0.0,               # Co_Ep, Co_Open
-        n_H2O / Vaq             # Ca_H2O
+        n_H2O2 / Vaq,            # Ca_H2O2
+        n_HCOOH / Vaq,           # Ca_HCOOH
+        0.0,                     # Ca_PFA
+        0.0,                     # Co_H2O2
+        0.0,                     # Co_HCOOH
+        0.0,                     # Co_PFA
+        prm["moles_CdC"] / Vorg, # Co_CdC
+        0.0, 0.0,                # Co_Ep, Co_Open
+        n_H2O / Vaq,             # Ca_H2O
+        0.0                      # Co_H2O
     ])
     par_2fases = P(
         prm["k1f"], prm["k1r"], prm["k2"], prm["k3"], prm["k4"], prm["k5"], prm["alpha"],
         Vaq, Vorg,
         prm["kla_PFA"], prm["kla_H2O2"], prm["Kp_PFA"], prm["Kp_H2O2"],
-        True,                              # usar_TM = True
-        kla_HCOOH=prm["kla_HCOOH"],        # TM para HCOOH activado
-        Kp_HCOOH=prm["Kp_HCOOH"]
+        True,
+        kla_HCOOH=prm["kla_HCOOH"], Kp_HCOOH=prm["Kp_HCOOH"],
+        kla_H2O=prm["kla_H2O"],     Kp_H2O=prm["Kp_H2O"]
     )
 
     # ========================= RHS (1-fase y 2-fases) =======================
@@ -265,24 +265,26 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         (Ca_H2O2, Ca_HCOOH, Ca_PFA,
         Co_H2O2, Co_HCOOH, Co_PFA,
         Co_CdC,  Co_Ep,    Co_Open,
-        Ca_H2O) = y
+        Ca_H2O,  Co_H2O) = y
 
         # Reacciones en acuosa
         r1f = p.k1f*Ca_HCOOH*Ca_H2O2*p.alpha
         r1r = p.k1r*Ca_PFA
         r3  = p.k3*Ca_PFA
-        r4a = p.k4*Ca_H2O2   # decaimiento H2O2 en acuosa
+        r4a = p.k4*Ca_H2O2              # descomp. H2O2 (aq)
 
         # Reacciones en orgánica
         r2  = p.k2*Co_PFA*Co_CdC*p.alpha
-        r5  = p.k5*Co_Ep*Ca_H2O*p.alpha
-        r4o = p.k4*Co_H2O2   # opcional: decaimiento en orgánica (suele ser menor, pero lo incluimos)
+        r5  = p.k5*Co_Ep*Co_H2O*p.alpha  # << AHORA usa agua orgánica
+        r4o = p.k4*Co_H2O2               # descomp. H2O2 (org)
 
-        # Transferencias
-        TM_H2O2  = p.kla_H2O2*(Ca_H2O2 - Co_H2O2/p.Kp_H2O2)
-        TM_HCOOH = p.kla_HCOOH*(Ca_HCOOH - Co_HCOOH/p.Kp_HCOOH)
-        TM_PFA   = p.kla_PFA*(Ca_PFA - Co_PFA/p.Kp_PFA)
+        # Transferencias (dos-películas)
+        TM_H2O2  = p.kla_H2O2 *(Ca_H2O2 - Co_H2O2 / p.Kp_H2O2)
+        TM_HCOOH = p.kla_HCOOH*(Ca_HCOOH - Co_HCOOH/ p.Kp_HCOOH)
+        TM_PFA   = p.kla_PFA  *(Ca_PFA   - Co_PFA   / p.Kp_PFA)
+        TM_H2O   = p.kla_H2O  *(Ca_H2O   - Co_H2O   / p.Kp_H2O)  # << NUEVO
 
+        # Balances
         dCa_H2O2  = -r1f + r1r - r4a - TM_H2O2
         dCa_HCOOH = -r1f + r1r + r3  - TM_HCOOH
         dCa_PFA   =  r1f - r1r - r3  - TM_PFA
@@ -295,12 +297,14 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         dCo_Ep    =  r2 - r5
         dCo_Open  =  r5
 
-        dCa_H2O   =  r1r + r4a  # agua formada en acuosa (puedes sumar +r5 a org si modelas agua orgánica explícita)
+        dCa_H2O   =  r1r + r4a - TM_H2O          # agua formada en aq y que puede transferirse
+        dCo_H2O   = +TM_H2O - r5                 # agua que llega a org y reacciona en R5
 
         return [dCa_H2O2, dCa_HCOOH, dCa_PFA,
                 dCo_H2O2, dCo_HCOOH, dCo_PFA,
                 dCo_CdC,  dCo_Ep,    dCo_Open,
-                dCa_H2O]
+                dCa_H2O,  dCo_H2O]
+
 
     # ========================= BOTONES: SIM, GUARDAR, EXPORT =================
     cbtn = st.columns([1,1,1,1.2])
@@ -343,27 +347,19 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # Simulación
     if run_clicked:
         # Controles compactos SOLO ahora:
-        colu1, colu2, colu3 = st.columns([1.2,1,1])
-        unidad = colu1.radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
-        auto_axes = colu2.checkbox("Ejes automáticos", value=True)
-        x_lim_box = colu3.checkbox("Fijar límites XY", value=False)
+        colu1 = st.columns([1.2,1,1])
+        unidad = colu1[0].radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
+        auto_axes = colu1[1].checkbox("Ejes automáticos", value=True)
+        xylim_on  = colu1[2].checkbox("Fijar rangos XY", value=False)
 
-        # Rango XY compacto en una fila (visible solo si el usuario quiere fijarlos)
-        y_max_user = st.number_input("y max", value=1.0)
-        if x_lim_box:
+        if xylim_on:
             cax1, cax2, cax3, cax4 = st.columns(4)
             x_min = cax1.number_input("x min [h]", value=0.0, step=0.5)
             x_max = cax2.number_input("x max [h]", value=float(prm["t_h"]), step=0.5)
             y_min = cax3.number_input("y min", value=0.0)
             y_max = cax4.number_input("y max", value=1.0)
         else:
-            x_min = x_max = y_min = y_max = None  # no se usan
-
-        def _apply_axes(fig, auto_axes, x_min, x_max, y_min, y_max):
-            if (not auto_axes) and (x_min is not None) and (x_max is not None) and (y_min is not None) and (y_max is not None):
-                fig.update_xaxes(range=[x_min, x_max])
-                fig.update_yaxes(range=[y_min, y_max])
-            return fig
+            x_min = x_max = y_min = y_max = None
 
         # ---- correr siempre 1-fase ----
         t_end = float(prm["t_h"])*3600.0
@@ -389,28 +385,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         }
         fig1 = _plot_all_one_figure(times_h, curves1, "Modelo 1-fase", ylab)
 
-        # ---- correr siempre 2-fases (usar tus parámetros TM en par_2fases) ----
-        y0_2fases = np.array([
-            n_H2O2/Vaq,            # Ca_H2O2
-            n_HCOOH/Vaq,           # Ca_HCOOH
-            0.0,                   # Ca_PFA
-            0.0,                   # Co_H2O2
-            0.0,                   # Co_HCOOH
-            0.0,                   # Co_PFA
-            prm["moles_CdC"]/Vorg, # Co_CdC
-            0.0, 0.0,              # Co_Ep, Co_Open
-            n_H2O/Vaq              # Ca_H2O
-        ])
-        
-        par_2fases = P(
-            prm["k1f"],prm["k1r"],prm["k2"],prm["k3"],prm["k4"],prm["k5"],prm["alpha"],
-            Vaq,Vorg,
-            prm["kla_PFA"],prm["kla_H2O2"],prm["Kp_PFA"],prm["Kp_H2O2"],
-            True
-        )
-        # Guarda también en 'par_2fases' los nuevos KLa/K de HCOOH (si tu clase P no los tiene, agrégalos):
-        par_2fases.kla_HCOOH = prm["kla_HCOOH"]
-        par_2fases.Kp_HCOOH  = prm["Kp_HCOOH"]
 
         sol2 = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par_2fases), [0,t_end], y0_2fases, t_eval=t_eval,
                         method="LSODA", rtol=1e-7, atol=1e-9)
@@ -424,24 +398,26 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
         curves2 = {
             "H₂O₂ (aq)":      conv_aq(sol2.y[0]),
-            "H₂O₂ (org)":     conv_org(sol2.y[3]), 
-            "HCOOH (aq)":     conv_aq(sol2.y[1]),  
+            "H₂O₂ (org)":     conv_org(sol2.y[3]),
+            "HCOOH (aq)":     conv_aq(sol2.y[1]),
             "HCOOH (org)":    conv_org(sol2.y[4]),
             "PFA (aq)":       conv_aq(sol2.y[2]),
             "PFA (org)":      conv_org(sol2.y[5]),
             "C=C (org)":      conv_org(sol2.y[6]),
             "Epóxido (org)":  conv_org(sol2.y[7]),
             "Apertura (org)": conv_org(sol2.y[8]),
+
+            "H2O (aq)":     conv_aq(sol2.y[9]),
+            "H2O (org)":    conv_org(sol2.y[10]),
         }
+
 
         fig2 = _plot_all_one_figure(times_h, curves2, "Modelo 2-fases (con TM)", ylab)
 
-        # Rango de ejes: si el usuario pone “auto”, dejamos que Plotly ajuste;
-        # si no, aplicamos los límites manuales (mismos para ambos gráficos)
-        if not auto_axes:
-            fig1 = _apply_axes(fig1, False, x_min, x_max, y_min, y_max_user)
-            fig2 = _apply_axes(fig2, False, x_min, x_max, y_min, y_max_user)
-
+        if (not auto_axes) and xylim_on:
+            fig1 = _apply_axes(fig1, False, x_min, x_max, y_min, y_max)
+            fig2 = _apply_axes(fig2, False, x_min, x_max, y_min, y_max)
+            
         st.plotly_chart(fig1, use_container_width=True)
         st.plotly_chart(fig2, use_container_width=True)
 

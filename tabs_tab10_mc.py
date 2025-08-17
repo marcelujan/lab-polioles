@@ -76,7 +76,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2 - Epoxidación en fase orgánica}")
     st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3 - Descomposición del PFA}")
     st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4 - Descomposición del H₂O₂}")
-    st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5 - Apertura del epóxido por agua}")
+    st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5 - Apertura del epóxido}")
 
     st.markdown("**Modelo 1-fase**")
     st.latex(r"""
@@ -255,19 +255,29 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # ======================= UI: TRANSFERENCIA DE MASA ======================
     st.markdown("**Parámetros de transferencia de masa**")
-    with st.expander("Ajustes de TM (modelo 2-fases)"):
-        cols_tm1, cols_tm2 = st.columns(2)
-        with cols_tm1:
-            prm["frac_aq"]    = st.slider("Fracción acuosa Vaq/V", 0.05, 0.60, value=float(prm["frac_aq"]), step=0.05)
-            prm["kla_PFA"]    = st.number_input("kLa_PFA [1/s]",   value=prm["kla_PFA"],   format="%.2e")
-            prm["Kp_PFA"]     = st.number_input("Koq PFA (=Corg/Caq)", value=prm["Kp_PFA"], step=0.1)
-            prm["kla_HCOOH"]  = st.number_input("kLa_HCOOH [1/s]", value=prm["kla_HCOOH"], format="%.2e")
-            prm["Kp_HCOOH"]   = st.number_input("Koq HCOOH",       value=prm["Kp_HCOOH"],  step=0.01)
-        with cols_tm2:
-            prm["kla_H2O2"]   = st.number_input("kLa H₂O₂ [1/s]",  value=prm["kla_H2O2"],  format="%.2e")
-            prm["Kp_H2O2"]    = st.number_input("Koq H₂O₂",        value=prm["Kp_H2O2"],   step=0.01)
-            prm["kla_H2O"]    = st.number_input("kLa H₂O [1/s]",   value=prm["kla_H2O"],   format="%.2e")  # NUEVO
-            prm["Kp_H2O"]     = st.number_input("Koq H₂O",         value=prm["Kp_H2O"],    step=0.01)      # NUEVO
+    tmc1, tmc2, tmc3, tmc4, tmc5, tmc6, tmc7 = st.columns(7)
+
+    with tmc1:
+        prm["frac_aq"] = st.slider("Vaq/V (fracción acuosa)", 0.05, 0.60, value=float(prm["frac_aq"]), step=0.05)
+    with tmc2:
+        prm["kla_PFA"] = st.number_input("kLa_PFA [1/s]", value=float(prm["kla_PFA"]), format="%.2e")
+    with tmc3:
+        prm["Kp_PFA"] = st.number_input("Koq PFA (=Corg/Caq)", value=float(prm["Kp_PFA"]), step=0.1, format="%.2f")
+    with tmc4:
+        prm["kla_H2O2"] = st.number_input("kLa H₂O₂ [1/s]", value=float(prm["kla_H2O2"]), format="%.2e")
+    with tmc5:
+        prm["Kp_H2O2"] = st.number_input("Koq H₂O₂", value=float(prm["Kp_H2O2"]), step=0.01, format="%.2f")
+    with tmc6:
+        prm["kla_HCOOH"] = st.number_input("kLa HCOOH [1/s]", value=float(prm["kla_HCOOH"]), format="%.2e")
+    with tmc7:
+        prm["Kp_HCOOH"] = st.number_input("Koq HCOOH", value=float(prm["Kp_HCOOH"]), step=0.01, format="%.2f")
+
+    # Segunda fila para H2O (si preferís todo en una sola fila, cambiá a 9 columnas)
+    tmh1, tmh2 = st.columns(2)
+    with tmh1:
+        prm["kla_H2O"] = st.number_input("kLa H₂O [1/s]", value=float(prm["kla_H2O"]), format="%.2e")
+    with tmh2:
+        prm["Kp_H2O"] = st.number_input("Koq H₂O", value=float(prm["Kp_H2O"]), step=0.01, format="%.2f")
 
     # ======================= UI: TIEMPO =====================================
     st.subheader("Simulación")

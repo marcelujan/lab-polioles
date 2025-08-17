@@ -271,9 +271,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         prm["kla_HCOOH"] = st.number_input("kLa HCOOH [1/s]", value=float(prm["kla_HCOOH"]), format="%.2e")
     with tmc7:
         prm["Kp_HCOOH"] = st.number_input("Koq HCOOH", value=float(prm["Kp_HCOOH"]), step=0.01, format="%.2f")
-    with tmh8:
+    with tmc8:
         prm["kla_H2O"] = st.number_input("kLa H₂O [1/s]", value=float(prm["kla_H2O"]), format="%.2e")
-    with tmh9:
+    with tmc9:
         prm["Kp_H2O"] = st.number_input("Koq H₂O", value=float(prm["Kp_H2O"]), step=0.01, format="%.2f")
 
     # ======================= UI: TIEMPO =====================================

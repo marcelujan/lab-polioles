@@ -9,11 +9,12 @@ from tabs_tab1_lab import render_tab1
 from tabs_tab2_datos import render_tab2
 from tabs_tab3_espectros import render_tab3
 from tabs_tab4_espectros import render_tab4
-from tabs_tab5_ftir import render_tab5  # Análisis FTIR con índice OH y comparación
+from tabs_tab5_ftir import render_tab5 
 from tabs_tab6_rmn import render_tab6
 from tabs_tab7_consola import render_tab7
 from tabs_tab8_sugerencias import render_tab8
-from tabs_tab9_desarrollos import render_tab9  # Hoja en blanco para pruebas
+from tabs_tab9_desarrollos import render_tab9
+from tabs_tab10_modelo import render_tab10
 import json
 
 if not firebase_admin._apps:
@@ -73,7 +74,8 @@ tabs = st.tabs([
     "RMN",  
     "Consola",  
     "Sugerencias",     
-    "Desarrollo"  
+    "Desarrollo",     
+    "MC"  
 ])
 
 
@@ -95,7 +97,9 @@ with tabs[7]:
     render_tab8(db, mostrar_sector_flotante)
 with tabs[8]:
     render_tab9(db, cargar_muestras, mostrar_sector_flotante)
-
+with tabs[9]:
+    render_tab10(db, mostrar_sector_flotante)
+    
 from ia_flotante import mostrar_panel_ia
 if "user_email" in st.session_state and "db" in st.session_state:
     st.session_state["firebase_db"] = st.session_state.db

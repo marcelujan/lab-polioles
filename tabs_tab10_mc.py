@@ -4,6 +4,7 @@ import streamlit as st
 from scipy.integrate import solve_ivp
 import plotly.graph_objects as go
 import hashlib, json
+import pandas as pd
 
 MW_H2O2  = 34.0147
 MW_HCOOH = 46.0254
@@ -32,11 +33,8 @@ def _apply_params_to_widgets(d):
 
 def _defaults():
     return dict(
-        # Composición Mi PoliOL
+        # Composición Mi PoliOL (volúmenes por lote)
         V_soy=400.00, V_H2SO4=3.64, V_H2O=32.73, V_HCOOH=80.00, V_H2O2=204.36,
-        moles_CdC=2.00,
-        # Densidades
-        rho_soy=0.92, rho_HCOOH=1.215, rho_H2O2=1.00,
         # Cinética
         k1f=2.0e-2, k1r=1.0e-3, k2=1.0e-2, k3=1.0e-4, k4=2.0e-5, k5=5.0e-5, alpha=1.0,
         # Transferencia de masa (PFA, H2O2, HCOOH, H2O)
@@ -61,10 +59,10 @@ class P:
 
 def _params_hash(prm: dict) -> str:
     # Solo cosas que cambian la simulación (no sliders de ejes, ni selección de series)
-    keys = ["V_soy","V_H2SO4","V_H2O","V_HCOOH","V_H2O2","moles_CdC",
-            "rho_soy","rho_HCOOH","rho_H2O2",
+    keys = ["V_soy","V_H2SO4","V_H2O","V_HCOOH","V_H2O2",
             "k1f","k1r","k2","k3","k4","k5","alpha",
-            "frac_aq","kla_PFA","Kp_PFA","kla_H2O2","Kp_H2O2","kla_HCOOH","Kp_HCOOH","kla_H2O","Kp_H2O",
+            "frac_aq","kla_PFA","Kp_PFA","kla_H2O2","Kp_H2O2",
+            "kla_HCOOH","Kp_HCOOH","kla_H2O","Kp_H2O",
             "t_h","npts"]
     subset = {k: float(prm[k]) for k in keys}
     s = json.dumps(subset, sort_keys=True)
@@ -135,22 +133,107 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     prm = _apply_params_to_widgets(st.session_state["mc_params"])
 
     # ======================= UI: COMPOSICIÓN ================================
-    st.markdown("**Composición inicial**")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        prm["V_soy"]   = st.number_input("Aceite de soja [mL]",  value=prm["V_soy"], step=1.0)
-        prm["V_H2SO4"] = st.number_input("H₂SO₄ 98% [mL]",       value=prm["V_H2SO4"], step=0.1)
-        prm["V_H2O"]   = st.number_input("Agua destilada [mL]",  value=prm["V_H2O"], step=0.1)
-    with c2:
-        prm["V_HCOOH"] = st.number_input("HCOOH 85% [mL]",       value=prm["V_HCOOH"], step=0.1)
-        prm["V_H2O2"]  = st.number_input("H₂O₂ 30% **p/v** [mL]",value=prm["V_H2O2"], step=0.1,
-                                         help="30 g H2O2 / 100 mL de solución (p/v)")
-        prm["moles_CdC"]=st.number_input("Moles C=C (lote)",     value=prm["moles_CdC"], step=0.1)
-    with c3:
-        st.markdown("**Densidades:**")
-        prm["rho_soy"]   = st.number_input("ρ aceite [g/mL]",    value=prm["rho_soy"], step=0.01)
-        prm["rho_HCOOH"] = st.number_input("ρ HCOOH 85% [g/mL]", value=prm["rho_HCOOH"], step=0.005)
-        prm["rho_H2O2"]  = st.number_input("ρ H₂O₂ 30% p/v [g/mL]", value=prm["rho_H2O2"], step=0.01)
+    st.subheader("Composición inicial")
+
+    st.subheader("Densidad y PM")
+
+    densidades = {
+        "ACEITE": 0.910,
+        "H2SO4":  1.83,
+        "H2O":    1.00,
+        "HCOOH":  1.195,
+        "H2O2":   1.11,
+        "HCOOOH": 1.18,
+    }
+
+    MW = {
+        "ACEITE":  873.64,
+        "H2SO4":    98.08,
+        "H2O":      18.02,
+        "HCOOH":    46.03,
+        "H2O2":     34.01,
+        "HCOOOH":   62.02,
+    }
+
+    df_ref = pd.DataFrame([
+        ("Aceite de soja crudo",     densidades["ACEITE"], MW["ACEITE"]),
+        ("Ácido sulfúrico 98% p/p",  densidades["H2SO4"],  MW["H2SO4"]),
+        ("Agua",                     densidades["H2O"],    MW["H2O"]),
+        ("Ácido fórmico 85%",        densidades["HCOOH"],  MW["HCOOH"]),
+        ("Peróxido H₂O₂ 30% p/v",    densidades["H2O2"],   MW["H2O2"]),
+        ("Ácido perfórmico",         densidades["HCOOOH"], MW["HCOOOH"]),
+    ], columns=["Componente","d [g/mL]","PM [g/mol]"])
+    st.dataframe(df_ref.style.format({"d [g/mL]": "{:.3f}", "PM [g/mol]": "{:.2f}"}),
+                use_container_width=True, hide_index=True)
+
+
+    st.subheader("Relaciones molares")
+
+    m_soy   = densidades["ACEITE"] * prm["V_soy"]
+    m_H2SO4 = densidades["H2SO4"]  * prm["V_H2SO4"]
+    m_HCOOH = densidades["HCOOH"]  * prm["V_HCOOH"]
+    m_H2O2s = densidades["H2O2"]   * prm["V_H2O2"]   # masa de la solución
+
+    # moles de soluto puro
+    n_soy   = m_soy / MW["ACEITE"]
+    n_H2SO4 = (0.98 * m_H2SO4) / MW["H2SO4"]
+    n_HCOOH = (0.85 * m_HCOOH) / MW["HCOOH"]
+    # 30% p/v = 0.30 g H2O2 por mL de solución (asumiendo p≈1 g/mL)
+    g_H2O2  = 0.30 * prm["V_H2O2"]
+    n_H2O2  = g_H2O2 / MW["H2O2"]
+
+    # agua de reactivos (moles)
+    # H2SO4 98%: 2% agua (m/m)
+    n_H2O_from_H2SO4 = (0.02 * m_H2SO4) / MW["H2O"]
+    # HCOOH 85%: 15% agua (m/m)
+    n_H2O_from_HCOOH = (0.15 * m_HCOOH) / MW["H2O"]
+    # H2O2 30% p/v: agua ≈ (masa solución − masa H2O2)
+    n_H2O_from_H2O2  = max(m_H2O2s - g_H2O2, 0.0) / MW["H2O"]
+
+    n_H2O_react      = n_H2O_from_H2SO4 + n_H2O_from_HCOOH + n_H2O_from_H2O2
+    n_H2O_total      = n_H2O_react + (prm["V_H2O"]*1.0)/MW["H2O"]
+
+    # protones (moles de H+)
+    Hplus_H2SO4 = 2.0 * n_H2SO4   # diprótico fuerte
+    Hplus_HCOOH = 1.0 * n_HCOOH   # monoprótico
+    Hplus_total = Hplus_H2SO4 + Hplus_HCOOH
+
+    # dobles enlaces: 4.5 mol C=C / mol aceite
+    n_CdC = 4.5 * n_soy
+
+    # relaciones
+    rel_H2O2_CdC = n_H2O2 / n_CdC if n_CdC > 0 else 0.0
+    rel_H2SO4_CdC = n_H2SO4 / n_CdC if n_CdC > 0 else 0.0
+    rel_HCOOH_CdC = n_HCOOH / n_CdC if n_CdC > 0 else 0.0
+    rel_H2SO4_soy = n_H2SO4 / n_soy if n_soy > 0 else 0.0
+    rel_HCOOH_soy = n_HCOOH / n_soy if n_soy > 0 else 0.0
+
+    # tabla resumen (no editable)
+    rows = [
+        ("Aceite de soja crudo [mol]",        n_soy),
+        ("Ácido sulfúrico 98% [mol]",         n_H2SO4),
+        ("Agua destilada [mol]",              (prm["V_H2O"]*1.0)/MW["H2O"]),
+        ("Ácido fórmico 85% [mol]",           n_HCOOH),
+        ("Peróxido de hidrógeno 30% p/v [mol]", n_H2O2),
+        ("—", None),
+        ("Agua de reactivos [mol]",           n_H2O_react),
+        ("Agua total [mol]",                  n_H2O_total),
+        ("Protones H₂SO₄ [mol H⁺]",           Hplus_H2SO4),
+        ("Protones HCOOH [mol H⁺]",           Hplus_HCOOH),
+        ("Protones totales [mol H⁺]",         Hplus_total),
+        ("—", None),
+        ("C=C (dobles enlaces) [mol]",        n_CdC),
+        ("Relación H₂O₂/C=C [mol/mol]",       rel_H2O2_CdC),
+        ("Relación H₂SO₄/C=C [mol/mol]",      rel_H2SO4_CdC),
+        ("Relación HCOOH/C=C [mol/mol]",      rel_HCOOH_CdC),
+        ("Relación H₂SO₄/aceite [mol/mol]",   rel_H2SO4_soy),
+        ("Relación HCOOH/aceite [mol/mol]",   rel_HCOOH_soy),
+    ]
+
+    # render bonito
+    df_rel = pd.DataFrame(rows, columns=["Magnitud", "Valor"])
+    st.dataframe(df_rel.style.format({"Valor": "{:,.6g}"}), use_container_width=True, hide_index=True)
+
 
     # ======================= UI: CINÉTICA ===================================
     st.markdown("**Constantes cinéticas y factor ácido**")
@@ -187,13 +270,15 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.session_state["mc_params"] = prm
 
     # =============== CÁLCULOS INICIALES (moles y estados) ===================
-    g_H2O2    = 0.30 * prm["V_H2O2"]              # p/v: 30 g por 100 mL
+    g_H2O2    = 0.30 * prm["V_H2O2"]               # 30 g H2O2 / 100 mL
     n_H2O2    = g_H2O2 / MW_H2O2
-    g_HCOOH   = 0.85 * prm["rho_HCOOH"] * prm["V_HCOOH"]
+    g_HCOOH   = 0.85 * densidades["HCOOH"] * prm["V_HCOOH"]
     n_HCOOH   = g_HCOOH / MW_HCOOH
-    g_H2O_ini = (prm["V_H2O"]*1.0) + 0.15*(prm["rho_HCOOH"]*prm["V_HCOOH"]) + \
-                max(prm["rho_H2O2"]*prm["V_H2O2"] - g_H2O2, 0.0)
+    g_H2O_ini = (prm["V_H2O"]*densidades["H2O"]) + \
+                0.15*(densidades["HCOOH"]*prm["V_HCOOH"]) + \
+                max(densidades["H2O2"]*prm["V_H2O2"] - g_H2O2, 0.0)
     n_H2O     = g_H2O_ini / MW_H2O
+    n_CdC = 4.5 * (densidades["ACEITE"]*prm["V_soy"] / MW["ACEITE"])
 
     V_total_L = (prm["V_soy"] + prm["V_H2SO4"] + prm["V_H2O"] + prm["V_HCOOH"] + prm["V_H2O2"]) / 1000.0
     # 2-fases: usar frac_aq para partición de volumen
@@ -206,7 +291,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         n_H2O2 / V_total_L,
         n_HCOOH / V_total_L,
         0.0,
-        prm["moles_CdC"] / V_total_L,
+        n_CdC / V_total_L,
         0.0, 0.0,
         n_H2O / V_total_L
     ])
@@ -230,7 +315,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         0.0,                     # Co_H2O2
         0.0,                     # Co_HCOOH
         0.0,                     # Co_PFA
-        prm["moles_CdC"] / Vorg, # Co_CdC
+        n_CdC / Vorg,            # Co_CdC
         0.0, 0.0,                # Co_Ep, Co_Open
         n_H2O / Vaq,             # Ca_H2O
         0.0                      # Co_H2O

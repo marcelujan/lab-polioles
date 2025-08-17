@@ -14,7 +14,7 @@ from tabs_tab6_rmn import render_tab6
 from tabs_tab7_consola import render_tab7
 from tabs_tab8_sugerencias import render_tab8
 from tabs_tab9_desarrollos import render_tab9
-from tabs_tab10_modelo import render_tab10
+from tabs_tab10_mc import render_tab10
 import json
 
 if not firebase_admin._apps:

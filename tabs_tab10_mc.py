@@ -291,7 +291,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                 ("C=C (dobles enlaces) [mol]",  n_CdC),
                 ("Agua de reactivos [mol]",     n_H2O_react),
                 ("Agua total [mol]",            n_H2O_total),
-                ("Fracción orgánica Vorg/V [–]", 1.0 - prm["frac_aq"]), 
+                ("Fracción orgánica Vorg/V", 1.0 - prm["frac_aq"]), 
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
             use_container_width=True, hide_index=True
         )

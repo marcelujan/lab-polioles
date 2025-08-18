@@ -271,11 +271,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             use_container_width=True, hide_index=True
         )
 
-    # render bonito
-    df_rel = pd.DataFrame(rows, columns=["Magnitud", "Valor"])
-    st.dataframe(df_rel.style.format({"Valor": "{:,.6g}"}), use_container_width=True, hide_index=True)
-
-
     # ======================= UI: CINÉTICA ===================================
     st.markdown("**Constantes cinéticas y factor ácido**")
     kcols = st.columns(7)

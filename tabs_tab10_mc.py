@@ -152,7 +152,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
 
     # ================== Composición inicial (con %v/v, %p/p, d, PM, moles y equivalentes) ==================
-    st.subheader("Composición inicial")
+    st.markdown("**Composición inicial**")
 
     # Ingreso de aceite (los demás se escalan por la receta base)
     V_soy_in = st.number_input("Aceite de soja crudo [mL]", min_value=0.0,
@@ -473,7 +473,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # ========================= BOTONES: SIM, GUARDAR, EXPORT =================
     cbtn = st.columns([1,1,1,1.2])
     run_clicked  = cbtn[0].button("▶ Ejecutar")
-    save_clicked = cbtn[1].button("💾 Guardar ‘último’ (Firebase)")
+    save_clicked = cbtn[1].button("💾 Guardar (Firebase)")
     export_clicked = cbtn[2].button("📤 Exportar JSON")
     reset_clicked  = cbtn[3].button("↺ Reset a valores por defecto")
 

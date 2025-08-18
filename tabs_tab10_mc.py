@@ -216,16 +216,16 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             "PM [g/mol]": "{:.4f}",
             "n [mol]": "{:.4f}",
             "n eq [mol eq]": "{:.4f}",
-            "Koq": "{:.2f}",
-            "kLa [1/s]": "{:.2e}",
+            "*Koq": "{:.2f}",
+            "**kLa [1/s]": "{:.2e}",
         }, na_rep=""),
         use_container_width=True, hide_index=True
     )
-    
+
     # Observación en letra más pequeña
     st.markdown(
-        "<p style='font-size: 0.7em;'>* kLa → coeficiente volumétrico de transferencia de masa gas–líquido o líquido–líquido. <br> "
-        "* Koq → coeficiente de partición o coeficiente de reparto.</p>",
+        "<p style='font-size: 0.7em;'>**Koq: coeficiente de partición o coeficiente de reparto. <br> "
+        "*kLa: coeficiente volumétrico de transferencia de masa gas–líquido o líquido–líquido.</p>",
         unsafe_allow_html=True
     )
 

@@ -98,10 +98,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     def _fmt_e(x): return f"{x:.2e}"
     k = K_FIXED  # o prm si preferís
-
-    st.markdown("**Esquema y ecuaciones**")
-
-    # Usamos SIEMPRE el mismo layout de columnas para alinear la columna derecha
     colw = [5, 2]
 
     # R1
@@ -145,8 +141,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         st.markdown(
             f"""
             <div style="text-align:right; font-size:0.9em; margin-top:0.5rem">
-            <b>α = {k['alpha']:.2f}</b><span style="opacity:0.85">Aplica como factor ácido en: <b>R1, R2, R5</b></span>
-            </div>
+            <b>α = {k['alpha']:.2f} aplica como factor ácido en: R1, R2, R5.
             """,
             unsafe_allow_html=True
         )

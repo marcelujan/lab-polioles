@@ -122,51 +122,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     prm = _apply_params_to_widgets(st.session_state["mc_params"])
 
-    # ======================= ECUACIONES + PARÁMETROS (JUNTOS) =======================
-    # R1 – Formación del ácido perfórmico
-    st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1 - Formación del ácido perfórmico}")
-    cR1a, cR1b, cR1c = st.columns([1,1,1])
-    with cR1a:
-        prm["k1f"] = st.number_input("R1 – k1f [L·mol⁻¹·s⁻¹]", value=float(prm["k1f"]), format="%.2e")
-    with cR1b:
-        prm["k1r"] = st.number_input("R1 – k1r [s⁻¹]",         value=float(prm["k1r"]), format="%.2e")
-    with cR1c:
-        prm["alpha"] = st.number_input("R1 – α (factor ácido)", value=float(prm["alpha"]), format="%.2f",
-                                    help="Parámetro empírico que modula pasos acidocatalizados.")
-
-    # R2 – Epoxidación en fase orgánica
-    st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2 - Epoxidación en fase orgánica}")
-    cR2, = st.columns([1])
-    with cR2:
-        prm["k2"] = st.number_input("R2 – k2 [L·mol⁻¹·s⁻¹]", value=float(prm["k2"]), format="%.2e")
-
-    # R3 – Descomposición del PFA
-    st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3 - Descomposición del PFA}")
-    cR3, = st.columns([1])
-    with cR3:
-        prm["k3"] = st.number_input("R3 – k3 [s⁻¹]", value=float(prm["k3"]), format="%.2e")
-
-    # R4 – Descomposición del H2O2
-    st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4 - Descomposición del H_2O_2}")
-    cR4, = st.columns([1])
-    with cR4:
-        prm["k4"] = st.number_input("R4 – k4 [s⁻¹]", value=float(prm["k4"]), format="%.2e")
-
-    # R5 – Apertura del epóxido
-    st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5 - Apertura del epóxido}")
-    cR5, = st.columns([1])
-    with cR5:
-        prm["k5"] = st.number_input("R5 – k5 [L·mol⁻¹·s⁻¹]", value=float(prm["k5"]), format="%.2e")
-    # ===============================================================================
-
-    # (Opcional) Mini nota: qué afecta α
-    st.markdown(
-        "<div style='font-size:0.8em;opacity:0.8'>"
-        "Nota: α se usa como factor acidocatalítico en los pasos dependientes de acidez (p.ej. R1 y, si así lo definiste en el código, R2/R5)."
-        "</div>",
-        unsafe_allow_html=True
-    )
-
     # === Constantes físico-químicas (fijas) ===
     densidades = {
         "ACEITE": 0.910,  # Aceite de soja crudo [g/mL]

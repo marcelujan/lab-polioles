@@ -191,7 +191,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     m_H2O2  = densidades["H2O2"]   * V_H2O2
     m_total = max(m_soy + m_H2SO4 + m_H2O + m_HCOOH + m_H2O2, 1e-12)
 
-    import pandas as pd
     datos = [
         ("Aceite de soja crudo",  V_soy_in, densidades["ACEITE"], MW["ACEITE"], n_soy,   eq_soy,   m_soy),
         ("Ácido sulfúrico 98%",   V_H2SO4,  densidades["H2SO4"],  MW["H2SO4"],  n_H2SO4, eq_H2SO4, m_H2SO4),
@@ -343,7 +342,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         prm["Kp_H2O"] = st.number_input("Koq H₂O", value=float(prm["Kp_H2O"]), step=0.01, format="%.2f")
 
     # ======================= UI: TIEMPO =====================================
-    st.subheader("Simulación")
+    #st.subheader("Simulación")
     s1, s2 = st.columns(2)
     prm["t_h"]  = s1.number_input("Tiempo total [h]", value=prm["t_h"], step=0.5)
     prm["npts"] = s2.number_input("Puntos", value=int(prm["npts"]), step=50, min_value=100)

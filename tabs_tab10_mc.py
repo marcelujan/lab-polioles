@@ -161,6 +161,11 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     V_HCOOH = ratios_vs_oil["HCOOH"] * V_soy_in
     V_H2O2  = ratios_vs_oil["H2O2"]  * V_soy_in
 
+    # Fracción acuosa calculada
+    V_total_mix = V_soy_in + V_H2SO4 + V_H2O + V_HCOOH + V_H2O2
+    frac_aq_calc = (V_H2SO4 + V_H2O + V_HCOOH + V_H2O2) / max(V_total_mix, 1e-12)
+    prm["frac_aq"] = float(frac_aq_calc)
+
     # Actualizar prm para el resto de la app
     prm["V_soy"], prm["V_H2SO4"], prm["V_H2O"], prm["V_HCOOH"], prm["V_H2O2"] = \
         float(V_soy_in), float(V_H2SO4), float(V_H2O), float(V_HCOOH), float(V_H2O2)
@@ -216,16 +221,16 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             "PM [g/mol]": "{:.4f}",
             "n [mol]": "{:.4f}",
             "n eq [mol eq]": "{:.4f}",
-            "*Koq": "{:.2f}",
-            "**kLa [1/s]": "{:.2e}",
+            "Koq": "{:.2f}",
+            "kLa [1/s]": "{:.2e}",
         }, na_rep=""),
         use_container_width=True, hide_index=True
     )
 
     # Observación en letra más pequeña
     st.markdown(
-        "<p style='font-size: 0.7em;'>**Koq: coeficiente de partición o coeficiente de reparto. <br> "
-        "*kLa: coeficiente volumétrico de transferencia de masa gas–líquido o líquido–líquido.</p>",
+        "<p style='font-size: 0.7em;'>*Koq: coeficiente de partición o coeficiente de reparto. <br> "
+        "**kLa: coeficiente volumétrico de transferencia de masa gas–líquido o líquido–líquido.</p>",
         unsafe_allow_html=True
     )
 
@@ -281,9 +286,10 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     with col1:
         st.dataframe(
             pd.DataFrame([
-                ("C=C (dobles enlaces) [mol]", n_CdC),
-                ("Agua de reactivos [mol]",    n_H2O_react),
-                ("Agua total [mol]",           n_H2O_total),
+                ("C=C (dobles enlaces) [mol]",  n_CdC),
+                ("Agua de reactivos [mol]",     n_H2O_react),
+                ("Agua total [mol]",            n_H2O_total),
+                ("Fracción acuosa Vaq/V [–]",   prm["frac_aq"]),  # << NUEVA FILA
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
             use_container_width=True, hide_index=True
         )
@@ -327,30 +333,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     for i,(k,lab,fmt) in enumerate(zip(keys,labels,fmts)):
         prm[k] = kcols[i].number_input(lab, value=prm[k], format=fmt)
 
-    # ======================= UI: TRANSFERENCIA DE MASA ======================
-    st.markdown("**Parámetros de transferencia de masa**")
-    tmc1, tmc2, tmc3, tmc4, tmc5, tmc6, tmc7, tmc8, tmc9 = st.columns(9)
-
-    with tmc1:
-        prm["frac_aq"] = st.slider("Vaq/V (fracción acuosa)", 0.05, 0.60, value=float(prm["frac_aq"]), step=0.05)
-    with tmc2:
-        prm["kla_PFA"] = st.number_input("kLa_PFA [1/s]", value=float(prm["kla_PFA"]), format="%.2e")
-    with tmc3:
-        prm["Kp_PFA"] = st.number_input("Koq PFA (=Corg/Caq)", value=float(prm["Kp_PFA"]), step=0.1, format="%.2f")
-    with tmc4:
-        prm["kla_H2O2"] = st.number_input("kLa H₂O₂ [1/s]", value=float(prm["kla_H2O2"]), format="%.2e")
-    with tmc5:
-        prm["Kp_H2O2"] = st.number_input("Koq H₂O₂", value=float(prm["Kp_H2O2"]), step=0.01, format="%.2f")
-    with tmc6:
-        prm["kla_HCOOH"] = st.number_input("kLa HCOOH [1/s]", value=float(prm["kla_HCOOH"]), format="%.2e")
-    with tmc7:
-        prm["Kp_HCOOH"] = st.number_input("Koq HCOOH", value=float(prm["Kp_HCOOH"]), step=0.01, format="%.2f")
-    with tmc8:
-        prm["kla_H2O"] = st.number_input("kLa H₂O [1/s]", value=float(prm["kla_H2O"]), format="%.2e")
-    with tmc9:
-        prm["Kp_H2O"] = st.number_input("Koq H₂O", value=float(prm["Kp_H2O"]), step=0.01, format="%.2f")
-
-    # ======================= UI: TIEMPO =====================================
+   # ======================= Simulación =====================================
     #st.subheader("Simulación")
     s1, s2 = st.columns(2)
     prm["t_h"]  = s1.number_input("Tiempo total [h]", value=prm["t_h"], step=0.5)

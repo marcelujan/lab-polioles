@@ -68,27 +68,27 @@ def _params_hash(prm: dict) -> str:
     s = json.dumps(subset, sort_keys=True)
     return hashlib.md5(s.encode()).hexdigest()
 
-    # ==== Cinética  ====
-    K_FIXED = dict(
-        k1f=2.0e-2,  # L·mol⁻¹·s⁻¹
-        k1r=1.0e-3,  # s⁻¹
-        k2 =1.0e-2,  # L·mol⁻¹·s⁻¹
-        k3 =1.0e-4,  # s⁻¹
-        k4 =2.0e-5,  # s⁻¹
-        k5 =5.0e-5,  # L·mol⁻¹·s⁻¹
-        alpha=1.0    # –
-    )
+# ==== Cinética  ====
+K_FIXED = dict(
+    k1f=2.0e-2,  # L·mol⁻¹·s⁻¹
+    k1r=1.0e-3,  # s⁻¹
+    k2 =1.0e-2,  # L·mol⁻¹·s⁻¹
+    k3 =1.0e-4,  # s⁻¹
+    k4 =2.0e-5,  # s⁻¹
+    k5 =5.0e-5,  # L·mol⁻¹·s⁻¹
+    alpha=1.0    # –
+)
 
-    # Unidades 
-    K_META = {
-        "k1f":  {"unid":"L·mol⁻¹·s⁻¹"},
-        "k1r":  {"unid":"s⁻¹"},
-        "k2":   {"unid":"L·mol⁻¹·s⁻¹"},
-        "k3":   {"unid":"s⁻¹"},
-        "k4":   {"unid":"s⁻¹"},
-        "k5":   {"unid":"L·mol⁻¹·s⁻¹"},
-        "alpha":{"unid":"–"}
-    }
+# Unidades 
+K_META = {
+    "k1f":  {"unid":"L·mol⁻¹·s⁻¹"},
+    "k1r":  {"unid":"s⁻¹"},
+    "k2":   {"unid":"L·mol⁻¹·s⁻¹"},
+    "k3":   {"unid":"s⁻¹"},
+    "k4":   {"unid":"s⁻¹"},
+    "k5":   {"unid":"L·mol⁻¹·s⁻¹"},
+    "alpha":{"unid":"–"}
+}
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     if "mc_params" not in st.session_state:

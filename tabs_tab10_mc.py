@@ -161,9 +161,11 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     V_HCOOH = ratios_vs_oil["HCOOH"] * V_soy_in
     V_H2O2  = ratios_vs_oil["H2O2"]  * V_soy_in
 
-    # Fracción acuosa calculada
+    # --- Fracciones por PRIORIDAD en el aceite (orgánico) ---
     V_total_mix = V_soy_in + V_H2SO4 + V_H2O + V_HCOOH + V_H2O2
-    frac_aq_calc = (V_H2SO4 + V_H2O + V_HCOOH + V_H2O2) / max(V_total_mix, 1e-12)
+    frac_org = V_soy_in / max(V_total_mix, 1e-12)
+    frac_aq_calc = 1.0 - frac_org
+
     prm["frac_aq"] = float(frac_aq_calc)
 
     # Actualizar prm para el resto de la app
@@ -289,7 +291,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                 ("C=C (dobles enlaces) [mol]",  n_CdC),
                 ("Agua de reactivos [mol]",     n_H2O_react),
                 ("Agua total [mol]",            n_H2O_total),
-                ("Fracción acuosa Vaq/V [–]",   prm["frac_aq"]),  # << NUEVA FILA
+                ("Fracción orgánica Vorg/V [–]", 1.0 - prm["frac_aq"]), 
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
             use_container_width=True, hide_index=True
         )
@@ -334,7 +336,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         prm[k] = kcols[i].number_input(lab, value=prm[k], format=fmt)
 
    # ======================= Simulación =====================================
-    #st.subheader("Simulación")
     s1, s2 = st.columns(2)
     prm["t_h"]  = s1.number_input("Tiempo total [h]", value=prm["t_h"], step=0.5)
     prm["npts"] = s2.number_input("Puntos", value=int(prm["npts"]), step=50, min_value=100)

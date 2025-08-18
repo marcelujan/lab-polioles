@@ -151,17 +151,14 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     MW_HCOOH = MW["HCOOH"]
 
 
-    # ================== Composición inicial (con % v/v, d, PM, moles y eq) ==================
+    # ================== Composición inicial (con %v/v, %p/p, d, PM, moles y equivalentes) ==================
     st.subheader("Composición inicial")
 
-    # Ingreso manual de aceite (los demás se escalan)
+    # Ingreso de aceite (los demás se escalan por la receta base)
     V_soy_in = st.number_input("Aceite de soja crudo [mL]", min_value=0.0,
                             value=float(prm.get("V_soy", 400.0)), step=0.1, format="%.4f")
 
-    # Ratios base (Mi PoliOL)
     ratios_vs_oil = {"H2SO4":3.64/400.0, "H2O":32.73/400.0, "HCOOH":80.0/400.0, "H2O2":204.36/400.0}
-
-    # Volúmenes escalados
     V_H2SO4 = ratios_vs_oil["H2SO4"] * V_soy_in
     V_H2O   = ratios_vs_oil["H2O"]   * V_soy_in
     V_HCOOH = ratios_vs_oil["HCOOH"] * V_soy_in
@@ -171,53 +168,60 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     prm["V_soy"], prm["V_H2SO4"], prm["V_H2O"], prm["V_HCOOH"], prm["V_H2O2"] = \
         float(V_soy_in), float(V_H2SO4), float(V_H2O), float(V_HCOOH), float(V_H2O2)
 
-    # Moles (según definiciones de cada solución)
+    # Moles (según definición de cada solución)
     n_soy   = (densidades["ACEITE"] * V_soy_in) / MW["ACEITE"]
     n_H2SO4 = (0.98 * densidades["H2SO4"] * V_H2SO4) / MW["H2SO4"]
     n_H2O   = (densidades["H2O"]   * V_H2O)   / MW["H2O"]
     n_HCOOH = (0.85 * densidades["HCOOH"] * V_HCOOH) / MW["HCOOH"]
-    g_H2O2  = 0.30 * V_H2O2         # 30 g H2O2 / 100 mL (p/v)
+    g_H2O2  = 0.30 * V_H2O2                         # 30 g H2O2 / 100 mL
     n_H2O2  = g_H2O2 / MW["H2O2"]
 
-    # Equivalentes (mol H+)
-    eq_soy = 0.0
-    eq_H2SO4 = 2.0 * n_H2SO4
-    eq_H2O   = 0.0
-    eq_HCOOH = 1.0 * n_HCOOH
-    eq_H2O2  = 0.0
+    # Equivalentes (mol eq) – factores corregidos
+    eq_soy   = 4.5 * n_soy     # C=C por mol aceite
+    eq_H2SO4 = 2.0 * n_H2SO4   # 2 H+
+    eq_H2O   = 1.0 * n_H2O     # 1 nucleófilo
+    eq_HCOOH = 1.0 * n_HCOOH   # 1 H+
+    eq_H2O2  = 1.0 * n_H2O2    # 1 oxidante
 
-    # Construir tabla
+    # Masas para % p/p
+    m_soy   = densidades["ACEITE"] * V_soy_in
+    m_H2SO4 = densidades["H2SO4"]  * V_H2SO4
+    m_H2O   = densidades["H2O"]    * V_H2O
+    m_HCOOH = densidades["HCOOH"]  * V_HCOOH
+    m_H2O2  = densidades["H2O2"]   * V_H2O2
+    m_total = max(m_soy + m_H2SO4 + m_H2O + m_HCOOH + m_H2O2, 1e-12)
+
     import pandas as pd
     datos = [
-        ("Aceite de soja crudo",  V_soy_in, densidades["ACEITE"], MW["ACEITE"], n_soy,   eq_soy),
-        ("Ácido sulfúrico 98%",   V_H2SO4,  densidades["H2SO4"],  MW["H2SO4"],  n_H2SO4, eq_H2SO4),
-        ("Agua destilada",        V_H2O,    densidades["H2O"],    MW["H2O"],    n_H2O,   eq_H2O),
-        ("Ácido fórmico 85%",     V_HCOOH,  densidades["HCOOH"],  MW["HCOOH"],  n_HCOOH, eq_HCOOH),
-        ("Peróxido H₂O₂ 30% p/v", V_H2O2,   densidades["H2O2"],   MW["H2O2"],   n_H2O2,  eq_H2O2),
+        ("Aceite de soja crudo",  V_soy_in, densidades["ACEITE"], MW["ACEITE"], n_soy,   eq_soy,   m_soy),
+        ("Ácido sulfúrico 98%",   V_H2SO4,  densidades["H2SO4"],  MW["H2SO4"],  n_H2SO4, eq_H2SO4, m_H2SO4),
+        ("Agua destilada",        V_H2O,    densidades["H2O"],    MW["H2O"],    n_H2O,   eq_H2O,   m_H2O),
+        ("Ácido fórmico 85%",     V_HCOOH,  densidades["HCOOH"],  MW["HCOOH"],  n_HCOOH, eq_HCOOH, m_HCOOH),
+        ("Peróxido H₂O₂ 30% p/v", V_H2O2,   densidades["H2O2"],   MW["H2O2"],   n_H2O2,  eq_H2O2,  m_H2O2),
     ]
-    df_comp = pd.DataFrame(datos, columns=["Componente","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol H⁺]"])
+    df_comp = pd.DataFrame(datos, columns=["Componente","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol eq]","m [g]"])
 
-    # Porcentajes v/v
-    V_total = df_comp["Volumen [mL]"].sum() if df_comp["Volumen [mL]"].sum() > 0 else 1.0
+    # % v/v y % p/p
+    V_total = max(df_comp["Volumen [mL]"].sum(), 1e-12)
     df_comp["[% v/v]"] = 100.0 * df_comp["Volumen [mL]"] / V_total
+    df_comp["[% p/p]"] = 100.0 * df_comp["m [g]"] / m_total
 
-    # Reordenar columnas al layout pedido
-    df_comp = df_comp[["Componente","[% v/v]","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol H⁺]"]]
+    # Orden de columnas
+    df_comp = df_comp[["Componente","[% v/v]","[% p/p]","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol eq]"]]
 
-    # Render con 4 decimales
     st.dataframe(
         df_comp.style.format({
             "[% v/v]": "{:.4f}",
+            "[% p/p]": "{:.4f}",
             "Volumen [mL]": "{:.4f}",
             "d [g/mL]": "{:.4f}",
             "PM [g/mol]": "{:.4f}",
             "n [mol]": "{:.4f}",
-            "n eq [mol H⁺]": "{:.4f}",
+            "n eq [mol eq]": "{:.4f}",
         }),
         use_container_width=True, hide_index=True
     )
-    # =============================================================================
-
+    # =========================================================================================
 
     st.markdown("**Relaciones molares**")
 

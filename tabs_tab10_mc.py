@@ -258,53 +258,36 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         unsafe_allow_html=True
     )
 
-    # =========================================================================================
 
+    # ======================= Relaciones molares (sin recálculos) =======================
     st.markdown("**Relaciones molares**")
 
-    m_soy   = densidades["ACEITE"] * prm["V_soy"]
-    m_H2SO4 = densidades["H2SO4"]  * prm["V_H2SO4"]
-    m_HCOOH = densidades["HCOOH"]  * prm["V_HCOOH"]
-    m_H2O2s = densidades["H2O2"]   * prm["V_H2O2"]   # masa de la solución
-
-    # moles de soluto puro
-    n_soy   = m_soy / MW["ACEITE"]
-    n_H2SO4 = (0.98 * m_H2SO4) / MW["H2SO4"]
-    n_HCOOH = (0.85 * m_HCOOH) / MW["HCOOH"]
-    # 30% p/v = 0.30 g H2O2 por mL de solución (asumiendo p≈1 g/mL)
-    g_H2O2  = 0.30 * prm["V_H2O2"]
-    n_H2O2  = g_H2O2 / MW["H2O2"]
-
-    # agua de reactivos (moles)
-    # H2SO4 98%: 2% agua (m/m)
-    n_H2O_from_H2SO4 = (0.02 * m_H2SO4) / MW["H2O"]
-    # HCOOH 85%: 15% agua (m/m)
-    n_H2O_from_HCOOH = (0.15 * m_HCOOH) / MW["H2O"]
-    # H2O2 30% p/v: agua ≈ (masa solución − masa H2O2)
-    n_H2O_from_H2O2  = max(m_H2O2s - g_H2O2, 0.0) / MW["H2O"]
-
+    # Agua de reactivos (usa m_* y g_H2O2 ya calculados arriba)
+    n_H2O_from_H2SO4 = (0.02 * m_H2SO4) / MW["H2O"]              # 2% m/m en H2SO4 98%
+    n_H2O_from_HCOOH = (0.15 * m_HCOOH) / MW["H2O"]              # 15% m/m en HCOOH 85%
+    n_H2O_from_H2O2  = max(m_H2O2 - g_H2O2, 0.0) / MW["H2O"]     # resto en la solución 30% p/v
     n_H2O_react      = n_H2O_from_H2SO4 + n_H2O_from_HCOOH + n_H2O_from_H2O2
-    n_H2O_total      = n_H2O_react + (prm["V_H2O"]*1.0)/MW["H2O"]
 
-    # protones (moles de H+)
-    Hplus_H2SO4 = 2.0 * n_H2SO4   # diprótico fuerte
-    Hplus_HCOOH = 1.0 * n_HCOOH   # monoprótico
+    # Agua total = agua de reactivos + agua dosificada (n_H2O ya calculado arriba)
+    n_H2O_total = n_H2O_react + n_H2O
+
+    # Protones (equivalentes, ya tenés n_H2SO4 y n_HCOOH)
+    Hplus_H2SO4 = 2.0 * n_H2SO4
+    Hplus_HCOOH = 1.0 * n_HCOOH
     Hplus_total = Hplus_H2SO4 + Hplus_HCOOH
 
-    # dobles enlaces: 4.5 mol C=C / mol aceite
-    n_CdC = 4.5 * n_soy
+    # Dobles enlaces (ya tenés eq_soy = 4.5*n_soy)
+    n_CdC = eq_soy
 
-    # relaciones
-    rel_H2O2_CdC = n_H2O2 / n_CdC if n_CdC > 0 else 0.0
+    # Relaciones (reusan n_* existentes)
+    rel_H2O2_CdC  = n_H2O2 / n_CdC if n_CdC > 0 else 0.0
     rel_H2SO4_CdC = n_H2SO4 / n_CdC if n_CdC > 0 else 0.0
     rel_HCOOH_CdC = n_HCOOH / n_CdC if n_CdC > 0 else 0.0
+    rel_H2O2_soy  = n_H2O2 / n_soy if n_soy > 0 else 0.0
     rel_H2SO4_soy = n_H2SO4 / n_soy if n_soy > 0 else 0.0
     rel_HCOOH_soy = n_HCOOH / n_soy if n_soy > 0 else 0.0
-    rel_H2O2_soy = n_H2O2 / n_soy if n_soy > 0 else 0.0
 
-    # tabla resumen (no editable)
     fmt = "{:.4f}"
-
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
@@ -313,7 +296,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                 ("C=C (dobles enlaces) [mol]",  n_CdC),
                 ("Agua de reactivos [mol]",     n_H2O_react),
                 ("Agua total [mol]",            n_H2O_total),
-                ("Fracción orgánica Vorg/V", 1.0 - prm["frac_aq"]), 
+                ("Fracción orgánica Vorg/V [–]", 1.0 - prm["frac_aq"]),
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
             use_container_width=True, hide_index=True
         )
@@ -347,6 +330,8 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
             use_container_width=True, hide_index=True
         )
+    # ================================================================================
+
 
     # ======================= Simulación =====================================
     s1, s2 = st.columns(2)

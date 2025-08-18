@@ -140,8 +140,8 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     with right:
         st.markdown(
             f"""
-            <div style="text-align:right; font-size:0.9em; margin-top:0.5rem">
-            <b>α = {k['alpha']:.2f} aplica como factor ácido en R1, R2, R5.
+            <div style='text-align:right; font-size:0.9em; margin-top:0.5rem'>
+            α = {k['alpha']:.2f} aplica como factor ácido en R1, R2, R5.
             """,
             unsafe_allow_html=True
         )

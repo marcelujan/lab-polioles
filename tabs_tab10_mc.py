@@ -81,13 +81,13 @@ K_FIXED = dict(
 
 # Unidades 
 K_META = {
-    "k1f":  {"unid":"L·mol⁻¹·s⁻¹"},
-    "k1r":  {"unid":"s⁻¹"},
-    "k2":   {"unid":"L·mol⁻¹·s⁻¹"},
-    "k3":   {"unid":"s⁻¹"},
-    "k4":   {"unid":"s⁻¹"},
-    "k5":   {"unid":"L·mol⁻¹·s⁻¹"},
-    "alpha":{"unid":"–"}
+    "k1f":  {"unid":"L·mol⁻¹·s⁻¹", "det":"(definir)"},
+    "k1r":  {"unid":"s⁻¹",          "det":"(definir)"},
+    "k2":   {"unid":"L·mol⁻¹·s⁻¹", "det":"(definir)"},
+    "k3":   {"unid":"s⁻¹",          "det":"(definir)"},
+    "k4":   {"unid":"s⁻¹",          "det":"(definir)"},
+    "k5":   {"unid":"L·mol⁻¹·s⁻¹", "det":"(definir)"},
+    "alpha":{"unid":"–",            "det":"(definir)"},
 }
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):

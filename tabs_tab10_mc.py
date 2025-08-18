@@ -69,8 +69,31 @@ def _params_hash(prm: dict) -> str:
     return hashlib.md5(s.encode()).hexdigest()
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
-    # ───────── Esquema y ecuaciones (render LaTeX) ─────────
 
+    if "mc_params" not in st.session_state:
+        st.session_state["mc_params"] = _defaults()
+    prm = _apply_params_to_widgets(st.session_state["mc_params"])
+
+    # === UI: CINÉTICA ===
+    st.markdown("**Constantes cinéticas y factor ácido (temporal)**")
+    kcols = st.columns(7)
+    with kcols[0]:
+        prm["k1f"]  = st.number_input("k1f [L·mol⁻¹·s⁻¹]", value=float(prm.get("k1f", 2.0e-2)), format="%.2e")
+    with kcols[1]:
+        prm["k1r"]  = st.number_input("k1r [s⁻¹]",         value=float(prm.get("k1r", 1.0e-3)), format="%.2e")
+    with kcols[2]:
+        prm["k2"]   = st.number_input("k2 [L·mol⁻¹·s⁻¹]",  value=float(prm.get("k2", 1.0e-2)), format="%.2e")
+    with kcols[3]:
+        prm["k3"]   = st.number_input("k3 [s⁻¹]",          value=float(prm.get("k3", 1.0e-4)), format="%.2e")
+    with kcols[4]:
+        prm["k4"]   = st.number_input("k4 [s⁻¹]",          value=float(prm.get("k4", 2.0e-5)), format="%.2e")
+    with kcols[5]:
+        prm["k5"]   = st.number_input("k5 [L·mol⁻¹·s⁻¹]",  value=float(prm.get("k5", 5.0e-5)), format="%.2e")
+    with kcols[6]:
+        prm["alpha"]= st.number_input("α (factor ácido) [-]", value=float(prm.get("alpha", 1.0)), format="%.2f")
+    # ================================================
+
+    # ───────── Esquema y ecuaciones (render LaTeX) ─────────
     st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1 - Formación del ácido perfórmico}")
     st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2 - Epoxidación en fase orgánica}")
     st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3 - Descomposición del PFA}")
@@ -200,7 +223,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         ("Agua destilada",        V_H2O,    densidades["H2O"],    MW["H2O"],    n_H2O,   eq_H2O,   m_H2O,   prm.get("Kp_H2O"),   prm.get("kla_H2O")),
         ("Ácido fórmico 85%",     V_HCOOH,  densidades["HCOOH"],  MW["HCOOH"],  n_HCOOH, eq_HCOOH, m_HCOOH, prm.get("Kp_HCOOH"), prm.get("kla_HCOOH")),
         ("Peróxido H₂O₂ 30% p/v", V_H2O2,   densidades["H2O2"],   MW["H2O2"],   n_H2O2,  eq_H2O2,  m_H2O2,  prm.get("Kp_H2O2"),  prm.get("kla_H2O2")),
-        ("PFA (generado)",        0.0,      1.18,                 MW["HCOOOH"],    0.0,     0.0,     0.0,     prm.get("Kp_PFA"),   prm.get("kla_PFA")),
+        ("PFA (generado)",        0.0,      densidades["HCOOOH"], MW["HCOOOH"],    0.0,     0.0,     0.0,   prm.get("Kp_PFA"),   prm.get("kla_PFA")),
         ]
 
     df_comp = pd.DataFrame(datos, columns=["Componente","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol eq]","m [g]","Koq","kLa [1/s]"])
@@ -325,16 +348,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             use_container_width=True, hide_index=True
         )
 
-    # ======================= UI: CINÉTICA ===================================
-    st.markdown("**Constantes cinéticas y factor ácido**")
-    kcols = st.columns(7)
-    keys = ["k1f","k1r","k2","k3","k4","k5","alpha"]
-    labels= ["k1f [L/mol/s]","k1r [1/s]","k2 [L/mol/s]","k3 [1/s]","k4 [1/s]","k5 [L/mol/s]","α (ácido)"]
-    fmts  = ["%.2e"]*6+["%0.2f"]
-    for i,(k,lab,fmt) in enumerate(zip(keys,labels,fmts)):
-        prm[k] = kcols[i].number_input(lab, value=prm[k], format=fmt)
-
-   # ======================= Simulación =====================================
+    # ======================= Simulación =====================================
     s1, s2 = st.columns(2)
     prm["t_h"]  = s1.number_input("Tiempo total [h]", value=prm["t_h"], step=0.5)
     prm["npts"] = s2.number_input("Puntos", value=int(prm["npts"]), step=50, min_value=100)

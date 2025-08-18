@@ -223,53 +223,21 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     rel_HCOOH_CdC = n_HCOOH / n_CdC if n_CdC > 0 else 0.0
     rel_H2SO4_soy = n_H2SO4 / n_soy if n_soy > 0 else 0.0
     rel_HCOOH_soy = n_HCOOH / n_soy if n_soy > 0 else 0.0
-    rel_H2O2_soy = n_H2O2 / n_soy if n_soy > 0 else 0.0
 
     # tabla resumen (no editable)
-    fmt = lambda v: f"{v:,.6g}"
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.markdown("**Relaciones molares**")
-        st.dataframe(
-            pd.DataFrame([
-                ("C=C (dobles enlaces) [mol]", fmt(n_CdC)),
-                ("Agua de reactivos [mol]",    fmt(n_H2O_react)),
-                ("Agua total [mol]",           fmt(n_H2O_total)),
-            ], columns=["Magnitud", "Valor"]),
-            use_container_width=True, hide_index=True
-        )
-
-    with col2:
-        st.dataframe(
-            pd.DataFrame([
-                ("Protones H₂SO₄ [mol H⁺]",   fmt(Hplus_H2SO4)),
-                ("Protones HCOOH [mol H⁺]",   fmt(Hplus_HCOOH)),
-                ("Protones totales [mol H⁺]", fmt(Hplus_total)),
-            ], columns=["Magnitud", "Valor"]),
-            use_container_width=True, hide_index=True
-        )
-
-    with col3:
-        st.dataframe(
-            pd.DataFrame([
-                ("Relación H₂O₂/C=C [mol/mol]",  fmt(rel_H2O2_CdC)),
-                ("Relación H₂SO₄/C=C [mol/mol]", fmt(rel_H2SO4_CdC)),
-                ("Relación HCOOH/C=C [mol/mol]", fmt(rel_HCOOH_CdC)),
-            ], columns=["Magnitud", "Valor"]),
-            use_container_width=True, hide_index=True
-        )
-
-    with col4:
-        st.dataframe(
-            pd.DataFrame([
-                ("Relación H₂O₂/aceite [mol/mol]",  fmt(rel_H2O2_soy)),
-                ("Relación H₂SO₄/aceite [mol/mol]", fmt(rel_H2SO4_soy)),
-                ("Relación HCOOH/aceite [mol/mol]", fmt(rel_HCOOH_soy)),
-            ], columns=["Magnitud", "Valor"]),
-            use_container_width=True, hide_index=True
-        )
+    rows = [
+        ("Agua de reactivos [mol]",           n_H2O_react),
+        ("Agua total [mol]",                  n_H2O_total),
+        ("Protones H₂SO₄ [mol eq H⁺]",           Hplus_H2SO4),
+        ("Protones HCOOH [mol eq H⁺]",           Hplus_HCOOH),
+        ("Protones totales [mol eq H⁺]",         Hplus_total),
+        ("C=C (dobles enlaces) [mol]",        n_CdC),
+        ("Relación H₂O₂/C=C [mol/mol]",       rel_H2O2_CdC),
+        ("Relación H₂SO₄/C=C [mol/mol]",      rel_H2SO4_CdC),
+        ("Relación HCOOH/C=C [mol/mol]",      rel_HCOOH_CdC),
+        ("Relación H₂SO₄/aceite [mol/mol]",   rel_H2SO4_soy),
+        ("Relación HCOOH/aceite [mol/mol]",   rel_HCOOH_soy),
+    ]
 
     # render bonito
     df_rel = pd.DataFrame(rows, columns=["Magnitud", "Valor"])

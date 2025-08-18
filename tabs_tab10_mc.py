@@ -68,30 +68,57 @@ def _params_hash(prm: dict) -> str:
     s = json.dumps(subset, sort_keys=True)
     return hashlib.md5(s.encode()).hexdigest()
 
-def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
+    # ==== Cinética  ====
+    K_FIXED = dict(
+        k1f=2.0e-2,  # L·mol⁻¹·s⁻¹
+        k1r=1.0e-3,  # s⁻¹
+        k2 =1.0e-2,  # L·mol⁻¹·s⁻¹
+        k3 =1.0e-4,  # s⁻¹
+        k4 =2.0e-5,  # s⁻¹
+        k5 =5.0e-5,  # L·mol⁻¹·s⁻¹
+        alpha=1.0    # –
+    )
 
+    # Unidades 
+    K_META = {
+        "k1f":  {"unid":"L·mol⁻¹·s⁻¹"},
+        "k1r":  {"unid":"s⁻¹"},
+        "k2":   {"unid":"L·mol⁻¹·s⁻¹"},
+        "k3":   {"unid":"s⁻¹"},
+        "k4":   {"unid":"s⁻¹"},
+        "k5":   {"unid":"L·mol⁻¹·s⁻¹"},
+        "alpha":{"unid":"–"}
+    }
+
+def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     if "mc_params" not in st.session_state:
         st.session_state["mc_params"] = _defaults()
     prm = _apply_params_to_widgets(st.session_state["mc_params"])
+    prm.update({k: float(v) for k, v in K_FIXED.items()})
 
-    # === UI: CINÉTICA ===
-    st.markdown("**Constantes cinéticas y factor ácido (temporal)**")
-    kcols = st.columns(7)
-    with kcols[0]:
-        prm["k1f"]  = st.number_input("k1f [L·mol⁻¹·s⁻¹]", value=float(prm.get("k1f", 2.0e-2)), format="%.2e")
-    with kcols[1]:
-        prm["k1r"]  = st.number_input("k1r [s⁻¹]",         value=float(prm.get("k1r", 1.0e-3)), format="%.2e")
-    with kcols[2]:
-        prm["k2"]   = st.number_input("k2 [L·mol⁻¹·s⁻¹]",  value=float(prm.get("k2", 1.0e-2)), format="%.2e")
-    with kcols[3]:
-        prm["k3"]   = st.number_input("k3 [s⁻¹]",          value=float(prm.get("k3", 1.0e-4)), format="%.2e")
-    with kcols[4]:
-        prm["k4"]   = st.number_input("k4 [s⁻¹]",          value=float(prm.get("k4", 2.0e-5)), format="%.2e")
-    with kcols[5]:
-        prm["k5"]   = st.number_input("k5 [L·mol⁻¹·s⁻¹]",  value=float(prm.get("k5", 5.0e-5)), format="%.2e")
-    with kcols[6]:
-        prm["alpha"]= st.number_input("α (factor ácido) [-]", value=float(prm.get("alpha", 1.0)), format="%.2f")
-    # ================================================
+    def _row(keys):
+        data = []
+        for k in keys:
+            meta = K_META.get(k, {"unid":"", "det":""})
+            val  = prm[k]
+            fmt  = "{:.2e}" if meta["unid"] != "–" else "{:.2f}"
+            data.append([k, fmt.format(val), meta["unid"], meta["det"]])
+        return pd.DataFrame(data, columns=["Parámetro","Valor","Unidades","Determinación"])
+
+    st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1 - Formación del ácido perfórmico}")
+    st.dataframe(_row(["k1f","k1r","alpha"]), use_container_width=True, hide_index=True)
+
+    st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2 - Epoxidación en fase orgánica}")
+    st.dataframe(_row(["k2","alpha"]), use_container_width=True, hide_index=True)
+
+    st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3 - Descomposición del PFA}")
+    st.dataframe(_row(["k3"]), use_container_width=True, hide_index=True)
+
+    st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4 - Descomposición del H_2O_2}")
+    st.dataframe(_row(["k4"]), use_container_width=True, hide_index=True)
+
+    st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5 - Apertura del epóxido}")
+    st.dataframe(_row(["k5","alpha"]), use_container_width=True, hide_index=True)
 
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
     st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1 - Formación del ácido perfórmico}")
@@ -613,5 +640,5 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # Pie: simplificaciones
     st.markdown("""
 ---
-**Simplificaciones:** isoterma, volumen constante, cinética de orden potencia, α catalítico lumped; en 2-fases, \(k_L a\) y \(K_{oq}\) constantes.
+**Simplificaciones:** isoterma, volumen constante, cinética de orden potencia, α catalítico lumped; en 2-fases, \\(k_L a\\) y \\(K_{oq}\\) constantes.
 """)

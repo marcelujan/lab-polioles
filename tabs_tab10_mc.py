@@ -221,6 +221,14 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         }, na_rep=""),
         use_container_width=True, hide_index=True
     )
+    
+    # Observación en letra más pequeña
+    st.markdown(
+        "<p style='font-size: 0.7em;'>* kLa → coeficiente volumétrico de transferencia de masa gas–líquido o líquido–líquido. <br> "
+        "* Koq → coeficiente de partición o coeficiente de reparto.</p>",
+        unsafe_allow_html=True
+    )
+
     # =========================================================================================
 
     st.markdown("**Relaciones molares**")

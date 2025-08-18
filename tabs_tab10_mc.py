@@ -96,74 +96,72 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     prm = _apply_params_to_widgets(st.session_state["mc_params"])
     prm.update({k: float(v) for k, v in K_FIXED.items()})
 
-    # ---------- Helper formato ----------
-    def _fmt_e(x):  # notación científica corta
-        return f"{x:.2e}"
-    k = K_FIXED  # usar constantes fijas para mostrar
+    def _fmt_e(x): return f"{x:.2e}"
+    k = K_FIXED  # o prm si preferís
+
+    st.markdown("**Esquema y ecuaciones**")
+
+    # Usamos SIEMPRE el mismo layout de columnas para alinear la columna derecha
+    colw = [5, 2]
 
     # R1
-    c1, c2 = st.columns([5,2])
+    c1, c2 = st.columns(colw)
     with c1:
         st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1}")
     with c2:
-        st.markdown(
-            f"""
-            <div style="text-align:right; font-size:0.9em">
-            k₁f = {_fmt_e(k['k1f'])} L·mol⁻¹·s⁻¹<br>
-            k₁r = {_fmt_e(k['k1r'])} s⁻¹<br>
-            α = {k['alpha']:.2f}
-            </div>
-            """, unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:right; font-size:0.9em'>k₁f = {_fmt_e(k['k1f'])} L·mol⁻¹·s⁻¹<br>k₁r = {_fmt_e(k['k1r'])} s⁻¹</div>", unsafe_allow_html=True)
 
     # R2
-    c1, c2 = st.columns([5,2])
+    c1, c2 = st.columns(colw)
     with c1:
         st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2}")
     with c2:
-        st.markdown(
-            f"<div style='text-align:right; font-size:0.9em'>k₂ = {_fmt_e(k['k2'])} L·mol⁻¹·s⁻¹</div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:right; font-size:0.9em'>k₂ = {_fmt_e(k['k2'])} L·mol⁻¹·s⁻¹</div>", unsafe_allow_html=True)
 
     # R3
-    c1, c2 = st.columns([5,2])
+    c1, c2 = st.columns(colw)
     with c1:
         st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3}")
     with c2:
-        st.markdown(
-            f"<div style='text-align:right; font-size:0.9em'>k₃ = {_fmt_e(k['k3'])} s⁻¹</div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:right; font-size:0.9em'>k₃ = {_fmt_e(k['k3'])} s⁻¹</div>", unsafe_allow_html=True)
 
     # R4
-    c1, c2 = st.columns([5,2])
+    c1, c2 = st.columns(colw)
     with c1:
         st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4}")
     with c2:
-        st.markdown(
-            f"<div style='text-align:right; font-size:0.9em'>k₄ = {_fmt_e(k['k4'])} s⁻¹</div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:right; font-size:0.9em'>k₄ = {_fmt_e(k['k4'])} s⁻¹</div>", unsafe_allow_html=True)
 
     # R5
-    c1, c2 = st.columns([5,2])
+    c1, c2 = st.columns(colw)
     with c1:
         st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5}")
     with c2:
+        st.markdown(f"<div style='text-align:right; font-size:0.9em'>k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹</div>", unsafe_allow_html=True)
+
+    # ---- α separado, alineado con la columna de los k ----
+    _ , right = st.columns(colw)  # misma geometría
+    with right:
         st.markdown(
-            f"<div style='text-align:right; font-size:0.9em'>k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹</div>",
+            f"""
+            <div style="text-align:right; font-size:0.9em; margin-top:0.5rem">
+            <b>α = {k['alpha']:.2f}</b><br>
+            <span style="opacity:0.85">Aplica como factor ácido en: <b>R1, R2, R5</b></span>
+            </div>
+            """,
             unsafe_allow_html=True
         )
 
+    # Referencias
     st.markdown("""
-    **Referencias**
+    **Referencias (R# → descripción)**
     - R1: Formación del ácido perfórmico  
     - R2: Epoxidación en fase orgánica  
     - R3: Descomposición del PFA  
     - R4: Descomposición del H₂O₂  
     - R5: Apertura del epóxido
     """)
+
 
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
     st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1 - Formación del ácido perfórmico}")

@@ -151,7 +151,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     MW_HCOOH = MW["HCOOH"]
 
 
-    # ================== Composición inicial (con %v/v, %p/p, d, PM, moles y equivalentes) ==================
+    # ================== Composición inicial (con %v/v, %p/p, d, PM, moles y equivalentes) ================== 
     st.markdown("**Composición inicial**")
 
     # Ingreso de aceite (los demás se escalan por la receta base)
@@ -192,13 +192,15 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     m_total = max(m_soy + m_H2SO4 + m_H2O + m_HCOOH + m_H2O2, 1e-12)
 
     datos = [
-        ("Aceite de soja crudo",  V_soy_in, densidades["ACEITE"], MW["ACEITE"], n_soy,   eq_soy,   m_soy),
-        ("Ácido sulfúrico 98%",   V_H2SO4,  densidades["H2SO4"],  MW["H2SO4"],  n_H2SO4, eq_H2SO4, m_H2SO4),
-        ("Agua destilada",        V_H2O,    densidades["H2O"],    MW["H2O"],    n_H2O,   eq_H2O,   m_H2O),
-        ("Ácido fórmico 85%",     V_HCOOH,  densidades["HCOOH"],  MW["HCOOH"],  n_HCOOH, eq_HCOOH, m_HCOOH),
-        ("Peróxido H₂O₂ 30% p/v", V_H2O2,   densidades["H2O2"],   MW["H2O2"],   n_H2O2,  eq_H2O2,  m_H2O2),
+        ("Aceite de soja crudo",  V_soy_in, densidades["ACEITE"], MW["ACEITE"], n_soy,   eq_soy,   m_soy,   None, None),
+        ("Ácido sulfúrico 98%",   V_H2SO4,  densidades["H2SO4"],  MW["H2SO4"],  n_H2SO4, eq_H2SO4, m_H2SO4, None, None),
+        ("Agua destilada",        V_H2O,    densidades["H2O"],    MW["H2O"],    n_H2O,   eq_H2O,   m_H2O,   prm.get("Kp_H2O"),   prm.get("kla_H2O")),
+        ("Ácido fórmico 85%",     V_HCOOH,  densidades["HCOOH"],  MW["HCOOH"],  n_HCOOH, eq_HCOOH, m_HCOOH, prm.get("Kp_HCOOH"), prm.get("kla_HCOOH")),
+        ("Peróxido H₂O₂ 30% p/v", V_H2O2,   densidades["H2O2"],   MW["H2O2"],   n_H2O2,  eq_H2O2,  m_H2O2,  prm.get("Kp_H2O2"),  prm.get("kla_H2O2")),
+        # Fila PFA generado
+        ("PFA (generado)",        0.0,      1.18,                 MW["PFA"],    0.0,     0.0,     0.0,     prm.get("Kp_PFA"),   prm.get("kla_PFA")),
     ]
-    df_comp = pd.DataFrame(datos, columns=["Componente","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol eq]","m [g]"])
+    df_comp = pd.DataFrame(datos, columns=["Componente","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol eq]","m [g]","Koq","kLa [1/s]"])
 
     # % v/v y % p/p
     V_total = max(df_comp["Volumen [mL]"].sum(), 1e-12)
@@ -206,7 +208,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     df_comp["[% p/p]"] = 100.0 * df_comp["m [g]"] / m_total
 
     # Orden de columnas
-    df_comp = df_comp[["Componente","[% v/v]","[% p/p]","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol eq]"]]
+    df_comp = df_comp[["Componente","[% v/v]","[% p/p]","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol eq]","Koq","kLa [1/s]"]]
 
     st.dataframe(
         df_comp.style.format({
@@ -217,7 +219,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             "PM [g/mol]": "{:.4f}",
             "n [mol]": "{:.4f}",
             "n eq [mol eq]": "{:.4f}",
-        }),
+            "Koq": "{:.2f}",
+            "kLa [1/s]": "{:.2e}",
+        }, na_rep=""),
         use_container_width=True, hide_index=True
     )
     # =========================================================================================

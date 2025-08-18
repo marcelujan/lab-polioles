@@ -226,7 +226,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     rel_H2O2_soy = n_H2O2 / n_soy if n_soy > 0 else 0.0
 
     # tabla resumen (no editable)
-    fmt = "{:,.6g}"
+    fmt = "{:.4f}"
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -269,7 +269,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
             use_container_width=True, hide_index=True
         )
-
 
     # ======================= UI: CINÉTICA ===================================
     st.markdown("**Constantes cinéticas y factor ácido**")

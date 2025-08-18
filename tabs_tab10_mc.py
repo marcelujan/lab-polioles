@@ -120,7 +120,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2}")
     with c2:
         st.markdown(
-            f"<div style='text-align:right; font-size:0.9em; margin-top:0.9rem'>k₂ = {_fmt_e(k['k2'])} L·mol⁻¹·s⁻¹</div>",
+            f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₂ = {_fmt_e(k['k2'])} L·mol⁻¹·s⁻¹</div>",
             unsafe_allow_html=True
         )
 
@@ -130,7 +130,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3}")
     with c2:
         st.markdown(
-            f"<div style='text-align:right; font-size:0.9em; margin-top:0.9rem'>k₃ = {_fmt_e(k['k3'])} s⁻¹</div>",
+            f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₃ = {_fmt_e(k['k3'])} s⁻¹</div>",
             unsafe_allow_html=True
         )
 
@@ -140,7 +140,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4}")
     with c2:
         st.markdown(
-            f"<div style='text-align:right; font-size:0.9em; margin-top:0.9rem'>k₄ = {_fmt_e(k['k4'])} s⁻¹</div>",
+            f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₄ = {_fmt_e(k['k4'])} s⁻¹</div>",
             unsafe_allow_html=True
         )
 
@@ -150,7 +150,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5}")
     with c2:
         st.markdown(
-            f"<div style='text-align:right; font-size:0.9em; margin-top:0.9rem'>k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹</div>",
+            f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹</div>",
             unsafe_allow_html=True
         )
         

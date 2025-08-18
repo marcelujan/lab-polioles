@@ -197,9 +197,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         ("Agua destilada",        V_H2O,    densidades["H2O"],    MW["H2O"],    n_H2O,   eq_H2O,   m_H2O,   prm.get("Kp_H2O"),   prm.get("kla_H2O")),
         ("Ácido fórmico 85%",     V_HCOOH,  densidades["HCOOH"],  MW["HCOOH"],  n_HCOOH, eq_HCOOH, m_HCOOH, prm.get("Kp_HCOOH"), prm.get("kla_HCOOH")),
         ("Peróxido H₂O₂ 30% p/v", V_H2O2,   densidades["H2O2"],   MW["H2O2"],   n_H2O2,  eq_H2O2,  m_H2O2,  prm.get("Kp_H2O2"),  prm.get("kla_H2O2")),
-        # Fila PFA generado
         ("PFA (generado)",        0.0,      1.18,                 MW["PFA"],    0.0,     0.0,     0.0,     prm.get("Kp_PFA"),   prm.get("kla_PFA")),
-    ]
+        ]
+
     df_comp = pd.DataFrame(datos, columns=["Componente","Volumen [mL]","d [g/mL]","PM [g/mol]","n [mol]","n eq [mol eq]","m [g]","Koq","kLa [1/s]"])
 
     # % v/v y % p/p

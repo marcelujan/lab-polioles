@@ -95,53 +95,69 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         st.session_state["mc_params"] = _defaults()
     prm = _apply_params_to_widgets(st.session_state["mc_params"])
     prm.update({k: float(v) for k, v in K_FIXED.items()})
-    
+
     # ---------- Helper formato ----------
     def _fmt_e(x):  # notación científica corta
         return f"{x:.2e}"
-
     k = K_FIXED  # usar constantes fijas para mostrar
-
-    st.markdown("**Esquema y ecuaciones**")
 
     # R1
     c1, c2 = st.columns([5,2])
     with c1:
-        st.latex(rf"\mathrm{{HCOOH + H_2O_2 \xrightleftharpoons[k_{{1r}}]{{k_{{1f}}}} PFA + H_2O}}\tag{{R1}}")
+        st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1}")
     with c2:
-        st.markdown(f"**k₁f = {_fmt_e(k['k1f'])} L·mol⁻¹·s⁻¹; k₁r = {_fmt_e(k['k1r'])} s⁻¹; α = {k['alpha']:.2f}**")
+        st.markdown(
+            f"""
+            <div style="text-align:right; font-size:0.9em">
+            k₁f = {_fmt_e(k['k1f'])} L·mol⁻¹·s⁻¹<br>
+            k₁r = {_fmt_e(k['k1r'])} s⁻¹<br>
+            α = {k['alpha']:.2f}
+            </div>
+            """, unsafe_allow_html=True
+        )
 
     # R2
     c1, c2 = st.columns([5,2])
     with c1:
         st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2}")
     with c2:
-        st.markdown(f"**k₂ = {_fmt_e(k['k2'])} L·mol⁻¹·s⁻¹**")
+        st.markdown(
+            f"<div style='text-align:right; font-size:0.9em'>k₂ = {_fmt_e(k['k2'])} L·mol⁻¹·s⁻¹</div>",
+            unsafe_allow_html=True
+        )
 
     # R3
     c1, c2 = st.columns([5,2])
     with c1:
         st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3}")
     with c2:
-        st.markdown(f"**k₃ = {_fmt_e(k['k3'])} s⁻¹**")
+        st.markdown(
+            f"<div style='text-align:right; font-size:0.9em'>k₃ = {_fmt_e(k['k3'])} s⁻¹</div>",
+            unsafe_allow_html=True
+        )
 
     # R4
     c1, c2 = st.columns([5,2])
     with c1:
         st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4}")
     with c2:
-        st.markdown(f"**k₄ = {_fmt_e(k['k4'])} s⁻¹**")
+        st.markdown(
+            f"<div style='text-align:right; font-size:0.9em'>k₄ = {_fmt_e(k['k4'])} s⁻¹</div>",
+            unsafe_allow_html=True
+        )
 
     # R5
     c1, c2 = st.columns([5,2])
     with c1:
         st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5}")
     with c2:
-        st.markdown(f"**k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹**")
+        st.markdown(
+            f"<div style='text-align:right; font-size:0.9em'>k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹</div>",
+            unsafe_allow_html=True
+        )
 
-    # Referencias compactas
     st.markdown("""
-    **Referencias (R# → descripción)**
+    **Referencias**
     - R1: Formación del ácido perfórmico  
     - R2: Epoxidación en fase orgánica  
     - R3: Descomposición del PFA  

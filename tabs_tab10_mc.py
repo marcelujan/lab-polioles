@@ -95,30 +95,59 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         st.session_state["mc_params"] = _defaults()
     prm = _apply_params_to_widgets(st.session_state["mc_params"])
     prm.update({k: float(v) for k, v in K_FIXED.items()})
+    
+    # ---------- Helper formato ----------
+    def _fmt_e(x):  # notación científica corta
+        return f"{x:.2e}"
 
-    def _row(keys):
-        data = []
-        for k in keys:
-            meta = K_META.get(k, {"unid":"", "det":""})
-            val  = prm[k]
-            fmt  = "{:.2e}" if meta["unid"] != "–" else "{:.2f}"
-            data.append([k, fmt.format(val), meta["unid"], meta["det"]])
-        return pd.DataFrame(data, columns=["Parámetro","Valor","Unidades","Determinación"])
+    k = K_FIXED  # usar constantes fijas para mostrar
 
-    st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1 - Formación del ácido perfórmico}")
-    st.dataframe(_row(["k1f","k1r","alpha"]), use_container_width=True, hide_index=True)
+    st.markdown("**Esquema y ecuaciones**")
 
-    st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2 - Epoxidación en fase orgánica}")
-    st.dataframe(_row(["k2","alpha"]), use_container_width=True, hide_index=True)
+    # R1
+    c1, c2 = st.columns([5,2])
+    with c1:
+        st.latex(rf"\mathrm{{HCOOH + H_2O_2 \xrightleftharpoons[k_{{1r}}]{{k_{{1f}}}} PFA + H_2O}}\tag{{R1}}")
+    with c2:
+        st.markdown(f"**k₁f = {_fmt_e(k['k1f'])} L·mol⁻¹·s⁻¹; k₁r = {_fmt_e(k['k1r'])} s⁻¹; α = {k['alpha']:.2f}**")
 
-    st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3 - Descomposición del PFA}")
-    st.dataframe(_row(["k3"]), use_container_width=True, hide_index=True)
+    # R2
+    c1, c2 = st.columns([5,2])
+    with c1:
+        st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2}")
+    with c2:
+        st.markdown(f"**k₂ = {_fmt_e(k['k2'])} L·mol⁻¹·s⁻¹**")
 
-    st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4 - Descomposición del H_2O_2}")
-    st.dataframe(_row(["k4"]), use_container_width=True, hide_index=True)
+    # R3
+    c1, c2 = st.columns([5,2])
+    with c1:
+        st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3}")
+    with c2:
+        st.markdown(f"**k₃ = {_fmt_e(k['k3'])} s⁻¹**")
 
-    st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5 - Apertura del epóxido}")
-    st.dataframe(_row(["k5","alpha"]), use_container_width=True, hide_index=True)
+    # R4
+    c1, c2 = st.columns([5,2])
+    with c1:
+        st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4}")
+    with c2:
+        st.markdown(f"**k₄ = {_fmt_e(k['k4'])} s⁻¹**")
+
+    # R5
+    c1, c2 = st.columns([5,2])
+    with c1:
+        st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5}")
+    with c2:
+        st.markdown(f"**k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹**")
+
+    # Referencias compactas
+    st.markdown("""
+    **Referencias (R# → descripción)**
+    - R1: Formación del ácido perfórmico  
+    - R2: Epoxidación en fase orgánica  
+    - R3: Descomposición del PFA  
+    - R4: Descomposición del H₂O₂  
+    - R5: Apertura del epóxido
+    """)
 
     # ───────── Esquema y ecuaciones (render LaTeX) ─────────
     st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1 - Formación del ácido perfórmico}")

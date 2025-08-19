@@ -7,6 +7,11 @@ import hashlib, json
 import pandas as pd
 from typing import Literal, Dict, Tuple
 
+MW_H2O2  = 34.0147
+MW_HCOOH = 46.0254
+MW_H2O   = 18.0153
+R = 8.314462618 # J/mol/K
+
 @dataclass
 class Params:
     T: float = 313.15
@@ -32,13 +37,18 @@ class Params:
     # actividades
     activities: Literal["IDEAL","UNIQUAC","UNIFAC"] = "IDEAL"
 
+@dataclass
+class P:
+    k1f: float; k1r: float; k2: float; k3: float; k4: float; k5: float; alpha: float
+    Vaq: float; Vorg: float
+    kla_PFA: float; kla_H2O2: float; Kp_PFA: float; Kp_H2O2: float
+    kla_HCOOH: float = 0.0
+    Kp_HCOOH: float  = 0.20
+    kla_H2O: float   = 0.0
+    Kp_H2O: float    = 0.02
+
 def conc(n: float, V: float) -> float:
     return n / max(V, 1e-12)
-
-MW_H2O2  = 34.0147
-MW_HCOOH = 46.0254
-MW_H2O   = 18.0153
-R = 8.314462618 # J/mol/K
 
 def _safe_uid():
     # tomá tu UID de donde lo guardes; si no hay, usa "local"
@@ -76,16 +86,6 @@ def _defaults():
         # Simulación
         t_h=12.0, npts=400
     )
-
-@dataclass
-class P:
-    k1f: float; k1r: float; k2: float; k3: float; k4: float; k5: float; alpha: float
-    Vaq: float; Vorg: float
-    kla_PFA: float; kla_H2O2: float; Kp_PFA: float; Kp_H2O2: float
-    kla_HCOOH: float = 0.0
-    Kp_HCOOH: float  = 0.20
-    kla_H2O: float   = 0.0
-    Kp_H2O: float    = 0.02
 
 def _params_hash(prm: dict) -> str:
     # Solo cosas que cambian la simulación (no sliders de ejes, ni selección de series)
@@ -656,76 +656,85 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     times_h = res["t"]/3600.0
 
     # === Multiselect GLOBAL (aplica a los 3 gráficos) ===
-    opts_global = [
-        "C=C","Ep","FA","PFA","H2O2","HCOOH",         # 1F
-        "C=C(org)","Ep(org)","FA(org)","PFA(org)",    # 2F-eq / 2F-2film (org)
-        "H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)"     # 2F-eq / 2F-2film (aq)
-    ]
+    LABELS = {
+        "1F":        (["C=C","Ep","FA","PFA","H2O2","HCOOH"],            list(range(6))),                 # 0..5
+        "2F_eq_org": (["C=C(org)","Ep(org)","FA(org)","PFA(org)"],       [0,1,2,3]),
+        "2F_eq_aq":  (["H2O2(aq)","HCOOH(aq)"],                          [4,5]),
+        "2F_tf_org": (["C=C(org)","Ep(org)","FA(org)","PFA(org)"],       [0,1,2,3]),
+        "2F_tf_aq":  (["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)"],       [4,5,6,7]),
+    }
+    # orden sugerido en el selector
+    opts_global = sum([LABELS["1F"][0], LABELS["2F_eq_org"][0], LABELS["2F_eq_aq"][0], LABELS["2F_tf_aq"][0]], [])
     sel = st.multiselect("Curvas a mostrar (global)", options=opts_global, default=opts_global)
 
-    # ---- Modelo 1 fase (1F): índices 0..5 ----
-    labels_1F = ["C=C","Ep","FA","PFA","H2O2","HCOOH"]
-    Ys_1F = [res["1F"][i] for i in range(6)]
-    fig1 = go.Figure()
-    _add_traces_filtered(fig1, times_h, Ys_1F, labels_1F, conv_1F)
-    fig1.update_layout(title="Modelo 1-fase – Especies seleccionadas")
+    # Conversores de unidad ya definidos arriba (conv_1F, conv_2F_org, conv_2F_aq) + etiqueta de eje y
+    def _plot_model(title, t_h, Y, labels, conv_fn):
+        fig = go.Figure()
+        for lab, idx in zip(labels[0], labels[1]):
+            if lab in sel:
+                fig.add_trace(go.Scatter(x=t_h, y=conv_fn(Y[idx]), mode="lines", name=lab))
+        fig.update_layout(title=title, xaxis_title="Tiempo [h]", yaxis_title=ylab,
+                        legend_title="Especie", hovermode="x unified")
+        return fig
+
+    times_h = res["t"] / 3600.0  # una sola vez
+
+    # ---- Modelo 1-fase ----
+    fig1 = _plot_model("Modelo 1-fase – Especies seleccionadas",
+                    times_h, res["1F"], LABELS["1F"], conv_1F)
     st.plotly_chart(fig1, use_container_width=True)
 
-    # ---- Modelo 2 fases – equilibrio: org (0..3) + aq (4..5) ----
-    labels_2Feq_org = ["C=C(org)","Ep(org)","FA(org)","PFA(org)"]
-    labels_2Feq_aq  = ["H2O2(aq)","HCOOH(aq)"]
-    Ys_2Feq_org = [res["2F_eq"][i] for i in [0,1,2,3]]
-    Ys_2Feq_aq  = [res["2F_eq"][i] for i in [4,5]]
+    # ---- 2-fases (equilibrio) ----
     fig2 = go.Figure()
-    _add_traces_filtered(fig2, times_h, Ys_2Feq_org, labels_2Feq_org, conv_2F_org)
-    _add_traces_filtered(fig2, times_h, Ys_2Feq_aq,  labels_2Feq_aq,  conv_2F_aq)
-    fig2.update_layout(title="Modelo 2-fases (equilibrio) – Especies seleccionadas")
+    for part, conv in [( "2F_eq_org", conv_2F_org), ("2F_eq_aq", conv_2F_aq)]:
+        labs, idxs = LABELS[part]
+        for lab, i in zip(labs, idxs):
+            if lab in sel:
+                fig2.add_trace(go.Scatter(x=times_h, y=conv(res["2F_eq"][i]), mode="lines", name=lab))
+    fig2.update_layout(title="Modelo 2-fases (equilibrio) – Especies seleccionadas",
+                    xaxis_title="Tiempo [h]", yaxis_title=ylab, hovermode="x unified",
+                    legend_title="Especie")
     st.plotly_chart(fig2, use_container_width=True)
 
-    # ---- Modelo 2 fases – dos películas: org (0..3) + aq (4..7) ----
-    labels_2Ftf_org = ["C=C(org)","Ep(org)","FA(org)","PFA(org)"]
-    labels_2Ftf_aq  = ["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)"]
-    Ys_2Ftf_org = [res["2F_2film"][i] for i in [0,1,2,3]]
-    Ys_2Ftf_aq  = [res["2F_2film"][i] for i in [4,5,6,7]]
+    # ---- 2-fases (dos películas) ----
     fig3 = go.Figure()
-    _add_traces_filtered(fig3, times_h, Ys_2Ftf_org, labels_2Ftf_org, conv_2F_org)
-    _add_traces_filtered(fig3, times_h, Ys_2Ftf_aq,  labels_2Ftf_aq,  conv_2F_aq)
-    fig3.update_layout(title="Modelo 2-fases (dos películas) – Especies seleccionadas")
+    for part, conv in [( "2F_tf_org", conv_2F_org), ("2F_tf_aq", conv_2F_aq)]:
+        labs, idxs = LABELS[part]
+        for lab, i in zip(labs, idxs):
+            if lab in sel:
+                fig3.add_trace(go.Scatter(x=times_h, y=conv(res["2F_2film"][i]), mode="lines", name=lab))
+    fig3.update_layout(title="Modelo 2-fases (dos películas) – Especies seleccionadas",
+                    xaxis_title="Tiempo [h]", yaxis_title=ylab, hovermode="x unified",
+                    legend_title="Especie")
     st.plotly_chart(fig3, use_container_width=True)
 
-    # ---- Stacked de producción/consumo NETO basado en 2F-dos películas ----
-    # Δn = n(t_final) - n(t_inicial) (en moles de lote o concentración, según tu 'unidad')
-    labels_2F2film_all = labels_2Ftf_org + labels_2Ftf_aq
-    Ys_2F2film_all = Ys_2Ftf_org + Ys_2Ftf_aq
-    conv_for_label = {            # mapea etiqueta a conversor de fase
-        "C=C(org)": conv_2F_org, "Ep(org)": conv_2F_org, "FA(org)": conv_2F_org, "PFA(org)": conv_2F_org,
-        "H2O2(aq)": conv_2F_aq,  "HCOOH(aq)": conv_2F_aq, "PFA(aq)": conv_2F_aq, "FA(aq)": conv_2F_aq
-    }
+    # ---- Stacked Producción / Consumo neto (solo 2F-dos películas) ----
+    # Δn = n(tf) - n(t0), en la unidad elegida (moles o mol/L por fase)
+    labs_all, idx_all = LABELS["2F_tf_org"][0] + LABELS["2F_tf_aq"][0], LABELS["2F_tf_org"][1] + LABELS["2F_tf_aq"][1]
+    conv_map = {lab: (conv_2F_org if "(org)" in lab else conv_2F_aq) for lab in labs_all}
 
-    # calcular deltas solo de las especies visibles en 'sel'
-    labs_visibles, prod, cons = [], [], []
-    for lab, serie in zip(labels_2F2film_all, Ys_2F2film_all):
+    labs_vis, prod, cons = [], [], []
+    for lab, i in zip(labs_all, idx_all):
         if lab not in sel:
             continue
-        y_conv = conv_for_label[lab](serie)
+        y_conv = conv_map[lab](res["2F_2film"][i])
         d = float(y_conv[-1] - y_conv[0])
-        labs_visibles.append(lab)
+        labs_vis.append(lab)
         prod.append(d if d > 0 else 0.0)
         cons.append(d if d < 0 else 0.0)
 
     fig4 = go.Figure()
-    if labs_visibles:
-        fig4.add_trace(go.Bar(x=labs_visibles, y=prod, name="Producción"))
-        fig4.add_trace(go.Bar(x=labs_visibles, y=cons, name="Consumo"))
+    if labs_vis:
+        fig4.add_trace(go.Bar(x=labs_vis, y=prod, name="Producción"))
+        fig4.add_trace(go.Bar(x=labs_vis, y=cons, name="Consumo"))
     fig4.update_layout(
         title="2F – Dos películas: Producción / Consumo neto",
         xaxis_title="Especie",
         yaxis_title=("Δ mol" if unidad == "Moles de lote" else "Δ mol/L"),
-        barmode="relative",  # positivos arriba, negativos abajo (stacked relativo)
+        barmode="relative",
         hovermode="x unified"
     )
     st.plotly_chart(fig4, use_container_width=True)
-
 
     def pack_for_plots(res):
         t=res["t"]

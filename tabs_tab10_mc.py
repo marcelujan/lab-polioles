@@ -37,33 +37,8 @@ class Params:
     # actividades
     activities: Literal["IDEAL","UNIQUAC","UNIFAC"] = "IDEAL"
 
-@dataclass
-class P:
-    k1f: float; k1r: float; k2: float; k3: float; k4: float; k5: float; alpha: float
-    Vaq: float; Vorg: float
-    kla_PFA: float; kla_H2O2: float; Kp_PFA: float; Kp_H2O2: float
-    kla_HCOOH: float = 0.0
-    Kp_HCOOH: float  = 0.20
-    kla_H2O: float   = 0.0
-    Kp_H2O: float    = 0.02
-
 def conc(n: float, V: float) -> float:
     return n / max(V, 1e-12)
-
-def _safe_uid():
-    # tomá tu UID de donde lo guardes; si no hay, usa "local"
-    return st.session_state.get("uid") or "local"
-
-def _save_last(db, data):
-    if db is None:
-        raise RuntimeError("No hay handle 'db' para Firestore.")
-    uid = _safe_uid()
-    db.collection("users").document(uid)\
-      .collection("mc_scenarios").document("ultimo").set(data)
-
-def _collect_params(inputs):
-    # 'inputs' es un dict con TODAS las variables UI
-    return {k: (float(v) if isinstance(v, (np.floating,)) else v) for k, v in inputs.items()}
 
 def _apply_params_to_widgets(d):
     # Devuelve un diccionario con defaults si faltan claves
@@ -87,17 +62,6 @@ def _defaults():
         t_h=12.0, npts=400
     )
 
-def _params_hash(prm: dict) -> str:
-    # Solo cosas que cambian la simulación (no sliders de ejes, ni selección de series)
-    keys = ["V_soy","V_H2SO4","V_H2O","V_HCOOH","V_H2O2",
-            "k1f","k1r","k2","k3","k4","k5","alpha",
-            "frac_aq","kla_PFA","Kp_PFA","kla_H2O2","Kp_H2O2",
-            "kla_HCOOH","Kp_HCOOH","kla_H2O","Kp_H2O",
-            "t_h","npts"]
-    subset = {k: float(prm[k]) for k in keys}
-    s = json.dumps(subset, sort_keys=True)
-    return hashlib.md5(s.encode()).hexdigest()
-
 # ==== Cinética  ====
 K_FIXED = dict(
     k1f=2.0e-2,  # L·mol⁻¹·s⁻¹
@@ -108,17 +72,6 @@ K_FIXED = dict(
     k5 =5.0e-5,  # L·mol⁻¹·s⁻¹
     alpha=1.0    # –
 )
-
-# Unidades 
-K_META = {
-    "k1f":  {"unid":"L·mol⁻¹·s⁻¹", "det":"(definir)"},
-    "k1r":  {"unid":"s⁻¹",          "det":"(definir)"},
-    "k2":   {"unid":"L·mol⁻¹·s⁻¹", "det":"(definir)"},
-    "k3":   {"unid":"s⁻¹",          "det":"(definir)"},
-    "k4":   {"unid":"s⁻¹",          "det":"(definir)"},
-    "k5":   {"unid":"L·mol⁻¹·s⁻¹", "det":"(definir)"},
-    "alpha":{"unid":"–",            "det":"(definir)"},
-}
 
 def rhs_one_phase(t, y, p: Params):
     # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH]  (todo en un volumen efectivo V=Vorg+Vaq)
@@ -201,15 +154,6 @@ def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float]
     y03 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2a","HCOOHa","PFAa","FAa"]]
     sol3 = solve_ivp(lambda t,y: rhs_two_phase_twofilm(t,y,p), t_span, y03, t_eval=t_eval, method="LSODA")
     return {"t": t_eval, "1F": sol1.y, "2F_eq": sol2.y, "2F_2film": sol3.y}
-
-
-def _add_traces_filtered(fig, t, Ys, labels, conv_fn):
-    for y, lab in zip(Ys, labels):
-        if lab in sel:
-            fig.add_trace(go.Scatter(x=t, y=conv_fn(y), mode="lines", name=lab))
-    fig.update_layout(xaxis_title="Tiempo [h]", yaxis_title=ylab,
-                    legend_title="Especie", hovermode="x unified")
-
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     if "mc_params" not in st.session_state:
@@ -310,21 +254,16 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # ——— Ecuaciones de balance (modelo 2-fases) ———
     st.markdown("**Modelo 2-fases**")
-    st.latex(r"\frac{dC_{H_2O_2,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} - k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O_2}^{TM}}{V_{aq}}\tag{R6}")
-    st.latex(r"\frac{dC_{H_2O_2,org}}{dt} = +\,\frac{\dot n_{H_2O_2}^{TM}}{V_{org}} - k_{4}\,C_{H_2O_2,org}\tag{R7}")
-
-    st.latex(r"\frac{dC_{HCOOH,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} + k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{HCOOH}^{TM}}{V_{aq}}\tag{R8}")
-    st.latex(r"\frac{dC_{HCOOH,org}}{dt} = +\,\frac{\dot n_{HCOOH}^{TM}}{V_{org}}\tag{R9}")
-
-    st.latex(r"\frac{dC_{PFA,aq}}{dt} = +\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} - k_{1r}\,C_{PFA,aq} - k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{PFA}^{TM}}{V_{aq}}\tag{R10}")
-    st.latex(r"\frac{dC_{PFA,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} \;+\; \frac{\dot n_{PFA}^{TM}}{V_{org}}\tag{R11}")
-
-    st.latex(r"\frac{dC_{C{=}C,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org}\tag{R12}")
-    st.latex(r"\frac{dC_{Ep,org}}{dt} = +\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} - k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R13}")
-
-    st.latex(r"\frac{dC_{H_2O,aq}}{dt} = +\,k_{1r}\,C_{PFA,aq} + k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O}^{TM}}{V_{aq}}\tag{R14}")
-    st.latex(r"\frac{dC_{H_2O,org}}{dt} = +\,\frac{\dot n_{H_2O}^{TM}}{V_{org}} \;-\; k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R15}")
-
+    st.latex(r"\\frac{dC_{H_2O_2,aq}}{dt} = -k_{1f}C_{HCOOH,aq}C_{H_2O_2,aq} + k_{1r}C_{PFA,aq} - k_{4}C_{H_2O_2,aq} - \\frac{\\dot n_{H_2O_2}^{TM}}{V_{aq}}")
+    st.latex(r"\\frac{dC_{H_2O_2,org}}{dt} = +\\frac{\\dot n_{H_2O_2}^{TM}}{V_{org}} - k_{4}C_{H_2O_2,org}")
+    st.latex(r"\\frac{dC_{HCOOH,aq}}{dt} = -k_{1f}C_{HCOOH,aq}C_{H_2O_2,aq} + k_{1r}C_{PFA,aq} + k_{3}C_{PFA,aq} - \\frac{\\dot n_{HCOOH}^{TM}}{V_{aq}}")
+    st.latex(r"\\frac{dC_{HCOOH,org}}{dt} = +\\frac{\\dot n_{HCOOH}^{TM}}{V_{org}}")
+    st.latex(r"\\frac{dC_{PFA,aq}}{dt} = +k_{1f}C_{HCOOH,aq}C_{H_2O_2,aq} - k_{1r}C_{PFA,aq} - k_{3}C_{PFA,aq} - \\frac{\\dot n_{PFA}^{TM}}{V_{aq}}")
+    st.latex(r"\\frac{dC_{PFA,org}}{dt} = -k_{2}C_{PFA,org}C_{C{=}C,org} + \\frac{\\dot n_{PFA}^{TM}}{V_{org}}")
+    st.latex(r"\\frac{dC_{C{=}C,org}}{dt} = -k_{2}C_{PFA,org}C_{C{=}C,org}")
+    st.latex(r"\\frac{dC_{Ep,org}}{dt} = +k_{2}C_{PFA,org}C_{C{=}C,org} - k_{5}C_{Ep,org}C_{H_2O,org}")
+    st.latex(r"\\frac{dC_{H_2O,aq}}{dt} = +k_{1r}C_{PFA,aq} + k_{4}C_{H_2O_2,aq} - \\frac{\\dot n_{H_2O}^{TM}}{V_{aq}}")
+    st.latex(r"\\frac{dC_{H_2O,org}}{dt} = +\\frac{\\dot n_{H_2O}^{TM}}{V_{org}} - k_{5}C_{Ep,org}C_{H_2O,org}")
     # ======================= UI: IMPORTAR JSON ===============================
     st.markdown("**Importar parámetros (JSON)**")
     up = st.file_uploader("Cargar JSON de escenario", type=["json"])
@@ -644,9 +583,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         conv_2F_org = lambda arr: arr / max(Vorg,1e-12) * Vorg
         ylab = "Concentración (mol/L)"
 
-    times_h = res["t"]/3600.0
-
-
     def _add_traces(fig, t, Ys, names, conv_fn):
         for y, name in zip(Ys, names):
             fig.add_trace(go.Scatter(x=t, y=conv_fn(y), mode="lines", name=name))
@@ -733,16 +669,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         hovermode="x unified"
     )
     st.plotly_chart(fig_acc, use_container_width=True)
-
-
-    def pack_for_plots(res):
-        t=res["t"]
-        return {
-            "t": t,
-            "1F":    {"CdC":res["1F"][0],    "Ep":res["1F"][1],    "FA":res["1F"][2],    "PFA":res["1F"][3]},
-            "2F_eq": {"CdC":res["2F_eq"][0], "Ep":res["2F_eq"][1], "FA":res["2F_eq"][2], "PFA":res["2F_eq"][3]},
-            "2F_2film":{"CdC":res["2F_2film"][0],"Ep":res["2F_2film"][1],"FA":res["2F_2film"][2],"PFA":res["2F_2film"][3]},
-        }
 
     # Pie: simplificaciones
     st.markdown("""

@@ -254,16 +254,21 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # ——— Ecuaciones de balance (modelo 2-fases) ———
     st.markdown("**Modelo 2-fases**")
-    st.latex(r"\\frac{dC_{H_2O_2,aq}}{dt} = -k_{1f}C_{HCOOH,aq}C_{H_2O_2,aq} + k_{1r}C_{PFA,aq} - k_{4}C_{H_2O_2,aq} - \\frac{\\dot n_{H_2O_2}^{TM}}{V_{aq}}")
-    st.latex(r"\\frac{dC_{H_2O_2,org}}{dt} = +\\frac{\\dot n_{H_2O_2}^{TM}}{V_{org}} - k_{4}C_{H_2O_2,org}")
-    st.latex(r"\\frac{dC_{HCOOH,aq}}{dt} = -k_{1f}C_{HCOOH,aq}C_{H_2O_2,aq} + k_{1r}C_{PFA,aq} + k_{3}C_{PFA,aq} - \\frac{\\dot n_{HCOOH}^{TM}}{V_{aq}}")
-    st.latex(r"\\frac{dC_{HCOOH,org}}{dt} = +\\frac{\\dot n_{HCOOH}^{TM}}{V_{org}}")
-    st.latex(r"\\frac{dC_{PFA,aq}}{dt} = +k_{1f}C_{HCOOH,aq}C_{H_2O_2,aq} - k_{1r}C_{PFA,aq} - k_{3}C_{PFA,aq} - \\frac{\\dot n_{PFA}^{TM}}{V_{aq}}")
-    st.latex(r"\\frac{dC_{PFA,org}}{dt} = -k_{2}C_{PFA,org}C_{C{=}C,org} + \\frac{\\dot n_{PFA}^{TM}}{V_{org}}")
-    st.latex(r"\\frac{dC_{C{=}C,org}}{dt} = -k_{2}C_{PFA,org}C_{C{=}C,org}")
-    st.latex(r"\\frac{dC_{Ep,org}}{dt} = +k_{2}C_{PFA,org}C_{C{=}C,org} - k_{5}C_{Ep,org}C_{H_2O,org}")
-    st.latex(r"\\frac{dC_{H_2O,aq}}{dt} = +k_{1r}C_{PFA,aq} + k_{4}C_{H_2O_2,aq} - \\frac{\\dot n_{H_2O}^{TM}}{V_{aq}}")
-    st.latex(r"\\frac{dC_{H_2O,org}}{dt} = +\\frac{\\dot n_{H_2O}^{TM}}{V_{org}} - k_{5}C_{Ep,org}C_{H_2O,org}")
+    st.latex(r"\frac{dC_{H_2O_2,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} - k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O_2}^{TM}}{V_{aq}}\tag{R6}")
+    st.latex(r"\frac{dC_{H_2O_2,org}}{dt} = +\,\frac{\dot n_{H_2O_2}^{TM}}{V_{org}} - k_{4}\,C_{H_2O_2,org}\tag{R7}")
+
+    st.latex(r"\frac{dC_{HCOOH,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} + k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{HCOOH}^{TM}}{V_{aq}}\tag{R8}")
+    st.latex(r"\frac{dC_{HCOOH,org}}{dt} = +\,\frac{\dot n_{HCOOH}^{TM}}{V_{org}}\tag{R9}")
+
+    st.latex(r"\frac{dC_{PFA,aq}}{dt} = +\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} - k_{1r}\,C_{PFA,aq} - k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{PFA}^{TM}}{V_{aq}}\tag{R10}")
+    st.latex(r"\frac{dC_{PFA,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} \;+\; \frac{\dot n_{PFA}^{TM}}{V_{org}}\tag{R11}")
+
+    st.latex(r"\frac{dC_{C{=}C,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org}\tag{R12}")
+    st.latex(r"\frac{dC_{Ep,org}}{dt} = +\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} - k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R13}")
+
+    st.latex(r"\frac{dC_{H_2O,aq}}{dt} = +\,k_{1r}\,C_{PFA,aq} + k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O}^{TM}}{V_{aq}}\tag{R14}")
+    st.latex(r"\frac{dC_{H_2O,org}}{dt} = +\,\frac{\dot n_{H_2O}^{TM}}{V_{org}} \;-\; k_{5}\,C_{Ep,org}\,C_{H_2O,org}\tag{R15}")
+
     # ======================= UI: IMPORTAR JSON ===============================
     st.markdown("**Importar parámetros (JSON)**")
     up = st.file_uploader("Cargar JSON de escenario", type=["json"])

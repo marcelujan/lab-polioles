@@ -21,6 +21,9 @@ class Params:
     k1f: float = 2.0e-2
     k1r: float = 1.0e-3
     k2:  float = 1.0e-2
+    k3: float = 1.0e-4 # PFA → HCOOH
+    k4: float = 2.0e-5 # H2O2 → H2O
+    alpha: float = 1.0
     # aperturas en orgánica
     k_FA:  float = 2.0e-4   # Ep + 2*FA
     k_PFA: float = 1.0e-4   # Ep + 2*PFA
@@ -74,72 +77,90 @@ K_FIXED = dict(
 )
 
 def rhs_one_phase(t, y, p: Params):
-    # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH]  (todo en un volumen efectivo V=Vorg+Vaq)
+    # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH] (todo en V=Vorg+Vaq)
     n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH = y
     V = p.Vorg + p.Vaq
     C_CdC, C_Ep, C_FA, C_PFA, C_H2O2, C_HCOOH = [conc(n, V) for n in y]
-    r1f = p.k1f * C_H2O2 * C_HCOOH
+    r1f = p.k1f * C_H2O2 * C_HCOOH * p.alpha
     r1r = p.k1r * C_PFA
-    r_epox = p.k2 * C_PFA * C_CdC
-    r_open_FA  = p.k_FA  * C_Ep * (C_FA**2)
-    r_open_PFA = p.k_PFA * C_Ep * (C_PFA**2)
+    r_epox = p.k2 * C_PFA * C_CdC * p.alpha
+    r_open_FA = p.k_FA * C_Ep * (C_FA**2) * p.alpha
+    r_open_PFA = p.k_PFA * C_Ep * (C_PFA**2) * p.alpha
+    r3 = p.k3 * C_PFA # PFA → HCOOH
+    r4 = p.k4 * C_H2O2 # H2O2 → H2O (no se trackea H2O en 1F)
     dn_CdC = - r_epox * V
-    dn_Ep  = ( r_epox - r_open_FA - r_open_PFA ) * V
-    dn_FA  = (-r1f + r1r + r_epox) * V
-    dn_PFA = ( r1f - r1r - r_epox - r_open_PFA ) * V
-    dn_H2O2  = - r1f * V
-    dn_HCOOH = (-r1f + r1r + r_epox) * V
+    dn_Ep = ( r_epox - r_open_FA - r_open_PFA ) * V
+    dn_FA = (-r1f + r1r + r_epox + r3) * V
+    dn_PFA = ( r1f - r1r - r_epox - r_open_PFA - r3 ) * V
+    dn_H2O2 = - (r1f + r4) * V
+    dn_HCOOH = (-r1f + r1r + r_epox + r3) * V
     return [dn_CdC, dn_Ep, dn_FA, dn_PFA, dn_H2O2, dn_HCOOH]
 
 def rhs_two_phase_eq(t,y,p:Params):
     n_CdC,n_Ep,n_FAo,n_PFAo,n_H2O2a,n_HCOOHa = y
     CCo,Ep,FAo,PFAo = [conc(v,p.Vorg) for v in [n_CdC,n_Ep,n_FAo,n_PFAo]]
     H2O2a,HCOOHa    = [conc(v,p.Vaq)  for v in [n_H2O2a,n_HCOOHa]]
-    PFAa = PFAo / max(p.Kp_PFA,   1e-12)
-
-    r1f = p.k1f*H2O2a*HCOOHa
+    PFAa = PFAo / max(p.Kp_PFA, 1e-12)
+    r1f = p.k1f*H2O2a*HCOOHa * p.alpha
     r1r = p.k1r*PFAa
-    r_epox     = p.k2*PFAo*CCo
-    r_open_FA  = p.k_FA  * Ep * (FAo**2)
-    r_open_PFA = p.k_PFA * Ep * (PFAo**2)
+    r_epox = p.k2*PFAo*CCo * p.alpha
+    r_open_FA = p.k_FA * Ep * (FAo**2) * p.alpha
+    r_open_PFA = p.k_PFA * Ep * (PFAo**2) * p.alpha
+    r3 = p.k3 * PFAa # en fase acuosa
+    r4 = p.k4 * H2O2a
 
     # ¡OJO con los volúmenes!
     dn_CdC   = - r_epox * p.Vorg
     dn_Ep    = ( r_epox - r_open_FA - r_open_PFA ) * p.Vorg
-    dn_FAo   = (-r1f + r1r) * p.Vaq + r_epox * p.Vorg
-    dn_PFAo  = ( r1f - r1r) * p.Vaq - r_epox * p.Vorg - r_open_PFA * p.Vorg
-    dn_H2O2a = - r1f * p.Vaq
-    dn_HCOOHa= (-r1f + r1r) * p.Vaq + r_epox * p.Vorg
+    dn_FAo = (-r1f + r1r + r3) * p.Vaq + r_epox * p.Vorg
+    dn_PFAo = ( r1f - r1r - r3) * p.Vaq - r_epox * p.Vorg - r_open_PFA * p.Vorg
+    dn_H2O2a = - (r1f + r4) * p.Vaq
+    dn_HCOOHa= (-r1f + r1r + r3) * p.Vaq + r_epox * p.Vorg
     return [dn_CdC,dn_Ep,dn_FAo,dn_PFAo,dn_H2O2a,dn_HCOOHa]
 
 def rhs_two_phase_twofilm(t, y, p: Params):
-    # y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa, n_PFAa, n_FAa]
-    n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa, n_PFAa, n_FAa = y
+    # y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2o, n_H2Oo, n_H2O2a, n_HCOOHa, n_PFAa, n_FAa, n_H2Oa]
+    (n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2o, n_H2Oo,
+    n_H2O2a, n_HCOOHa, n_PFAa, n_FAa, n_H2Oa) = y
+    # orgánico
     C_CdC = conc(n_CdC, p.Vorg); C_Ep = conc(n_Ep, p.Vorg)
     C_FAo = conc(n_FAo, p.Vorg); C_PFAo = conc(n_PFAo, p.Vorg)
+    C_H2O2o = conc(n_H2O2o, p.Vorg); C_H2Oo = conc(n_H2Oo, p.Vorg)
+    # acuoso
     C_H2O2a = conc(n_H2O2a, p.Vaq); C_HCOOHa = conc(n_HCOOHa, p.Vaq)
-    C_PFAa = conc(n_PFAa, p.Vaq);   C_FAa   = conc(n_FAa, p.Vaq)
-    # transferencia  (C_org* = Kp * C_aq)
-    C_PFAo_star = p.Kp_PFA  * C_PFAa
-    C_FAo_star  = p.Kp_HCOOH* C_FAa
-    J_PFA = p.kla_PFA  * (C_PFAo_star - C_PFAo) * p.Vorg
-    J_FA  = p.kla_HCOOH* (C_FAo_star  - C_FAo ) * p.Vorg
+    C_PFAa = conc(n_PFAa, p.Vaq); C_FAa = conc(n_FAa, p.Vaq)
+    C_H2Oa = conc(n_H2Oa, p.Vaq)
+    # transferencia (C_org* = Kp * C_aq)
+    C_PFAo_star = p.Kp_PFA * C_PFAa
+    C_FAo_star = p.Kp_HCOOH * C_FAa
+    C_H2O2o_st = p.Kp_H2O2 * C_H2O2a
+    C_H2Oo_st = p.Kp_H2O * C_H2Oa
+    J_PFA = p.kla_PFA * (C_PFAo_star - C_PFAo) * p.Vorg
+    J_FA = p.kla_HCOOH * (C_FAo_star - C_FAo ) * p.Vorg
+    J_H2O2 = p.kla_H2O2 * (C_H2O2o_st - C_H2O2o) * p.Vorg
+    J_H2O = p.kla_H2O * (C_H2Oo_st - C_H2Oo ) * p.Vorg
     # reacciones
-    r1f = p.k1f * C_H2O2a * C_HCOOHa
+    r1f = p.k1f * C_H2O2a * C_HCOOHa * p.alpha
     r1r = p.k1r * C_PFAa
-    r_epox = p.k2 * C_PFAo * C_CdC
-    r_open_FA  = p.k_FA  * C_Ep * (C_FAo**2)
-    r_open_PFA = p.k_PFA * C_Ep * (C_PFAo**2)
+    r_epox = p.k2 * C_PFAo * C_CdC * p.alpha
+    r_open_FA = p.k_FA * C_Ep * (C_FAo**2) * p.alpha
+    r_open_PFA = p.k_PFA * C_Ep * (C_PFAo**2) * p.alpha
+    r3 = p.k3 * C_PFAa
+    r4a = p.k4 * C_H2O2a
+    r4o = p.k4 * C_H2O2o
     # balances en MOLES
     dn_CdC = - r_epox * p.Vorg
     dn_Ep  = ( r_epox - r_open_FA - r_open_PFA ) * p.Vorg
     dn_PFAo= - r_epox*p.Vorg - r_open_PFA*p.Vorg + J_PFA
     dn_FAo = + r_epox*p.Vorg + J_FA
-    dn_H2O2a  = - r1f*p.Vaq
-    dn_HCOOHa = (-r1f + r1r)*p.Vaq
-    dn_PFAa   = ( r1f - r1r)*p.Vaq - J_PFA
-    dn_FAa    = (-r1f + r1r)*p.Vaq - J_FA
-    return [dn_CdC, dn_Ep, dn_FAo, dn_PFAo, dn_H2O2a, dn_HCOOHa, dn_PFAa, dn_FAa]
+    dn_H2O2o = - r4o*p.Vorg + J_H2O2
+    dn_H2Oo = + r4o*p.Vorg + J_H2O
+    dn_H2O2a = - (r1f + r4a)*p.Vaq - J_H2O2
+    dn_HCOOHa = (-r1f + r1r + r3)*p.Vaq
+    dn_PFAa = ( r1f - r1r - r3)*p.Vaq - J_PFA
+    dn_FAa = (-r1f + r1r + r3)*p.Vaq - J_FA
+    dn_H2Oa = + r4a*p.Vaq - J_H2O
+    return [dn_CdC, dn_Ep, dn_FAo, dn_PFAo, dn_H2O2o, dn_H2Oo, dn_H2O2a, dn_HCOOHa, dn_PFAa, dn_FAa, dn_H2Oa]
 
 
 def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float], npts: int = 400):
@@ -150,8 +171,8 @@ def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float]
     # 2 fases eq
     y02 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2a","HCOOHa"]]
     sol2 = solve_ivp(lambda t,y: rhs_two_phase_eq(t,y,p), t_span, y02, t_eval=t_eval, method="LSODA")
-    # 2 fases 2 films
-    y03 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2a","HCOOHa","PFAa","FAa"]]
+    # 2 fases 2 films (con H2O2o y H2O en ambas fases)
+    y03 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2o","H2Oo","H2O2a","HCOOHa","PFAa","FAa","H2Oa"]]
     sol3 = solve_ivp(lambda t,y: rhs_two_phase_twofilm(t,y,p), t_span, y03, t_eval=t_eval, method="LSODA")
     return {"t": t_eval, "1F": sol1.y, "2F_eq": sol2.y, "2F_2film": sol3.y}
 
@@ -553,7 +574,10 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         "H2O2a": y0_2fases[0]*Vaq,    # H2O2 acuosa
         "HCOOHa":y0_2fases[1]*Vaq,    # HCOOH acuosa
         "PFAa":  y0_2fases[2]*Vaq,    # PFA acuosa
-        "FAa":   y0_2fases[1]*Vaq     # FA acuosa (= HCOOH aq)
+        "FAa":   y0_2fases[1]*Vaq,    # FA acuosa (= HCOOH aq)
+        "H2Oa": y0_2fases[9]*Vaq,     # H2O acuosa
+        "H2O2o": 0.0*Vorg,            # H2O2 org (inicial 0)
+        "H2Oo": 0.0*Vorg              # H2O org (inicial 0)
     }
 
     # Parámetros del modelo (usa sliders/JSON de prm donde corresponda)
@@ -561,6 +585,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         T = 313.15,
         Vaq = Vaq, Vorg = Vorg,
         k1f = prm["k1f"], k1r = prm["k1r"], k2 = prm["k2"],
+        k3 = prm.get("k3", K_FIXED["k3"]),
+        k4 = prm.get("k4", K_FIXED["k4"]),
+        alpha = prm.get("alpha", K_FIXED["alpha"]),
         # aperturas en orgánica (puedes exponer sliders luego si querés)
         k_FA = 2.0e-4,
         k_PFA = 1.0e-4,
@@ -598,11 +625,12 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # === Multiselect GLOBAL (aplica a los 3 gráficos) ===
     LABELS = {
-        "1F":        (["C=C","Ep","FA","PFA","H2O2","HCOOH"],            list(range(6))),                 # 0..5
-        "2F_eq_org": (["C=C(org)","Ep(org)","FA(org)","PFA(org)"],       [0,1,2,3]),
-        "2F_eq_aq":  (["H2O2(aq)","HCOOH(aq)"],                          [4,5]),
-        "2F_tf_org": (["C=C(org)","Ep(org)","FA(org)","PFA(org)"],       [0,1,2,3]),
-        "2F_tf_aq":  (["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)"],       [4,5,6,7]),
+    "1F": (["C=C","Ep","FA","PFA","H2O2","HCOOH"], list(range(6))),
+    "2F_eq_org": (["C=C(org)","Ep(org)","FA(org)","PFA(org)"], [0,1,2,3]),
+    "2F_eq_aq": (["H2O2(aq)","HCOOH(aq)"], [4,5]),
+    # 2‑films (nuevo orden): [CdC, Ep, FAo, PFAo, H2O2o, H2Oo, H2O2a, HCOOHa, PFAa, FAa, H2Oa]
+    "2F_tf_org": (["C=C(org)","Ep(org)","FA(org)","PFA(org)","H2O2(org)","H2O(org)"], [0,1,2,3,4,5]),
+    "2F_tf_aq": (["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)","H2O(aq)"], [6,7,8,9,10]),
     }
     # orden sugerido en el selector
     opts_global = sum([LABELS["1F"][0], LABELS["2F_eq_org"][0], LABELS["2F_eq_aq"][0], LABELS["2F_tf_aq"][0]], [])
@@ -652,11 +680,10 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # ---- 2-fases (dos películas) – ACUMULADOS (Δ respecto a t0) ----
     # Usamos las mismas etiquetas e índices del gráfico 2F-2film
     labs_org, idx_org = LABELS["2F_tf_org"]
-    labs_aq,  idx_aq  = LABELS["2F_tf_aq"]
+    labs_aq, idx_aq = LABELS["2F_tf_aq"]
 
     # Mapa de conversores por etiqueta
-    conv_map = {lab: (conv_2F_org if "(org)" in lab else conv_2F_aq)
-                for lab in (labs_org + labs_aq)}
+    conv_map = {lab: (conv_2F_org if "(org)" in lab else conv_2F_aq) for lab in (labs_org + labs_aq)}
 
     fig_acc = go.Figure()
     for lab, i in zip(labs_org + labs_aq, idx_org + idx_aq):

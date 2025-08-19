@@ -143,7 +143,6 @@ def rhs_two_phase_eq(t,y,p:Params):
     CCo,Ep,FAo,PFAo = [conc(v,p.Vorg) for v in [n_CdC,n_Ep,n_FAo,n_PFAo]]
     H2O2a,HCOOHa    = [conc(v,p.Vaq)  for v in [n_H2O2a,n_HCOOHa]]
     PFAa = PFAo / max(p.Kp_PFA,   1e-12)
-    FAa  = FAo  / max(p.Kp_HCOOH, 1e-12)
 
     r1f = p.k1f*H2O2a*HCOOHa
     r1r = p.k1r*PFAa
@@ -286,14 +285,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     - R4: Descomposición del H₂O₂  
     - R5: Apertura del epóxido
     """)
-
-
-    # ───────── Esquema y ecuaciones (render LaTeX) ─────────
-    st.latex(r"\mathrm{HCOOH + H_2O_2 \xrightleftharpoons[k_{1r}]{k_{1f}} PFA + H_2O}\tag{R1 - Formación del ácido perfórmico}")
-    st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2 - Epoxidación en fase orgánica}")
-    st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3 - Descomposición del PFA}")
-    st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4 - Descomposición del H₂O₂}")
-    st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{R5 - Apertura del epóxido}")
 
     st.markdown("**Modelo 1-fase**")
     st.latex(r"""
@@ -646,25 +637,47 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     times_h = res["t"]/3600.0
 
-    def _one_fig(title, y):
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=times_h, y=y, mode="lines", name="Ep"))
-        fig.update_layout(title=title, xaxis_title="Tiempo [h]", yaxis_title=ylab,
+
+    def _add_traces(fig, t, Ys, names, conv_fn):
+        for y, name in zip(Ys, names):
+            fig.add_trace(go.Scatter(x=t, y=conv_fn(y), mode="lines", name=name))
+        fig.update_layout(xaxis_title="Tiempo [h]", yaxis_title=ylab,
                         legend_title="Especie", hovermode="x unified")
-        return fig
 
-    # Índices de Ep en cada modelo según las RHS en moles:
-    # 1F: y = [CdC, Ep, FA, PFA, H2O2, HCOOH] -> Ep = idx 1
-    # 2F-eq: y = [CdC, Ep, FAo, PFAo, H2O2a, HCOOHa] -> Ep = idx 1
-    # 2F-2films: y = [CdC, Ep, FAo, PFAo, H2O2a, HCOOHa, PFAa, FAa] -> Ep = idx 1
+    times_h = res["t"]/3600.0
 
-    fig1 = _one_fig("Modelo 1-fase",      conv_1F(res["1F"][1]))
-    fig2 = _one_fig("Modelo 2-fases (eq)", conv_2F_org(res["2F_eq"][1]))
-    fig3 = _one_fig("Modelo 2-fases (dos películas)", conv_2F_org(res["2F_2film"][1]))
-
+    # ---- Modelo 1 fase (1F) ----
+    names_1F = ["C=C","Ep","FA","PFA","H2O2","HCOOH"]   # índices 0..5 en res["1F"]
+    Ys_1F = [res["1F"][i] for i in range(6)]
+    fig1 = go.Figure()
+    _add_traces(fig1, times_h, Ys_1F, names_1F, conv_1F)
+    fig1.update_layout(title="Modelo 1-fase – Todas las especies")
     st.plotly_chart(fig1, use_container_width=True)
+
+    # ---- Modelo 2 fases – equilibrio ----
+    # org: 0..3  |  aq: 4..5   en res["2F_eq"]
+    names_2Feq_org = ["C=C(org)","Ep(org)","FA(org)","PFA(org)"]
+    names_2Feq_aq  = ["H2O2(aq)","HCOOH(aq)"]
+    Ys_2Feq_org = [res["2F_eq"][i] for i in [0,1,2,3]]
+    Ys_2Feq_aq  = [res["2F_eq"][i] for i in [4,5]]
+    fig2 = go.Figure()
+    _add_traces(fig2, times_h, Ys_2Feq_org, names_2Feq_org, conv_2F_org)
+    _add_traces(fig2, times_h, Ys_2Feq_aq,  names_2Feq_aq,  conv_2F_aq)
+    fig2.update_layout(title="Modelo 2-fases (equilibrio) – Todas las especies")
     st.plotly_chart(fig2, use_container_width=True)
+
+    # ---- Modelo 2 fases – dos películas ----
+    # org: 0..3  |  aq: 4..7   en res["2F_2film"]
+    names_2Ftf_org = ["C=C(org)","Ep(org)","FA(org)","PFA(org)"]
+    names_2Ftf_aq  = ["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)"]
+    Ys_2Ftf_org = [res["2F_2film"][i] for i in [0,1,2,3]]
+    Ys_2Ftf_aq  = [res["2F_2film"][i] for i in [4,5,6,7]]
+    fig3 = go.Figure()
+    _add_traces(fig3, times_h, Ys_2Ftf_org, names_2Ftf_org, conv_2F_org)
+    _add_traces(fig3, times_h, Ys_2Ftf_aq,  names_2Ftf_aq,  conv_2F_aq)
+    fig3.update_layout(title="Modelo 2-fases (dos películas) – Todas las especies")
     st.plotly_chart(fig3, use_container_width=True)
+
 
 
     def pack_for_plots(res):

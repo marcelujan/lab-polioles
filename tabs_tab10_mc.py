@@ -23,6 +23,7 @@ class Params:
     k2:  float = 1.0e-2
     k3: float = 1.0e-4 # PFA → HCOOH
     k4: float = 2.0e-5 # H2O2 → H2O
+    k5: float = 1.0e-5 # Apertura por agua: Ep + H2O → diol (lumped)
     alpha: float = 1.0
     # aperturas en orgánica
     k_FA:  float = 2.0e-4   # Ep + 2*FA
@@ -78,23 +79,28 @@ K_FIXED = dict(
 
 def rhs_one_phase(t, y, p: Params):
     # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH] (todo en V=Vorg+Vaq)
-    n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH = y
+    n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH, n_H2O = y
     V = p.Vorg + p.Vaq
-    C_CdC, C_Ep, C_FA, C_PFA, C_H2O2, C_HCOOH = [conc(n, V) for n in y]
+    C_CdC, C_Ep, C_FA, C_PFA, C_H2O2, C_HCOOH, C_H2O = [conc(n, V) for n in y]
     r1f = p.k1f * C_H2O2 * C_HCOOH * p.alpha
     r1r = p.k1r * C_PFA
     r_epox = p.k2 * C_PFA * C_CdC * p.alpha
+    # Aperturas por FA/PFA (lumped) + por H2O
     r_open_FA = p.k_FA * C_Ep * (C_FA**2) * p.alpha
     r_open_PFA = p.k_PFA * C_Ep * (C_PFA**2) * p.alpha
+    r_open_H2O = p.k5 * C_Ep * C_H2O * p.alpha
+    # Descomposiciones adicionales
     r3 = p.k3 * C_PFA # PFA → HCOOH
     r4 = p.k4 * C_H2O2 # H2O2 → H2O (no se trackea H2O en 1F)
     dn_CdC = - r_epox * V
-    dn_Ep = ( r_epox - r_open_FA - r_open_PFA ) * V
+    dn_Ep = ( r_epox - r_open_FA - r_open_PFA - r_open_H2O ) * V
     dn_FA = (-r1f + r1r + r_epox + r3) * V
     dn_PFA = ( r1f - r1r - r_epox - r_open_PFA - r3 ) * V
     dn_H2O2 = - (r1f + r4) * V
     dn_HCOOH = (-r1f + r1r + r_epox + r3) * V
-    return [dn_CdC, dn_Ep, dn_FA, dn_PFA, dn_H2O2, dn_HCOOH]
+    dn_H2O = ( + r4 - r_open_H2O ) * V
+    return [dn_CdC, dn_Ep, dn_FA, dn_PFA, dn_H2O2, dn_HCOOH, dn_H2O]
+
 
 def rhs_two_phase_eq(t,y,p:Params):
     n_CdC,n_Ep,n_FAo,n_PFAo,n_H2O2a,n_HCOOHa = y
@@ -166,8 +172,8 @@ def rhs_two_phase_twofilm(t, y, p: Params):
 def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float], npts: int = 400):
     t_eval = np.linspace(t_span[0], t_span[1], npts)
     # 1 fase
-    y01 = [y0[k] for k in ["CdC","Ep","FA","PFA","H2O2","HCOOH"]]
-    sol1 = solve_ivp(lambda t,y: rhs_one_phase(t,y,p), t_span, y01, t_eval=t_eval, method="LSODA")
+    y01 = [y0[k] for k in ["CdC","Ep","FA","PFA","H2O2","HCOOH","H2O"]]
+    sol1 = solve_ivp(lambda t,y: rhs_one_phase(t,y,p1), t_span, y01, t_eval=t_eval, method="LSODA")
     # 2 fases eq
     y02 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2a","HCOOHa"]]
     sol2 = solve_ivp(lambda t,y: rhs_two_phase_eq(t,y,p), t_span, y02, t_eval=t_eval, method="LSODA")
@@ -568,6 +574,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         "PFA":  y0_1F_moles["PFA"],
         "H2O2": y0_1F_moles["H2O2"],
         "HCOOH":y0_1F_moles["HCOOH"],
+        "H2O": y0_2fases[9]*Vaq,
         # clave 2F-eq / 2F-2films
         "FAo":   y0_2fases[4]*Vorg,   # HCOOH org inicial
         "PFAo":  y0_2fases[5]*Vorg,   # PFA org inicial
@@ -587,6 +594,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         k1f = prm["k1f"], k1r = prm["k1r"], k2 = prm["k2"],
         k3 = prm.get("k3", K_FIXED["k3"]),
         k4 = prm.get("k4", K_FIXED["k4"]),
+        k5 = prm.get("k5", K_FIXED["k5"]),
         alpha = prm.get("alpha", K_FIXED["alpha"]),
         # aperturas en orgánica (puedes exponer sliders luego si querés)
         k_FA = 2.0e-4,
@@ -625,7 +633,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # === Multiselect GLOBAL (aplica a los 3 gráficos) ===
     LABELS = {
-    "1F": (["C=C","Ep","FA","PFA","H2O2","HCOOH"], list(range(6))),
+    "1F": (["C=C","Ep","FA","PFA","H2O2","HCOOH","H2O"], list(range(7))),
     "2F_eq_org": (["C=C(org)","Ep(org)","FA(org)","PFA(org)"], [0,1,2,3]),
     "2F_eq_aq": (["H2O2(aq)","HCOOH(aq)"], [4,5]),
     # 2‑films (nuevo orden): [CdC, Ep, FAo, PFAo, H2O2o, H2Oo, H2O2a, HCOOHa, PFAa, FAa, H2Oa]

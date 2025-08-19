@@ -157,7 +157,7 @@ def rhs_two_phase_twofilm(t, y, p: Params):
     r4o = p.k4 * C_H2O2o
     # balances en MOLES
     dn_CdC = - r_epox * p.Vorg
-    dn_Ep  = ( r_epox - r_open_FA - r_open_PFA - r_open_H2O ) * p.Vorg
+    dn_Ep = ( r_epox - r_open_FA - r_open_PFA - r_open_H2O ) * p.Vorg
     dn_PFAo= - r_epox*p.Vorg - r_open_PFA*p.Vorg + J_PFA
     dn_FAo = + r_epox*p.Vorg + J_FA
     dn_H2O2o = - r4o*p.Vorg + J_H2O2

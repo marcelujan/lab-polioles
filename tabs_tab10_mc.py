@@ -708,33 +708,32 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                     legend_title="Especie")
     st.plotly_chart(fig3, use_container_width=True)
 
-    # ---- Stacked Producción / Consumo neto (solo 2F-dos películas) ----
-    # Δn = n(tf) - n(t0), en la unidad elegida (moles o mol/L por fase)
-    labs_all, idx_all = LABELS["2F_tf_org"][0] + LABELS["2F_tf_aq"][0], LABELS["2F_tf_org"][1] + LABELS["2F_tf_aq"][1]
-    conv_map = {lab: (conv_2F_org if "(org)" in lab else conv_2F_aq) for lab in labs_all}
+    # ---- 2-fases (dos películas) – ACUMULADOS (Δ respecto a t0) ----
+    # Usamos las mismas etiquetas e índices del gráfico 2F-2film
+    labs_org, idx_org = LABELS["2F_tf_org"]
+    labs_aq,  idx_aq  = LABELS["2F_tf_aq"]
 
-    labs_vis, prod, cons = [], [], []
-    for lab, i in zip(labs_all, idx_all):
-        if lab not in sel:
+    # Mapa de conversores por etiqueta
+    conv_map = {lab: (conv_2F_org if "(org)" in lab else conv_2F_aq)
+                for lab in (labs_org + labs_aq)}
+
+    fig_acc = go.Figure()
+    for lab, i in zip(labs_org + labs_aq, idx_org + idx_aq):
+        if lab not in sel:           # respeta el multiselect global
             continue
         y_conv = conv_map[lab](res["2F_2film"][i])
-        d = float(y_conv[-1] - y_conv[0])
-        labs_vis.append(lab)
-        prod.append(d if d > 0 else 0.0)
-        cons.append(d if d < 0 else 0.0)
+        y_acc  = y_conv - y_conv[0]  # acumulado: Δy(t) = y(t) - y(0)
+        fig_acc.add_trace(go.Scatter(x=times_h, y=y_acc, mode="lines", name=lab))
 
-    fig4 = go.Figure()
-    if labs_vis:
-        fig4.add_trace(go.Bar(x=labs_vis, y=prod, name="Producción"))
-        fig4.add_trace(go.Bar(x=labs_vis, y=cons, name="Consumo"))
-    fig4.update_layout(
-        title="2F – Dos películas: Producción / Consumo neto",
-        xaxis_title="Especie",
+    fig_acc.update_layout(
+        title="Modelo 2-fases (dos películas) – Acumulados (Δ respecto a t₀)",
+        xaxis_title="Tiempo [h]",
         yaxis_title=("Δ mol" if unidad == "Moles de lote" else "Δ mol/L"),
-        barmode="relative",
+        legend_title="Especie",
         hovermode="x unified"
     )
-    st.plotly_chart(fig4, use_container_width=True)
+    st.plotly_chart(fig_acc, use_container_width=True)
+
 
     def pack_for_plots(res):
         t=res["t"]

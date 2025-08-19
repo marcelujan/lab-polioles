@@ -303,6 +303,11 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     frac_org = V_soy_in / max(V_total_mix, 1e-12)
     frac_aq_calc = 1.0 - frac_org
 
+    # Volúmenes de fase (L)
+    V_total_L = max(V_total_mix / 1000.0, 1e-12)
+    Vaq  = max(frac_aq_calc * V_total_L, 1e-12)
+    Vorg = max(V_total_L - Vaq, 1e-12)
+
     prm["frac_aq"] = float(frac_aq_calc)
 
     # Actualizar prm para el resto de la app
@@ -459,6 +464,40 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     t_end  = float(prm["t_h"])*3600.0
     npts   = int(prm["npts"])
 
+    # ---- definir y0_1fase y V_total_L ----
+    V_total_L = Vaq + Vorg
+
+    # Estado inicial 2-fases en CONCENTRACIÓN  (aq primero, org después)
+    # Usa moles que ya calculaste: n_H2O2, n_HCOOH, n_CdC (=eq_soy), n_H2O_total
+    y0_2fases = [
+        n_H2O2 / Vaq,          # Ca_H2O2
+        n_HCOOH / Vaq,         # Ca_HCOOH
+        0.0,                   # Ca_PFA
+        0.0,                   # Co_H2O2 (inicialmente 0 en orgánico)
+        0.0,                   # Co_HCOOH
+        0.0,                   # Co_PFA
+        n_CdC / Vorg,          # Co_CdC (dobles enlaces en orgánico)
+        0.0,                   # Co_Ep
+        0.0,                   # Co_Open
+        n_H2O_total / Vaq,     # Ca_H2O  (agua total en acuosa a t=0)
+        0.0                    # Co_H2O
+    ]
+
+    # y0_2fases = [Ca_H2O2, Ca_HCOOH, Ca_PFA, Co_H2O2, Co_HCOOH, Co_PFA, Co_CdC, Co_Ep, Co_Open, Ca_H2O, Co_H2O]
+    Ca_H2O2, Ca_HCOOH, Ca_PFA, Co_H2O2, Co_HCOOH, Co_PFA, Co_CdC, Co_Ep, Co_Open, Ca_H2O, Co_H2O = y0_2fases
+
+    # Para el modelo 1F (pseudo-homogéneo) definimos una mezcla “equivalente” en el volumen total.
+    # Tomamos especies principalmente “acuosas” desde la fase aq y “orgánicas” desde org:
+    H2O2_1F = Ca_H2O2   # mol/L
+    HCOOH_1F = (Ca_HCOOH*Vaq + Co_HCOOH*Vorg) / max(V_total_L, 1e-12)  # promedio ponderado
+    PFA_1F  = (Ca_PFA*Vaq + Co_PFA*Vorg) / max(V_total_L, 1e-12)
+    CdC_1F  = Co_CdC     # mol/L (está en org)
+    Ep_1F   = Co_Ep
+    Open_1F = Co_Open
+
+    y0_1fase = [H2O2_1F, HCOOH_1F, PFA_1F, CdC_1F, Ep_1F, Open_1F]
+
+
     # 1F (usa V_total_L)   y0_1fase = [H2O2, HCOOH, PFA, C=C, Ep, Open, H2O]  (concentraciones)
     y0_1F_moles = {
         "H2O2":  y0_1fase[0]*V_total_L,
@@ -492,6 +531,21 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         "PFAa":  y0_2fases[2]*Vaq,    # PFA acuosa
         "FAa":   y0_2fases[1]*Vaq     # FA acuosa (= HCOOH aq)
     }
+
+    # Parámetros del modelo (usa sliders/JSON de prm donde corresponda)
+    par_2fases = Params(
+        T = 313.15,
+        Vaq = Vaq, Vorg = Vorg,
+        k1f = prm["k1f"], k1r = prm["k1r"], k2 = prm["k2"],
+        # aperturas en orgánica (puedes exponer sliders luego si querés)
+        k_FA = 2.0e-4,
+        k_PFA = 1.0e-4,
+        # transferencia y partición desde prm
+        kla_PFA = prm["kla_PFA"],  Kp_PFA  = prm["Kp_PFA"],
+        kla_H2O2 = prm["kla_H2O2"], Kp_H2O2 = prm["Kp_H2O2"],
+        kla_HCOOH = prm["kla_HCOOH"], Kp_HCOOH = prm["Kp_HCOOH"],
+        kla_H2O = prm["kla_H2O"],   Kp_H2O = prm["Kp_H2O"],
+    )
 
     # ===== Ejecutar los 3 modelos (usa las RHS nuevas en moles) =====
     res = simulate_models(par_2fases, y0, (0, t_end), npts=npts)
@@ -551,29 +605,27 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         dn_HCOOH = (-r1f + r1r + r_epox) * V
         return [dn_CdC, dn_Ep, dn_FA, dn_PFA, dn_H2O2, dn_HCOOH]
 
-    def rhs_two_phase_eq(t, y, p: Params):
-        # y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa]
-        n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa = y
-        C_CdC = conc(n_CdC, p.Vorg); C_Ep = conc(n_Ep, p.Vorg)
-        C_FAo = conc(n_FAo, p.Vorg); C_PFAo = conc(n_PFAo, p.Vorg)
-        C_H2O2a = conc(n_H2O2a, p.Vaq); C_HCOOHa = conc(n_HCOOHa, p.Vaq)
-        # partición instantánea (referencia acuosa)
-        C_PFAa = C_PFAo / max(p.Kp_PFA, 1e-12)
-        C_FAa  = C_FAo  / max(p.Kp_HCOOH, 1e-12)
-        # reacciones
-        r1f = p.k1f * C_H2O2a * C_HCOOHa
-        r1r = p.k1r * C_PFAa
-        r_epox = p.k2 * C_PFAo * C_CdC
-        r_open_FA  = p.k_FA  * C_Ep * (C_FAo**2)
-        r_open_PFA = p.k_PFA * C_Ep * (C_PFAo**2)
-        # balances en MOLES (fuentes donde ocurren)
-        dn_CdC = - r_epox * p.Vorg
-        dn_Ep  = ( r_epox - r_open_FA - r_open_PFA ) * p.Vorg
-        dn_FAo = (-r1f + r1r) * p.Vaq + r_epox * p.Vorg
-        dn_PFAo= ( r1f - r1r) * p.Vaq - r_epox * p.Vorg - r_open_PFA * p.Vorg
-        dn_H2O2a  = - r1f * p.Vaq
-        dn_HCOOHa = (-r1f + r1r) * p.Vaq + r_epox * p.Vorg
-        return [dn_CdC, dn_Ep, dn_FAo, dn_PFAo, dn_H2O2a, dn_HCOOHa]
+    def rhs_two_phase_eq(t,y,p:Params):
+        n_CdC,n_Ep,n_FAo,n_PFAo,n_H2O2a,n_HCOOHa = y
+        CCo,Ep,FAo,PFAo = [conc(v,p.Vorg) for v in [n_CdC,n_Ep,n_FAo,n_PFAo]]
+        H2O2a,HCOOHa    = [conc(v,p.Vaq)  for v in [n_H2O2a,n_HCOOHa]]
+        PFAa = PFAo / max(p.Kp_PFA,   1e-12)
+        FAa  = FAo  / max(p.Kp_HCOOH, 1e-12)
+
+        r1f = p.k1f*H2O2a*HCOOHa
+        r1r = p.k1r*PFAa
+        r_epox     = p.k2*PFAo*CCo
+        r_open_FA  = p.k_FA  * Ep * (FAo**2)
+        r_open_PFA = p.k_PFA * Ep * (PFAo**2)
+
+        # ¡OJO con los volúmenes!
+        dn_CdC   = - r_epox * p.Vorg
+        dn_Ep    = ( r_epox - r_open_FA - r_open_PFA ) * p.Vorg
+        dn_FAo   = (-r1f + r1r) * p.Vaq + r_epox * p.Vorg
+        dn_PFAo  = ( r1f - r1r) * p.Vaq - r_epox * p.Vorg - r_open_PFA * p.Vorg
+        dn_H2O2a = - r1f * p.Vaq
+        dn_HCOOHa= (-r1f + r1r) * p.Vaq + r_epox * p.Vorg
+        return [dn_CdC,dn_Ep,dn_FAo,dn_PFAo,dn_H2O2a,dn_HCOOHa]
 
     def rhs_two_phase_twofilm(t, y, p: Params):
         # y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa, n_PFAa, n_FAa]
@@ -626,156 +678,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             "2F_eq": {"CdC":res["2F_eq"][0], "Ep":res["2F_eq"][1], "FA":res["2F_eq"][2], "PFA":res["2F_eq"][3]},
             "2F_2film":{"CdC":res["2F_2film"][0],"Ep":res["2F_2film"][1],"FA":res["2F_2film"][2],"PFA":res["2F_2film"][3]},
         }
-
-
-    # ========================= BOTONES: SIM, GUARDAR, EXPORT =================
-    cbtn = st.columns([1,1,1,1.2])
-    run_clicked  = cbtn[0].button("▶ Ejecutar")
-    save_clicked = cbtn[1].button("💾 Guardar (Firebase)")
-    export_clicked = cbtn[2].button("📤 Exportar JSON")
-    reset_clicked  = cbtn[3].button("↺ Reset a valores por defecto")
-
-    # Export JSON
-    if export_clicked:
-        js = json.dumps(_collect_params(prm), indent=2)
-        st.download_button("Descargar parámetros (JSON)", js, file_name="mc_params.json", mime="application/json")
-
-    if reset_clicked:
-        st.session_state["mc_params"] = _defaults()
-        st.experimental_rerun()
-
-    # Guardar “último” en Firestore
-    if save_clicked:
-        try:
-            _save_last(db, _collect_params(prm))
-            st.success("Guardado en Firebase: users/{uid}/mc_scenarios/ultimo")
-        except Exception as e:
-            st.warning(f"No se pudo guardar en Firestore: {e}")
-
-    def _plot_all_one_figure(times_h, curves, title, y_label):
-        fig = go.Figure()
-        for name, y in curves.items():
-            fig.add_trace(go.Scatter(x=times_h, y=y, mode="lines", name=name))
-        fig.update_layout(title=title, xaxis_title="Tiempo [h]", yaxis_title=y_label,
-                        legend_title="Especie", hovermode="x unified")
-        return fig
-
-    # Simulación
-    if run_clicked:
-       # 1) Resolver ODEs (siempre ambos modelos)
-        st.session_state["mc_last_hash"] = _params_hash(prm)
-        t_end  = float(prm["t_h"])*3600.0
-        t_eval = np.linspace(0, t_end, int(prm["npts"]))
-        sol1 = solve_ivp(lambda t,Y: rhs_1phase(t,Y,par_1fase), [0,t_end], y0_1fase, t_eval=t_eval,
-                        method="LSODA", rtol=1e-7, atol=1e-9)
-        sol2 = solve_ivp(lambda t,Y: rhs_2phase(t,Y,par_2fases), [0,t_end], y0_2fases, t_eval=t_eval,
-                        method="LSODA", rtol=1e-7, atol=1e-9)
-        st.session_state["mc_sol1"] = sol1
-        st.session_state["mc_sol2"] = sol2    
-
-    have_cache = ("mc_sol1" in st.session_state) and ("mc_sol2" in st.session_state)
-    same_hash  = (st.session_state.get("mc_last_hash") == _params_hash(prm))
-    if have_cache and same_hash:
-        sol1 = st.session_state["mc_sol1"]
-        sol2 = st.session_state["mc_sol2"]
-    
-        # 2) Controles de visualización (siempre presentes)
-        colu1 = st.columns([1.6])
-        unidad = colu1[0].radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
-
-        # Conversión según unidad
-        if unidad == "Moles de lote":
-            conv1    = lambda c: c*par_1fase.Vaq
-            conv_aq  = lambda c: c*par_2fases.Vaq
-            conv_org = lambda c: c*par_2fases.Vorg
-            ylab = "Cantidad (moles)"
-        else:
-            conv1 = conv_aq = conv_org = (lambda c: c)
-            ylab = "Concentración (mol/L)"
-
-        # Curvas convertidas
-        curves1 = {
-            "H₂O₂":     conv1(sol1.y[0]),
-            "PFA":      conv1(sol1.y[2]),
-            "C=C":      conv1(sol1.y[3]),
-            "Epóxido":  conv1(sol1.y[4]),
-            "Apertura": conv1(sol1.y[5]),
-        }
-        curves2 = {
-            "H₂O₂ (aq)":      conv_aq(sol2.y[0]),
-            "H₂O₂ (org)":     conv_org(sol2.y[3]),
-            "HCOOH (aq)":     conv_aq(sol2.y[1]),
-            "HCOOH (org)":    conv_org(sol2.y[4]),
-            "PFA (aq)":       conv_aq(sol2.y[2]),
-            "PFA (org)":      conv_org(sol2.y[5]),
-            "C=C (org)":      conv_org(sol2.y[6]),
-            "Epóxido (org)":  conv_org(sol2.y[7]),
-            "Apertura (org)": conv_org(sol2.y[8]),
-            "H₂O (aq)":       conv_aq(sol2.y[9]),
-            "H₂O (org)":      conv_org(sol2.y[10]),
-        }
-
-        # Filtros de series (primero se elige, luego auto-limites)
-        all_keys_1 = list(curves1.keys())
-        sel_keys_1 = st.multiselect("Series (Modelo 1-fase)", options=all_keys_1, default=all_keys_1, key="sel_1fase")
-
-        all_keys_2 = list(curves2.keys())
-        sel_keys_2 = st.multiselect("Series (Modelo 2-fases)", options=all_keys_2, default=all_keys_2, key="sel_2fases")
-
-        curves1_f = {k: v for k, v in curves1.items() if k in sel_keys_1}
-        curves2_f = {k: v for k, v in curves2.items() if k in sel_keys_2}
-
-        # Auto-límites a partir de las series seleccionadas (ignorando H2O si hay otras)
-        pool = {**curves1_f, **curves2_f}
-        pool_sin_agua = {k: v for k, v in pool.items() if "H₂O" not in k}
-        if pool_sin_agua:
-            pool = pool_sin_agua
-
-        if pool:
-            y_max_auto = float(max(np.nanmax(np.asarray(y)) for y in pool.values()))
-            y_min_auto = float(min(np.nanmin(np.asarray(y)) for y in pool.values()))
-        else:
-            y_min_auto, y_max_auto = 0.0, 1.0
-
-        # pequeño padding
-        pad = 0.05 * (y_max_auto - y_min_auto if y_max_auto > y_min_auto else 1.0)
-        t_end_h = float(prm["t_h"])
-
-        # ── 4 boxes SIEMPRE visibles, inicializados con autos ──
-        t_min_h, t_max_h = 0.0, float(prm["t_h"])
-        cax1, cax2, cax3, cax4 = st.columns(4)
-        x_min = cax1.number_input("x min [h]", value=t_min_h, step=0.5)
-        x_max = cax2.number_input("x max [h]", value=t_max_h, step=0.5)
-        y_min = cax3.number_input("y min", value=max(0.0, y_min_auto - pad))
-        y_max = cax4.number_input("y max", value=y_max_auto + pad)
-
-        # ── Saneamiento de rangos para que nunca colapsen ──
-        EPSX, EPSY = 1e-6, 1e-12
-
-        # clamp dentro del dominio simulado
-        x_min = max(t_min_h, min(x_min, t_max_h - EPSX))
-        x_max = max(x_min + EPSX, min(x_max, t_max_h))
-
-        # evitar y-span ≤ 0 y NaN/inf
-        def _isfinite(v): 
-            return np.isfinite(v) and not np.isnan(v)
-
-        if not _isfinite(y_min): y_min = 0.0
-        if not _isfinite(y_max): y_max = y_min + 1.0
-        if y_max <= y_min + EPSY:
-            y_max = y_min + max(EPSY, 0.05*max(1.0, abs(y_min)))
-
-        # ── Graficar ──
-        fig1 = _plot_all_one_figure(sol1.t/3600.0, curves1_f, "Modelo 1-fase", ylab)
-        fig2 = _plot_all_one_figure(sol2.t/3600.0, curves2_f, "Modelo 2-fases", ylab)
-
-        # aplicar SIEMPRE los límites saneados
-        fig1.update_xaxes(range=[x_min, x_max]); fig1.update_yaxes(range=[y_min, y_max])
-        fig2.update_xaxes(range=[x_min, x_max]); fig2.update_yaxes(range=[y_min, y_max])
-
-        st.plotly_chart(fig1, use_container_width=True)
-        st.plotly_chart(fig2, use_container_width=True)
-
 
     # Pie: simplificaciones
     st.markdown("""

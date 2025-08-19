@@ -202,6 +202,15 @@ def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float]
     sol3 = solve_ivp(lambda t,y: rhs_two_phase_twofilm(t,y,p), t_span, y03, t_eval=t_eval, method="LSODA")
     return {"t": t_eval, "1F": sol1.y, "2F_eq": sol2.y, "2F_2film": sol3.y}
 
+
+def _add_traces_filtered(fig, t, Ys, labels, conv_fn):
+    for y, lab in zip(Ys, labels):
+        if lab in sel:
+            fig.add_trace(go.Scatter(x=t, y=conv_fn(y), mode="lines", name=lab))
+    fig.update_layout(xaxis_title="Tiempo [h]", yaxis_title=ylab,
+                    legend_title="Especie", hovermode="x unified")
+
+
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     if "mc_params" not in st.session_state:
         st.session_state["mc_params"] = _defaults()
@@ -646,38 +655,76 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     times_h = res["t"]/3600.0
 
-    # ---- Modelo 1 fase (1F) ----
-    names_1F = ["C=C","Ep","FA","PFA","H2O2","HCOOH"]   # índices 0..5 en res["1F"]
+    # === Multiselect GLOBAL (aplica a los 3 gráficos) ===
+    opts_global = [
+        "C=C","Ep","FA","PFA","H2O2","HCOOH",         # 1F
+        "C=C(org)","Ep(org)","FA(org)","PFA(org)",    # 2F-eq / 2F-2film (org)
+        "H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)"     # 2F-eq / 2F-2film (aq)
+    ]
+    sel = st.multiselect("Curvas a mostrar (global)", options=opts_global, default=opts_global)
+
+    # ---- Modelo 1 fase (1F): índices 0..5 ----
+    labels_1F = ["C=C","Ep","FA","PFA","H2O2","HCOOH"]
     Ys_1F = [res["1F"][i] for i in range(6)]
     fig1 = go.Figure()
-    _add_traces(fig1, times_h, Ys_1F, names_1F, conv_1F)
-    fig1.update_layout(title="Modelo 1-fase – Todas las especies")
+    _add_traces_filtered(fig1, times_h, Ys_1F, labels_1F, conv_1F)
+    fig1.update_layout(title="Modelo 1-fase – Especies seleccionadas")
     st.plotly_chart(fig1, use_container_width=True)
 
-    # ---- Modelo 2 fases – equilibrio ----
-    # org: 0..3  |  aq: 4..5   en res["2F_eq"]
-    names_2Feq_org = ["C=C(org)","Ep(org)","FA(org)","PFA(org)"]
-    names_2Feq_aq  = ["H2O2(aq)","HCOOH(aq)"]
+    # ---- Modelo 2 fases – equilibrio: org (0..3) + aq (4..5) ----
+    labels_2Feq_org = ["C=C(org)","Ep(org)","FA(org)","PFA(org)"]
+    labels_2Feq_aq  = ["H2O2(aq)","HCOOH(aq)"]
     Ys_2Feq_org = [res["2F_eq"][i] for i in [0,1,2,3]]
     Ys_2Feq_aq  = [res["2F_eq"][i] for i in [4,5]]
     fig2 = go.Figure()
-    _add_traces(fig2, times_h, Ys_2Feq_org, names_2Feq_org, conv_2F_org)
-    _add_traces(fig2, times_h, Ys_2Feq_aq,  names_2Feq_aq,  conv_2F_aq)
-    fig2.update_layout(title="Modelo 2-fases (equilibrio) – Todas las especies")
+    _add_traces_filtered(fig2, times_h, Ys_2Feq_org, labels_2Feq_org, conv_2F_org)
+    _add_traces_filtered(fig2, times_h, Ys_2Feq_aq,  labels_2Feq_aq,  conv_2F_aq)
+    fig2.update_layout(title="Modelo 2-fases (equilibrio) – Especies seleccionadas")
     st.plotly_chart(fig2, use_container_width=True)
 
-    # ---- Modelo 2 fases – dos películas ----
-    # org: 0..3  |  aq: 4..7   en res["2F_2film"]
-    names_2Ftf_org = ["C=C(org)","Ep(org)","FA(org)","PFA(org)"]
-    names_2Ftf_aq  = ["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)"]
+    # ---- Modelo 2 fases – dos películas: org (0..3) + aq (4..7) ----
+    labels_2Ftf_org = ["C=C(org)","Ep(org)","FA(org)","PFA(org)"]
+    labels_2Ftf_aq  = ["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)"]
     Ys_2Ftf_org = [res["2F_2film"][i] for i in [0,1,2,3]]
     Ys_2Ftf_aq  = [res["2F_2film"][i] for i in [4,5,6,7]]
     fig3 = go.Figure()
-    _add_traces(fig3, times_h, Ys_2Ftf_org, names_2Ftf_org, conv_2F_org)
-    _add_traces(fig3, times_h, Ys_2Ftf_aq,  names_2Ftf_aq,  conv_2F_aq)
-    fig3.update_layout(title="Modelo 2-fases (dos películas) – Todas las especies")
+    _add_traces_filtered(fig3, times_h, Ys_2Ftf_org, labels_2Ftf_org, conv_2F_org)
+    _add_traces_filtered(fig3, times_h, Ys_2Ftf_aq,  labels_2Ftf_aq,  conv_2F_aq)
+    fig3.update_layout(title="Modelo 2-fases (dos películas) – Especies seleccionadas")
     st.plotly_chart(fig3, use_container_width=True)
 
+    # ---- Stacked de producción/consumo NETO basado en 2F-dos películas ----
+    # Δn = n(t_final) - n(t_inicial) (en moles de lote o concentración, según tu 'unidad')
+    labels_2F2film_all = labels_2Ftf_org + labels_2Ftf_aq
+    Ys_2F2film_all = Ys_2Ftf_org + Ys_2Ftf_aq
+    conv_for_label = {            # mapea etiqueta a conversor de fase
+        "C=C(org)": conv_2F_org, "Ep(org)": conv_2F_org, "FA(org)": conv_2F_org, "PFA(org)": conv_2F_org,
+        "H2O2(aq)": conv_2F_aq,  "HCOOH(aq)": conv_2F_aq, "PFA(aq)": conv_2F_aq, "FA(aq)": conv_2F_aq
+    }
+
+    # calcular deltas solo de las especies visibles en 'sel'
+    labs_visibles, prod, cons = [], [], []
+    for lab, serie in zip(labels_2F2film_all, Ys_2F2film_all):
+        if lab not in sel:
+            continue
+        y_conv = conv_for_label[lab](serie)
+        d = float(y_conv[-1] - y_conv[0])
+        labs_visibles.append(lab)
+        prod.append(d if d > 0 else 0.0)
+        cons.append(d if d < 0 else 0.0)
+
+    fig4 = go.Figure()
+    if labs_visibles:
+        fig4.add_trace(go.Bar(x=labs_visibles, y=prod, name="Producción"))
+        fig4.add_trace(go.Bar(x=labs_visibles, y=cons, name="Consumo"))
+    fig4.update_layout(
+        title="2F – Dos películas: Producción / Consumo neto",
+        xaxis_title="Especie",
+        yaxis_title=("Δ mol" if unidad == "Moles de lote" else "Δ mol/L"),
+        barmode="relative",  # positivos arriba, negativos abajo (stacked relativo)
+        hovermode="x unified"
+    )
+    st.plotly_chart(fig4, use_container_width=True)
 
 
     def pack_for_plots(res):

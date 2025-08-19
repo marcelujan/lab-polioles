@@ -78,7 +78,7 @@ K_FIXED = dict(
 )
 
 def rhs_one_phase(t, y, p: Params):
-    # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH] (todo en V=Vorg+Vaq)
+    # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH, n_H2O] (todo en V=Vorg+Vaq)
     n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH, n_H2O = y
     V = p.Vorg + p.Vaq
     C_CdC, C_Ep, C_FA, C_PFA, C_H2O2, C_HCOOH, C_H2O = [conc(n, V) for n in y]
@@ -151,16 +151,17 @@ def rhs_two_phase_twofilm(t, y, p: Params):
     r_epox = p.k2 * C_PFAo * C_CdC * p.alpha
     r_open_FA = p.k_FA * C_Ep * (C_FAo**2) * p.alpha
     r_open_PFA = p.k_PFA * C_Ep * (C_PFAo**2) * p.alpha
+    r_open_H2O = p.k5    * C_Ep *  C_H2Oo      * p.alpha
     r3 = p.k3 * C_PFAa
     r4a = p.k4 * C_H2O2a
     r4o = p.k4 * C_H2O2o
     # balances en MOLES
     dn_CdC = - r_epox * p.Vorg
-    dn_Ep  = ( r_epox - r_open_FA - r_open_PFA ) * p.Vorg
+    dn_Ep  = ( r_epox - r_open_FA - r_open_PFA - r_open_H2O ) * p.Vorg
     dn_PFAo= - r_epox*p.Vorg - r_open_PFA*p.Vorg + J_PFA
     dn_FAo = + r_epox*p.Vorg + J_FA
     dn_H2O2o = - r4o*p.Vorg + J_H2O2
-    dn_H2Oo = + r4o*p.Vorg + J_H2O
+    dn_H2Oo = + r4o*p.Vorg + J_H2O - r_open_H2O*p.Vorg
     dn_H2O2a = - (r1f + r4a)*p.Vaq - J_H2O2
     dn_HCOOHa = (-r1f + r1r + r3)*p.Vaq
     dn_PFAa = ( r1f - r1r - r3)*p.Vaq - J_PFA
@@ -173,7 +174,7 @@ def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float]
     t_eval = np.linspace(t_span[0], t_span[1], npts)
     # 1 fase
     y01 = [y0[k] for k in ["CdC","Ep","FA","PFA","H2O2","HCOOH","H2O"]]
-    sol1 = solve_ivp(lambda t,y: rhs_one_phase(t,y,p1), t_span, y01, t_eval=t_eval, method="LSODA")
+    sol1 = solve_ivp(lambda t,y: rhs_one_phase(t,y,p), t_span, y01, t_eval=t_eval, method="LSODA")
     # 2 fases eq
     y02 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2a","HCOOHa"]]
     sol2 = solve_ivp(lambda t,y: rhs_two_phase_eq(t,y,p), t_span, y02, t_eval=t_eval, method="LSODA")
@@ -274,7 +275,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     \dot C_{PFA}   &= \phantom{-}k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha - k_{1r} C_{PFA} - k_2 C_{PFA} C_{C{=}C}\,\alpha - k_3 C_{PFA}\\
     \dot C_{C{=}C} &= -k_{2} C_{PFA} C_{C{=}C}\,\alpha\\
     \dot C_{Ep}    &= \phantom{-}k_{2} C_{PFA} C_{C{=}C}\,\alpha - k_{5} C_{Ep} C_{H_2O}\,\alpha\\
-    \dot C_{Open}  &= \phantom{-}k_{5} C_{Ep} C_{H_2O}\,\alpha\\
     \dot C_{H_2O}  &= \phantom{-}k_{1r} C_{PFA} + k_{4} C_{H_2O_2}
     \end{aligned}
     """)
@@ -613,14 +613,14 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     colu1 = st.columns([1.6])
     unidad = colu1[0].radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
     if unidad == "Moles de lote":
-        conv_1F   = lambda arr: arr * V_total_L
-        conv_2F_aq  = lambda arr: arr * Vaq
-        conv_2F_org = lambda arr: arr * Vorg
+        conv_1F = lambda arr: arr
+        conv_2F_aq  = lambda arr: arr
+        conv_2F_org = lambda arr: arr
         ylab = "Cantidad (mol)"
     else:
-        conv_1F   = lambda arr: arr / max(V_total_L,1e-12) * V_total_L  # identidad para mantener consistencia
-        conv_2F_aq  = lambda arr: arr / max(Vaq,1e-12) * Vaq
-        conv_2F_org = lambda arr: arr / max(Vorg,1e-12) * Vorg
+        conv_1F = lambda arr: arr / max(V_total_L,1e-12)
+        conv_2F_aq  = lambda arr: arr / max(Vaq,1e-12)
+        conv_2F_org = lambda arr: arr / max(Vorg,1e-12)
         ylab = "Concentración (mol/L)"
 
     def _add_traces(fig, t, Ys, names, conv_fn):
@@ -641,7 +641,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     "2F_tf_aq": (["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)","H2O(aq)"], [6,7,8,9,10]),
     }
     # orden sugerido en el selector
-    opts_global = sum([LABELS["1F"][0], LABELS["2F_eq_org"][0], LABELS["2F_eq_aq"][0], LABELS["2F_tf_aq"][0]], [])
+    opts_global = sum([LABELS["1F"][0], LABELS["2F_eq_org"][0], LABELS["2F_eq_aq"][0], LABELS["2F_tf_org"][0], LABELS["2F_tf_aq"][0]], [])
     sel = st.multiselect("Curvas a mostrar (global)", options=opts_global, default=opts_global)
 
     # Conversores de unidad ya definidos arriba (conv_1F, conv_2F_org, conv_2F_aq) + etiqueta de eje y

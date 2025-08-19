@@ -5,10 +5,42 @@ from scipy.integrate import solve_ivp
 import plotly.graph_objects as go
 import hashlib, json
 import pandas as pd
+from typing import Literal, Dict, Tuple
+
+@dataclass
+class Params:
+    T: float = 313.15
+    Vaq: float = 0.33
+    Vorg: float = 0.40
+    # cinética
+    k1f: float = 2.0e-2
+    k1r: float = 1.0e-3
+    k2:  float = 1.0e-2
+    # aperturas en orgánica
+    k_FA:  float = 2.0e-4   # Ep + 2*FA
+    k_PFA: float = 1.0e-4   # Ep + 2*PFA
+    # transferencia (dos-películas)
+    kla_H2O2: float = 1.0e-3
+    kla_HCOOH: float = 1.0e-3
+    kla_PFA:  float = 1.0e-3
+    kla_H2O:  float = 1.0e-3
+    # partición (C_org = Kp * C_aq)
+    Kp_H2O2: float = 0.02
+    Kp_HCOOH: float = 0.20
+    Kp_PFA:  float = 0.20
+    Kp_H2O:  float = 1.0
+    # actividades
+    activities: Literal["IDEAL","UNIQUAC","UNIFAC"] = "IDEAL"
+
+def conc(n: float, V: float) -> float:
+    return n / max(V, 1e-12)
+
+
 
 MW_H2O2  = 34.0147
 MW_HCOOH = 46.0254
 MW_H2O   = 18.0153
+R = 8.314462618 # J/mol/K
 
 def _safe_uid():
     # tomá tu UID de donde lo guardes; si no hay, usa "local"
@@ -415,7 +447,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         )
     # ================================================================================
 
-
     # ======================= Simulación =====================================
     s1, s2 = st.columns(2)
     prm["t_h"]  = s1.number_input("Tiempo total [h]", value=prm["t_h"], step=0.5)
@@ -424,124 +455,177 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # Guardar en estado para exportación
     st.session_state["mc_params"] = prm
 
-    # =============== CÁLCULOS INICIALES (moles y estados) ===================
-    g_H2O2    = 0.30 * prm["V_H2O2"]               # 30 g H2O2 / 100 mL
-    n_H2O2    = g_H2O2 / MW_H2O2
-    g_HCOOH   = 0.85 * densidades["HCOOH"] * prm["V_HCOOH"]
-    n_HCOOH   = g_HCOOH / MW_HCOOH
-    g_H2O_ini = (prm["V_H2O"]*densidades["H2O"]) + \
-                0.15*(densidades["HCOOH"]*prm["V_HCOOH"]) + \
-                max(densidades["H2O2"]*prm["V_H2O2"] - g_H2O2, 0.0)
-    n_H2O     = g_H2O_ini / MW_H2O
-    n_CdC = 4.5 * (densidades["ACEITE"]*prm["V_soy"] / MW["ACEITE"])
+    # ===== y0 para los 3 modelos EN MOLES (convertimos desde tus y0_* en concentración) =====
+    t_end  = float(prm["t_h"])*3600.0
+    npts   = int(prm["npts"])
 
-    V_total_L = (prm["V_soy"] + prm["V_H2SO4"] + prm["V_H2O"] + prm["V_HCOOH"] + prm["V_H2O2"]) / 1000.0
-    # 2-fases: usar frac_aq para partición de volumen
-    Vaq       = float(prm["frac_aq"]) * V_total_L
-    Vorg      = V_total_L - Vaq
+    # 1F (usa V_total_L)   y0_1fase = [H2O2, HCOOH, PFA, C=C, Ep, Open, H2O]  (concentraciones)
+    y0_1F_moles = {
+        "H2O2":  y0_1fase[0]*V_total_L,
+        "HCOOH": y0_1fase[1]*V_total_L,
+        "PFA":   y0_1fase[2]*V_total_L,
+        "CdC":   y0_1fase[3]*V_total_L,
+        "Ep":    y0_1fase[4]*V_total_L,
+        "FA":    y0_1fase[1]*V_total_L  # FA total en 1F: usamos HCOOH inicial
+    }
 
-    # ---- MODELO 1-FASE (7 vars) ----
-    # y1 = [H2O2, HCOOH, PFA, C=C, Ep, Open, H2O]
-    y0_1fase = np.array([
-        n_H2O2 / V_total_L,
-        n_HCOOH / V_total_L,
-        0.0,
-        n_CdC / V_total_L,
-        0.0, 0.0,
-        n_H2O / V_total_L
-    ])
-    par_1fase = P(
-        prm["k1f"], prm["k1r"], prm["k2"], prm["k3"], prm["k4"], prm["k5"], prm["alpha"],
-        V_total_L, 0.0,
-        0.0, 0.0, 5.0, 0.05,
-        kla_HCOOH=0.0, Kp_HCOOH=0.20, kla_H2O=0.0, Kp_H2O=0.02
-    )
+    # 2F eq / 2F 2films (usa Vaq, Vorg)
+    # y0_2fases = [
+    #   0 Ca_H2O2, 1 Ca_HCOOH, 2 Ca_PFA,
+    #   3 Co_H2O2, 4 Co_HCOOH, 5 Co_PFA,
+    #   6 Co_CdC,  7 Co_Ep,    8 Co_Open,
+    #   9 Ca_H2O,  10 Co_H2O
+    # ]
+    y0 = {
+        # clave 1F
+        "CdC":  y0_1F_moles["CdC"],
+        "Ep":   y0_1F_moles["Ep"],
+        "FA":   y0_1F_moles["FA"],
+        "PFA":  y0_1F_moles["PFA"],
+        "H2O2": y0_1F_moles["H2O2"],
+        "HCOOH":y0_1F_moles["HCOOH"],
+        # clave 2F-eq / 2F-2films
+        "FAo":   y0_2fases[4]*Vorg,   # HCOOH org inicial
+        "PFAo":  y0_2fases[5]*Vorg,   # PFA org inicial
+        "H2O2a": y0_2fases[0]*Vaq,    # H2O2 acuosa
+        "HCOOHa":y0_2fases[1]*Vaq,    # HCOOH acuosa
+        "PFAa":  y0_2fases[2]*Vaq,    # PFA acuosa
+        "FAa":   y0_2fases[1]*Vaq     # FA acuosa (= HCOOH aq)
+    }
 
-    # ---- MODELO 2-FASES (11 vars) ----
-    # Orden en y2 y en rhs_2phase:
-    # [0] Ca_H2O2, [1] Ca_HCOOH, [2] Ca_PFA,
-    # [3] Co_H2O2, [4] Co_HCOOH, [5] Co_PFA,
-    # [6] Co_CdC,  [7] Co_Ep,    [8] Co_Open,
-    # [9] Ca_H2O,  [10] Co_H2O   << NUEVO
-    y0_2fases = np.array([
-        n_H2O2 / Vaq,            # Ca_H2O2
-        n_HCOOH / Vaq,           # Ca_HCOOH
-        0.0,                     # Ca_PFA
-        0.0,                     # Co_H2O2
-        0.0,                     # Co_HCOOH
-        0.0,                     # Co_PFA
-        n_CdC / Vorg,            # Co_CdC
-        0.0, 0.0,                # Co_Ep, Co_Open
-        n_H2O / Vaq,             # Ca_H2O
-        0.0                      # Co_H2O
-    ])
-    par_2fases = P(
-        prm["k1f"], prm["k1r"], prm["k2"], prm["k3"], prm["k4"], prm["k5"], prm["alpha"],
-        Vaq, Vorg,
-        prm["kla_PFA"], prm["kla_H2O2"], prm["Kp_PFA"], prm["Kp_H2O2"],
-        kla_HCOOH=prm["kla_HCOOH"], Kp_HCOOH=prm["Kp_HCOOH"],
-        kla_H2O=prm["kla_H2O"],     Kp_H2O=prm["Kp_H2O"]
-    )
+    # ===== Ejecutar los 3 modelos (usa las RHS nuevas en moles) =====
+    res = simulate_models(par_2fases, y0, (0, t_end), npts=npts)
 
-    # ========================= RHS (1-fase y 2-fases) =======================
-    def rhs_1phase(t, y, p: P):
-        H2O2, HCOOH, PFA, CdC, Ep, Open, H2O = y
-        r1f = p.k1f*HCOOH*H2O2*p.alpha; r1r=p.k1r*PFA
-        r2  = p.k2*PFA*CdC*p.alpha;     r3 = p.k3*PFA
-        r4  = p.k4*H2O2;                r5 = p.k5*Ep*H2O*p.alpha
-        return [
-            -r1f + r1r - r4,
-            -r1f + r1r + r2 + r3,
-             r1f - r1r - r2 - r3,
-            -r2,
-             r2 - r5,
-             r5,
-             r1r + r4
-        ]
+    # Unidad de graficación
+    colu1 = st.columns([1.6])
+    unidad = colu1[0].radio("Unidad", ["Moles de lote", "Concentración (mol/L)"], index=0, horizontal=True)
+    if unidad == "Moles de lote":
+        conv_1F   = lambda arr: arr * V_total_L
+        conv_2F_aq  = lambda arr: arr * Vaq
+        conv_2F_org = lambda arr: arr * Vorg
+        ylab = "Cantidad (mol)"
+    else:
+        conv_1F   = lambda arr: arr / max(V_total_L,1e-12) * V_total_L  # identidad para mantener consistencia
+        conv_2F_aq  = lambda arr: arr / max(Vaq,1e-12) * Vaq
+        conv_2F_org = lambda arr: arr / max(Vorg,1e-12) * Vorg
+        ylab = "Concentración (mol/L)"
 
-    def rhs_2phase(t, y, p: P):
-        (Ca_H2O2, Ca_HCOOH, Ca_PFA,
-        Co_H2O2, Co_HCOOH, Co_PFA,
-        Co_CdC,  Co_Ep,    Co_Open,
-        Ca_H2O,  Co_H2O) = y
+    times_h = res["t"]/3600.0
 
-        # Reacciones en acuosa
-        r1f = p.k1f*Ca_HCOOH*Ca_H2O2*p.alpha
-        r1r = p.k1r*Ca_PFA
-        r3  = p.k3*Ca_PFA
-        r4a = p.k4*Ca_H2O2              # descomp. H2O2 (aq)
+    def _one_fig(title, y):
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=times_h, y=y, mode="lines", name="Ep"))
+        fig.update_layout(title=title, xaxis_title="Tiempo [h]", yaxis_title=ylab,
+                        legend_title="Especie", hovermode="x unified")
+        return fig
 
-        # Reacciones en orgánica
-        r2  = p.k2*Co_PFA*Co_CdC*p.alpha
-        r5  = p.k5*Co_Ep*Co_H2O*p.alpha  # << AHORA usa agua orgánica
-        r4o = p.k4*Co_H2O2               # descomp. H2O2 (org)
+    # Índices de Ep en cada modelo según las RHS en moles:
+    # 1F: y = [CdC, Ep, FA, PFA, H2O2, HCOOH] -> Ep = idx 1
+    # 2F-eq: y = [CdC, Ep, FAo, PFAo, H2O2a, HCOOHa] -> Ep = idx 1
+    # 2F-2films: y = [CdC, Ep, FAo, PFAo, H2O2a, HCOOHa, PFAa, FAa] -> Ep = idx 1
 
-        # Transferencias (dos-películas)
-        TM_H2O2  = p.kla_H2O2 *(Ca_H2O2 - Co_H2O2 / p.Kp_H2O2)
-        TM_HCOOH = p.kla_HCOOH*(Ca_HCOOH - Co_HCOOH/ p.Kp_HCOOH)
-        TM_PFA   = p.kla_PFA  *(Ca_PFA   - Co_PFA   / p.Kp_PFA)
-        TM_H2O   = p.kla_H2O  *(Ca_H2O   - Co_H2O   / p.Kp_H2O)  # << NUEVO
+    fig1 = _one_fig("Modelo 1-fase",      conv_1F(res["1F"][1]))
+    fig2 = _one_fig("Modelo 2-fases (eq)", conv_2F_org(res["2F_eq"][1]))
+    fig3 = _one_fig("Modelo 2-fases (dos películas)", conv_2F_org(res["2F_2film"][1]))
 
-        # Balances
-        dCa_H2O2  = -r1f + r1r - r4a - TM_H2O2
-        dCa_HCOOH = -r1f + r1r + r3  - TM_HCOOH
-        dCa_PFA   =  r1f - r1r - r3  - TM_PFA
+    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig3, use_container_width=True)
 
-        dCo_H2O2  = +TM_H2O2 - r4o
-        dCo_HCOOH = +TM_HCOOH
-        dCo_PFA   = +TM_PFA - r2
 
-        dCo_CdC   = -r2
-        dCo_Ep    =  r2 - r5
-        dCo_Open  =  r5
+    def rhs_one_phase(t, y, p: Params):
+        # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH]  (todo en un volumen efectivo V=Vorg+Vaq)
+        n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH = y
+        V = p.Vorg + p.Vaq
+        C_CdC, C_Ep, C_FA, C_PFA, C_H2O2, C_HCOOH = [conc(n, V) for n in y]
+        r1f = p.k1f * C_H2O2 * C_HCOOH
+        r1r = p.k1r * C_PFA
+        r_epox = p.k2 * C_PFA * C_CdC
+        r_open_FA  = p.k_FA  * C_Ep * (C_FA**2)
+        r_open_PFA = p.k_PFA * C_Ep * (C_PFA**2)
+        dn_CdC = - r_epox * V
+        dn_Ep  = ( r_epox - r_open_FA - r_open_PFA ) * V
+        dn_FA  = (-r1f + r1r + r_epox) * V
+        dn_PFA = ( r1f - r1r - r_epox - r_open_PFA ) * V
+        dn_H2O2  = - r1f * V
+        dn_HCOOH = (-r1f + r1r + r_epox) * V
+        return [dn_CdC, dn_Ep, dn_FA, dn_PFA, dn_H2O2, dn_HCOOH]
 
-        dCa_H2O   =  r1r + r4a - TM_H2O          # agua formada en aq y que puede transferirse
-        dCo_H2O   = +TM_H2O - r5                 # agua que llega a org y reacciona en R5
+    def rhs_two_phase_eq(t, y, p: Params):
+        # y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa]
+        n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa = y
+        C_CdC = conc(n_CdC, p.Vorg); C_Ep = conc(n_Ep, p.Vorg)
+        C_FAo = conc(n_FAo, p.Vorg); C_PFAo = conc(n_PFAo, p.Vorg)
+        C_H2O2a = conc(n_H2O2a, p.Vaq); C_HCOOHa = conc(n_HCOOHa, p.Vaq)
+        # partición instantánea (referencia acuosa)
+        C_PFAa = C_PFAo / max(p.Kp_PFA, 1e-12)
+        C_FAa  = C_FAo  / max(p.Kp_HCOOH, 1e-12)
+        # reacciones
+        r1f = p.k1f * C_H2O2a * C_HCOOHa
+        r1r = p.k1r * C_PFAa
+        r_epox = p.k2 * C_PFAo * C_CdC
+        r_open_FA  = p.k_FA  * C_Ep * (C_FAo**2)
+        r_open_PFA = p.k_PFA * C_Ep * (C_PFAo**2)
+        # balances en MOLES (fuentes donde ocurren)
+        dn_CdC = - r_epox * p.Vorg
+        dn_Ep  = ( r_epox - r_open_FA - r_open_PFA ) * p.Vorg
+        dn_FAo = (-r1f + r1r) * p.Vaq + r_epox * p.Vorg
+        dn_PFAo= ( r1f - r1r) * p.Vaq - r_epox * p.Vorg - r_open_PFA * p.Vorg
+        dn_H2O2a  = - r1f * p.Vaq
+        dn_HCOOHa = (-r1f + r1r) * p.Vaq + r_epox * p.Vorg
+        return [dn_CdC, dn_Ep, dn_FAo, dn_PFAo, dn_H2O2a, dn_HCOOHa]
 
-        return [dCa_H2O2, dCa_HCOOH, dCa_PFA,
-                dCo_H2O2, dCo_HCOOH, dCo_PFA,
-                dCo_CdC,  dCo_Ep,    dCo_Open,
-                dCa_H2O,  dCo_H2O]
+    def rhs_two_phase_twofilm(t, y, p: Params):
+        # y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa, n_PFAa, n_FAa]
+        n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa, n_PFAa, n_FAa = y
+        C_CdC = conc(n_CdC, p.Vorg); C_Ep = conc(n_Ep, p.Vorg)
+        C_FAo = conc(n_FAo, p.Vorg); C_PFAo = conc(n_PFAo, p.Vorg)
+        C_H2O2a = conc(n_H2O2a, p.Vaq); C_HCOOHa = conc(n_HCOOHa, p.Vaq)
+        C_PFAa = conc(n_PFAa, p.Vaq);   C_FAa   = conc(n_FAa, p.Vaq)
+        # transferencia  (C_org* = Kp * C_aq)
+        C_PFAo_star = p.Kp_PFA  * C_PFAa
+        C_FAo_star  = p.Kp_HCOOH* C_FAa
+        J_PFA = p.kla_PFA  * (C_PFAo_star - C_PFAo) * p.Vorg
+        J_FA  = p.kla_HCOOH* (C_FAo_star  - C_FAo ) * p.Vorg
+        # reacciones
+        r1f = p.k1f * C_H2O2a * C_HCOOHa
+        r1r = p.k1r * C_PFAa
+        r_epox = p.k2 * C_PFAo * C_CdC
+        r_open_FA  = p.k_FA  * C_Ep * (C_FAo**2)
+        r_open_PFA = p.k_PFA * C_Ep * (C_PFAo**2)
+        # balances en MOLES
+        dn_CdC = - r_epox * p.Vorg
+        dn_Ep  = ( r_epox - r_open_FA - r_open_PFA ) * p.Vorg
+        dn_PFAo= - r_epox*p.Vorg - r_open_PFA*p.Vorg + J_PFA
+        dn_FAo = + r_epox*p.Vorg + J_FA
+        dn_H2O2a  = - r1f*p.Vaq
+        dn_HCOOHa = (-r1f + r1r)*p.Vaq
+        dn_PFAa   = ( r1f - r1r)*p.Vaq - J_PFA
+        dn_FAa    = (-r1f + r1r)*p.Vaq - J_FA
+        return [dn_CdC, dn_Ep, dn_FAo, dn_PFAo, dn_H2O2a, dn_HCOOHa, dn_PFAa, dn_FAa]
+
+
+    def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float], npts: int = 400):
+        t_eval = np.linspace(t_span[0], t_span[1], npts)
+        # 1 fase
+        y01 = [y0[k] for k in ["CdC","Ep","FA","PFA","H2O2","HCOOH"]]
+        sol1 = solve_ivp(lambda t,y: rhs_one_phase(t,y,p), t_span, y01, t_eval=t_eval, method="LSODA")
+        # 2 fases eq
+        y02 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2a","HCOOHa"]]
+        sol2 = solve_ivp(lambda t,y: rhs_two_phase_eq(t,y,p), t_span, y02, t_eval=t_eval, method="LSODA")
+        # 2 fases 2 films
+        y03 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2a","HCOOHa","PFAa","FAa"]]
+        sol3 = solve_ivp(lambda t,y: rhs_two_phase_twofilm(t,y,p), t_span, y03, t_eval=t_eval, method="LSODA")
+        return {"t": t_eval, "1F": sol1.y, "2F_eq": sol2.y, "2F_2film": sol3.y}
+
+    def pack_for_plots(res):
+        t=res["t"]
+        return {
+            "t": t,
+            "1F":    {"CdC":res["1F"][0],    "Ep":res["1F"][1],    "FA":res["1F"][2],    "PFA":res["1F"][3]},
+            "2F_eq": {"CdC":res["2F_eq"][0], "Ep":res["2F_eq"][1], "FA":res["2F_eq"][2], "PFA":res["2F_eq"][3]},
+            "2F_2film":{"CdC":res["2F_2film"][0],"Ep":res["2F_2film"][1],"FA":res["2F_2film"][2],"PFA":res["2F_2film"][3]},
+        }
 
 
     # ========================= BOTONES: SIM, GUARDAR, EXPORT =================

@@ -91,7 +91,7 @@ def rhs_one_phase(t, y, p: Params):
     r_open_H2O = p.k5 * C_Ep * C_H2O * p.alpha
     # Descomposiciones adicionales
     r3 = p.k3 * C_PFA # PFA → HCOOH
-    r4 = p.k4 * C_H2O2 # H2O2 → H2O (no se trackea H2O en 1F)
+    r4 = p.k4 * C_H2O2 # H2O2 → H2O 
     dn_CdC = - r_epox * V
     dn_Ep = ( r_epox - r_open_FA - r_open_PFA - r_open_H2O ) * V
     dn_FA = (-r1f + r1r + r_epox + r3) * V
@@ -275,7 +275,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     \dot C_{PFA}   &= \phantom{-}k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha - k_{1r} C_{PFA} - k_2 C_{PFA} C_{C{=}C}\,\alpha - k_3 C_{PFA}\\
     \dot C_{C{=}C} &= -k_{2} C_{PFA} C_{C{=}C}\,\alpha\\
     \dot C_{Ep}    &= \phantom{-}k_{2} C_{PFA} C_{C{=}C}\,\alpha - k_{5} C_{Ep} C_{H_2O}\,\alpha\\
-    \dot C_{H_2O}  &= \phantom{-}k_{1r} C_{PFA} + k_{4} C_{H_2O_2}
+    \dot C_{H_2O}  = \phantom{-}k_{1r} C_{PFA} + k_{4} C_{H_2O_2} - k_{5} C_{Ep} C_{H_2O}\,\alpha
     \end{aligned}
     """)
 
@@ -539,10 +539,10 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # Para el modelo 1F (pseudo-homogéneo) definimos una mezcla “equivalente” en el volumen total.
     # Tomamos especies principalmente “acuosas” desde la fase aq y “orgánicas” desde org:
-    H2O2_1F = Ca_H2O2   # mol/L
+    H2O2_1F = (Ca_H2O2*Vaq + Co_H2O2*Vorg) / max(V_total_L,1e-12)  # = n_H2O2 / V_total_L
     HCOOH_1F = (Ca_HCOOH*Vaq + Co_HCOOH*Vorg) / max(V_total_L, 1e-12)  # promedio ponderado
     PFA_1F  = (Ca_PFA*Vaq + Co_PFA*Vorg) / max(V_total_L, 1e-12)
-    CdC_1F  = Co_CdC     # mol/L (está en org)
+    CdC_1F  = (Co_CdC*Vorg + 0.0*Vaq)      / max(V_total_L,1e-12)  # = n_CdC  / V_total_L
     Ep_1F   = Co_Ep
     Open_1F = Co_Open
 

@@ -125,7 +125,7 @@ def rhs_one_phase(t, y, p: Params):
     n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH, n_H2O, n_OL, n_FORM, n_PFORM = y
     V = p.Vorg + p.Vaq
     C_CdC, C_Ep, C_FA, C_PFA, C_H2O2, C_HCOOH, C_H2O = [conc(n, V) for n in y[:7]]
-    T = _T_of_T(t)
+    T = _T_of_t(t)
     k = _k_of_T(T, p)
 
     r1f = k['k1f']*C_H2O2*C_HCOOH*p.alpha
@@ -158,9 +158,8 @@ def rhs_two_phase_eq(t, y, p: Params):
     (n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa, n_OL_o, n_FORM_o, n_PFORM_o) = y
 
     # concentraciones
-    CCo, C_Ep, C_FAo, C_PFAo = [conc(v, p.Vorg) for v in [n_CdC, n_Ep, n_FAo, n_PFAo]]
+    C_CdC, C_Ep, C_FAo, C_PFAo = [conc(v, p.Vorg) for v in [n_CdC, n_Ep, n_FAo, n_PFAo]]
     C_H2O2a, C_HCOOHa = [conc(v, p.Vaq) for v in [n_H2O2a, n_HCOOHa]]
-    C_H2Oo = p.C_H2Oorg_eq  # agua orgánica “efectiva” (constante)
     T = _T_of_t(t)
     k = _k_of_T(T, p)
 

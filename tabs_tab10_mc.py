@@ -331,8 +331,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     \frac{dC_{PFORM,\mathrm{org}}}{dt}&=\alpha\,k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}
     \end{aligned}
     """)
-    st.caption(r"\(\tilde C_{H_2O,org}=K_{p,H_2O}\,C_{H_2O,aq}(t_0)\).")
-
 
 
     st.markdown("**Modelo 2-fases (dos películas)**")

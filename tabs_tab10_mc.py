@@ -42,7 +42,15 @@ class Params:
     Kp_H2O:  float = 1.0
     # actividades
     activities: Literal["IDEAL","UNIQUAC","UNIFAC"] = "IDEAL"
+
     C_H2Oorg_eq: float = 0.0   # H2O(org) efectivo para 2F-eq (constante)
+
+    Tref: float = 313.15   # K (40°C)
+    Ea_k1f: float = 0.0; Ea_k1r: float = 0.0; Ea_k2: float = 0.0; Ea_k3: float = 0.0; Ea_k4: float = 0.0
+    Ea_k5a: float = 0.0; Ea_k5b: float = 0.0; Ea_k5c: float = 0.0
+    # van ’t Hoff para particiones (solo usa 2F-eq)
+    dH_Kp_H2O: float = 0.0; dH_Kp_PFA: float = 0.0; dH_Kp_H2O2: float = 0.0; dH_Kp_HCOOH: float = 0.0
+    C_H2Oa0_conc: float = 0.0  # [H2O]_aq en t0 (mol/L)
 
 
 def conc(n: float, V: float) -> float:
@@ -84,20 +92,50 @@ K_FIXED = dict(
     alpha=1.0,    # –
 )
 
+def _T_of_t(t_s: float) -> float:
+    """Perfil térmico (t en segundos, devuelve T en K)."""
+    th = float(t_s)/3600.0  # s -> h
+    if   th < 0.5:  Tc = 25.0
+    elif th < 1.0:  Tc = 35.0
+    elif th < 1.5:  Tc = 45.0
+    elif th < 3.5:  Tc = 50.0
+    else:           Tc = 60.0
+    return 273.15 + Tc
+
+def _arr(kref, Ea, T, Tref):          # Arrhenius con kref a Tref
+    return float(kref*np.exp((Ea/R)*(1.0/Tref - 1.0/T)))
+
+def _vh(Kref, dH, T, Tref):           # van ’t Hoff para Kp(T)
+    return float(Kref*np.exp((-dH/R)*(1.0/T - 1.0/Tref)))
+
+def _k_of_T(T, p):
+    return dict(
+        k1f=_arr(p.k1f, p.Ea_k1f, T, p.Tref),
+        k1r=_arr(p.k1r, p.Ea_k1r, T, p.Tref),
+        k2 =_arr(p.k2 , p.Ea_k2 , T, p.Tref),
+        k3 =_arr(p.k3 , p.Ea_k3 , T, p.Tref),
+        k4 =_arr(p.k4 , p.Ea_k4 , T, p.Tref),
+        k5a=_arr(p.k5a, p.Ea_k5a, T, p.Tref),
+        k5b=_arr(p.k5b, p.Ea_k5b, T, p.Tref),
+        k5c=_arr(p.k5c, p.Ea_k5c, T, p.Tref),
+    )
+
 def rhs_one_phase(t, y, p: Params):
     # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH, n_H2O, n_OL, n_FORM, n_PFORM]
     n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH, n_H2O, n_OL, n_FORM, n_PFORM = y
     V = p.Vorg + p.Vaq
     C_CdC, C_Ep, C_FA, C_PFA, C_H2O2, C_HCOOH, C_H2O = [conc(n, V) for n in y[:7]]
+    T = _T_of_T(t)
+    k = _k_of_T(T, p)
 
-    r1f = p.k1f*C_H2O2*C_HCOOH*p.alpha
-    r1r = p.k1r*C_PFA
-    r_epox = p.k2*C_PFA*C_CdC*p.alpha
-    r3 = p.k3*C_PFA
-    r4 = p.k4*C_H2O2
-    r5a = p.k5a*C_Ep*C_H2O*p.alpha
-    r5b = p.k5b*C_Ep*C_H2O*C_FA*p.alpha
-    r5c = p.k5c*C_Ep*C_H2O*C_PFA*p.alpha
+    r1f = k['k1f']*C_H2O2*C_HCOOH*p.alpha
+    r1r = k['k1r']*C_PFA
+    r_epox = k['k2']*C_PFA*C_CdC*p.alpha
+    r3 = k['k3']*C_PFA
+    r4 = k['k4']*C_H2O2
+    r5a = k['k5a']*C_Ep*C_H2O*p.alpha
+    r5b = k['k5b']*C_Ep*C_H2O*C_HCOOH*p.alpha
+    r5c = k['k5c']*C_Ep*C_H2O*C_PFA*p.alpha
 
     dn_CdC   = - r_epox * V
     dn_Ep    = ( r_epox - (r5a + r5b + r5c) ) * V
@@ -117,26 +155,30 @@ def rhs_one_phase(t, y, p: Params):
 
 def rhs_two_phase_eq(t, y, p: Params):
     # y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa, n_OL_o, n_FORM_o, n_PFORM_o]
-    (n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa,
-     n_OL_o, n_FORM_o, n_PFORM_o) = y
+    (n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_HCOOHa, n_OL_o, n_FORM_o, n_PFORM_o) = y
 
     # concentraciones
     CCo, C_Ep, C_FAo, C_PFAo = [conc(v, p.Vorg) for v in [n_CdC, n_Ep, n_FAo, n_PFAo]]
     C_H2O2a, C_HCOOHa = [conc(v, p.Vaq) for v in [n_H2O2a, n_HCOOHa]]
     C_H2Oo = p.C_H2Oorg_eq  # agua orgánica “efectiva” (constante)
+    T = _T_of_t(t)
+    k = _k_of_T(T, p)
 
-    # equilibrio ácido-peroxi (en agua) y epoxidación (en orgánico)
-    C_PFAa = C_PFAo / max(p.Kp_PFA, 1e-12)
-    r1f = p.k1f * C_H2O2a * C_HCOOHa * p.alpha
-    r1r = p.k1r * C_PFAa
-    r_epox = p.k2 * C_PFAo * CCo * p.alpha
-    r3 = p.k3 * C_PFAa
-    r4 = p.k4 * C_H2O2a
+    # particiones con van ’t Hoff (dinámicas)
+    Kp_H2O_T  = _vh(p.Kp_H2O,  p.dH_Kp_H2O,  T, p.Tref)
+    Kp_PFA_T  = _vh(p.Kp_PFA,  p.dH_Kp_PFA,  T, p.Tref)
+    # Si quieres, idem para H2O2/HCOOH
+    C_H2Oo   = Kp_H2O_T * p.C_H2Oa0_conc
+    C_PFAa = C_PFAo / max(Kp_PFA_T, 1e-12)
 
-    # R5a/R5b/R5c en orgánico (lumped respecto a H2O variable)
-    r5a = p.k5a * C_Ep * C_H2Oo * p.alpha
-    r5b = p.k5b * C_Ep * C_H2Oo * C_FAo * p.alpha
-    r5c = p.k5c * C_Ep * C_H2Oo * C_PFAo * p.alpha
+    r1f = k['k1f']*C_H2O2a*C_HCOOHa*p.alpha
+    r1r = k['k1r']*C_PFAa
+    r_epox = k['k2']*C_PFAo*C_CdC*p.alpha
+    r3 = k['k3']*C_PFAa
+    r4 = k['k4']*C_H2O2a
+    r5a = k['k5a']*C_Ep*C_H2Oo*p.alpha
+    r5b = k['k5b']*C_Ep*C_H2Oo*C_FAo*p.alpha
+    r5c = k['k5c']*C_Ep*C_H2Oo*C_PFAo*p.alpha
 
     # balances en MOLES (¡respetando volúmenes!)
     dn_CdC    = - r_epox * p.Vorg
@@ -175,16 +217,22 @@ def rhs_two_phase_twofilm(t, y, p: Params):
     J_FA = p.kla_HCOOH * (C_FAo_star - C_FAo ) * p.Vorg
     J_H2O2 = p.kla_H2O2 * (C_H2O2o_st - C_H2O2o) * p.Vorg
     J_H2O = p.kla_H2O * (C_H2Oo_st - C_H2Oo ) * p.Vorg
-    # reacciones
-    r1f = p.k1f * C_H2O2a * C_HCOOHa * p.alpha
-    r1r = p.k1r * C_PFAa
-    r_epox = p.k2 * C_PFAo * C_CdC * p.alpha
-    r3 = p.k3 * C_PFAa
-    r4a = p.k4 * C_H2O2a
-    r4o = p.k4 * C_H2O2o
-    r5a = p.k5a * C_Ep * C_H2Oo          * p.alpha          # Ep+H2O
-    r5b = p.k5b * C_Ep * C_H2Oo * C_FAo  * p.alpha          # Ep+H2O+FA
-    r5c = p.k5c * C_Ep * C_H2Oo * C_PFAo * p.alpha          # Ep+H2O+PFA
+    
+    T = _T_of_t(t)
+    k = _k_of_T(T, p)
+
+    # reacciones por fase
+    r1f   = k['k1f'] * C_H2O2a * C_HCOOHa * p.alpha        # acuosa
+    r1r   = k['k1r'] * C_PFAa
+    r_epox= k['k2']  * C_PFAo * C_CdC * p.alpha            # orgánica
+    r3    = k['k3']  * C_PFAa                               # acuosa
+    r4a   = k['k4']  * C_H2O2a                              # acuosa
+    r4o   = k['k4']  * C_H2O2o                              # orgánica
+    r5a   = k['k5a'] * C_Ep * C_H2Oo * p.alpha              # orgánica
+    r5b   = k['k5b'] * C_Ep * C_H2Oo * C_FAo * p.alpha      # orgánica
+    r5c   = k['k5c'] * C_Ep * C_H2Oo * C_PFAo * p.alpha     # orgánica
+
+
     # balances en MOLES
     dn_CdC   = - r_epox * p.Vorg
     dn_Ep    = ( r_epox - (r5a + r5b + r5c) ) * p.Vorg
@@ -671,6 +719,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         kla_HCOOH = prm["kla_HCOOH"], Kp_HCOOH = prm["Kp_HCOOH"],
         kla_H2O = prm["kla_H2O"],   Kp_H2O = prm["Kp_H2O"],
         C_H2Oorg_eq = prm["Kp_H2O"] * (y0["H2Oa"] / Vaq),
+        C_H2Oa0_conc = (y0["H2Oa"] / Vaq),  
     )
 
     # ===== Ejecutar los 3 modelos (usa las RHS nuevas en moles) =====

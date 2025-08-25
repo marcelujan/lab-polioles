@@ -320,18 +320,18 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     \begin{aligned}
     \frac{dC_{Ep,\mathrm{org}}}{dt}&=
     k_{2}\,C_{PFA,\mathrm{org}}\,C_{C{=}C,\mathrm{org}}\,\alpha
-    -\alpha\Big(k_{5a}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}
-    +k_{5b}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{HCOOH,\mathrm{org}}
-    +k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}\Big)\\[2pt]
+    -\alpha\Big(k_{5a}\,C_{Ep,\mathrm{org}}\,\tilde{C}_{H_2O,\mathrm{org}}
+    +k_{5b}\,C_{Ep,\mathrm{org}}\,\tilde{C}_{H_2O,\mathrm{org}}\,C_{HCOOH,\mathrm{org}}
+    +k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde{C}_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}\Big)\\[2pt]
     \frac{dC_{OL,\mathrm{org}}}{dt}&=\alpha\Big(
-    2k_{5a}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}
-    +k_{5b}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{HCOOH,\mathrm{org}}
-    +k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}\Big)\\[2pt]
-    \frac{dC_{FORM,\mathrm{org}}}{dt}&=\alpha\,k_{5b}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{HCOOH,\mathrm{org}}\\[2pt]
-    \frac{dC_{PFORM,\mathrm{org}}}{dt}&=\alpha\,k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}
+    2k_{5a}\,C_{Ep,\mathrm{org}}\,\tilde{C}_{H_2O,\mathrm{org}}
+    +k_{5b}\,C_{Ep,\mathrm{org}}\,\tilde{C}_{H_2O,\mathrm{org}}\,C_{HCOOH,\mathrm{org}}
+    +k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde{C}_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}\Big)\\[2pt]
+    \frac{dC_{FORM,\mathrm{org}}}{dt}&=\alpha\,k_{5b}\,C_{Ep,\mathrm{org}}\,\tilde{C}_{H_2O,\mathrm{org}}\,C_{HCOOH,\mathrm{org}}\\[2pt]
+    \frac{dC_{PFORM,\mathrm{org}}}{dt}&=\alpha\,k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde{C}_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}\\[4pt]
+    \tilde{C}_{H_2O,\mathrm{org}}&=K_{p,H_2O}\,C_{H_2O,\mathrm{aq}}(t_0)\quad\text{(constante en 2F-eq)}
     \end{aligned}
     """)
-    st.latex(r"\tilde{C}_{H_2O,\mathrm{org}} = K_{p,H_2O}\,C_{H_2O,\mathrm{aq}}(t_0)\quad\text{(constante en 2F-eq)}")
 
 
     st.markdown("**Modelo 2-fases (dos películas)**")

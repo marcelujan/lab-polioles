@@ -276,9 +276,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         st.markdown(
             f"""
             <div style='text-align:right; font-size:0.9em; margin-top:0.6rem'>
-            k₅ₐ = {_fmt_e(k5a)} L²·mol⁻²·s⁻¹<br>
-            k₅_b = {_fmt_e(k5b)} L²·mol⁻²·s⁻¹<br>
-            k₅_c = {_fmt_e(k5c)} L²·mol⁻²·s⁻¹
+            k<sub>5a</sub> = {_fmt_e(k5a)} L·mol⁻¹·s⁻¹<br>
+            k<sub>5b</sub> = {_fmt_e(k5b)} L²·mol⁻²·s⁻¹<br>
+            k<sub>5c</sub> = {_fmt_e(k5c)} L²·mol⁻²·s⁻¹
             </div>
             """, unsafe_allow_html=True
         )
@@ -333,9 +333,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         st.markdown(
             f"""
             <div style='text-align:right; font-size:0.9em; margin-top:0.6rem'>
-            k₅ₐ = {_fmt_e(k['k5a'])} L·mol⁻¹·s⁻¹<br>
-            k₅_b = {_fmt_e(k['k5b'])} L²·mol⁻²·s⁻¹<br>
-            k₅_c = {_fmt_e(k['k5c'])} L²·mol⁻²·s⁻¹<br>
+            k<sub>5a</sub> = {_fmt_e(k5a)} L·mol⁻¹·s⁻¹<br>
+            k<sub>5b</sub> = {_fmt_e(k5b)} L²·mol⁻²·s⁻¹<br>
+            k<sub>5c</sub> = {_fmt_e(k5c)} L²·mol⁻²·s⁻¹
             </div>
             """,
             unsafe_allow_html=True

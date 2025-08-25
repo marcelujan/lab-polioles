@@ -520,7 +520,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # Guardar en estado para exportación
     st.session_state["mc_params"] = prm
 
-    st.markdown("**Exportar parámetros (JSON)**")
+    #st.markdown("**Exportar parámetros (JSON)**")
     conf = _apply_params_to_widgets(st.session_state["mc_params"])
     st.download_button(
         "Descargar JSON de escenario",

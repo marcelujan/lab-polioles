@@ -303,59 +303,55 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     - R5: Apertura del epóxido
     """)
 
+
     st.markdown("**Modelo 1-fase**")
     st.latex(r"""
     \begin{aligned}
-    \dot C_{H_2O_2} &= -k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha + k_{1r} C_{PFA} - k_4 C_{H_2O_2}\\
-    \dot C_{HCOOH} &= -k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha + k_{1r} C_{PFA} + k_2 C_{PFA} C_{C{=}C}\,\alpha + k_3 C_{PFA}\\
-    \dot C_{PFA}   &= \phantom{-}k_{1f} C_{HCOOH} C_{H_2O_2}\,\alpha - k_{1r} C_{PFA} - k_2 C_{PFA} C_{C{=}C}\,\alpha - k_3 C_{PFA}\\
-    \dot C_{C{=}C} &= -k_{2} C_{PFA} C_{C{=}C}\,\alpha\\
-    \dot C_{Ep}   = k_{2} C_{PFA} C_{C{=}C}\,\alpha
-                - \big(k_{5a} C_{Ep} C_{H_2O}
-                        + k_{5b} C_{Ep} C_{H_2O} C_{HCOOH}
-                        + k_{5c} C_{Ep} C_{H_2O} C_{PFA}\big)\,\alpha
-
-    \dot C_{H_2O} = k_{1r} C_{PFA} + k_{4} C_{H_2O_2}
-                - \big(k_{5a} C_{Ep} C_{H_2O}
-                        + k_{5b} C_{Ep} C_{H_2O} C_{HCOOH}
-                        + k_{5c} C_{Ep} C_{H_2O} C_{PFA}\big)\,\alpha
+    \dot C_{H_2O_2}&=-k_{1f}C_{HCOOH}C_{H_2O_2}\,\alpha + k_{1r}C_{PFA} - k_{4}C_{H_2O_2}\\
+    \dot C_{HCOOH}&=-k_{1f}C_{HCOOH}C_{H_2O_2}\,\alpha + k_{1r}C_{PFA}+k_{2}C_{PFA}C_{C{=}C}\,\alpha + k_{3}C_{PFA}\\
+    \dot C_{PFA}&=k_{1f}C_{HCOOH}C_{H_2O_2}\,\alpha - k_{1r}C_{PFA}-k_{2}C_{PFA}C_{C{=}C}\,\alpha - k_{3}C_{PFA}\\
+    \dot C_{C{=}C}&=-k_{2}C_{PFA}C_{C{=}C}\,\alpha\\
+    \dot C_{Ep}&=k_{2}C_{PFA}C_{C{=}C}\,\alpha
+    -\alpha\!\left(k_{5a}C_{Ep}C_{H_2O}+k_{5b}C_{Ep}C_{H_2O}C_{HCOOH}+k_{5c}C_{Ep}C_{H_2O}C_{PFA}\right)\\
+    \dot C_{H_2O}&=k_{1r}C_{PFA}+k_{4}C_{H_2O_2}
+    -\alpha\!\left(k_{5a}C_{Ep}C_{H_2O}+k_{5b}C_{Ep}C_{H_2O}C_{HCOOH}+k_{5c}C_{Ep}C_{H_2O}C_{PFA}\right)
     \end{aligned}
     """)
 
+
     st.markdown("**Modelo 2-fases (equilibrio)**")
-    c1, c2 = st.columns(colw)
+    c1, _ = st.columns(colw)
     with c1:
-        st.latex(r"""\textbf{Modelo 2-fases (equilibrio): R5a–R5c en orgánico}""")
-        st.latex(r"""\begin{aligned}\frac{dC_{Ep,org}}{dt}&= k_{2}\,C_{PFA,org}\,C_{C{=}C,org}\,\alpha \\ &\quad - \alpha\Big(k_{5a}\,C_{Ep,org}\,\tilde C_{H_2O,org}+k_{5b}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{HCOOH,org}+k_{5c}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{PFA,org}\Big)\end{aligned}""")
-        st.latex(r""" \begin{aligned} \frac{dC_{OL,org}}{dt}&= \alpha\Big( 2\,k_{5a}\,C_{Ep,org}\,\tilde C_{H_2O,org}+  k_{5b}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{HCOOH,org}+  k_{5c}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{PFA,org}\Big)\\[4pt]\frac{dC_{FORM,org}}{dt}&= \alpha\,k_{5b}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{HCOOH,org}\\[4pt]\frac{dC_{PFORM,org}}{dt}&= \alpha\,k_{5c}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{PFA,org}\end{aligned}""")
-        st.caption(r"\(\tilde C_{H_2O,org}=C^\mathrm{eq}_{H_2O,org}=K_{p,H_2O}\,C_{H_2O,aq}(t_0)\) (constante en 2F-eq).")
-    with c2:
-        st.markdown(
-            f"""
-            <div style='text-align:right; font-size:0.9em; margin-top:0.6rem'>
-            k<sub>5a</sub> = {_fmt_e(k5a)} L·mol⁻¹·s⁻¹<br>
-            k<sub>5b</sub> = {_fmt_e(k5b)} L²·mol⁻²·s⁻¹<br>
-            k<sub>5c</sub> = {_fmt_e(k5c)} L²·mol⁻²·s⁻¹
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.latex(r"""
+        \begin{aligned}
+        \frac{dC_{Ep,org}}{dt}&=k_{2}C_{PFA,org}C_{C{=}C,org}\,\alpha
+        -\alpha\Big(k_{5a}C_{Ep,org}\tilde C_{H_2O,org}
+        +k_{5b}C_{Ep,org}\tilde C_{H_2O,org}C_{HCOOH,org}
+        +k_{5c}C_{Ep,org}\tilde C_{H_2O,org}C_{PFA,org}\Big)\\[4pt]
+        \frac{dC_{OL,org}}{dt}&=\alpha\Big(2k_{5a}C_{Ep,org}\tilde C_{H_2O,org}
+        +k_{5b}C_{Ep,org}\tilde C_{H_2O,org}C_{HCOOH,org}
+        +k_{5c}C_{Ep,org}\tilde C_{H_2O,org}C_{PFA,org}\Big)\\[4pt]
+        \frac{dC_{FORM,org}}{dt}&=\alpha\,k_{5b}C_{Ep,org}\tilde C_{H_2O,org}C_{HCOOH,org}\\[4pt]
+        \frac{dC_{PFORM,org}}{dt}&=\alpha\,k_{5c}C_{Ep,org}\tilde C_{H_2O,org}C_{PFA,org}
+        \end{aligned}
+        """)
+    st.caption(r"\(\tilde C_{H_2O,org}=K_{p,H_2O}\,C_{H_2O,aq}(t_0)\), constante en 2F-eq.")
 
 
     st.markdown("**Modelo 2-fases (dos películas)**")
-    st.latex(r"\frac{dC_{H_2O_2,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} - k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O_2}^{TM}}{V_{aq}}\tag{R6}")
-    st.latex(r"\frac{dC_{H_2O_2,org}}{dt} = +\,\frac{\dot n_{H_2O_2}^{TM}}{V_{org}} - k_{4}\,C_{H_2O_2,org}\tag{R7}")
+    st.latex(r"\frac{dC_{H_2O_2,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} - k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O_2}^{TM}}{V_{aq}}")
+    st.latex(r"\frac{dC_{H_2O_2,org}}{dt} = +\,\frac{\dot n_{H_2O_2}^{TM}}{V_{org}} - k_{4}\,C_{H_2O_2,org}")
 
-    st.latex(r"\frac{dC_{HCOOH,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} + k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{HCOOH}^{TM}}{V_{aq}}\tag{R8}")
-    st.latex(r"\frac{dC_{HCOOH,org}}{dt} = +\,\frac{\dot n_{HCOOH}^{TM}}{V_{org}}\tag{R9}")
+    st.latex(r"\frac{dC_{HCOOH,aq}}{dt} = -\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} + k_{1r}\,C_{PFA,aq} + k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{HCOOH}^{TM}}{V_{aq}}")
+    st.latex(r"\frac{dC_{HCOOH,org}}{dt} = +\,\frac{\dot n_{HCOOH}^{TM}}{V_{org}}")
 
-    st.latex(r"\frac{dC_{PFA,aq}}{dt} = +\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} - k_{1r}\,C_{PFA,aq} - k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{PFA}^{TM}}{V_{aq}}\tag{R10}")
-    st.latex(r"\frac{dC_{PFA,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} \;+\; \frac{\dot n_{PFA}^{TM}}{V_{org}}\tag{R11}")
+    st.latex(r"\frac{dC_{PFA,aq}}{dt} = +\,k_{1f}\,C_{HCOOH,aq}\,C_{H_2O_2,aq} - k_{1r}\,C_{PFA,aq} - k_{3}\,C_{PFA,aq} \;-\; \frac{\dot n_{PFA}^{TM}}{V_{aq}}")
+    st.latex(r"\frac{dC_{PFA,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org} \;+\; \frac{\dot n_{PFA}^{TM}}{V_{org}}")
 
-    st.latex(r"\frac{dC_{C{=}C,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org}\tag{R12}")
+    st.latex(r"\frac{dC_{C{=}C,org}}{dt} = -\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org}")
     st.latex(r"\frac{dC_{Ep,org}}{dt} = +\,k_{2}\,C_{PFA,org}\,C_{C{=}C,org}- \big(k_{5a}\,C_{Ep,org}\,C_{H_2O,org}+k_{5b}\,C_{Ep,org}\,C_{H_2O,org}\,C_{HCOOH,org}+k_{5c}\,C_{Ep,org}\,C_{H_2O,org}\,C_{PFA,org}\big)\,\alpha")
 
-    st.latex(r"\frac{dC_{H_2O,aq}}{dt} = +\,k_{1r}\,C_{PFA,aq} + k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O}^{TM}}{V_{aq}}\tag{R14}")
+    st.latex(r"\frac{dC_{H_2O,aq}}{dt} = +\,k_{1r}\,C_{PFA,aq} + k_{4}\,C_{H_2O_2,aq} \;-\; \frac{\dot n_{H_2O}^{TM}}{V_{aq}}")
     st.latex(r"\frac{dC_{H_2O,org}}{dt} = +\,\frac{\dot n_{H_2O}^{TM}}{V_{org}} - \big(k_{5a}\,C_{Ep,org}\,C_{H_2O,org}+k_{5b}\,C_{Ep,org}\,C_{H_2O,org}\,C_{HCOOH,org}+k_{5c}\,C_{Ep,org}\,C_{H_2O,org}\,C_{PFA,org}\big)\,\alpha")
 
     # ======================= UI: IMPORTAR JSON ===============================

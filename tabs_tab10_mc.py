@@ -242,16 +242,28 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             unsafe_allow_html=True
         )
 
-    # R5
+    # R5a–R5c  (aperturas de epóxido)
     c1, c2 = st.columns(colw)
     with c1:
-        st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} OH + FORM}\tag{R5}")
+        st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Diol\ (2\,OH)}\tag{R5a}")
+        st.latex(r"\mathrm{Ep + HCOOH \xrightarrow{k_{FA}} FORM}\tag{R5b}")
+        st.latex(r"\mathrm{Ep + PFA \xrightarrow{k_{PFA}} \phi_{OH}\,OH + (1-\phi_{OH})\,FORM}\tag{R5c}")
     with c2:
+        k_FA_disp  = prm.get("k_FA", Params().k_FA)
+        k_PFA_disp = prm.get("k_PFA", Params().k_PFA)
+        phi_disp   = float(prm.get("phi_OH", 0.30))
         st.markdown(
-            f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹</div>",
+            f"""
+            <div style='text-align:right; font-size:0.9em; margin-top:0.6rem'>
+            k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹<br>
+            k_FA = {_fmt_e(k_FA_disp)} L·mol⁻¹·s⁻¹<br>
+            k_PFA = {_fmt_e(k_PFA_disp)} L·mol⁻¹·s⁻¹<br>
+            φ<sub>OH</sub> = {phi_disp:.2f}
+            </div>
+            """,
             unsafe_allow_html=True
         )
-        
+
     # ---- α separado, alineado con la columna de los k ----
     _ , right = st.columns(colw)  # misma geometría
     with right:

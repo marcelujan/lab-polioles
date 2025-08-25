@@ -212,7 +212,7 @@ def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float]
     # 2 fases eq
     y02 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2a","HCOOHa"]] + [0.0, 0.0, 0.0]
     sol2 = solve_ivp(lambda t,y: rhs_two_phase_eq(t,y,p), t_span, y02, t_eval=t_eval, method="LSODA")
-    # 2 fases 2 films (con H2O2o y H2O en ambas fases)
+    # 2 fases 2 films
     y03 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2o","H2Oo","H2O2a","HCOOHa","PFAa","FAa","H2Oa"]] + [0.0, 0.0, 0.0]
     sol3 = solve_ivp(lambda t,y: rhs_two_phase_twofilm(t,y,p), t_span, y03, t_eval=t_eval, method="LSODA")
     return {"t": t_eval, "1F": sol1.y, "2F_eq": sol2.y, "2F_2film": sol3.y}
@@ -246,30 +246,21 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     with c1:
         st.latex(r"\mathrm{PFA + C{=}C \xrightarrow{k_{2}} Ep + HCOOH}\tag{R2}")
     with c2:
-        st.markdown(
-            f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₂ = {_fmt_e(k['k2'])} L·mol⁻¹·s⁻¹</div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₂ = {_fmt_e(k['k2'])} L·mol⁻¹·s⁻¹</div>", unsafe_allow_html=True)
 
     # R3
     c1, c2 = st.columns(colw)
     with c1:
         st.latex(r"\mathrm{PFA \xrightarrow{k_{3}} HCOOH}\tag{R3}")
     with c2:
-        st.markdown(
-            f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₃ = {_fmt_e(k['k3'])} s⁻¹</div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₃ = {_fmt_e(k['k3'])} s⁻¹</div>", unsafe_allow_html=True)
 
     # R4
     c1, c2 = st.columns(colw)
     with c1:
         st.latex(r"\mathrm{H_2O_2 \xrightarrow{k_{4}} H_2O}\tag{R4}")
     with c2:
-        st.markdown(
-            f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₄ = {_fmt_e(k['k4'])} s⁻¹</div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₄ = {_fmt_e(k['k4'])} s⁻¹</div>", unsafe_allow_html=True)
 
     # R5a–R5c (aperturas de epóxido en fase orgánica)
     c1, c2 = st.columns(colw)
@@ -334,34 +325,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.markdown("**Modelo 2-fases (equilibrio)**")
     c1, c2 = st.columns(colw)
     with c1:
-        st.latex(r"""
-        \textbf{Modelo 2-fases (equilibrio): R5a–R5c en orgánico}
-        """)
-        st.latex(r"""
-        \begin{aligned}
-        \frac{dC_{Ep,org}}{dt}
-        &= k_{2}\,C_{PFA,org}\,C_{C{=}C,org}\,\alpha \\
-        &\quad - \alpha\Big(
-        k_{5a}\,C_{Ep,org}\,\tilde C_{H_2O,org}
-        +k_{5b}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{HCOOH,org}
-        +k_{5c}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{PFA,org}
-        \Big)
-        \end{aligned}
-        """)
-        st.latex(r"""
-        \begin{aligned}
-        \frac{dC_{OL,org}}{dt}
-        &= \alpha\Big(
-        2\,k_{5a}\,C_{Ep,org}\,\tilde C_{H_2O,org}
-        +  k_{5b}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{HCOOH,org}
-        +  k_{5c}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{PFA,org}
-        \Big)\\[4pt]
-        \frac{dC_{FORM,org}}{dt}
-        &= \alpha\,k_{5b}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{HCOOH,org}\\[4pt]
-        \frac{dC_{PFORM,org}}{dt}
-        &= \alpha\,k_{5c}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{PFA,org}
-        \end{aligned}
-        """)
+        st.latex(r"""\textbf{Modelo 2-fases (equilibrio): R5a–R5c en orgánico}""")
+        st.latex(r"""\begin{aligned}\frac{dC_{Ep,org}}{dt}&= k_{2}\,C_{PFA,org}\,C_{C{=}C,org}\,\alpha \\ &\quad - \alpha\Big(k_{5a}\,C_{Ep,org}\,\tilde C_{H_2O,org}+k_{5b}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{HCOOH,org}+k_{5c}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{PFA,org}\Big)\end{aligned}""")
+        st.latex(r""" \begin{aligned} \frac{dC_{OL,org}}{dt}&= \alpha\Big( 2\,k_{5a}\,C_{Ep,org}\,\tilde C_{H_2O,org}+  k_{5b}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{HCOOH,org}+  k_{5c}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{PFA,org}\Big)\\[4pt]\frac{dC_{FORM,org}}{dt}&= \alpha\,k_{5b}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{HCOOH,org}\\[4pt]\frac{dC_{PFORM,org}}{dt}&= \alpha\,k_{5c}\,C_{Ep,org}\,\tilde C_{H_2O,org}\,C_{PFA,org}\end{aligned}""")
         st.caption(r"\(\tilde C_{H_2O,org}=C^\mathrm{eq}_{H_2O,org}=K_{p,H_2O}\,C_{H_2O,aq}(t_0)\) (constante en 2F-eq).")
     with c2:
         st.markdown(

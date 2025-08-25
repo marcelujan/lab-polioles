@@ -288,7 +288,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     with right:
         st.markdown(
             f"<div style='text-align:right; font-size:0.9em; margin-top:0.0rem'>"
-            f"α = {k['alpha']:.2f} factor ácido en R1, R2, R5."
+            f"α = {k['alpha']:.2f} factor ácido en R1, R2, R5a, R5b, R5c."
             f"</div>",  # ← cerrar
             unsafe_allow_html=True
         )

@@ -245,7 +245,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # R5
     c1, c2 = st.columns(colw)
     with c1:
-        st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} Open}\tag{OH + FORM}")
+        st.latex(r"\mathrm{Ep + H_2O \xrightarrow{k_{5}} OH + FORM}\tag{R5}")
     with c2:
         st.markdown(
             f"<div style='text-align:right; font-size:0.9em; margin-top:1.2rem'>k₅ = {_fmt_e(k['k5'])} L·mol⁻¹·s⁻¹</div>",
@@ -520,7 +520,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # Guardar en estado para exportación
     st.session_state["mc_params"] = prm
 
-    #st.markdown("**Exportar parámetros (JSON)**")
+    st.markdown("**Exportar parámetros (JSON)**")
     conf = _apply_params_to_widgets(st.session_state["mc_params"])
     st.download_button(
         "Descargar JSON de escenario",

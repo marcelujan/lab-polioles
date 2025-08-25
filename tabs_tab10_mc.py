@@ -296,7 +296,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     - R2: Epoxidación en fase orgánica  
     - R3: Descomposición del PFA  
     - R4: Descomposición del H₂O₂  
-    - R5: Apertura del epóxido
+    - R5: Aperturas del epóxido
     """)
 
 
@@ -318,15 +318,17 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.markdown("**Modelo 2-fases (equilibrio)**")
     st.latex(r"""
     \begin{aligned}
-    \frac{dC_{Ep,org}}{dt}&=k_{2}C_{PFA,org}C_{C{=}C,org}\,\alpha
-    -\alpha\Big(k_{5a}C_{Ep,org}\tilde C_{H_2O,org}
-    +k_{5b}C_{Ep,org}\tilde C_{H_2O,org}C_{HCOOH,org}
-    +k_{5c}C_{Ep,org}\tilde C_{H_2O,org}C_{PFA,org}\Big)\\[2pt]
-    \frac{dC_{OL,org}}{dt}&=\alpha\Big(2k_{5a}C_{Ep,org}\tilde C_{H_2O,org}
-    +k_{5b}C_{Ep,org}\tilde C_{H_2O,org}C_{HCOOH,org}
-    +k_{5c}C_{Ep,org}\tilde C_{H_2O,org}C_{PFA,org}\Big)\\[2pt]
-    \frac{dC_{FORM,org}}{dt}&=\alpha\,k_{5b}C_{Ep,org}\tilde C_{H_2O,org}C_{HCOOH,org}\\[2pt]
-    \frac{dC_{PFORM,org}}{dt}&=\alpha\,k_{5c}C_{Ep,org}\tilde C_{H_2O,org}C_{PFA,org}
+    \frac{dC_{Ep,\mathrm{org}}}{dt}&=
+    k_{2}\,C_{PFA,\mathrm{org}}\,C_{C{=}C,\mathrm{org}}\,\alpha
+    -\alpha\Big(k_{5a}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}
+    +k_{5b}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{HCOOH,\mathrm{org}}
+    +k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}\Big)\\[2pt]
+    \frac{dC_{OL,\mathrm{org}}}{dt}&=\alpha\Big(
+    2k_{5a}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}
+    +k_{5b}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{HCOOH,\mathrm{org}}
+    +k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}\Big)\\[2pt]
+    \frac{dC_{FORM,\mathrm{org}}}{dt}&=\alpha\,k_{5b}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{HCOOH,\mathrm{org}}\\[2pt]
+    \frac{dC_{PFORM,\mathrm{org}}}{dt}&=\alpha\,k_{5c}\,C_{Ep,\mathrm{org}}\,\tilde C_{H_2O,\mathrm{org}}\,C_{PFA,\mathrm{org}}
     \end{aligned}
     """)
     st.caption(r"\(\tilde C_{H_2O,org}=K_{p,H_2O}\,C_{H_2O,aq}(t_0)\).")

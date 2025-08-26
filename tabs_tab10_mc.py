@@ -355,12 +355,12 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     """)
     
     st.markdown(
-        "<div style='font-size:0.9rem'><b>Siglas usadas:</b> "
+        "<div style='font-size:0.9rem'><b>Siglas:</b> "
         "FA = ácido fórmico (HCOOH); PFA = ácido perfórmico (HCOOOH); "
         "AS = ácido sulfúrico (H₂SO₄); H2O2 = peróxido de hidrógeno; "
         "H2O = agua; Ep = epóxido; OL = grupos OH (polioles); "
-        "C=C = dobles enlaces; FORM = formiato; PFORM = performato."
-        "</div>",
+        "C=C = dobles enlaces; FORM = formiato; PFORM = performiato."
+        "</div>\\",
         unsafe_allow_html=True
     )
 

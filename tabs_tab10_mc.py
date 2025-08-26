@@ -75,10 +75,10 @@ class Params:
     kla_PFA:  float = 1.0e-3
     kla_H2O:  float = 1.0e-3
     # partición (C_org = Kp * C_aq)
-    Kp_H2O2: float = 0.02
-    Kp_FA: float = 0.20
-    Kp_PFA:  float = 0.20
-    Kp_H2O:  float = 1.0
+    Kp_H2O2: float = 0.05
+    Kp_FA:   float = 0.20
+    Kp_PFA:  float = 5.0
+    Kp_H2O:  float = 0.02
     # actividades
     activities: Literal["IDEAL","UNIQUAC","UNIFAC"] = "IDEAL"
 
@@ -188,10 +188,10 @@ def rhs_two_phase_eq(t, y, p: Params):
 
     dn_CdC   = - r_epox * p.Vorg
     dn_Ep    = ( r_epox - (r5a + r5b + r5c) ) * p.Vorg
-    dn_FAo   = (-r1f + r1r + r3 - r5b) * p.Vaq + r_epox * p.Vorg
+    dn_FAo   = (-r1f + r1r + r3) * p.Vaq - r5b * p.Vorg + r_epox * p.Vorg
     dn_PFAo  = ( r1f - r1r - r3 - r5c) * p.Vaq - r_epox * p.Vorg
     dn_H2O2a = - (r1f + r4) * p.Vaq
-    dn_FAa   = (-r1f + r1r + r3) * p.Vaq + r_epox * p.Vorg
+    dn_FAa   = (-r1f + r1r + r3) * p.Vaq
 
     dn_OL_o    = (2*r5a + r5b + r5c) * p.Vorg
     dn_FORM_o  = (r5b) * p.Vorg
@@ -875,5 +875,5 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # Pie: simplificaciones
     st.markdown("""
 ---
-**Simplificaciones:** isoterma, volumen constante, cinética de orden potencia, α catalítico lumped; en 2-fases, \\(k_L a\\) y \\(K_{oq}\\) constantes.
+**Simplificaciones:** perfil térmico (no isoterma), volumen constante, cinética de orden potencia, α catalítico lumped; en 2-fases, \\(k_L a\\) y \\(K_{oq}\\) constantes.
 """)

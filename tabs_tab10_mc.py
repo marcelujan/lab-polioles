@@ -168,6 +168,7 @@ def rhs_two_phase_eq(t, y, p: Params):
     # particiones con van ’t Hoff (dinámicas)
     Kp_H2O_T  = _vh(p.Kp_H2O,  p.dH_Kp_H2O,  T, p.Tref)
     Kp_PFA_T  = _vh(p.Kp_PFA,  p.dH_Kp_PFA,  T, p.Tref)
+    
     # Si quieres, idem para H2O2/HCOOH
     C_H2Oo   = Kp_H2O_T * p.C_H2Oa0_conc
     C_PFAa = C_PFAo / max(Kp_PFA_T, 1e-12)
@@ -753,8 +754,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     times_h = res["t"]/3600.0
     T_C = res.get("T_C", None)
-              
-    # === Multiselect GLOBAL (aplica a los 3 gráficos) ===
+
     LABELS = {
     "1F": (["C=C","Ep","FA","PFA","H2O2","HCOOH","H2O","OL","FORM","PFORM"], list(range(10))),
     "2F_eq_org": (["C=C(org)","Ep(org)","FA(org)","PFA(org)","OL(org)","FORM(org)","PFORM(org)"],
@@ -764,9 +764,67 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     "2F_tf_org": (["C=C(org)","Ep(org)","FA(org)","PFA(org)","H2O2(org)","H2O(org)", "OL(org)","FORM(org)","PFORM(org)"], [0,1,2,3,4,5,11,12,13]),
     "2F_tf_aq": (["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)","H2O(aq)"], [6,7,8,9,10]),
     }
-    # orden sugerido en el selector
-    opts_global = sum([LABELS["1F"][0], LABELS["2F_eq_org"][0], LABELS["2F_eq_aq"][0], LABELS["2F_tf_org"][0], LABELS["2F_tf_aq"][0]], []) + (["Temperatura (°C)"] if T_C is not None else [])
-    sel = st.multiselect("Curvas a mostrar (global)", options=opts_global, default=opts_global)
+
+    # --- opciones por gráfico ---
+    opts1 = LABELS["1F"][0] + (["Temperatura (°C)"] if T_C is not None else [])
+    hide1 = {"H2O"}
+    sel1  = st.multiselect("1-fase: curvas a mostrar",
+                        options=opts1,
+                        default=[o for o in opts1 if o not in hide1])
+
+    opts2 = LABELS["2F_eq_org"][0] + LABELS["2F_eq_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
+    # (en 2F-eq no hay H2O explícita; dejamos todo encendido)
+    sel2  = st.multiselect("2-fases (equilibrio): curvas a mostrar", options=opts2, default=opts2)
+
+    opts3 = LABELS["2F_tf_org"][0] + LABELS["2F_tf_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
+    hide3 = {"H2O(org)", "H2O(aq)"}
+    sel3  = st.multiselect("2-fases (dos películas): curvas a mostrar",
+                        options=opts3,
+                        default=[o for o in opts3 if o not in hide3])
+
+    #1-fase
+    use_T = ("Temperatura (°C)" in sel1) and (T_C is not None)
+    fig1 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
+    labs, idxs = LABELS["1F"]
+    for lab, i in zip(labs, idxs):
+        if lab in sel1:
+            fig1.add_trace(go.Scatter(x=times_h, y=conv_1F(res["1F"][i]), mode="lines", name=lab),
+                        secondary_y=False if use_T else None)
+    if use_T:
+        fig1.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
+                    secondary_y=True)
+        fig1.update_yaxes(title_text="T [°C]", secondary_y=True)
+    st.plotly_chart(fig1, use_container_width=True)
+
+    #2-fases (equilibrio)
+    use_T = ("Temperatura (°C)" in sel2) and (T_C is not None)
+    fig2 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
+    for part, conv in [("2F_eq_org", conv_2F_org), ("2F_eq_aq", conv_2F_aq)]:
+        labs, idxs = LABELS[part]
+        for lab, i in zip(labs, idxs):
+            if lab in sel2:
+                fig2.add_trace(go.Scatter(x=times_h, y=conv(res["2F_eq"][i]), mode="lines", name=lab),
+                            secondary_y=False if use_T else None)
+    if use_T:
+        fig2.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
+                    secondary_y=True)
+        fig2.update_yaxes(title_text="T [°C]", secondary_y=True)
+    st.plotly_chart(fig2, use_container_width=True)
+
+    #2-fases (dos películas)
+    use_T = ("Temperatura (°C)" in sel3) and (T_C is not None)
+    fig3 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
+    for part, conv in [("2F_tf_org", conv_2F_org), ("2F_tf_aq", conv_2F_aq)]:
+        labs, idxs = LABELS[part]
+        for lab, i in zip(labs, idxs):
+            if lab in sel3:
+                fig3.add_trace(go.Scatter(x=times_h, y=conv(res["2F_2film"][i]), mode="lines", name=lab),
+                            secondary_y=False if use_T else None)
+    if use_T:
+        fig3.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
+                    secondary_y=True)
+        fig3.update_yaxes(title_text="T [°C]", secondary_y=True)
+    st.plotly_chart(fig3, use_container_width=True)
 
 
     # Conversores de unidad ya definidos arriba (conv_1F, conv_2F_org, conv_2F_aq) + etiqueta de eje y

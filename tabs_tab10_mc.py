@@ -3,6 +3,7 @@ import numpy as np
 import streamlit as st
 from scipy.integrate import solve_ivp
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import hashlib, json
 import pandas as pd
 from typing import Literal, Dict, Tuple
@@ -11,6 +12,35 @@ MW_H2O2  = 34.0147
 MW_HCOOH = 46.0254
 MW_H2O   = 18.0153
 R = 8.314462618 # J/mol/K
+
+
+def _T_of_t(t_s: float) -> float:
+    """Perfil térmico (t en segundos, devuelve T en K)."""
+    th = float(t_s)/3600.0  # s -> h
+    if   th < 0.5:  Tc = 25.0
+    elif th < 1.0:  Tc = 35.0
+    elif th < 1.5:  Tc = 45.0
+    elif th < 3.5:  Tc = 50.0
+    else:           Tc = 60.0
+    return 273.15 + Tc
+
+def _arr(kref, Ea, T, Tref):          # Arrhenius con kref a Tref
+    return float(kref*np.exp((Ea/R)*(1.0/Tref - 1.0/T)))
+
+def _vh(Kref, dH, T, Tref):           # van ’t Hoff para Kp(T)
+    return float(Kref*np.exp((-dH/R)*(1.0/T - 1.0/Tref)))
+
+def _k_of_T(T, p):
+    return dict(
+        k1f=_arr(p.k1f, p.Ea_k1f, T, p.Tref),
+        k1r=_arr(p.k1r, p.Ea_k1r, T, p.Tref),
+        k2 =_arr(p.k2 , p.Ea_k2 , T, p.Tref),
+        k3 =_arr(p.k3 , p.Ea_k3 , T, p.Tref),
+        k4 =_arr(p.k4 , p.Ea_k4 , T, p.Tref),
+        k5a=_arr(p.k5a, p.Ea_k5a, T, p.Tref),
+        k5b=_arr(p.k5b, p.Ea_k5b, T, p.Tref),
+        k5c=_arr(p.k5c, p.Ea_k5c, T, p.Tref),
+    )
 
 @dataclass
 class Params:
@@ -45,7 +75,8 @@ class Params:
 
     C_H2Oorg_eq: float = 0.0   # H2O(org) efectivo para 2F-eq (constante)
 
-    Tref: float = 313.15   # K (40°C)
+    #Tref: float = 313.15   # K (40°C)
+    Tref: float = 298.15
     Ea_k1f: float = 0.0; Ea_k1r: float = 0.0; Ea_k2: float = 0.0; Ea_k3: float = 0.0; Ea_k4: float = 0.0
     Ea_k5a: float = 0.0; Ea_k5b: float = 0.0; Ea_k5c: float = 0.0
     # van ’t Hoff para particiones (solo usa 2F-eq)
@@ -91,34 +122,6 @@ K_FIXED = dict(
     k5c = 1.0e-04,  # Ep+H2O+PFA
     alpha=1.0,    # –
 )
-
-def _T_of_t(t_s: float) -> float:
-    """Perfil térmico (t en segundos, devuelve T en K)."""
-    th = float(t_s)/3600.0  # s -> h
-    if   th < 0.5:  Tc = 25.0
-    elif th < 1.0:  Tc = 35.0
-    elif th < 1.5:  Tc = 45.0
-    elif th < 3.5:  Tc = 50.0
-    else:           Tc = 60.0
-    return 273.15 + Tc
-
-def _arr(kref, Ea, T, Tref):          # Arrhenius con kref a Tref
-    return float(kref*np.exp((Ea/R)*(1.0/Tref - 1.0/T)))
-
-def _vh(Kref, dH, T, Tref):           # van ’t Hoff para Kp(T)
-    return float(Kref*np.exp((-dH/R)*(1.0/T - 1.0/Tref)))
-
-def _k_of_T(T, p):
-    return dict(
-        k1f=_arr(p.k1f, p.Ea_k1f, T, p.Tref),
-        k1r=_arr(p.k1r, p.Ea_k1r, T, p.Tref),
-        k2 =_arr(p.k2 , p.Ea_k2 , T, p.Tref),
-        k3 =_arr(p.k3 , p.Ea_k3 , T, p.Tref),
-        k4 =_arr(p.k4 , p.Ea_k4 , T, p.Tref),
-        k5a=_arr(p.k5a, p.Ea_k5a, T, p.Tref),
-        k5b=_arr(p.k5b, p.Ea_k5b, T, p.Tref),
-        k5c=_arr(p.k5c, p.Ea_k5c, T, p.Tref),
-    )
 
 def rhs_one_phase(t, y, p: Params):
     # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_HCOOH, n_H2O, n_OL, n_FORM, n_PFORM]
@@ -253,6 +256,7 @@ def rhs_two_phase_twofilm(t, y, p: Params):
 
 def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float], npts: int = 400):
     t_eval = np.linspace(t_span[0], t_span[1], npts)
+    T_vec = np.array([T_of_t_seconds(ti) for ti in t_eval])  # K
     # 1 fase
     y01 = [y0[k] for k in ["CdC","Ep","FA","PFA","H2O2","HCOOH","H2O"]] + [0.0, 0.0, 0.0]
     sol1 = solve_ivp(lambda t,y: rhs_one_phase(t,y,p), t_span, y01, t_eval=t_eval, method="LSODA")
@@ -262,7 +266,7 @@ def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float]
     # 2 fases 2 films
     y03 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2o","H2Oo","H2O2a","HCOOHa","PFAa","FAa","H2Oa"]] + [0.0, 0.0, 0.0]
     sol3 = solve_ivp(lambda t,y: rhs_two_phase_twofilm(t,y,p), t_span, y03, t_eval=t_eval, method="LSODA")
-    return {"t": t_eval, "1F": sol1.y, "2F_eq": sol2.y, "2F_2film": sol3.y}
+    return {"t": t_eval, "1F": sol1.y, "2F_eq": sol2.y, "2F_2film": sol3.y,"T_C": (T_vec - 273.15)}
 
 def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     if "mc_params" not in st.session_state:
@@ -745,7 +749,8 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                         legend_title="Especie", hovermode="x unified")
 
     times_h = res["t"]/3600.0
-
+    T_C = res.get("T_C", None)
+              
     # === Multiselect GLOBAL (aplica a los 3 gráficos) ===
     LABELS = {
     "1F": (["C=C","Ep","FA","PFA","H2O2","HCOOH","H2O","OL","FORM","PFORM"], list(range(10))),
@@ -757,17 +762,29 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     "2F_tf_aq": (["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)","H2O(aq)"], [6,7,8,9,10]),
     }
     # orden sugerido en el selector
-    opts_global = sum([LABELS["1F"][0], LABELS["2F_eq_org"][0], LABELS["2F_eq_aq"][0], LABELS["2F_tf_org"][0], LABELS["2F_tf_aq"][0]], [])
+    opts_global = sum([LABELS["1F"][0], LABELS["2F_eq_org"][0], LABELS["2F_eq_aq"][0], LABELS["2F_tf_org"][0], LABELS["2F_tf_aq"][0]], []) + (["Temperatura (°C)"] if T_C is not None else [])
     sel = st.multiselect("Curvas a mostrar (global)", options=opts_global, default=opts_global)
+
 
     # Conversores de unidad ya definidos arriba (conv_1F, conv_2F_org, conv_2F_aq) + etiqueta de eje y
     def _plot_model(title, t_h, Y, labels, conv_fn):
-        fig = go.Figure()
+        use_T = ("Temperatura (°C)" in sel) and (T_C is not None)
+        fig = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
+
+        # especies
         for lab, idx in zip(labels[0], labels[1]):
             if lab in sel:
-                fig.add_trace(go.Scatter(x=t_h, y=conv_fn(Y[idx]), mode="lines", name=lab))
+                fig.add_trace(go.Scatter(x=t_h, y=conv_fn(Y[idx]), mode="lines", name=lab),
+                            secondary_y=False if use_T else None)
+
+        # T en eje derecho
+        if use_T:
+            fig.add_trace(go.Scatter(x=t_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
+                        secondary_y=True)
+            fig.update_yaxes(title_text="T [°C]", secondary_y=True)
+
         fig.update_layout(title=title, xaxis_title="Tiempo [h]", yaxis_title=ylab,
-                        legend_title="Especie", hovermode="x unified")
+                        legend_title="Variable", hovermode="x unified")
         return fig
 
     times_h = res["t"] / 3600.0  # una sola vez

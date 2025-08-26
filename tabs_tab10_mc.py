@@ -256,7 +256,7 @@ def rhs_two_phase_twofilm(t, y, p: Params):
 
 def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float], npts: int = 400):
     t_eval = np.linspace(t_span[0], t_span[1], npts)
-    T_vec = np.array([T_of_t_seconds(ti) for ti in t_eval])  # K
+    T_vec = np.array([_T_of_t(ti) for ti in t_eval]) # K
     # 1 fase
     y01 = [y0[k] for k in ["CdC","Ep","FA","PFA","H2O2","HCOOH","H2O"]] + [0.0, 0.0, 0.0]
     sol1 = solve_ivp(lambda t,y: rhs_one_phase(t,y,p), t_span, y01, t_eval=t_eval, method="LSODA")
@@ -723,6 +723,11 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         kla_H2O = prm["kla_H2O"],   Kp_H2O = prm["Kp_H2O"],
         C_H2Oorg_eq = prm["Kp_H2O"] * (y0["H2Oa"] / Vaq),
         C_H2Oa0_conc = (y0["H2Oa"] / Vaq),  
+
+        Tref=313.15,                 # 40 °C
+        Ea_k2=60000.0,               # 60 kJ/mol (epoxidación)
+        Ea_k5a=40000.0, Ea_k5b=50000.0, Ea_k5c=50000.0,   # apertura
+        Ea_k1f=30000.0, Ea_k1r=30000.0, Ea_k3=30000.0, Ea_k4=30000.0
     )
 
     # ===== Ejecutar los 3 modelos (usa las RHS nuevas en moles) =====
@@ -795,28 +800,45 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.plotly_chart(fig1, use_container_width=True)
 
     # ---- 2-fases (equilibrio) ----
-    fig2 = go.Figure()
-    for part, conv in [( "2F_eq_org", conv_2F_org), ("2F_eq_aq", conv_2F_aq)]:
+    use_T = ("Temperatura (°C)" in sel) and (T_C is not None)
+    fig2 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
+    for part, conv in [("2F_eq_org", conv_2F_org), ("2F_eq_aq", conv_2F_aq)]:
         labs, idxs = LABELS[part]
         for lab, i in zip(labs, idxs):
             if lab in sel:
-                fig2.add_trace(go.Scatter(x=times_h, y=conv(res["2F_eq"][i]), mode="lines", name=lab))
+                fig2.add_trace(
+                    go.Scatter(x=times_h, y=conv(res["2F_eq"][i]), mode="lines", name=lab),
+                    secondary_y=False if use_T else None
+                )
+    if use_T:
+        fig2.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
+                    secondary_y=True)
+        fig2.update_yaxes(title_text="T [°C]", secondary_y=True)
     fig2.update_layout(title="Modelo 2-fases (equilibrio) – Especies seleccionadas",
                     xaxis_title="Tiempo [h]", yaxis_title=ylab, hovermode="x unified",
-                    legend_title="Especie")
+                    legend_title="Variable")
     st.plotly_chart(fig2, use_container_width=True)
 
     # ---- 2-fases (dos películas) ----
-    fig3 = go.Figure()
-    for part, conv in [( "2F_tf_org", conv_2F_org), ("2F_tf_aq", conv_2F_aq)]:
+    use_T = ("Temperatura (°C)" in sel) and (T_C is not None)
+    fig3 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
+    for part, conv in [("2F_tf_org", conv_2F_org), ("2F_tf_aq", conv_2F_aq)]:
         labs, idxs = LABELS[part]
         for lab, i in zip(labs, idxs):
             if lab in sel:
-                fig3.add_trace(go.Scatter(x=times_h, y=conv(res["2F_2film"][i]), mode="lines", name=lab))
+                fig3.add_trace(
+                    go.Scatter(x=times_h, y=conv(res["2F_2film"][i]), mode="lines", name=lab),
+                    secondary_y=False if use_T else None
+                )
+    if use_T:
+        fig3.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
+                    secondary_y=True)
+        fig3.update_yaxes(title_text="T [°C]", secondary_y=True)
     fig3.update_layout(title="Modelo 2-fases (dos películas) – Especies seleccionadas",
                     xaxis_title="Tiempo [h]", yaxis_title=ylab, hovermode="x unified",
-                    legend_title="Especie")
+                    legend_title="Variable")
     st.plotly_chart(fig3, use_container_width=True)
+
 
     # ---- 2-fases (dos películas) – ACUMULADOS (Δ respecto a t0) ----
     # Usamos las mismas etiquetas e índices del gráfico 2F-2film

@@ -766,7 +766,13 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
         Ea_k2=60000.0,               # 60 kJ/mol (epoxidación)
         Ea_k5a=40000.0, Ea_k5b=50000.0, Ea_k5c=50000.0,   # apertura
-        Ea_k1f=30000.0, Ea_k1r=30000.0, Ea_k3=30000.0, Ea_k4=30000.0
+        Ea_k1f=30000.0, Ea_k1r=30000.0, Ea_k3=30000.0, Ea_k4=30000.0,
+
+        # ----- activar T en TRANSFERENCIA -----
+        Ea_kla_PFA=2.0e4, Ea_kla_H2O2=2.0e4, Ea_kla_HCOOH=2.0e4, Ea_kla_H2O=1.5e4,  # J/mol
+        # ----- activar T en PARTICIÓN (van’t Hoff) -----
+        dH_Kp_PFA= +1.5e4, dH_Kp_HCOOH= +1.0e4, dH_Kp_H2O2= +8.0e3, dH_Kp_H2O= +5.0e3,  # J/mol
+        # (signo + ⇒ Kp↑ con T; si observás lo contrario, probá signo −)
     )
 
     # ===== Ejecutar los 3 modelos (usa las RHS nuevas en moles) =====

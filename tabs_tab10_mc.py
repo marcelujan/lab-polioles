@@ -747,7 +747,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         ylab = "Concentración (mol/L)"
 
     times_h = res["t"]/3600.0
-    T_C = res.get("T_C", None)
+    T_C = res.get("T_C", None)d
 
     LABELS = {
     "1F": (["C=C","Ep","FA","PFA","H2O2","HCOOH","H2O","OL","FORM","PFORM"], list(range(10))),
@@ -759,72 +759,84 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     "2F_tf_aq": (["H2O2(aq)","HCOOH(aq)","PFA(aq)","FA(aq)","H2O(aq)"], [6,7,8,9,10]),
     }
 
-    # --- opciones por gráfico ---
+    # --- 1-fase: selector justo antes del gráfico ---
     opts1 = LABELS["1F"][0] + (["Temperatura (°C)"] if T_C is not None else [])
     hide1 = {"H2O"}
     sel1  = st.multiselect("1-fase: curvas a mostrar",
                         options=opts1,
-                        default=[o for o in opts1 if o not in hide1])
+                        default=[o for o in opts1 if o not in hide1],
+                        key="sel_1f")
 
-    opts2 = LABELS["2F_eq_org"][0] + LABELS["2F_eq_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
-    # (en 2F-eq no hay H2O explícita; dejamos todo encendido)
-    sel2  = st.multiselect("2-fases (equilibrio): curvas a mostrar", options=opts2, default=opts2)
-
-    opts3 = LABELS["2F_tf_org"][0] + LABELS["2F_tf_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
-    hide3 = {"H2O(org)", "H2O(aq)"}
-    sel3  = st.multiselect("2-fases (dos películas): curvas a mostrar",
-                        options=opts3,
-                        default=[o for o in opts3 if o not in hide3])
-
-    #1-fase
     use_T = ("Temperatura (°C)" in sel1) and (T_C is not None)
     fig1 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
     labs, idxs = LABELS["1F"]
     for lab, i in zip(labs, idxs):
         if lab in sel1:
-            fig1.add_trace(go.Scatter(x=times_h, y=conv_1F(res["1F"][i]), mode="lines", name=lab),
+            fig1.add_trace(go.Scatter(x=times_h, y=conv_1F(res["1F"][i]),
+                                    mode="lines", name=lab),
                         secondary_y=False if use_T else None)
     if use_T:
-        fig1.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
+        fig1.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines",
+                                name="Temperatura (°C)", line=dict(dash="dash")),
                     secondary_y=True)
         fig1.update_yaxes(title_text="T [°C]", secondary_y=True)
+    fig1.update_layout(title="Modelo 1-fase", xaxis_title="Tiempo [h]", yaxis_title=ylab,
+                    hovermode="x unified", legend_title="Variable")
     st.plotly_chart(fig1, use_container_width=True)
 
-    #2-fases (equilibrio)
+
+    # --- 2-fases (equilibrio): selector justo antes del gráfico ---
+    opts2 = LABELS["2F_eq_org"][0] + LABELS["2F_eq_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
+    sel2  = st.multiselect("2-fases (equilibrio): curvas a mostrar",
+                        options=opts2, default=opts2, key="sel_2feq")
+
     use_T = ("Temperatura (°C)" in sel2) and (T_C is not None)
     fig2 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
     for part, conv in [("2F_eq_org", conv_2F_org), ("2F_eq_aq", conv_2F_aq)]:
         labs, idxs = LABELS[part]
         for lab, i in zip(labs, idxs):
             if lab in sel2:
-                fig2.add_trace(go.Scatter(x=times_h, y=conv(res["2F_eq"][i]), mode="lines", name=lab),
+                fig2.add_trace(go.Scatter(x=times_h, y=conv(res["2F_eq"][i]),
+                                        mode="lines", name=lab),
                             secondary_y=False if use_T else None)
     if use_T:
-        fig2.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
+        fig2.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines",
+                                name="Temperatura (°C)", line=dict(dash="dash")),
                     secondary_y=True)
         fig2.update_yaxes(title_text="T [°C]", secondary_y=True)
+    fig2.update_layout(title="Modelo 2-fases (equilibrio)", xaxis_title="Tiempo [h]",
+                    yaxis_title=ylab, hovermode="x unified", legend_title="Variable")
     st.plotly_chart(fig2, use_container_width=True)
 
-    #2-fases (dos películas)
+    # --- 2-fases (dos películas): selector justo antes del gráfico ---
+    opts3 = LABELS["2F_tf_org"][0] + LABELS["2F_tf_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
+    hide3 = {"H2O(org)", "H2O(aq)"}
+    sel3  = st.multiselect("2-fases (dos películas): curvas a mostrar",
+                        options=opts3,
+                        default=[o for o in opts3 if o not in hide3],
+                        key="sel_2film")
+
     use_T = ("Temperatura (°C)" in sel3) and (T_C is not None)
     fig3 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
     for part, conv in [("2F_tf_org", conv_2F_org), ("2F_tf_aq", conv_2F_aq)]:
         labs, idxs = LABELS[part]
         for lab, i in zip(labs, idxs):
             if lab in sel3:
-                fig3.add_trace(go.Scatter(x=times_h, y=conv(res["2F_2film"][i]), mode="lines", name=lab),
+                fig3.add_trace(go.Scatter(x=times_h, y=conv(res["2F_2film"][i]),
+                                        mode="lines", name=lab),
                             secondary_y=False if use_T else None)
     if use_T:
-        fig3.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
+        fig3.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines",
+                                name="Temperatura (°C)", line=dict(dash="dash")),
                     secondary_y=True)
         fig3.update_yaxes(title_text="T [°C]", secondary_y=True)
+    fig3.update_layout(title="Modelo 2-fases (dos películas)", xaxis_title="Tiempo [h]",
+                    yaxis_title=ylab, hovermode="x unified", legend_title="Variable")
     st.plotly_chart(fig3, use_container_width=True)
 
-
-    # ---- 2-fases (dos películas) – ACUMULADOS (Δ respecto a t0) ----
+    # --- 2-fases (dos películas): Acumulados Δ vs t0 (respeta sel3) ---
     labs_org, idx_org = LABELS["2F_tf_org"]
     labs_aq,  idx_aq  = LABELS["2F_tf_aq"]
-
     fig_acc = go.Figure()
     for lab, i in zip(labs_org + labs_aq, idx_org + idx_aq):
         if lab not in sel3:
@@ -833,13 +845,11 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         y_conv  = conv_fn(res["2F_2film"][i])
         y_acc   = y_conv - y_conv[0]
         fig_acc.add_trace(go.Scatter(x=times_h, y=y_acc, mode="lines", name=lab))
-
-    fig_acc.update_layout(
-        title="Modelo 2-fases (dos películas) – Acumulados Δ respecto a t0",
-        xaxis_title="Tiempo [h]", yaxis_title=ylab, hovermode="x unified",
-        legend_title="Variable"
-    )
+    fig_acc.update_layout(title="2-fases (dos películas) – Acumulados Δ t0",
+                        xaxis_title="Tiempo [h]", yaxis_title=ylab,
+                        hovermode="x unified", legend_title="Variable")
     st.plotly_chart(fig_acc, use_container_width=True)
+
 
     # Pie: simplificaciones
     st.markdown("""

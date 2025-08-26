@@ -746,12 +746,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         conv_2F_org = lambda arr: arr / max(Vorg,1e-12)
         ylab = "Concentración (mol/L)"
 
-    def _add_traces(fig, t, Ys, names, conv_fn):
-        for y, name in zip(Ys, names):
-            fig.add_trace(go.Scatter(x=t, y=conv_fn(y), mode="lines", name=name))
-        fig.update_layout(xaxis_title="Tiempo [h]", yaxis_title=ylab,
-                        legend_title="Especie", hovermode="x unified")
-
     times_h = res["t"]/3600.0
     T_C = res.get("T_C", None)
 
@@ -827,97 +821,23 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     st.plotly_chart(fig3, use_container_width=True)
 
 
-    # Conversores de unidad ya definidos arriba (conv_1F, conv_2F_org, conv_2F_aq) + etiqueta de eje y
-    def _plot_model(title, t_h, Y, labels, conv_fn):
-        use_T = ("Temperatura (°C)" in sel) and (T_C is not None)
-        fig = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
-
-        # especies
-        for lab, idx in zip(labels[0], labels[1]):
-            if lab in sel:
-                fig.add_trace(go.Scatter(x=t_h, y=conv_fn(Y[idx]), mode="lines", name=lab),
-                            secondary_y=False if use_T else None)
-
-        # T en eje derecho
-        if use_T:
-            fig.add_trace(go.Scatter(x=t_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
-                        secondary_y=True)
-            fig.update_yaxes(title_text="T [°C]", secondary_y=True)
-
-        fig.update_layout(title=title, xaxis_title="Tiempo [h]", yaxis_title=ylab,
-                        legend_title="Variable", hovermode="x unified")
-        return fig
-
-    times_h = res["t"] / 3600.0  # una sola vez
-
-    # ---- Modelo 1-fase ----
-    fig1 = _plot_model("Modelo 1-fase – Especies seleccionadas",
-                    times_h, res["1F"], LABELS["1F"], conv_1F)
-    st.plotly_chart(fig1, use_container_width=True)
-
-    # ---- 2-fases (equilibrio) ----
-    use_T = ("Temperatura (°C)" in sel) and (T_C is not None)
-    fig2 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
-    for part, conv in [("2F_eq_org", conv_2F_org), ("2F_eq_aq", conv_2F_aq)]:
-        labs, idxs = LABELS[part]
-        for lab, i in zip(labs, idxs):
-            if lab in sel:
-                fig2.add_trace(
-                    go.Scatter(x=times_h, y=conv(res["2F_eq"][i]), mode="lines", name=lab),
-                    secondary_y=False if use_T else None
-                )
-    if use_T:
-        fig2.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
-                    secondary_y=True)
-        fig2.update_yaxes(title_text="T [°C]", secondary_y=True)
-    fig2.update_layout(title="Modelo 2-fases (equilibrio) – Especies seleccionadas",
-                    xaxis_title="Tiempo [h]", yaxis_title=ylab, hovermode="x unified",
-                    legend_title="Variable")
-    st.plotly_chart(fig2, use_container_width=True)
-
-    # ---- 2-fases (dos películas) ----
-    use_T = ("Temperatura (°C)" in sel) and (T_C is not None)
-    fig3 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
-    for part, conv in [("2F_tf_org", conv_2F_org), ("2F_tf_aq", conv_2F_aq)]:
-        labs, idxs = LABELS[part]
-        for lab, i in zip(labs, idxs):
-            if lab in sel:
-                fig3.add_trace(
-                    go.Scatter(x=times_h, y=conv(res["2F_2film"][i]), mode="lines", name=lab),
-                    secondary_y=False if use_T else None
-                )
-    if use_T:
-        fig3.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="Temperatura (°C)", line=dict(dash="dash")),
-                    secondary_y=True)
-        fig3.update_yaxes(title_text="T [°C]", secondary_y=True)
-    fig3.update_layout(title="Modelo 2-fases (dos películas) – Especies seleccionadas",
-                    xaxis_title="Tiempo [h]", yaxis_title=ylab, hovermode="x unified",
-                    legend_title="Variable")
-    st.plotly_chart(fig3, use_container_width=True)
-
-
     # ---- 2-fases (dos películas) – ACUMULADOS (Δ respecto a t0) ----
-    # Usamos las mismas etiquetas e índices del gráfico 2F-2film
     labs_org, idx_org = LABELS["2F_tf_org"]
-    labs_aq, idx_aq = LABELS["2F_tf_aq"]
-
-    # Mapa de conversores por etiqueta
-    conv_map = {lab: (conv_2F_org if "(org)" in lab else conv_2F_aq) for lab in (labs_org + labs_aq)}
+    labs_aq,  idx_aq  = LABELS["2F_tf_aq"]
 
     fig_acc = go.Figure()
     for lab, i in zip(labs_org + labs_aq, idx_org + idx_aq):
-        if lab not in sel:           # respeta el multiselect global
+        if lab not in sel3:
             continue
-        y_conv = conv_map[lab](res["2F_2film"][i])
-        y_acc  = y_conv - y_conv[0]  # acumulado: Δy(t) = y(t) - y(0)
+        conv_fn = conv_2F_org if "(org)" in lab else conv_2F_aq
+        y_conv  = conv_fn(res["2F_2film"][i])
+        y_acc   = y_conv - y_conv[0]
         fig_acc.add_trace(go.Scatter(x=times_h, y=y_acc, mode="lines", name=lab))
 
     fig_acc.update_layout(
-        title="Modelo 2-fases (dos películas) – Acumulados (Δ respecto a t₀)",
-        xaxis_title="Tiempo [h]",
-        yaxis_title=("Δ mol" if unidad == "Moles de lote" else "Δ mol/L"),
-        legend_title="Especie",
-        hovermode="x unified"
+        title="Modelo 2-fases (dos películas) – Acumulados Δ respecto a t0",
+        xaxis_title="Tiempo [h]", yaxis_title=ylab, hovermode="x unified",
+        legend_title="Variable"
     )
     st.plotly_chart(fig_acc, use_container_width=True)
 

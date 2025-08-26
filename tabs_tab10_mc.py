@@ -747,7 +747,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         ylab = "Concentración (mol/L)"
 
     times_h = res["t"]/3600.0
-    T_C = res.get("T_C", None)d
+    T_C = res.get("T_C", None)
 
     LABELS = {
     "1F": (["C=C","Ep","FA","PFA","H2O2","HCOOH","H2O","OL","FORM","PFORM"], list(range(10))),

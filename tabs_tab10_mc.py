@@ -808,10 +808,13 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # --- 1-fase: selector justo antes del gráfico ---
     opts1 = LABELS["1F"][0] + (["Temperatura (°C)"] if T_C is not None else [])
     hide1 = {"H2O"}
-    sel1  = st.multiselect("",
-                        options=opts1,
-                        default=[o for o in opts1 if o not in hide1],
-                        key="sel_1f")
+    sel1 = st.multiselect(
+        "1-fase: curvas a mostrar",
+        options=opts1,
+        default=[o for o in opts1 if o not in hide1],
+        key="sel_1f",
+        label_visibility="collapsed",   # oculta el label pero cumple accesibilidad
+    )
 
     use_T = ("Temperatura (°C)" in sel1) and (T_C is not None)
     fig1 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
@@ -833,8 +836,13 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # --- 2-fases (equilibrio): selector justo antes del gráfico ---
     opts2 = LABELS["2F_eq_org"][0] + LABELS["2F_eq_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
-    sel2  = st.multiselect("",
-                        options=opts2, default=opts2, key="sel_2feq")
+    sel2 = st.multiselect(
+        "2-fases (equilibrio): curvas a mostrar",
+        options=opts2,
+        default=opts2,
+        key="sel_2feq",
+        label_visibility="collapsed",
+    )
 
     use_T = ("Temperatura (°C)" in sel2) and (T_C is not None)
     fig2 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()
@@ -857,10 +865,13 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # --- 2-fases (dos películas): selector justo antes del gráfico ---
     opts3 = LABELS["2F_tf_org"][0] + LABELS["2F_tf_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
     hide3 = {"H2O(org)", "H2O(aq)"}
-    sel3  = st.multiselect("",
-                        options=opts3,
-                        default=[o for o in opts3 if o not in hide3],
-                        key="sel_2film")
+    sel3 = st.multiselect(
+        "2-fases (dos películas): curvas a mostrar",
+        options=opts3,
+        default=[o for o in opts3 if o not in hide3],
+        key="sel_2film",
+        label_visibility="collapsed",
+    )
 
     use_T = ("Temperatura (°C)" in sel3) and (T_C is not None)
     fig3 = make_subplots(specs=[[{"secondary_y": use_T}]]) if use_T else go.Figure()

@@ -762,8 +762,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # --- 1-fase: selector justo antes del gráfico ---
     opts1 = LABELS["1F"][0] + (["Temperatura (°C)"] if T_C is not None else [])
     hide1 = {"H2O"}
-    sel1  = st.multiselect("1-fase: curvas a mostrar",
-                        options=opts1,
+    sel1  = st.multiselect(options=opts1,
                         default=[o for o in opts1 if o not in hide1],
                         key="sel_1f")
 

@@ -353,16 +353,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     with right:
         st.markdown(f"<div style='text-align:right; font-size:0.9em; margin-top:0.0rem'>"f"α = {k['alpha']:.2f} factor ácido en R1, R2, R5a, R5b, R5c." f"</div>",unsafe_allow_html=True)
 
-    # Referencias
-    st.markdown("""
-    **Referencias**
-    - R1: Formación del ácido perfórmico  
-    - R2: Epoxidación en fase orgánica  
-    - R3: Descomposición del PFA  
-    - R4: Descomposición del H₂O₂  
-    - R5: Aperturas del epóxido
-    """)
-    
     st.markdown(
         "<div style='font-size:0.9rem'><b>Siglas:</b> "
         "FA = ácido fórmico (HCOOH); PFA = ácido perfórmico (HCOOOH); "
@@ -373,6 +363,15 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         unsafe_allow_html=True
     )
 
+    # Referencias
+    st.markdown("""
+    **Referencias**
+    - R1: Formación del ácido perfórmico  
+    - R2: Epoxidación en fase orgánica  
+    - R3: Descomposición del PFA  
+    - R4: Descomposición del H₂O₂  
+    - R5: Aperturas del epóxido
+    """)
 
     st.markdown("**Modelo 1-fase**")
     st.latex(r"""

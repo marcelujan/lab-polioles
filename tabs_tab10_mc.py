@@ -75,8 +75,7 @@ class Params:
 
     C_H2Oorg_eq: float = 0.0   # H2O(org) efectivo para 2F-eq (constante)
 
-    #Tref: float = 313.15   # K (40°C)
-    Tref: float = 298.15
+    Tref: float = 313.15   # K (40°C)
     Ea_k1f: float = 0.0; Ea_k1r: float = 0.0; Ea_k2: float = 0.0; Ea_k3: float = 0.0; Ea_k4: float = 0.0
     Ea_k5a: float = 0.0; Ea_k5b: float = 0.0; Ea_k5c: float = 0.0
     # van ’t Hoff para particiones (solo usa 2F-eq)
@@ -724,7 +723,6 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         C_H2Oorg_eq = prm["Kp_H2O"] * (y0["H2Oa"] / Vaq),
         C_H2Oa0_conc = (y0["H2Oa"] / Vaq),  
 
-        Tref=313.15,                 # 40 °C
         Ea_k2=60000.0,               # 60 kJ/mol (epoxidación)
         Ea_k5a=40000.0, Ea_k5b=50000.0, Ea_k5c=50000.0,   # apertura
         Ea_k1f=30000.0, Ea_k1r=30000.0, Ea_k3=30000.0, Ea_k4=30000.0

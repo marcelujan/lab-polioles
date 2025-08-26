@@ -762,7 +762,8 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # --- 1-fase: selector justo antes del gráfico ---
     opts1 = LABELS["1F"][0] + (["Temperatura (°C)"] if T_C is not None else [])
     hide1 = {"H2O"}
-    sel1  = st.multiselect(options=opts1,
+    sel1  = st.multiselect("",
+                        options=opts1,
                         default=[o for o in opts1 if o not in hide1],
                         key="sel_1f")
 
@@ -786,7 +787,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # --- 2-fases (equilibrio): selector justo antes del gráfico ---
     opts2 = LABELS["2F_eq_org"][0] + LABELS["2F_eq_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
-    sel2  = st.multiselect("2-fases (equilibrio): curvas a mostrar",
+    sel2  = st.multiselect("",
                         options=opts2, default=opts2, key="sel_2feq")
 
     use_T = ("Temperatura (°C)" in sel2) and (T_C is not None)
@@ -810,7 +811,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     # --- 2-fases (dos películas): selector justo antes del gráfico ---
     opts3 = LABELS["2F_tf_org"][0] + LABELS["2F_tf_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
     hide3 = {"H2O(org)", "H2O(aq)"}
-    sel3  = st.multiselect("2-fases (dos películas): curvas a mostrar",
+    sel3  = st.multiselect("",
                         options=opts3,
                         default=[o for o in opts3 if o not in hide3],
                         key="sel_2film")

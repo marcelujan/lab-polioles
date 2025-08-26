@@ -96,7 +96,7 @@ class Params:
 
 
 def conc(n: float, V: float) -> float:
-    return n / max(V, 1e-12)
+    return max(n, 0.0) / max(V, 1e-12)
 
 def _apply_params_to_widgets(d):
     # Devuelve un diccionario con defaults si faltan claves
@@ -135,6 +135,7 @@ K_FIXED = dict(
 )
 
 def rhs_one_phase(t, y, p: Params):
+    assert len(y) == 9, f"1F espera 9, recibió {len(y)}"
     # y = [n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_H2O, n_OL, n_FORM, n_PFORM]
     n_CdC, n_Ep, n_FA, n_PFA, n_H2O2, n_H2O, n_OL, n_FORM, n_PFORM = y
     V = p.Vorg + p.Vaq
@@ -166,6 +167,7 @@ def rhs_one_phase(t, y, p: Params):
 
 
 def rhs_two_phase_eq(t, y, p: Params):
+    assert len(y) == 9, f"2F_eq espera 9, recibió {len(y)}"
     # y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_FAa, n_OL_o, n_FORM_o, n_PFORM_o]
     (n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2a, n_FAa, n_OL_o, n_FORM_o, n_PFORM_o) = y
 
@@ -173,8 +175,10 @@ def rhs_two_phase_eq(t, y, p: Params):
     C_H2O2a, C_FAa = [conc(v, p.Vaq) for v in [n_H2O2a, n_FAa]]
     T = _T_of_t(t); k = _k_of_T(T, p)
 
-    Kp_H2O_T  = _vh(p.Kp_H2O,  getattr(p, "dH_Kp_H2O", 0.0), T, p.Tref)
-    Kp_PFA_T  = _vh(p.Kp_PFA,  getattr(p, "dH_Kp_PFA", 0.0), T, p.Tref)
+    #Kp_H2O_T  = _vh(p.Kp_H2O,  getattr(p, "dH_Kp_H2O", 0.0), T, p.Tref)
+    #Kp_PFA_T  = _vh(p.Kp_PFA,  getattr(p, "dH_Kp_PFA", 0.0), T, p.Tref)
+    Kp_FA_T   = _vh(p.Kp_FA,   getattr(p, "dH_Kp_FA",  0.0), T, p.Tref)
+
     C_H2Oo_eff = getattr(p, "C_H2Oorg_eq", 0.0)
 
     r1f   = k['k1f'] * C_H2O2a * C_FAa * p.alpha
@@ -188,10 +192,14 @@ def rhs_two_phase_eq(t, y, p: Params):
 
     dn_CdC   = - r_epox * p.Vorg
     dn_Ep    = ( r_epox - (r5a + r5b + r5c) ) * p.Vorg
-    dn_FAo   = (-r1f + r1r + r3) * p.Vaq - r5b * p.Vorg + r_epox * p.Vorg
     dn_PFAo  = ( r1f - r1r - r3 - r5c) * p.Vaq - r_epox * p.Vorg
     dn_H2O2a = - (r1f + r4) * p.Vaq
-    dn_FAa   = (-r1f + r1r + r3) * p.Vaq
+
+    rpart     = Kp_FA_T * p.Vorg / max(p.Vaq, 1e-12)  # razón de reparto org/aq
+    dFA_rxn   = (-r1f + r1r + r3) * p.Vaq             # Δn_FA neto “nace” en aq
+    dn_FAa    = dFA_rxn / (1.0 + rpart)               # va a aq
+    dn_FAo    = rpart * dFA_rxn - r5b * p.Vorg + r_epox * p.Vorg  # va a org + (R5b/R2)
+
 
     dn_OL_o    = (2*r5a + r5b + r5c) * p.Vorg
     dn_FORM_o  = (r5b) * p.Vorg
@@ -201,6 +209,7 @@ def rhs_two_phase_eq(t, y, p: Params):
 
 
 def rhs_two_phase_twofilm(t, y, p: Params):
+    assert len(y) == 13, f"2F_twofilm espera 13, recibió {len(y)}"
     """
     y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2o, n_H2Oo,
          n_H2O2a, n_FAa, n_PFAa, n_H2Oa,

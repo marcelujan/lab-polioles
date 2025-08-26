@@ -262,13 +262,13 @@ def simulate_models(p: Params, y0: Dict[str, float], t_span: Tuple[float, float]
     t_eval = np.linspace(t_span[0], t_span[1], npts)
     T_vec = np.array([_T_of_t(ti) for ti in t_eval]) # K
     # 1 fase
-    y01 = [y0[k] for k in ["CdC","Ep","FA","PFA","H2O2","FA","H2O"]] + [0.0, 0.0, 0.0]
+    y01 = [y0[k] for k in ["CdC","Ep","FA","PFA","H2O2","H2O"]] + [0.0, 0.0, 0.0]
     sol1 = solve_ivp(lambda t,y: rhs_one_phase(t,y,p), t_span, y01, t_eval=t_eval, method="LSODA")
     # 2 fases eq
     y02 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2a","FAa"]] + [0.0, 0.0, 0.0]
     sol2 = solve_ivp(lambda t,y: rhs_two_phase_eq(t,y,p), t_span, y02, t_eval=t_eval, method="LSODA")
     # 2 fases 2 films
-    y03 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2o","H2Oo","H2O2a","FAa","PFAa","FAa","H2Oa"]] + [0.0, 0.0, 0.0]
+    y03 = [y0[k] for k in ["CdC","Ep","FAo","PFAo","H2O2o","H2Oo","H2O2a","FAa","PFAa","H2Oa"]] + [0.0, 0.0, 0.0]
     sol3 = solve_ivp(lambda t,y: rhs_two_phase_twofilm(t,y,p), t_span, y03, t_eval=t_eval, method="LSODA")
     return {"t": t_eval, "1F": sol1.y, "2F_eq": sol2.y, "2F_2film": sol3.y,"T_C": (T_vec - 273.15)}
 
@@ -680,40 +680,28 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
     # 1F (usa V_total_L)   y0_1fase = [H2O2, FA, PFA, C=C, Ep, Open, H2O]  (concentraciones)
     y0_1F_moles = {
-        "H2O2":  y0_1fase[0]*V_total_L,
-        "FA": y0_1fase[1]*V_total_L,
-        "PFA":   y0_1fase[2]*V_total_L,
-        "CdC":   y0_1fase[3]*V_total_L,
-        "Ep":    y0_1fase[4]*V_total_L,
-        "FA":    y0_1fase[1]*V_total_L  # FA total en 1F: usamos FA inicial
+        "H2O2": y0_1fase[0]*V_total_L,
+        "FA":   y0_1fase[1]*V_total_L,
+        "PFA":  y0_1fase[2]*V_total_L,
+        "CdC":  y0_1fase[3]*V_total_L,
+        "Ep":   y0_1fase[4]*V_total_L,
     }
-
-    # 2F eq / 2F 2films (usa Vaq, Vorg)
-    # y0_2fases = [
-    #   0 Ca_H2O2, 1 Ca_FA, 2 Ca_PFA,
-    #   3 Co_H2O2, 4 Co_FA, 5 Co_PFA,
-    #   6 Co_CdC,  7 Co_Ep,    8 Co_Open,
-    #   9 Ca_H2O,  10 Co_H2O
-    # ]
+    
     y0 = {
-        # clave 1F
         "CdC":  y0_1F_moles["CdC"],
         "Ep":   y0_1F_moles["Ep"],
         "FA":   y0_1F_moles["FA"],
         "PFA":  y0_1F_moles["PFA"],
         "H2O2": y0_1F_moles["H2O2"],
-        "FA":y0_1F_moles["FA"],
-        "H2O": y0_2fases[9]*Vaq,
-        # clave 2F-eq / 2F-2films
-        "FAo":   y0_2fases[4]*Vorg,   # FA org inicial
-        "PFAo":  y0_2fases[5]*Vorg,   # PFA org inicial
-        "H2O2a": y0_2fases[0]*Vaq,    # H2O2 acuosa
-        "FAa":y0_2fases[1]*Vaq,    # FA acuosa
-        "PFAa":  y0_2fases[2]*Vaq,    # PFA acuosa
-        "FAa":   y0_2fases[1]*Vaq,    # FA acuosa (= FA aq)
-        "H2Oa": y0_2fases[9]*Vaq,     # H2O acuosa
-        "H2O2o": 0.0*Vorg,            # H2O2 org (inicial 0)
-        "H2Oo": 0.0*Vorg              # H2O org (inicial 0)
+        "H2O":  y0_2fases[9]*Vaq,     # agua total en 1F
+        "FAo":  y0_2fases[4]*Vorg,
+        "PFAo": y0_2fases[5]*Vorg,
+        "H2O2a":y0_2fases[0]*Vaq,
+        "FAa":  y0_2fases[1]*Vaq,
+        "PFAa": y0_2fases[2]*Vaq,
+        "H2Oa": y0_2fases[9]*Vaq,
+        "H2O2o":0.0*Vorg,
+        "H2Oo": 0.0*Vorg,
     }
 
     # Parámetros del modelo (usa sliders/JSON de prm donde corresponda)

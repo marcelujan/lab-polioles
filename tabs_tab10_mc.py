@@ -42,6 +42,15 @@ def _k_of_T(T, p):
         k5c=_arr(p.k5c, p.Ea_k5c, T, p.Tref),
     )
 
+def _kla_of_T(T, p):
+    arr = lambda kref, Ea: float(kref*np.exp((Ea/R)*(1.0/p.Tref - 1.0/T)))
+    return dict(
+        kla_PFA = arr(p.kla_PFA,  getattr(p,"Ea_kla_PFA",  0.0)),
+        kla_H2O2= arr(p.kla_H2O2, getattr(p,"Ea_kla_H2O2", 0.0)),
+        kla_HCOOH=arr(p.kla_HCOOH,getattr(p,"Ea_kla_HCOOH",0.0)),
+        kla_H2O = arr(p.kla_H2O,  getattr(p,"Ea_kla_H2O",  0.0)),
+    )
+
 @dataclass
 class Params:
     T: float = 313.15
@@ -78,6 +87,9 @@ class Params:
     Tref: float = 313.15   # K (40°C)
     Ea_k1f: float = 0.0; Ea_k1r: float = 0.0; Ea_k2: float = 0.0; Ea_k3: float = 0.0; Ea_k4: float = 0.0
     Ea_k5a: float = 0.0; Ea_k5b: float = 0.0; Ea_k5c: float = 0.0
+    Ea_kla_PFA: float = 0.0; Ea_kla_H2O2: float = 0.0
+    Ea_kla_HCOOH: float = 0.0; Ea_kla_H2O: float = 0.0
+
     # van ’t Hoff para particiones (solo usa 2F-eq)
     dH_Kp_H2O: float = 0.0; dH_Kp_PFA: float = 0.0; dH_Kp_H2O2: float = 0.0; dH_Kp_HCOOH: float = 0.0
     C_H2Oa0_conc: float = 0.0  # [H2O]_aq en t0 (mol/L)
@@ -199,57 +211,85 @@ def rhs_two_phase_eq(t, y, p: Params):
 
 
 def rhs_two_phase_twofilm(t, y, p: Params):
-    # y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2o, n_H2Oo, n_H2O2a, n_HCOOHa, n_PFAa, n_FAa, n_H2Oa, n_OL_o, n_FORM_o, n_PFORM_o]
+    """
+    y = [n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2o, n_H2Oo,
+         n_H2O2a, n_HCOOHa, n_PFAa, n_FAa, n_H2Oa,
+         n_OL_o, n_FORM_o, n_PFORM_o]
+    """
     (n_CdC, n_Ep, n_FAo, n_PFAo, n_H2O2o, n_H2Oo,
-    n_H2O2a, n_HCOOHa, n_PFAa, n_FAa, n_H2Oa, n_OL_o, n_FORM_o, n_PFORM_o) = y
-    # orgánico
-    C_CdC = conc(n_CdC, p.Vorg); C_Ep = conc(n_Ep, p.Vorg)
-    C_FAo = conc(n_FAo, p.Vorg); C_PFAo = conc(n_PFAo, p.Vorg)
-    C_H2O2o = conc(n_H2O2o, p.Vorg); C_H2Oo = conc(n_H2Oo, p.Vorg)
-    # acuoso
-    C_H2O2a = conc(n_H2O2a, p.Vaq); C_HCOOHa = conc(n_HCOOHa, p.Vaq)
-    C_PFAa = conc(n_PFAa, p.Vaq); C_FAa = conc(n_FAa, p.Vaq)
-    C_H2Oa = conc(n_H2Oa, p.Vaq)
-    # transferencia (C_org* = Kp * C_aq)
-    C_PFAo_star = p.Kp_PFA * C_PFAa
-    C_FAo_star = p.Kp_HCOOH * C_FAa
-    C_H2O2o_st = p.Kp_H2O2 * C_H2O2a
-    C_H2Oo_st = p.Kp_H2O * C_H2Oa
-    J_PFA = p.kla_PFA * (C_PFAo_star - C_PFAo) * p.Vorg
-    J_FA = p.kla_HCOOH * (C_FAo_star - C_FAo ) * p.Vorg
-    J_H2O2 = p.kla_H2O2 * (C_H2O2o_st - C_H2O2o) * p.Vorg
-    J_H2O = p.kla_H2O * (C_H2Oo_st - C_H2Oo ) * p.Vorg
-    
+     n_H2O2a, n_HCOOHa, n_PFAa, n_FAa, n_H2Oa,
+     n_OL_o, n_FORM_o, n_PFORM_o) = y
+
+    # --- concentraciones ---
+    C_CdC   = conc(n_CdC,   p.Vorg);  C_Ep   = conc(n_Ep,   p.Vorg)
+    C_FAo   = conc(n_FAo,   p.Vorg);  C_PFAo = conc(n_PFAo, p.Vorg)
+    C_H2O2o = conc(n_H2O2o, p.Vorg);  C_H2Oo = conc(n_H2Oo, p.Vorg)
+
+    C_H2O2a = conc(n_H2O2a, p.Vaq);   C_HCOOHa = conc(n_HCOOHa, p.Vaq)
+    C_PFAa  = conc(n_PFAa,  p.Vaq);   C_FAa    = conc(n_FAa,   p.Vaq)
+    C_H2Oa  = conc(n_H2Oa,  p.Vaq)
+
+    # --- temperatura y constantes ---
     T = _T_of_t(t)
     k = _k_of_T(T, p)
 
-    # reacciones por fase
-    r1f   = k['k1f'] * C_H2O2a * C_HCOOHa * p.alpha        # acuosa
-    r1r   = k['k1r'] * C_PFAa
-    r_epox= k['k2']  * C_PFAo * C_CdC * p.alpha            # orgánica
-    r3    = k['k3']  * C_PFAa                               # acuosa
-    r4a   = k['k4']  * C_H2O2a                              # acuosa
-    r4o   = k['k4']  * C_H2O2o                              # orgánica
-    r5a   = k['k5a'] * C_Ep * C_H2Oo * p.alpha              # orgánica
-    r5b   = k['k5b'] * C_Ep * C_H2Oo * C_FAo * p.alpha      # orgánica
-    r5c   = k['k5c'] * C_Ep * C_H2Oo * C_PFAo * p.alpha     # orgánica
+    # Kp(T) por van 't Hoff   (si ΔH=0 -> quedan constantes)
+    Kp_PFA_T   = _vh(p.Kp_PFA,   getattr(p, "dH_Kp_PFA",   0.0), T, p.Tref)
+    Kp_HCOOH_T = _vh(p.Kp_HCOOH, getattr(p, "dH_Kp_HCOOH", 0.0), T, p.Tref)
+    Kp_H2O2_T  = _vh(p.Kp_H2O2,  getattr(p, "dH_Kp_H2O2",  0.0), T, p.Tref)
+    Kp_H2O_T   = _vh(p.Kp_H2O,   getattr(p, "dH_Kp_H2O",   0.0), T, p.Tref)
 
+    # concentraciones de equilibrio en orgánico (asterisco)
+    C_PFAo_star  = Kp_PFA_T   * C_PFAa
+    C_FAo_star   = Kp_HCOOH_T * C_FAa
+    C_H2O2o_star = Kp_H2O2_T  * C_H2O2a
+    C_H2Oo_star  = Kp_H2O_T   * C_H2Oa
 
-    # balances en MOLES
-    dn_CdC   = - r_epox * p.Vorg
-    dn_Ep    = ( r_epox - (r5a + r5b + r5c) ) * p.Vorg
-    dn_PFAo  = (-r_epox - r5c) * p.Vorg + J_PFA
-    dn_FAo   = (+r_epox - r5b) * p.Vorg + J_FA
-    dn_H2O2o = - r4o * p.Vorg + J_H2O2
-    dn_H2Oo  = (+ r4o - (r5a + r5b + r5c)) * p.Vorg + J_H2O
-    dn_H2O2a = - (r1f + r4a)*p.Vaq - J_H2O2
-    dn_HCOOHa = (-r1f + r1r + r3)*p.Vaq
-    dn_PFAa = ( r1f - r1r - r3)*p.Vaq - J_PFA
-    dn_FAa = (-r1f + r1r + r3)*p.Vaq - J_FA
-    dn_H2Oa = + r4a*p.Vaq - J_H2O
-    dn_OL_o     = (2*r5a + 1*r5b + 1*r5c) * p.Vorg
-    dn_FORM_o   = (1*r5b) * p.Vorg
-    dn_PFORM_o  = (1*r5c) * p.Vorg 
+    # kLa(T) (si no definiste _kla_of_T, cae al valor constante de Params)
+    try:
+        kla = _kla_of_T(T, p)
+        kla_PFA, kla_HCOOH = kla['kla_PFA'], kla['kla_HCOOH']
+        kla_H2O2, kla_H2O  = kla['kla_H2O2'], kla['kla_H2O']
+    except NameError:
+        kla_PFA, kla_HCOOH = p.kla_PFA, p.kla_HCOOH
+        kla_H2O2, kla_H2O  = p.kla_H2O2, p.kla_H2O
+
+    # flujos (mol/s) -> signo positivo: entra a orgánico
+    J_PFA  = kla_PFA   * (C_PFAo_star  - C_PFAo)  * p.Vorg
+    J_FA   = kla_HCOOH * (C_FAo_star   - C_FAo)   * p.Vorg
+    J_H2O2 = kla_H2O2  * (C_H2O2o_star - C_H2O2o) * p.Vorg
+    J_H2O  = kla_H2O   * (C_H2Oo_star  - C_H2Oo)  * p.Vorg
+
+    # --- reacciones (acuosa / orgánica) ---
+    r1f    = k['k1f'] * C_H2O2a * C_HCOOHa * p.alpha      # acuosa
+    r1r    = k['k1r'] * C_PFAa
+    r_epox = k['k2']  * C_PFAo  * C_CdC * p.alpha         # orgánica
+    r3     = k['k3']  * C_PFAa                             # acuosa
+    r4a    = k['k4']  * C_H2O2a                            # acuosa
+    r4o    = k['k4']  * C_H2O2o                            # orgánica
+    r5a    = k['k5a'] * C_Ep * C_H2Oo * p.alpha           # orgánica
+    r5b    = k['k5b'] * C_Ep * C_H2Oo * C_FAo  * p.alpha  # orgánica
+    r5c    = k['k5c'] * C_Ep * C_H2Oo * C_PFAo * p.alpha  # orgánica
+
+    # --- balances en MOLES ---
+    dn_CdC    = - r_epox * p.Vorg
+    dn_Ep     = ( r_epox - (r5a + r5b + r5c) ) * p.Vorg
+
+    dn_PFAo   = (-r_epox - r5c) * p.Vorg + J_PFA
+    dn_FAo    = (+r_epox - r5b) * p.Vorg + J_FA
+    dn_H2O2o  = - r4o * p.Vorg + J_H2O2
+    dn_H2Oo   = (+ r4o - (r5a + r5b + r5c)) * p.Vorg + J_H2O
+
+    dn_H2O2a  = - (r1f + r4a) * p.Vaq - J_H2O2
+    dn_HCOOHa = (-r1f + r1r + r3) * p.Vaq
+    dn_PFAa   = ( r1f - r1r - r3) * p.Vaq - J_PFA
+    dn_FAa    = (-r1f + r1r + r3) * p.Vaq - J_FA
+    dn_H2Oa   = + r4a * p.Vaq - J_H2O
+
+    dn_OL_o    = (2*r5a + 1*r5b + 1*r5c) * p.Vorg
+    dn_FORM_o  = (1*r5b) * p.Vorg
+    dn_PFORM_o = (1*r5c) * p.Vorg
+
     return [dn_CdC, dn_Ep, dn_FAo, dn_PFAo, dn_H2O2o, dn_H2Oo,
             dn_H2O2a, dn_HCOOHa, dn_PFAa, dn_FAa, dn_H2Oa,
             dn_OL_o, dn_FORM_o, dn_PFORM_o]

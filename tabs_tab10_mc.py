@@ -891,7 +891,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         fig1.update_yaxes(title_text="T [°C]", secondary_y=True)
     fig1.update_layout(title="Modelo 1-fase", xaxis_title="Tiempo [h]", yaxis_title=ylab,
                     hovermode="x unified", legend_title="Variable")
-    st.plotly_chart(fig1, use_container_width='stretch')
+    st.plotly_chart(fig1, use_container_width=True)
 
 
     # --- 2-fases (equilibrio): selector justo antes del gráfico ---

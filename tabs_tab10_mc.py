@@ -635,7 +635,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
             "Koq": "{:.2f}",
             "kLa [1/s]": "{:.2e}",
         }, na_rep=""),
-        use_container_width=True, hide_index=True
+        use_container_width='stretch', hide_index=True
     )
 
     # Observación en letra más pequeña
@@ -685,7 +685,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                 ("Agua total [mol]",            n_H2O_total),
                 ("Fracción orgánica Vorg/V [–]", 1.0 - prm["frac_aq"]),
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
-            use_container_width=True, hide_index=True
+            use_container_width='stretch', hide_index=True
         )
 
     with col2:
@@ -695,7 +695,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                 ("Protones FA [mol H⁺]",   Hplus_FA),
                 ("Protones totales [mol H⁺]", Hplus_total),
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
-            use_container_width=True, hide_index=True
+            use_container_width='stretch', hide_index=True
         )
 
     with col3:
@@ -705,7 +705,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                 ("Relación H₂SO₄/C=C [mol/mol]", rel_SA_CdC),
                 ("Relación FA/C=C [mol/mol]", rel_FA_CdC),
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
-            use_container_width=True, hide_index=True
+            use_container_width='stretch', hide_index=True
         )
 
     with col4:
@@ -715,7 +715,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                 ("Relación H₂SO₄/aceite [mol/mol]", rel_SA_soy),
                 ("Relación FA/aceite [mol/mol]", rel_FA_soy),
             ], columns=["Magnitud", "Valor"]).style.format({"Valor": fmt}),
-            use_container_width=True, hide_index=True
+            use_container_width='stretch', hide_index=True
         )
     # ================================================================================
 
@@ -891,7 +891,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         fig1.update_yaxes(title_text="T [°C]", secondary_y=True)
     fig1.update_layout(title="Modelo 1-fase", xaxis_title="Tiempo [h]", yaxis_title=ylab,
                     hovermode="x unified", legend_title="Variable")
-    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig1, use_container_width='stretch')
 
 
     # --- 2-fases (equilibrio): selector justo antes del gráfico ---
@@ -920,7 +920,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         fig2.update_yaxes(title_text="T [°C]", secondary_y=True)
     fig2.update_layout(title="Modelo 2-fases (equilibrio)", xaxis_title="Tiempo [h]",
                     yaxis_title=ylab, hovermode="x unified", legend_title="Variable")
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width='stretch')
 
     # --- 2-fases (dos películas): selector justo antes del gráfico ---
     opts3 = LABELS["2F_tf_org"][0] + LABELS["2F_tf_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])
@@ -949,7 +949,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         fig3.update_yaxes(title_text="T [°C]", secondary_y=True)
     fig3.update_layout(title="Modelo 2-fases (dos películas)", xaxis_title="Tiempo [h]",
                     yaxis_title=ylab, hovermode="x unified", legend_title="Variable")
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, use_container_width='stretch')
 
     # --- 2-fases (dos películas): Acumulados Δ vs t0 (respeta sel3) ---
     labs_org, idx_org = LABELS["2F_tf_org"]
@@ -965,7 +965,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     fig_acc.update_layout(title="2-fases (dos películas) – Acumulados Δ t0",
                         xaxis_title="Tiempo [h]", yaxis_title=ylab,
                         hovermode="x unified", legend_title="Variable")
-    st.plotly_chart(fig_acc, use_container_width=True)
+    st.plotly_chart(fig_acc, use_container_width='stretch')
 
 
     # Pie: simplificaciones

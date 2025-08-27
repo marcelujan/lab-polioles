@@ -376,7 +376,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
 
     # === Parámetros dependientes de T (específicos, con valores a la derecha) ===
-    st.markdown("*Parámetros dependientes de T*")
+    st.markdown("***Parámetros dependientes de T***")
 
     # ---------------- Arrhenius: k_i(T) (una por cada k) ----------------
     st.markdown("**Cinéticas (Arrhenius)**")

@@ -450,6 +450,17 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
                 f"</div>", unsafe_allow_html=True
             )
 
+    # --- Constantes y referencia de temperatura (al final) ---
+    st.markdown("**Constantes usadas**")
+    c1, c2 = st.columns([5,2])
+    with c1:
+        st.latex(r"R = 8.314\,462\,618\ \mathrm{J\,mol^{-1}\,K^{-1}}")
+        st.latex(r"T_{\mathrm{ref}} = 313.15\ \mathrm{K}\ \left(40.00^{\circ}\mathrm{C}\right)")
+    with c2:
+        st.markdown("<div style='text-align:right; font-size:0.9em'>"
+                    "Única T_ref global usada en Arrhenius, kLa y Kp."
+                    "</div>", unsafe_allow_html=True)
+
 
 
     st.markdown("**Modelo 1-fase**")

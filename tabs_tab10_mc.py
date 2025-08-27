@@ -920,7 +920,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         fig2.update_yaxes(title_text="T [°C]", secondary_y=True)
     fig2.update_layout(title="Modelo 2-fases (equilibrio)", xaxis_title="Tiempo [h]",
                     yaxis_title=ylab, hovermode="x unified", legend_title="Variable")
-    st.plotly_chart(fig2, use_container_width='stretch')
+    st.plotly_chart(fig2, use_container_width=True)
 
     # --- 2-fases (dos películas): selector justo antes del gráfico ---
     opts3 = LABELS["2F_tf_org"][0] + LABELS["2F_tf_aq"][0] + (["Temperatura (°C)"] if T_C is not None else [])

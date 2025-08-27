@@ -359,7 +359,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         "AS = ácido sulfúrico (H₂SO₄); H2O2 = peróxido de hidrógeno; "
         "H2O = agua; Ep = epóxido; OL = grupos OH (polioles); "
         "C=C = dobles enlaces; FORM = formiato; PFORM = performiato."
-        "</div>  \n",
+        "</div>\\",
         unsafe_allow_html=True
     )
 

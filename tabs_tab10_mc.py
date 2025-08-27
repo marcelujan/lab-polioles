@@ -457,6 +457,9 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         "kLa = k_L·a, coeficiente volumétrico de transferencia de masa (s⁻¹)  \n"
         "Kp(T) = C_org/C_aq (–), coeficiente de partición orgánico/acuoso  \n"
         "Unidades típicas: k1f, k2, k5a (L·mol⁻¹·s⁻¹); k5b, k5c (L²·mol⁻²·s⁻¹); k1r, k3, k4 (s⁻¹).  \n"
+        "Modelo en concentración: constantes **aparentes** k_app(T)  \n"
+        "Kp(T) tratado como **efectivo** (partición por concentraciones).  \n"
+        "No se usan coeficientes de actividad (γ)."
     )
 
 

@@ -373,6 +373,97 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     - R5: Aperturas del epóxido
     """)
 
+
+    # === Parámetros dependientes de T (Arrhenius, kLa y van ’t Hoff) ===
+    st.markdown("**Parámetros dependientes de T**")
+
+    # -------- Arrhenius: k(T) --------
+    # Nota: tomamos k_ref de K_FIXED/prm y Ea iguales a los que ya usas al construir Params.
+    Ea = {
+        "k1f": prm.get("Ea_k1f", 3.0e4),
+        "k1r": prm.get("Ea_k1r", 3.0e4),
+        "k2":  prm.get("Ea_k2",  6.0e4),
+        "k3":  prm.get("Ea_k3",  3.0e4),
+        "k4":  prm.get("Ea_k4",  3.0e4),
+        "k5a": prm.get("Ea_k5a", 4.0e4),
+        "k5b": prm.get("Ea_k5b", 5.0e4),
+        "k5c": prm.get("Ea_k5c", 5.0e4),
+    }
+    Tref = 313.15  # = p.Tref
+    c1, c2 = st.columns(colw)
+    with c1:
+        st.latex(r"""
+        k_i(T)=k_{i,\mathrm{ref}}\,
+        \exp\!\left(\frac{E_{a,i}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)
+        """)
+    with c2:
+        st.markdown(
+            f"<div style='text-align:right; font-size:0.9em'>"
+            f"R = 8.314 J·mol⁻¹·K⁻¹<br>T_ref = {Tref:.2f} K</div>",
+            unsafe_allow_html=True
+        )
+
+    units_k = {
+        "k1f":"L·mol⁻¹·s⁻¹","k1r":"s⁻¹","k2":"L·mol⁻¹·s⁻¹","k3":"s⁻¹","k4":"s⁻¹",
+        "k5a":"L·mol⁻¹·s⁻¹","k5b":"L²·mol⁻²·s⁻¹","k5c":"L²·mol⁻²·s⁻¹"
+    }
+    rows = []
+    for key in ["k1f","k1r","k2","k3","k4","k5a","k5b","k5c"]:
+        rows.append((key, f"{_fmt_e(K_FIXED[key])} {units_k[key]}", f"{Ea[key]:.0f} J·mol⁻¹"))
+    st.dataframe(pd.DataFrame(rows, columns=["k_i","k_{i,ref} @ T_ref","E_{a,i}"]),
+                use_container_width=True, hide_index=True)
+
+    # -------- Transferencia: kLa(T) --------
+    st.markdown("**Transferencia de masa: kLa(T)**")
+    c1, c2 = st.columns(colw)
+    with c1:
+        st.latex(r"""
+        k_L a_i(T)=(k_L a)_{i,\mathrm{ref}}\,
+        \exp\!\left(\frac{E_{a,kLa,i}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)
+        """)
+        st.latex(r"\dot n_i^{TM}=k_L a_i(T)\,\big(C_{i,\mathrm{org}}^\*(T)-C_{i,\mathrm{org}}\big)\,V_{\mathrm{org}}")
+    with c2:
+        st.markdown("<div style='text-align:right; font-size:0.9em'>kLa ≡ k_L·a [s⁻¹]</div>",
+                    unsafe_allow_html=True)
+
+    kla_ref = {"PFA": prm["kla_PFA"], "H2O2":prm["kla_H2O2"], "FA":prm["kla_FA"], "H2O":prm["kla_H2O"]}
+    Ea_kla = {
+        "PFA": prm.get("Ea_kla_PFA", 2.0e4),
+        "H2O2":prm.get("Ea_kla_H2O2",2.0e4),
+        "FA":  prm.get("Ea_kla_FA",  2.0e4),
+        "H2O": prm.get("Ea_kla_H2O", 1.5e4),
+    }
+    rows = [(f"kLa_{sp}", f"{_fmt_e(kla_ref[sp])} s⁻¹", f"{Ea_kla[sp]:.0f} J·mol⁻¹")
+            for sp in ["PFA","H2O2","FA","H2O"]]
+    st.dataframe(pd.DataFrame(rows, columns=["Coeficiente","(kLa)_ref @ T_ref","E_{a,kLa}"]),
+                use_container_width=True, hide_index=True)
+
+    # -------- Partición: van ’t Hoff --------
+    st.markdown("**Partición: van ’t Hoff (Kp(T))**")
+    c1, c2 = st.columns(colw)
+    with c1:
+        st.latex(r"""
+        K_{p,i}(T)=K_{p,i,\mathrm{ref}}\,
+        \exp\!\left(\frac{-\Delta H_{Kp,i}}{R}\left(\frac{1}{T}-\frac{1}{T_{\mathrm{ref}}}\right)\right)
+        """)
+    with c2:
+        st.markdown("<div style='text-align:right; font-size:0.9em'>Kp ≡ C_i^{org}/C_i^{aq} (–)</div>",
+                    unsafe_allow_html=True)
+
+    Kp_ref = {"PFA":prm["Kp_PFA"], "FA":prm["Kp_FA"], "H2O2":prm["Kp_H2O2"], "H2O":prm["Kp_H2O"]}
+    dH = {
+        "PFA": prm.get("dH_Kp_PFA", 1.5e4),
+        "FA":  prm.get("dH_Kp_FA",  1.0e4),
+        "H2O2":prm.get("dH_Kp_H2O2",8.0e3),
+        "H2O": prm.get("dH_Kp_H2O", 5.0e3),
+    }
+    rows = [(f"Kp_{sp}", f"{Kp_ref[sp]:.3g} (–)", f"{dH[sp]:.0f} J·mol⁻¹")
+            for sp in ["PFA","FA","H2O2","H2O"]]
+    st.dataframe(pd.DataFrame(rows, columns=["Coeficiente","Kp_{ref} @ T_ref","ΔH_{Kp}"]),
+                use_container_width=True, hide_index=True)
+
+
+
     st.markdown("**Modelo 1-fase**")
     st.latex(r"""
     \begin{aligned}

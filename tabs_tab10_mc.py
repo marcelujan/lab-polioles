@@ -374,46 +374,81 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     """)
 
 
-    # === Ecuaciones del modelo (centradas) ===
-    st.markdown("## Parámetros dependientes de T")
 
-    # --- Arrhenius: todas las k(T) ---
+    # === Parámetros dependientes de T (específicos, con valores a la derecha) ===
+    st.markdown("**Parámetros dependientes de T**")
+
+    # ---------------- Arrhenius: k_i(T) (una por cada k) ----------------
     st.markdown("**Cinéticas (Arrhenius)**")
-    st.latex(r"""
-    \begin{aligned}
-    k_{1f}(T) &= k_{1f,\mathrm{ref}}\exp\!\left(\frac{E_{a,1f}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)\\
-    k_{1r}(T) &= k_{1r,\mathrm{ref}}\exp\!\left(\frac{E_{a,1r}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)\\
-    k_{2}(T)  &= k_{2,\mathrm{ref}}\exp\!\left(\frac{E_{a,2}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)\\
-    k_{3}(T)  &= k_{3,\mathrm{ref}}\exp\!\left(\frac{E_{a,3}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)\\
-    k_{4}(T)  &= k_{4,\mathrm{ref}}\exp\!\left(\frac{E_{a,4}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)\\
-    k_{5a}(T) &= k_{5a,\mathrm{ref}}\exp\!\left(\frac{E_{a,5a}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)\\
-    k_{5b}(T) &= k_{5b,\mathrm{ref}}\exp\!\left(\frac{E_{a,5b}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)\\
-    k_{5c}(T) &= k_{5c,\mathrm{ref}}\exp\!\left(\frac{E_{a,5c}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)
-    \end{aligned}
-    """)
 
-    # --- Transferencia: kLa(T) + flujo interfacial ---
+    units_k = {
+        "k1f":"L·mol⁻¹·s⁻¹","k1r":"s⁻¹","k2":"L·mol⁻¹·s⁻¹","k3":"s⁻¹","k4":"s⁻¹",
+        "k5a":"L·mol⁻¹·s⁻¹","k5b":"L²·mol⁻²·s⁻¹","k5c":"L²·mol⁻²·s⁻¹"
+    }
+    arr_list = [("k1f","1f"),("k1r","1r"),("k2","2"),("k3","3"),("k4","4"),("k5a","5a"),("k5b","5b"),("k5c","5c")]
+
+    for key, sub in arr_list:
+        c1, c2 = st.columns(colw)
+        with c1:
+            st.latex(rf"""
+            k_{{{sub}}}(T)=k_{{{sub},\mathrm{{ref}}}}\,
+            \exp\!\left(\frac{{E_{{a,{sub}}}}}{{R}}\left(\frac{{1}}{{T_{{\mathrm{{ref}}}}}}-\frac{{1}}{{T}}\right)\right)
+            """)
+        with c2:
+            st.markdown(
+                f"<div style='text-align:right; font-size:0.9em; margin-top:0.6rem'>"
+                f"k<sub>{sub}</sub>,ref = {_fmt_e(prm[key])} {units_k[key]}<br>"
+                f"E<sub>a,{sub}</sub> = {prm.get('Ea_'+key, 0.0):.0f} J·mol⁻¹"
+                f"</div>", unsafe_allow_html=True
+            )
+
+    # ---------------- Transferencia de masa: (kLa)_i(T) ----------------
     st.markdown("**Transferencia de masa (kLa)**")
-    st.latex(r"""
-    \begin{aligned}
-    (k_L a)_i(T) &= (k_L a)_{i,\mathrm{ref}}\,
-    \exp\!\left(\frac{E_{a,kLa,i}}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right)\\[4pt]
-    \dot n_i^{TM} &= (k_L a)_i(T)\,\big(C_{i,\mathrm{org}}^{*}(T)-C_{i,\mathrm{org}}\big)\,V_{\mathrm{org}}
-    \end{aligned}
-    """)
 
-    # --- Partición: van 't Hoff para Kp(T) ---
+    kla_items = [
+        ("PFA",  "kla_PFA",  "Ea_kla_PFA"),
+        ("H_2O_2","kla_H2O2","Ea_kla_H2O2"),
+        ("FA",   "kla_FA",   "Ea_kla_FA"),
+        ("H_2O", "kla_H2O",  "Ea_kla_H2O"),
+    ]
+    for label_lx, key_ref, key_Ea in kla_items:
+        c1, c2 = st.columns(colw)
+        with c1:
+            st.latex(rf"""
+            (k_L a)_{{{label_lx}}}(T)=(k_L a)_{{{label_lx},\mathrm{{ref}}}}\,
+            \exp\!\left(\frac{{E_{{a,kLa,{label_lx}}}}}{{R}}\left(\frac{{1}}{{T_{{\mathrm{{ref}}}}}}-\frac{{1}}{{T}}\right)\right)
+            """)
+        with c2:
+            st.markdown(
+                f"<div style='text-align:right; font-size:0.9em; margin-top:0.6rem'>"
+                f"(kLa)<sub>{label_lx}</sub>,ref = {_fmt_e(prm[key_ref])} s⁻¹<br>"
+                f"E<sub>a,kLa,{label_lx}</sub> = {prm.get(key_Ea, 0.0):.0f} J·mol⁻¹"
+                f"</div>", unsafe_allow_html=True
+            )
+
+    # ---------------- Partición: Kp_i(T) (van ’t Hoff) ----------------
     st.markdown("**Partición (van ’t Hoff)**")
-    st.latex(r"""
-    \begin{aligned}
-    K_{p,i}(T) &= K_{p,i,\mathrm{ref}}\,
-    \exp\!\left(\frac{-\Delta H_{Kp,i}}{R}\left(\frac{1}{T}-\frac{1}{T_{\mathrm{ref}}}\right)\right)\\[4pt]
-    C_{i,\mathrm{org}}^{*}(T) &= K_{p,i}(T)\,C_{i,\mathrm{aq}}
-    \end{aligned}
-    """)
 
-    # Nota breve (opcional, una sola línea):
-    st.markdown("_Donde **R** es la constante de los gases, y **T_ref** la temperatura de referencia usada en tu modelo._")
+    kp_items = [
+        ("PFA",  "Kp_PFA",  "dH_Kp_PFA"),
+        ("FA",   "Kp_FA",   "dH_Kp_FA"),
+        ("H_2O_2","Kp_H2O2","dH_Kp_H2O2"),
+        ("H_2O", "Kp_H2O",  "dH_Kp_H2O"),
+    ]
+    for label_lx, key_ref, key_dH in kp_items:
+        c1, c2 = st.columns(colw)
+        with c1:
+            st.latex(rf"""
+            K_{{p,{label_lx}}}(T)=K_{{p,{label_lx},\mathrm{{ref}}}}\,
+            \exp\!\left(\frac{{-\Delta H_{{Kp,{label_lx}}}}}{{R}}\left(\frac{{1}}{{T}}-\frac{{1}}{{T_{{\mathrm{{ref}}}}}}\right)\right)
+            """)
+        with c2:
+            st.markdown(
+                f"<div style='text-align:right; font-size:0.9em; margin-top:0.6rem'>"
+                f"Kp<sub>{label_lx}</sub>,ref = {prm[key_ref]:.3g} (–)<br>"
+                f"ΔH<sub>Kp,{label_lx}</sub> = {prm.get(key_dH, 0.0):.0f} J·mol⁻¹"
+                f"</div>", unsafe_allow_html=True
+            )
 
 
 

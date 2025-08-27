@@ -965,7 +965,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
     fig_acc.update_layout(title="2-fases (dos películas) – Acumulados Δ t0",
                         xaxis_title="Tiempo [h]", yaxis_title=ylab,
                         hovermode="x unified", legend_title="Variable")
-    st.plotly_chart(fig_acc, use_container_width='stretch')
+    st.plotly_chart(fig_acc, use_container_width=True)
 
 
     # Pie: simplificaciones

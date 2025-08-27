@@ -359,13 +359,13 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         "AS = ácido sulfúrico (H₂SO₄); H2O2 = peróxido de hidrógeno; "
         "H2O = agua; Ep = epóxido; OL = grupos OH (polioles); "
         "C=C = dobles enlaces; FORM = formiato; PFORM = performiato."
-        "</div>",
+        "</div>  \n",
         unsafe_allow_html=True
     )
 
     # Referencias
     st.markdown("""
-    </b>**Referencias**
+    **Referencias**
     - R1: Formación del ácido perfórmico  
     - R2: Epoxidación en fase orgánica  
     - R3: Descomposición del PFA  

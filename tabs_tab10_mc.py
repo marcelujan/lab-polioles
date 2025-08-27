@@ -949,7 +949,7 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
         fig3.update_yaxes(title_text="T [°C]", secondary_y=True)
     fig3.update_layout(title="Modelo 2-fases (dos películas)", xaxis_title="Tiempo [h]",
                     yaxis_title=ylab, hovermode="x unified", legend_title="Variable")
-    st.plotly_chart(fig3, use_container_width='stretch')
+    st.plotly_chart(fig3, use_container_width=True)
 
     # --- 2-fases (dos películas): Acumulados Δ vs t0 (respeta sel3) ---
     labs_org, idx_org = LABELS["2F_tf_org"]

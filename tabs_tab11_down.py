@@ -43,7 +43,7 @@ def _save_df(db, datos, df: pd.DataFrame):
     guardar_sintesis_global(db, payload)
 
 def render_tab11(db, *_args, **_kwargs):
-    # filtro rápido arriba del grid
+    datos, df = _load_df(db)
     q = st.text_input(" ", placeholder="Filtrar rápido…", label_visibility="collapsed", key="down_qf")
 
     gob = GridOptionsBuilder.from_dataframe(df)

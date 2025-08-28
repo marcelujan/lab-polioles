@@ -83,6 +83,23 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         colcfg[f"{n}_t dec (h)"]  = st.column_config.NumberColumn(label=f"{n}_tDec",help=f"Etapa {n}: tiempo de decantación (h)", width="small", step=0.1, format="%.2f")
         colcfg[f"{n}_V dec (mL)"] = st.column_config.NumberColumn(label=f"{n}_Vdec",help=f"Etapa {n}: volumen decantado (mL)", width="small", step=1)
 
+    st.markdown("""
+    <style>
+    /* Compactar header y forzar SOLO texto */
+    div[data-testid="stDataEditorGrid"] thead th,
+    div[data-testid="stDataFrame"] thead th{
+    padding: 2px 4px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    }
+    /* Ocultar íconos (sort/menú) en los encabezados */
+    div[data-testid="stDataEditorGrid"] thead svg,
+    div[data-testid="stDataFrame"] thead svg{
+    display: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
     # Autosave opcional
     autosave = st.checkbox("Guardar automáticamente", value=True, key="down_autosave", help="Guarda al detectar cambios.")
@@ -95,26 +112,34 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         key="down_editor_native",
     )
 
+    # hash inicial de lo persistido (para no grabar de más)
+    rows_iniciales = df_in.fillna("").to_dict("records")
+    h0 = _hash_rows(rows_iniciales)
+    if "down_hash" not in st.session_state:
+        st.session_state["down_hash"] = h0
+
+    # Editor nativo, sin captions ni índice
+    df_edit = st.data_editor(
+        df_in,
+        num_rows="dynamic",
+        use_container_width=True,
+        column_config=colcfg,
+        hide_index=True,
+        key="down_editor_native",
+    )
+
+    # --- AUTO-GUARDAR SI CAMBIÓ ---
     rows = df_edit.fillna("").to_dict("records")
-    h = _hash_rows(rows)
-    last = st.session_state.get("down_hash")
+    h1 = _hash_rows(rows)
+    if h1 != st.session_state["down_hash"]:
+        guardar_sintesis_global(db, {**datos, "down_tabla": rows})  # persiste en 'sintesis_global/seleccion'
+        st.session_state["down_hash"] = h1
+        st.toast("Guardado", icon="✅")
 
-    if autosave and h != last:
-        guardar_sintesis_global(db, {**datos, "down_tabla": rows})  # persiste en 'sintesis_global/seleccion':contentReference[oaicite:2]{index=2}
-        st.session_state["down_hash"] = h
-        st.toast("Auto-guardado", icon="✅")
+    if st.button("➕ Fila"):
+        df_new = pd.concat([df_edit, pd.DataFrame([{c: "" for c in BASE_COLS}])], ignore_index=True)
+        rows_new = df_new.fillna("").to_dict("records")
+        guardar_sintesis_global(db, {**datos, "down_tabla": rows_new})
+        st.session_state["down_hash"] = _hash_rows(rows_new)
+        st.rerun()
 
-    # Acciones básicas (sin descargas)
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("💾 Guardar ahora", disabled=autosave):
-            guardar_sintesis_global(db, {**datos, "down_tabla": rows})
-            st.session_state["down_hash"] = h
-            st.toast("Guardado", icon="✅")
-    with c2:
-        if st.button("➕ Fila"):
-            df_new = pd.concat([df_edit, pd.DataFrame([{c: "" for c in BASE_COLS}])], ignore_index=True)
-            rows_new = df_new.fillna("").to_dict("records")
-            guardar_sintesis_global(db, {**datos, "down_tabla": rows_new})
-            st.session_state["down_hash"] = _hash_rows(rows_new)
-            st.rerun()

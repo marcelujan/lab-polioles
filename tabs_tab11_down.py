@@ -1,65 +1,126 @@
-# requirements.txt -> streamlit-aggrid>=0.3.5
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+# tabs_tab11_down.py
+import streamlit as st
 import pandas as pd
-from firestore_utils import cargar_sintesis_global, guardar_sintesis_global  # :contentReference[oaicite:2]{index=2}
+from firestore_utils import cargar_sintesis_global, guardar_sintesis_global  # persiste en Firestore:contentReference[oaicite:2]{index=2}
 
-ETAPA_COLORS = {1:"#ffe6d5", 2:"#d9efff", 3:"#e6f4d7", 4:"#efe6ff"}
+# Import condicional de AgGrid (opcional)
+try:
+    from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+    HAS_AGGRID = True
+except Exception:
+    HAS_AGGRID = False
 
-def _cols_etapa(n):
+# ----- Definición de esquema -----
+ETAPA_COLORS = {1: "#ffe6d5", 2: "#d9efff", 3: "#e6f4d7", 4: "#efe6ff"}
+
+def _cols_etapa(n: int):
     return [
-        f"E{n} TIPO DE SAL", f"E{n} CONC (g/L)", f"E{n} VOLUMEN (mL)",
-        f"E{n} TEMP (°C)", f"E{n} t AGIT (h)", f"E{n} t DECAN (h)",
-        f"E{n} FASE ACUO RET (mL)"
+        f"E{n} TIPO DE SAL",
+        f"E{n} CONC (g/L)",
+        f"E{n} VOLUMEN (mL)",
+        f"E{n} TEMP (°C)",
+        f"E{n} t AGIT (h)",
+        f"E{n} t DECAN (h)",
+        f"E{n} FASE ACUO RET (mL)",  # pedido
     ]
 
-BASE_COLS = ["Síntesis", "VOL ACUO (mL)"] + sum((_cols_etapa(i) for i in [1,2,3,4]), []) + ["Observaciones"]
+BASE_COLS = (
+    ["Síntesis", "VOL ACUO (mL)"]
+    + sum((_cols_etapa(i) for i in (1, 2, 3, 4)), [])
+    + ["Observaciones"]
+)
 
-def _df_vacio(n=6):
-    return pd.DataFrame([{c: "" for c in BASE_COLS} for _ in range(n)])
+def _df_vacio(n_rows: int = 6) -> pd.DataFrame:
+    return pd.DataFrame([{c: "" for c in BASE_COLS} for _ in range(n_rows)])
 
-def render_tab11(db, *_):
+def _load_df(db):
     datos = cargar_sintesis_global(db) or {}
-    df = pd.DataFrame(datos.get("down_tabla") or []) if datos.get("down_tabla") else _df_vacio()
+    raw = datos.get("down_tabla")
+    df = pd.DataFrame(raw) if raw else _df_vacio()
+    # asegurar columnas y orden
     for c in BASE_COLS:
-        if c not in df.columns: df[c] = ""
+        if c not in df.columns:
+            df[c] = ""
+    df = df[BASE_COLS]
+    return datos, df
 
-    g = GridOptionsBuilder.from_dataframe(df[BASE_COLS])
-    # ediciones
-    for c in BASE_COLS:
-        g.configure_column(c, editable=True, resizable=True)
+def _save_df(db, datos, df: pd.DataFrame):
+    payload = {**(datos or {}), "down_tabla": df.fillna("").to_dict(orient="records")}
+    guardar_sintesis_global(db, payload)
 
-    # tipos numéricos
-    for c in [x for x in BASE_COLS if any(k in x for k in ["(mL)","(°C)","(g/L)","(h)"])]:
-        g.configure_column(c, type=["numericColumn","customNumericFormat"], valueParser="Number(newValue)")
+def render_tab11(db, *_args, **_kwargs):
+    datos, df = _load_df(db)
 
-    # color por columnas de cada etapa + width angosto
-    def style_col(cols, color):
-        for c in cols: g.configure_column(c, cellStyle={"backgroundColor": color}, width=120)
-    for i in [1,2,3,4]:
-        style_col(_cols_etapa(i), ETAPA_COLORS[i])
-    g.configure_column("Síntesis", pinned="left", width=120)
-    g.configure_column("Observaciones", width=220)
+    if HAS_AGGRID:
+        # ===== Vista AG Grid: color por columna + edición =====
+        gob = GridOptionsBuilder.from_dataframe(df)
 
-    # agregar/eliminar filas
-    g.configure_grid_options(rowSelection="single", editable=True)
-    grid = AgGrid(
-        df, gridOptions=g.build(), update_mode=GridUpdateMode.VALUE_CHANGED,
-        enable_enterprise_modules=False, fit_columns_on_grid_load=False, height=520
-    )
+        # configurar columnas editables + tipos
+        for c in BASE_COLS:
+            gob.configure_column(c, editable=True, resizable=True)
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("➕ Agregar fila vacía"):
-            new = pd.concat([pd.DataFrame([{}], columns=BASE_COLS), pd.DataFrame(grid.data)], ignore_index=True).fillna("")
-            guardar_sintesis_global(db, {**datos, "down_tabla": new.to_dict("records")}); st.rerun()
-    with col2:
-        if st.button("🗑️ Borrar fila seleccionada"):
-            sel = grid["selected_rows"]
-            if sel:
-                left = pd.DataFrame(grid.data)
-                left = left.drop(index=int(sel[0]["_selectedRowNodeInfo"]["nodeId"])).reset_index(drop=True)
-                guardar_sintesis_global(db, {**datos, "down_tabla": left.to_dict("records")}); st.rerun()
-    with col3:
-        if st.button("💾 Guardar cambios"):
-            guardar_sintesis_global(db, {**datos, "down_tabla": pd.DataFrame(grid.data).to_dict("records")})
-            st.success("Guardado.")
+        num_cols = [c for c in BASE_COLS if any(k in c for k in ("(mL)", "(°C)", "(g/L)", "(h)"))]
+        for c in num_cols:
+            gob.configure_column(c, type=["numericColumn", "customNumericFormat"], valueParser="Number(newValue)")
+
+        # ancho y colores por etapa
+        def _style_cols(cols, color):
+            for c in cols:
+                gob.configure_column(c, width=120, cellStyle={"backgroundColor": color})
+
+        for i in (1, 2, 3, 4):
+            _style_cols(_cols_etapa(i), ETAPA_COLORS[i])
+
+        gob.configure_column("Síntesis", pinned="left", width=130)
+        gob.configure_column("Observaciones", width=260)
+
+        grid = AgGrid(
+            df,
+            gridOptions=gob.build(),
+            update_mode=GridUpdateMode.VALUE_CHANGED,
+            fit_columns_on_grid_load=False,
+            height=520,
+        )
+
+        b_add, b_save, b_reload = st.columns(3)
+        with b_add:
+            if st.button("➕ Agregar fila"):
+                nuevo = pd.DataFrame([{c: "" for c in BASE_COLS}])
+                df_out = pd.concat([pd.DataFrame(grid.data), nuevo], ignore_index=True)
+                _save_df(db, datos, df_out)
+                st.rerun()
+        with b_save:
+            if st.button("💾 Guardar"):
+                _save_df(db, datos, pd.DataFrame(grid.data))
+                st.success("Guardado.")
+        with b_reload:
+            if st.button("↺ Recargar"):
+                st.rerun()
+
+    else:
+        # ===== Fallback nativo (sin color por columna) =====
+        df_edit = st.data_editor(
+            df,
+            num_rows="dynamic",
+            use_container_width=True,
+            column_config={
+                "Síntesis": st.column_config.TextColumn(width="small"),
+                "VOL ACUO (mL)": st.column_config.NumberColumn(width="small", step=1),
+                "Observaciones": st.column_config.TextColumn(width="medium"),
+            },
+            key="down_editor",
+        )
+
+        b_save, b_reload, b_add = st.columns(3)
+        with b_save:
+            if st.button("💾 Guardar"):
+                _save_df(db, datos, df_edit)
+                st.success("Guardado.")
+        with b_reload:
+            if st.button("↺ Recargar"):
+                st.rerun()
+        with b_add:
+            if st.button("➕ Agregar fila"):
+                df_out = pd.concat([df_edit, pd.DataFrame([{c: "" for c in BASE_COLS}])], ignore_index=True)
+                _save_df(db, datos, df_out)
+                st.rerun()

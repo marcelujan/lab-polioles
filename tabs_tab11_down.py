@@ -1,111 +1,65 @@
-# tabs_tab11_down.py
-import streamlit as st
+# requirements.txt -> streamlit-aggrid>=0.3.5
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 import pandas as pd
 from firestore_utils import cargar_sintesis_global, guardar_sintesis_global  # :contentReference[oaicite:2]{index=2}
 
-# ----- Definición de columnas -----
-ETAPAS = [1, 2, 3, 4]
+ETAPA_COLORS = {1:"#ffe6d5", 2:"#d9efff", 3:"#e6f4d7", 4:"#efe6ff"}
 
-def _cols_etapa(n:int):
-    # Encabezados “verticales” con \n para hacerlos angostos
+def _cols_etapa(n):
     return [
-        f"ETAPA {n}\nTIPO\nDE SAL",
-        f"ETAPA {n}\nCONC.\n(g/L)",
-        f"ETAPA {n}\nVOLUMEN\n(mL)",
-        f"ETAPA {n}\nTEMP.\n(°C)",
-        f"ETAPA {n}\nTIEMPO\nAGIT. (h)",
-        f"ETAPA {n}\nTIEMPO\nDECAN. (h)",
-        f"ETAPA {n}\nFASE ACUO\nRETIRADA (mL)",
+        f"E{n} TIPO DE SAL", f"E{n} CONC (g/L)", f"E{n} VOLUMEN (mL)",
+        f"E{n} TEMP (°C)", f"E{n} t AGIT (h)", f"E{n} t DECAN (h)",
+        f"E{n} FASE ACUO RET (mL)"
     ]
 
-BASE_COLS = ["Síntesis", "VOL ACUO (mL)"]
-for e in ETAPAS:
-    BASE_COLS += _cols_etapa(e)
-BASE_COLS += ["Observaciones"]
+BASE_COLS = ["Síntesis", "VOL ACUO (mL)"] + sum((_cols_etapa(i) for i in [1,2,3,4]), []) + ["Observaciones"]
 
-# Colores suaves por etapa (bandas superiores)
-ETAPA_COLORS = {
-    1: "#ffe6d5",  # durazno suave
-    2: "#d9efff",  # celeste suave
-    3: "#e6f4d7",  # verde suave
-    4: "#efe6ff",  # lila suave
-}
+def _df_vacio(n=6):
+    return pd.DataFrame([{c: "" for c in BASE_COLS} for _ in range(n)])
 
-def _df_vacio(n_rows=6) -> pd.DataFrame:
-    row = {c: ("" if c in ["Síntesis", "Observaciones"] or "TIPO" in c else None) for c in BASE_COLS}
-    return pd.DataFrame([row.copy() for _ in range(n_rows)])
+def render_tab11(db, *_):
+    datos = cargar_sintesis_global(db) or {}
+    df = pd.DataFrame(datos.get("down_tabla") or []) if datos.get("down_tabla") else _df_vacio()
+    for c in BASE_COLS:
+        if c not in df.columns: df[c] = ""
 
-# ----- UI helpers -----
-def _bandas_etapas():
-    st.markdown(
-        """
-        <div style="display:flex; gap:8px; margin-bottom:6px;">
-          <div style="flex:0 0 160px;"></div>  <!-- Síntesis + VOL ACUO -->
-          <div style="flex:1; display:flex; gap:8px;">
-            <div style="flex:1; background:#ffe6d5; padding:6px; text-align:center; border-radius:6px;">ETAPA 1</div>
-            <div style="flex:1; background:#d9efff; padding:6px; text-align:center; border-radius:6px;">ETAPA 2</div>
-            <div style="flex:1; background:#e6f4d7; padding:6px; text-align:center; border-radius:6px;">ETAPA 3</div>
-            <div style="flex:1; background:#efe6ff; padding:6px; text-align:center; border-radius:6px;">ETAPA 4</div>
-          </div>
-          <div style="flex:0 0 120px;"></div> <!-- Observaciones -->
-        </div>
-        """,
-        unsafe_allow_html=True,
+    g = GridOptionsBuilder.from_dataframe(df[BASE_COLS])
+    # ediciones
+    for c in BASE_COLS:
+        g.configure_column(c, editable=True, resizable=True)
+
+    # tipos numéricos
+    for c in [x for x in BASE_COLS if any(k in x for k in ["(mL)","(°C)","(g/L)","(h)"])]:
+        g.configure_column(c, type=["numericColumn","customNumericFormat"], valueParser="Number(newValue)")
+
+    # color por columnas de cada etapa + width angosto
+    def style_col(cols, color):
+        for c in cols: g.configure_column(c, cellStyle={"backgroundColor": color}, width=120)
+    for i in [1,2,3,4]:
+        style_col(_cols_etapa(i), ETAPA_COLORS[i])
+    g.configure_column("Síntesis", pinned="left", width=120)
+    g.configure_column("Observaciones", width=220)
+
+    # agregar/eliminar filas
+    g.configure_grid_options(rowSelection="single", editable=True)
+    grid = AgGrid(
+        df, gridOptions=g.build(), update_mode=GridUpdateMode.VALUE_CHANGED,
+        enable_enterprise_modules=False, fit_columns_on_grid_load=False, height=520
     )
 
-def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
-    st.title("Down")
-    st.session_state["current_tab"] = "Down"
-
-    # --- Cargar desde Firestore ---
-    dados = cargar_sintesis_global(db) or {}
-    registros = dados.get("down_tabla", None)
-
-    if registros:
-        try:
-            df_in = pd.DataFrame(registros)
-            for c in BASE_COLS:
-                if c not in df_in.columns:
-                    df_in[c] = None
-            df_in = df_in[BASE_COLS]
-        except Exception:
-            df_in = _df_vacio()
-    else:
-        df_in = _df_vacio()
-
-    # Banda de colores por etapa (decorativa)
-    _bandas_etapas()
-
-    # Config de columnas: numeros angostos y textos angostos
-    colcfg = {
-        "Síntesis": st.column_config.TextColumn(width="small"),
-        "VOL ACUO (mL)": st.column_config.NumberColumn(width="small", step=1),
-        "Observaciones": st.column_config.TextColumn(width="medium"),
-    }
-    for e in ETAPAS:
-        colcfg[f"ETAPA {e}\nTIPO\nDE SAL"] = st.column_config.TextColumn(width="small")
-        colcfg[f"ETAPA {e}\nCONC.\n(g/L)"] = st.column_config.NumberColumn(width="small", step=1)
-        colcfg[f"ETAPA {e}\nVOLUMEN\n(mL)"] = st.column_config.NumberColumn(width="small", step=1)
-        colcfg[f"ETAPA {e}\nTEMP.\n(°C)"] = st.column_config.NumberColumn(width="small", step=1)
-        colcfg[f"ETAPA {e}\nTIEMPO\nAGIT. (h)"] = st.column_config.NumberColumn(width="small", step=0.1, format="%.2f")
-        colcfg[f"ETAPA {e}\nTIEMPO\nDECAN. (h)"] = st.column_config.NumberColumn(width="small", step=0.1, format="%.2f")
-        colcfg[f"ETAPA {e}\nFASE ACUO\nRETIRADA (mL)"] = st.column_config.NumberColumn(width="small", step=1)
-
-    st.caption("Editá la tabla. Podés agregar/eliminar filas.")
-    df_edit = st.data_editor(
-        df_in,
-        num_rows="dynamic",
-        use_container_width=True,
-        column_config=colcfg,
-        key="down_tabla_editor_v2",
-    )
-
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("💾 Guardar en Firestore"):
-            payload = {**(dados or {}), "down_tabla": df_edit.to_dict(orient="records")}
-            guardar_sintesis_global(db, payload)  # persiste en 'sintesis_global/seleccion':contentReference[oaicite:3]{index=3}
-            st.success("✅ Tabla guardada.")
-    with c2:
-        if st.button("↺ Recargar"):
-            st.rerun()
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("➕ Agregar fila vacía"):
+            new = pd.concat([pd.DataFrame([{}], columns=BASE_COLS), pd.DataFrame(grid.data)], ignore_index=True).fillna("")
+            guardar_sintesis_global(db, {**datos, "down_tabla": new.to_dict("records")}); st.rerun()
+    with col2:
+        if st.button("🗑️ Borrar fila seleccionada"):
+            sel = grid["selected_rows"]
+            if sel:
+                left = pd.DataFrame(grid.data)
+                left = left.drop(index=int(sel[0]["_selectedRowNodeInfo"]["nodeId"])).reset_index(drop=True)
+                guardar_sintesis_global(db, {**datos, "down_tabla": left.to_dict("records")}); st.rerun()
+    with col3:
+        if st.button("💾 Guardar cambios"):
+            guardar_sintesis_global(db, {**datos, "down_tabla": pd.DataFrame(grid.data).to_dict("records")})
+            st.success("Guardado.")

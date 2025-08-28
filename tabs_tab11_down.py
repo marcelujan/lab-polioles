@@ -70,26 +70,29 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # Reordenar columnas al esquema nuevo
     df_in = df_in[[c for c in BASE_COLS]]
 
-    # Config del editor nativo
     colcfg = {
-        "Síntesis": st.column_config.TextColumn(width="small"),
-        "VOL ACUO (mL)": st.column_config.NumberColumn(width="small", step=1),
-        "Observaciones": st.column_config.TextColumn(width="large"),
+        "Síntesis": st.column_config.TextColumn(label="ID", help="Identificador de síntesis", width="small"),
+        "VOL ACUO (mL)": st.column_config.NumberColumn(label="Vaq (mL)", help="Volumen fase acuosa", width="small", step=1),
+        "Observaciones": st.column_config.TextColumn(label="Obs", help="Notas", width="large"),
     }
-    # Tipos por etapa
-    for n in ETAPAS:
-        colcfg[f"{n}_Agente"]     = st.column_config.TextColumn(width="small")
-        colcfg[f"{n}_V (mL)"]     = st.column_config.NumberColumn(width="small", step=1)
-        colcfg[f"{n}_T"]          = st.column_config.NumberColumn(width="small", step=1)
-        colcfg[f"{n}_t ag (h)"]   = st.column_config.NumberColumn(width="small", step=0.1, format="%.2f")
-        colcfg[f"{n}_t dec (h)"]  = st.column_config.NumberColumn(width="small", step=0.1, format="%.2f")
-        colcfg[f"{n}_V dec (mL)"] = st.column_config.NumberColumn(width="small", step=1)
+    for n in (1,2,3,4):
+        colcfg[f"{n}_Agente"]     = st.column_config.TextColumn(label=f"{n}_Ag",   help=f"Etapa {n}: Agente", width="small")
+        colcfg[f"{n}_V (mL)"]     = st.column_config.NumberColumn(label=f"{n}_V",  help=f"Etapa {n}: Volumen (mL)", width="small", step=1)
+        colcfg[f"{n}_T"]          = st.column_config.NumberColumn(label=f"{n}_T",  help=f"Etapa {n}: Temperatura (°C)", width="small", step=1)
+        colcfg[f"{n}_t ag (h)"]   = st.column_config.NumberColumn(label=f"{n}_tAg",help=f"Etapa {n}: tiempo de agitación (h)", width="small", step=0.1, format="%.2f")
+        colcfg[f"{n}_t dec (h)"]  = st.column_config.NumberColumn(label=f"{n}_tDec",help=f"Etapa {n}: tiempo de decantación (h)", width="small", step=0.1, format="%.2f")
+        colcfg[f"{n}_V dec (mL)"] = st.column_config.NumberColumn(label=f"{n}_Vdec",help=f"Etapa {n}: volumen decantado (mL)", width="small", step=1)
+
 
     # Autosave opcional
     autosave = st.checkbox("Guardar automáticamente", value=True, key="down_autosave", help="Guarda al detectar cambios.")
     df_edit = st.data_editor(
-        df_in, num_rows="dynamic", use_container_width=True,
-        column_config=colcfg, key="down_editor_native"
+        df_in,
+        num_rows="dynamic",
+        use_container_width=True,
+        column_config=colcfg,
+        hide_index=True,
+        key="down_editor_native",
     )
 
     rows = df_edit.fillna("").to_dict("records")

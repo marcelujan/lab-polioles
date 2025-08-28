@@ -15,6 +15,7 @@ from tabs_tab7_consola import render_tab7
 from tabs_tab8_sugerencias import render_tab8
 from tabs_tab9_desarrollos import render_tab9
 from tabs_tab10_mc import render_tab10
+from tabs_tab11_down import render_tab11
 import json
 
 if not firebase_admin._apps:
@@ -75,7 +76,8 @@ tabs = st.tabs([
     "Consola",  
     "Sugerencias",     
     "Desarrollo",     
-    "MC"  
+    "MC",
+    "Down" 
 ])
 
 
@@ -99,6 +101,8 @@ with tabs[8]:
     render_tab9(db, cargar_muestras, mostrar_sector_flotante)
 with tabs[9]:
     render_tab10(db, mostrar_sector_flotante)
+with tabs[10]:
+    render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
     
 from ia_flotante import mostrar_panel_ia
 if "user_email" in st.session_state and "db" in st.session_state:

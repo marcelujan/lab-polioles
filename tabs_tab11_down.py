@@ -71,7 +71,7 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     colcfg = {
         "Síntesis": st.column_config.TextColumn(label="ID", help="Identificador de síntesis", width="small"),
-        "VOL ACUO (mL)": st.column_config.NumberColumn(label="Vaq (mL)", help="Volumen fase acuosa", width="small", step=1),
+        "VOL ACUO (mL)": st.column_config.TextColumn(label="Vaq (mL)", help="Volumen fase acuosa", width="small"  ),
         "Observaciones": st.column_config.TextColumn(label="Obs", help="Notas", width="large"),
     }
     for n in (1,2,3,4):

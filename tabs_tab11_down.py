@@ -2,10 +2,10 @@
 import streamlit as st
 import pandas as pd
 import hashlib, json
-from firestore_utils import cargar_sintesis_global, guardar_sintesis_global  # Firestore utils :contentReference[oaicite:1]{index=1}
+from firestore_utils import cargar_sintesis_global, guardar_sintesis_global
 
 ETAPAS = [1, 2, 3, 4]
-# columnas NUEVAS por etapa, con prefijo n_...
+
 CAMPOS_ETAPA = ["Agente", "V (mL)", "T", "t ag (h)", "t dec (h)", "V dec (mL)"]
 
 def _new_cols_etapa(n:int):
@@ -17,14 +17,13 @@ BASE_COLS = (
     ["Observaciones"]
 )
 
-# Mapa de migración (desde esquema viejo E{n} ... -> nuevo n_...)
 OLD2NEW = lambda n: {
     f"{n}_Agente":          f"E{n} TIPO DE SAL",
     f"{n}_V (mL)":          f"E{n} VOLUMEN (mL)",
     f"{n}_T":               f"E{n} TEMP (°C)",
     f"{n}_t ag (h)":        f"E{n} t AGIT (h)",
     f"{n}_t dec (h)":       f"E{n} t DECAN (h)",
-    f"{n}_V dec (mL)":      f"E{n} FASE ACUO RET (mL)",   # antes “fase acuosa retirada”
+    f"{n}_V dec (mL)":      f"E{n} FASE ACUO RET (mL)",
 }
 
 def _df_vacio():

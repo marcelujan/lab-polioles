@@ -1,65 +1,128 @@
 # tabs_tab11_down.py
 import streamlit as st
 import pandas as pd
-from firestore_utils import cargar_sintesis_global, guardar_sintesis_global  # :contentReference[oaicite:2]{index=2}
+import hashlib, json
+from firestore_utils import cargar_sintesis_global, guardar_sintesis_global  # Firestore utils :contentReference[oaicite:1]{index=1}
 
 ETAPAS = [1, 2, 3, 4]
+# columnas NUEVAS por etapa, con prefijo n_...
+CAMPOS_ETAPA = ["Agente", "V (mL)", "T", "t ag (h)", "t dec (h)", "V dec (mL)"]
 
-def _columnas_etapa(n):
-    base = [
-        f"ETAPA {n} – TIPO DE SAL",
-        f"ETAPA {n} – CONC. DE SAL. (g/L)",
-        f"ETAPA {n} – VOLUMEN (mL)",
-        f"ETAPA {n} – TEMPERATURA (°C)",
-        f"ETAPA {n} – TIEMPO AGIT. (h)",
-        f"ETAPA {n} – TIEMPO DECAN. (h)",
-        f"ETAPA {n} – FASE ACUO RETIRADA (mL)",   # 👈 columna pedida
-    ]
-    return base
+def _new_cols_etapa(n:int):
+    return [f"{n}_{c}" for c in CAMPOS_ETAPA]
 
-COLS = ["VOL ACUO (mL)"]
-for e in ETAPAS:
-    COLS += _columnas_etapa(e)
+BASE_COLS = (
+    ["Síntesis", "VOL ACUO (mL)"] +
+    [c for e in ETAPAS for c in _new_cols_etapa(e)] +
+    ["Observaciones"]
+)
 
-def _df_vacio(n_filas=6):
-    return pd.DataFrame([{c: ("" if "TIPO" in c else None) for c in COLS} for _ in range(n_filas)])
+# Mapa de migración (desde esquema viejo E{n} ... -> nuevo n_...)
+OLD2NEW = lambda n: {
+    f"{n}_Agente":          f"E{n} TIPO DE SAL",
+    f"{n}_V (mL)":          f"E{n} VOLUMEN (mL)",
+    f"{n}_T":               f"E{n} TEMP (°C)",
+    f"{n}_t ag (h)":        f"E{n} t AGIT (h)",
+    f"{n}_t dec (h)":       f"E{n} t DECAN (h)",
+    f"{n}_V dec (mL)":      f"E{n} FASE ACUO RET (mL)",   # antes “fase acuosa retirada”
+}
+
+def _df_vacio():
+    return pd.DataFrame(columns=BASE_COLS)
+
+def _hash_rows(rows):
+    s = json.dumps(rows, ensure_ascii=False, sort_keys=True)
+    return hashlib.md5(s.encode("utf-8")).hexdigest()
+
+def _migrar_columnas(df: pd.DataFrame) -> pd.DataFrame:
+    """Crea nuevas columnas y, si existen, copia datos desde las viejas."""
+    for n in ETAPAS:
+        mapping = OLD2NEW(n)
+        for new_col, old_col in mapping.items():
+            if new_col not in df.columns:
+                if old_col in df.columns:
+                    df[new_col] = df[old_col]
+                else:
+                    df[new_col] = ""
+    # Opcional: podés conservar las viejas; aquí las eliminamos si existen
+    cols_drop = []
+    for n in ETAPAS:
+        cols_drop += list(OLD2NEW(n).values())
+    df = df.drop(columns=[c for c in cols_drop if c in df.columns], errors="ignore")
+    return df
 
 def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
-    st.title("Down")
     st.session_state["current_tab"] = "Down"
 
-    # Cargar tabla desde Firestore (documento global 'sintesis_global/seleccion')
+    # --- Cargar desde Firestore ---
     datos = cargar_sintesis_global(db) or {}
-    registros = datos.get("down_tabla", None)
-    if registros:
-        try:
-            df_in = pd.DataFrame(registros)
-            # Asegurar columnas (por si faltan o cambió el orden)
-            for c in COLS:
-                if c not in df_in.columns:
-                    df_in[c] = None
-            df_in = df_in[COLS]
-        except Exception:
-            df_in = _df_vacio()
-    else:
-        df_in = _df_vacio()
+    raw = datos.get("down_tabla") or []
+    df_in = pd.DataFrame(raw) if raw else _df_vacio()
 
-    st.caption("Editá la tabla. Podés agregar/eliminar filas desde el widget.")
-    edited = st.data_editor(
+    # Asegurar columnas mínimas
+    for c in BASE_COLS:
+        if c not in df_in.columns:
+            df_in[c] = ""
+
+    # Migración desde el esquema viejo (si aplica)
+    df_in = _migrar_columnas(df_in)
+
+    # Reordenar columnas al esquema nuevo
+    df_in = df_in[[c for c in BASE_COLS]]
+
+    colcfg = {
+        "Síntesis": st.column_config.TextColumn(label="ID", help="Identificador de síntesis", width="small"),
+        "VOL ACUO (mL)": st.column_config.NumberColumn(label="Vaq (mL)", help="Volumen fase acuosa", width="small", step=1),
+        "Observaciones": st.column_config.TextColumn(label="Obs", help="Notas", width="large"),
+    }
+    for n in (1,2,3,4):
+        colcfg[f"{n}_Agente"]     = st.column_config.TextColumn(label=f"{n}_Ag",   help=f"Etapa {n}: Agente", width="small")
+        colcfg[f"{n}_V (mL)"]     = st.column_config.NumberColumn(label=f"{n}_V",  help=f"Etapa {n}: Volumen (mL)", width="small", step=1)
+        colcfg[f"{n}_T"]          = st.column_config.NumberColumn(label=f"{n}_T",  help=f"Etapa {n}: Temperatura (°C)", width="small", step=1)
+        colcfg[f"{n}_t ag (h)"]   = st.column_config.NumberColumn(label=f"{n}_tAg",help=f"Etapa {n}: tiempo de agitación (h)", width="small", step=0.1, format="%.2f")
+        colcfg[f"{n}_t dec (h)"]  = st.column_config.NumberColumn(label=f"{n}_tDec",help=f"Etapa {n}: tiempo de decantación (h)", width="small", step=0.1, format="%.2f")
+        colcfg[f"{n}_V dec (mL)"] = st.column_config.NumberColumn(label=f"{n}_Vdec",help=f"Etapa {n}: volumen decantado (mL)", width="small", step=1)
+
+    # --- encabezados compactos ---
+    st.markdown("""
+    <style>
+    div[data-testid="stDataEditorGrid"] thead th,
+    div[data-testid="stDataFrame"] thead th{
+      padding: 2px 4px !important; white-space: nowrap !important;
+      overflow: hidden !important; text-overflow: ellipsis !important;
+    }
+    div[data-testid="stDataEditorGrid"] thead svg,
+    div[data-testid="stDataFrame"] thead svg{ display: none !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # hash base de lo cargado (solo 1 vez por sesión)
+    rows_base = df_in.fillna("").to_dict("records")
+    if "down_hash" not in st.session_state:
+        st.session_state["down_hash"] = _hash_rows(rows_base)
+
+    # --- ÚNICO editor ---
+    df_edit = st.data_editor(
         df_in,
         num_rows="dynamic",
         use_container_width=True,
-        key="down_tabla_editor",
+        column_config=colcfg,
+        hide_index=True,
+        key="down_editor_native",
     )
 
-    col_g, col_r = st.columns([1,1])
-    with col_g:
-        if st.button("💾 Guardar tabla en Firestore"):
-            # Guardar como lista de dicts dentro del mismo documento global
-            payload = {**datos, "down_tabla": edited.to_dict(orient="records")}
-            guardar_sintesis_global(db, payload)
-            st.success("✅ Tabla guardada.")
+    # auto-guardado si cambió el contenido
+    rows = df_edit.fillna("").to_dict("records")
+    h = _hash_rows(rows)
+    if h != st.session_state["down_hash"]:
+        guardar_sintesis_global(db, {**datos, "down_tabla": rows})
+        st.session_state["down_hash"] = h
+        st.toast("Guardado", icon="✅")
 
-    with col_r:
-        if st.button("↺ Recargar desde Firestore"):
-            st.rerun()
+    # añadir fila
+    if st.button("➕ Fila"):
+        df_new = pd.concat([df_edit, pd.DataFrame([{c: "" for c in BASE_COLS}])], ignore_index=True)
+        rows_new = df_new.fillna("").to_dict("records")
+        guardar_sintesis_global(db, {**datos, "down_tabla": rows_new})
+        st.session_state["down_hash"] = _hash_rows(rows_new)
+        st.rerun()

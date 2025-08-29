@@ -114,18 +114,10 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         key="down_editor_native",
     )
 
-    # auto-guardado si cambió el contenido
+    # auto-guardado
     rows = df_edit.fillna("").to_dict("records")
     h = _hash_rows(rows)
     if h != st.session_state["down_hash"]:
         guardar_sintesis_global(db, {**datos, "down_tabla": rows})
         st.session_state["down_hash"] = h
         st.toast("Guardado", icon="✅")
-
-    # añadir fila
-    if st.button("➕ Fila"):
-        df_new = pd.concat([df_edit, pd.DataFrame([{c: "" for c in BASE_COLS}])], ignore_index=True)
-        rows_new = df_new.fillna("").to_dict("records")
-        guardar_sintesis_global(db, {**datos, "down_tabla": rows_new})
-        st.session_state["down_hash"] = _hash_rows(rows_new)
-        st.rerun()

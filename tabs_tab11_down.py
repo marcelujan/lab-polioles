@@ -69,15 +69,17 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # Reordenar columnas al esquema nuevo
     df_in = df_in[[c for c in BASE_COLS]]
 
-    colcfg = {
-        "Síntesis": st.column_config.TextColumn(label="ID", help="Identificador de síntesis", width="small"),
-        "VOL ACUO (mL)": st.column_config.TextColumn(label="Vaq (mL)", help="Volumen fase acuosa", width="small"  ),
-        "Observaciones": st.column_config.TextColumn(label="Obs", help="Notas", width="large"),
-    }
+    colcfg = {c: st.column_config.TextColumn(label=c, width="small") for c in BASE_COLS}
+
+    # Etiquetas compactas opcionales:
+    colcfg["Síntesis"] = st.column_config.TextColumn(label="ID", width="small")
+    colcfg["VOL ACUO (mL)"] = st.column_config.TextColumn(label="Vaq (mL)", help="Volumen fase acuosa", width="small")
+    colcfg["Observaciones"] = st.column_config.TextColumn(label="Obs", width="large")
+
     for n in (1,2,3,4):
         colcfg[f"{n}_Agente"]     = st.column_config.TextColumn(label=f"{n}_Ag",   help=f"Etapa {n}: Agente", width="small")
         colcfg[f"{n}_V (mL)"]     = st.column_config.NumberColumn(label=f"{n}_V",  help=f"Etapa {n}: Volumen (mL)", width="small", step=1)
-        colcfg[f"{n}_T"]          = st.column_config.NumberColumn(label=f"{n}_T",  help=f"Etapa {n}: Temperatura (°C)", width="small", step=1)
+        colcfg[f"{n}_T"]          = st.column_conffig.NumberColumn(label=f"{n}_T",  help=f"Etapa {n}: Temperatura (°C)", width="small", step=1)
         colcfg[f"{n}_t ag (h)"]   = st.column_config.NumberColumn(label=f"{n}_tAg",help=f"Etapa {n}: tiempo de agitación (h)", width="small", step=0.1, format="%.2f")
         colcfg[f"{n}_t dec (h)"]  = st.column_config.NumberColumn(label=f"{n}_tDec",help=f"Etapa {n}: tiempo de decantación (h)", width="small", step=0.1, format="%.2f")
         colcfg[f"{n}_V dec (mL)"] = st.column_config.NumberColumn(label=f"{n}_Vdec",help=f"Etapa {n}: volumen decantado (mL)", width="small", step=1)
@@ -99,6 +101,8 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     rows_base = df_in.fillna("").to_dict("records")
     if "down_hash" not in st.session_state:
         st.session_state["down_hash"] = _hash_rows(rows_base)
+
+    df_in = df_in.fillna("").astype(str)
 
     # --- ÚNICO editor ---
     df_edit = st.data_editor(

@@ -6,7 +6,7 @@ from firestore_utils import cargar_sintesis_global, guardar_sintesis_global
 
 ETAPAS = [1, 2, 3, 4]
 
-CAMPOS_ETAPA = ["Agente", "V (mL)", "T", "t ag (h)", "t dec (h)", "V dec (mL)"]
+CAMPOS_ETAPA = ["Sal", "[]", "V (mL)", "T", "t ag (h)", "t dec (h)", "V dec (mL)"]
 
 def _new_cols_etapa(n:int):
     return [f"{n}_{c}" for c in CAMPOS_ETAPA]
@@ -18,7 +18,8 @@ BASE_COLS = (
 )
 
 OLD2NEW = lambda n: {
-    f"{n}_Agente":          f"E{n} TIPO DE SAL",
+    f"{n}_Sal":             f"E{n} TIPO DE SAL",
+    f"{n}_[]":            f"E{n} CONCENTRACION",
     f"{n}_V (mL)":          f"E{n} VOLUMEN (mL)",
     f"{n}_T":               f"E{n} TEMP (°C)",
     f"{n}_t ag (h)":        f"E{n} t AGIT (h)",
@@ -80,7 +81,8 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     # columnas de etapas: todo texto, sin step/format
     for n in (1, 2, 3, 4):
-        colcfg[f"{n}_Agente"]     = st.column_config.TextColumn(label=f"{n}_Ag",   help=f"Etapa {n}: Agente", width="small")
+        colcfg[f"{n}_Sal"]     = st.column_config.TextColumn(label=f"{n}_Ag",   help=f"Etapa {n}: Sal", width="small")
+        colcfg[f"{n}_Cons"] = st.column_config.TextColumn(label=f"{n}_Cons", help=f"Etapa {n}: consumo", width="small")
         colcfg[f"{n}_V (mL)"]     = st.column_config.TextColumn(label=f"{n}_V",    help=f"Etapa {n}: Volumen (mL)", width="small")
         colcfg[f"{n}_T"]          = st.column_config.TextColumn(label=f"{n}_T",    help=f"Etapa {n}: Temperatura (°C)", width="small")
         colcfg[f"{n}_t ag (h)"]   = st.column_config.TextColumn(label=f"{n}_tAg",  help=f"Etapa {n}: tiempo de agitación (h)", width="small")

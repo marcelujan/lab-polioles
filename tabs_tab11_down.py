@@ -67,7 +67,7 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     df_in = _migrar_columnas(df_in)
 
     # Reordenar columnas al esquema nuevo
-    df_in = df_in[[c for c in BASE_COLS]]
+    df_in = df_in.fillna("").astype(str)
 
     colcfg = {c: st.column_config.TextColumn(label=c, width="small") for c in BASE_COLS}
 

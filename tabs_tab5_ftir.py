@@ -1277,13 +1277,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 if not mostrar_curvas.get(curva, True):
                     continue
                 grupo_ordenado = grupo.sort_values("X")
+                obs = grupo_ordenado["Observaciones"].astype(str).to_numpy().reshape(-1, 1)
                 fig_plotly.add_trace(
                     go.Scatter(
                         x=grupo_ordenado["X"],
                         y=grupo_ordenado["Índice OH"],
                         mode="lines+markers",
                         name=curva or "Sin curva",
-                        hovertemplate="X=%{x:.2f}<br>Índice OH=%{y:.2f}<extra></extra>"
+                        customdata=obs,
+                        hovertemplate="Obs: %{customdata[0]}<br>X=%{x:.2f}<br>Índice OH=%{y:.2f}<extra></extra>"
                     )
                 )
 
@@ -1331,13 +1333,15 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                        continue
                     grupo_ordenado = grupo.sort_values("X")
                     offset = ajustes_y.get(curva or "Sin curva", 0.0)
+                    obs = grupo_ordenado["Observaciones"].astype(str).to_numpy().reshape(-1, 1)
                     fig_plotly2.add_trace(
                         go.Scatter(
                             x=grupo_ordenado["X"],
                             y=grupo_ordenado["Índice OH"] + offset,
                             mode="lines+markers",
                             name=curva or "Sin curva",
-                            hovertemplate="X=%{x:.2f}<br>Índice OH ajustado=%{y:.2f}<extra></extra>"
+                            customdata=obs,
+                            hovertemplate="Obs: %{customdata[0]}<br>X=%{x:.2f}<br>Índice OH ajustado=%{y:.2f}<extra></extra>"
                         )
                     )
 

@@ -1090,9 +1090,14 @@ def mostrar_grafico_stacked(
         yaxis=dict(range=[y_min, y_max]),
         height=height_auto,
         showlegend=True,
-        template="simple_white",
-        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
+        template="tesis",
+        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
     )
+    fig_offset.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
+                            linecolor="black", tickcolor="black")
+    fig_offset.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
+                            linecolor="black", tickcolor="black")
+
     st.plotly_chart(fig_offset, use_container_width=True)
 
 
@@ -1352,8 +1357,13 @@ def mostrar_graficos_individuales(
             xaxis=dict(range=[x_max, x_min]),
             yaxis=dict(range=[y_min, y_max]),
             height=500,
-            template="simple_white"
+            template="tesis"
         )
+        fig.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
+                 linecolor="black", tickcolor="black")
+        fig.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
+                        linecolor="black", tickcolor="black")
+
         st.plotly_chart(fig, use_container_width=True)
 
 

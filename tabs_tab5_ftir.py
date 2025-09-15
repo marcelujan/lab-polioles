@@ -1371,8 +1371,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 add_tesis_guides(fig_plotly2, y0=True, x_lines=[1440], dash="dash", width=1.0)
                 st.plotly_chart(fig_plotly2, use_container_width=True, config={"toImageButtonOptions": {"scale": 4}})
 
-
-
     # 4. Calculadora manual de Índice OH
     if st.checkbox("Calculadora manual de Índice OH espectroscópico", value=False):
         calculadora_indice_oh_manual()

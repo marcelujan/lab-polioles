@@ -1295,7 +1295,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 xaxis=dict(range=[rango_x_min, rango_x_max]),
                 yaxis=dict(range=[rango_y_min, rango_y_max]),
                 legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
-                height=600,
+                height=700,
                 margin=dict(l=20, r=20, t=40, b=20)
             )
             st.plotly_chart(fig_plotly, use_container_width=True)
@@ -1345,7 +1345,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     xaxis=dict(range=[rango_x_min, rango_x_max]),
                     yaxis=dict(range=[y_min_segundo, rango_y_max]),
                     legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
-                    height=600,
+                    height=700,
                     margin=dict(l=20, r=20, t=40, b=20)
                 )
                 # línea discontinua negra en y = 0 a todo el ancho del gráfico
@@ -1354,7 +1354,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     x0=0, x1=1, y0=0, y1=0,
                     line=dict(color="black", dash="dash")
                 )
-                
+
                 st.plotly_chart(fig_plotly2, use_container_width=True)
 
     # 4. Calculadora manual de Índice OH

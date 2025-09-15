@@ -17,13 +17,15 @@ tesis_template = go.layout.Template(
             showgrid=True, gridcolor="#e0e0e0", gridwidth=1,
             zeroline=False, showline=True, linecolor="black", linewidth=1.5,
             ticks="outside", tickcolor="black", ticklen=6, tickwidth=1.5,
-            titlefont=dict(color="black"), tickfont=dict(color="black")
+            title=dict(font=dict(color="black")),
+            tickfont=dict(color="black")
         ),
         yaxis=dict(
             showgrid=True, gridcolor="#e0e0e0", gridwidth=1,
             zeroline=False, showline=True, linecolor="black", linewidth=1.5,
             ticks="outside", tickcolor="black", ticklen=6, tickwidth=1.5,
-            titlefont=dict(color="black"), tickfont=dict(color="black")
+            title=dict(font=dict(color="black")),
+            tickfont=dict(color="black")
         ),
     ),
     data={

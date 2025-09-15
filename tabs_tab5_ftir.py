@@ -1338,12 +1338,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                         )
                     )
 
-                y_min_segundo = -10.0  # piso fijo del eje Y
                 fig_plotly2.update_layout(
                     xaxis_title="tiempo",
                     yaxis_title="Índice OH",
                     xaxis=dict(range=[rango_x_min, rango_x_max]),
-                    yaxis=dict(range=[y_min_segundo, rango_y_max]),
+                    yaxis=dict(range=[rango_y_min, rango_y_max]),
                     legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
                     height=600,
                     margin=dict(l=20, r=20, t=40, b=20)

@@ -20,7 +20,7 @@ tesis_template = go.layout.Template(
             ticks="outside", tickcolor="black", ticklen=6, tickwidth=1.5,
             title=dict(font=dict(color="black")),
             tickfont=dict(color="black"),
-            minor=dict(showgrid=True, gridcolor="#f2f2f2", gridwidth=0.7)
+            minor=dict(showgrid=True, gridcolor="#f2f2f2", gridwidth=0.7),
         ),
         yaxis=dict(
             showgrid=True, gridcolor="#e0e0e0", gridwidth=1,
@@ -28,13 +28,13 @@ tesis_template = go.layout.Template(
             ticks="outside", tickcolor="black", ticklen=6, tickwidth=1.5,
             title=dict(font=dict(color="black")),
             tickfont=dict(color="black"),
-            minor=dict(showgrid=True, gridcolor="#f2f2f2", gridwidth=0.7))
+            minor=dict(showgrid=True, gridcolor="#f2f2f2", gridwidth=0.7),
         ),
     data={
         "scatter": [go.Scatter(mode="lines", line=dict(width=2), marker=dict(size=6))],
         "bar": [go.Bar(marker=dict(line=dict(color="black", width=1)))],
     }
-)
+))
 
 def setup_plotly_tesis(default=True):
     pio.templates["tesis"] = tesis_template

@@ -313,6 +313,10 @@ def render_deconvolucion_ftir(preprocesados, x_min, x_max, y_min, y_max, activar
                 yaxis=dict(range=[y_min, y_max]),
                 legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
             )
+
+            fig.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+            fig.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+
             st.plotly_chart(fig, use_container_width=True)
 
             # Métricas de ajuste

@@ -47,7 +47,7 @@ def setup_plotly_tesis(default=True):
     if default:
         pio.templates.default = "tesis"
 
-def add_tesis_guides(fig, y0=True, x_lines=None, dash="dash", width=2):
+def add_tesis_guides(fig, y0=True, x_lines=None, dash="dash", width=2.5):
     # línea horizontal en y=0
     if y0:
         fig.add_shape(type="line", xref="paper", yref="y",

@@ -537,6 +537,10 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
             x=0.5
         )
     )
+    
+    fig.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+    fig.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -599,6 +603,9 @@ def render_graficos_individuales_ftir(preprocesados, x_min, x_max, y_min, y_max,
             height=500,
             margin=dict(l=10, r=10, t=30, b=10),
         )
+
+        fig.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+        fig.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
 
         st.plotly_chart(fig, use_container_width=True)
 
@@ -1304,7 +1311,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 margin=dict(l=20, r=20, t=40, b=20)
             )
 
-            add_tesis_guides(fig_plotly, y0=True, x_lines=[1440], dash="dash", width=1.0)            
+            fig.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+            fig.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+
+            #add_tesis_guides(fig_plotly, y0=True, x_lines=[1440], dash="dash", width=1.0)            
             st.plotly_chart(fig_plotly, use_container_width=True)
 
             # SEGUNDO gráfico (Plotly con ajuste Y, opcional)
@@ -1354,6 +1364,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     height=600,
                     margin=dict(l=20, r=20, t=40, b=20)
                 )
+
+                fig.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+                fig.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
 
                 add_tesis_guides(fig_plotly2, y0=True, x_lines=[1440], dash="dash", width=1.0)
                 st.plotly_chart(fig_plotly2, use_container_width=True, config={"toImageButtonOptions": {"scale": 4}})

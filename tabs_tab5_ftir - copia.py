@@ -18,13 +18,15 @@ GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol med
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
 
-def obtener_espectros_para_muestra(db, nombre, force=False):
+
+def obtener_espectros_para_muestra(db, nombre):
     clave = f"_espectros_cache_{nombre}"
-    if force or clave not in st.session_state:
+    if clave not in st.session_state:
         ref = db.collection("muestras").document(nombre).collection("espectros")
         docs = ref.stream()
         st.session_state[clave] = [doc.to_dict() for doc in docs]
     return st.session_state[clave]
+
 
 def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
     if not datos_plotly:
@@ -1172,42 +1174,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 df_resultado["X"] = None
                 df_resultado["Curva"] = ""
                 st.session_state["df_oh_editado"] = df_resultado
-
-        colA, colB = st.columns(2)
-        if colA.button("🔄 Refrescar espectros"):
-            # limpia caché de espectros para ver lo nuevo
-            for k in list(st.session_state.keys()):
-                if k.startswith("_espectros_cache_"):
-                    st.session_state.pop(k)
-
-        if colB.button("🔁 Recalcular y fusionar"):
-            # 1) recalc auto con muestras actuales
-            for k in list(st.session_state.keys()):
-                if k.startswith("_espectros_cache_"):
-                    st.session_state.pop(k)
-            df_auto = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
-
-            # 2) traer lo manual guardado
-            doc_ref = db.document("tablas_indice_oh/manual")
-            filas_guardadas = doc_ref.get().to_dict().get("filas", []) if doc_ref.get().exists else []
-            df_manual = pd.DataFrame(filas_guardadas)
-
-            # 3) fusionar por claves y conservar columnas manuales (X, Curva)
-            claves = ["Muestra","Tipo","Observaciones","Fecha"]
-            if not df_manual.empty:
-                keep = df_manual[claves + ["X","Curva"]].drop_duplicates()
-                df_final = df_auto.merge(keep, on=claves, how="left")
-                # agregar filas manuales que no estén en auto
-                faltantes = keep.merge(df_auto[claves], on=claves, how="left", indicator=True)
-                faltantes = faltantes[faltantes["_merge"]=="left_only"].drop(columns=["_merge"])
-                df_final = pd.concat([df_final, faltantes], ignore_index=True)
-            else:
-                df_final = df_auto
-
-            st.session_state["df_oh_editado"] = df_final
-            doc_ref.set({"filas": df_final.to_dict(orient="records")})
-            st.success("Tabla actualizada y fusionada sin perder tus datos manuales.")
-
 
         df_editado = st.data_editor(
             st.session_state.get("df_oh_editado", pd.DataFrame()),

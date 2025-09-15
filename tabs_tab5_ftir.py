@@ -873,20 +873,6 @@ def calculadora_indice_oh_manual():
     with col2:
         st.dataframe(pd.DataFrame(resultados), use_container_width=True, hide_index=True)
 
-
-def obtener_ids_espectros(nombre):
-    return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
-
-
-def obtener_espectros_para_muestra(db, nombre):
-    clave = f"_espectros_cache_{nombre}"
-    if clave not in st.session_state:
-        ref = db.collection("muestras").document(nombre).collection("espectros")
-        docs = ref.stream()
-        st.session_state[clave] = [doc.to_dict() for doc in docs]
-    return st.session_state[clave]
-
-
 def render_comparacion_espectros_ftir(db, muestras):
     #st.subheader("Comparación de espectros FTIR")
     tipos_validos = ["FTIR-Acetato", "FTIR-Cloroformo", "FTIR-ATR"]
@@ -1311,8 +1297,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 margin=dict(l=20, r=20, t=40, b=20)
             )
 
-            fig.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
-            fig.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+
+            fig_plotly.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+            fig_plotly.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
             #add_tesis_guides(fig_plotly, y0=True, x_lines=[1440], dash="dash", width=1.0)            
             st.plotly_chart(fig_plotly, use_container_width=True)
 
@@ -1364,8 +1351,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     margin=dict(l=20, r=20, t=40, b=20)
                 )
 
-                fig.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
-                fig.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+                fig_plotly2.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+                fig_plotly2.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
 
                 add_tesis_guides(fig_plotly2, y0=True, x_lines=[1440], dash="dash", width=1.0)
                 st.plotly_chart(fig_plotly2, use_container_width=True, config={"toImageButtonOptions": {"scale": 4}})

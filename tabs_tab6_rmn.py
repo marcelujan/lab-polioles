@@ -1834,14 +1834,14 @@ def render_rmn_1h_d(df_tipo, db):
         xaxis=dict(
             autorange=False,
             range=[x_max, x_min],
-            showgrid=False,
+            showgrid=True, gridcolor="#e0e0e0",
             zeroline=False,
             linecolor="black"
         ),
         yaxis=dict(
             type="log",
             showticklabels=False,
-            showgrid=False,
+            showgrid=True, gridcolor="#e0e0e0",
             zeroline=False,
             linecolor="black",
             range=[np.log10(y_min_axis), np.log10(y_max_axis)]
@@ -1852,9 +1852,12 @@ def render_rmn_1h_d(df_tipo, db):
             y=0.99,
             bgcolor="white",
             bordercolor="black"
-        )
+        ),
+        template="tesis"
     )
 
+    fig.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+    fig.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
     st.plotly_chart(fig, use_container_width=True)
 
     # leyenda en 4 columnas
@@ -1975,8 +1978,12 @@ def render_rmn_1h_t2(df_tipo):
             title="T2 (s)"
         ),
         height=600,
-        legend=dict(orientation="h", x=0, y=-0.15)
+        legend=dict(orientation="h", x=0, y=-0.15),
+        template="tesis"
     )
+
+    fig2d.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+    fig2d.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
     st.plotly_chart(fig2d, use_container_width=True)
 
     fig1d.update_layout(
@@ -2054,8 +2061,12 @@ def render_rmn_1h_t2(df_tipo):
                     ],
                     title="T2 (s)"
                 ),
-                height=500
+                height=500,
+                template="tesis"
             )
+
+            fig2d_indiv.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+            fig2d_indiv.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
             st.plotly_chart(fig2d_indiv, use_container_width=True)
 
             # curva de decaimiento individual

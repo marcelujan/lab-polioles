@@ -11,7 +11,8 @@ import plotly.graph_objects as go
 from numpy import interp
 from collections import defaultdict
 from scipy.signal import find_peaks
-
+from theme_plotly_tesis import setup_plotly_tesis, add_tesis_guides
+setup_plotly_tesis()  # registra y deja "tesis" como default
 
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
 
@@ -1354,7 +1355,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     line=dict(color="black", dash="dash")
                 )
        
-                st.plotly_chart(fig_plotly2, use_container_width=True)
+                st.plotly_chart(fig_plotly2, use_container_width=True, config={"toImageButtonOptions": {"scale": 4}})
+                add_tesis_guides(fig_plotly2, y0=True, x_lines=[1440], dash="dash", width=2.5)
+
 
     # 4. Calculadora manual de Índice OH
     if st.checkbox("Calculadora manual de Índice OH espectroscópico", value=False):

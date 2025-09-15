@@ -1299,6 +1299,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 height=600,
                 margin=dict(l=20, r=20, t=40, b=20)
             )
+
+            add_tesis_guides(fig_plotly, y0=True, x_lines=[1440], dash="dash", width=1.0)            
             st.plotly_chart(fig_plotly, use_container_width=True)
 
             # SEGUNDO gráfico (Plotly con ajuste Y, opcional)
@@ -1348,14 +1350,8 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     height=600,
                     margin=dict(l=20, r=20, t=40, b=20)
                 )
-                # línea discontinua negra en y = 0 a todo el ancho del gráfico
-                fig_plotly2.add_shape(
-                    type="line", xref="paper", yref="y",
-                    x0=0, x1=1, y0=0, y1=0,
-                    line=dict(color="black", dash="dash")
-                )
-                
-                add_tesis_guides(fig_plotly2, y0=True, x_lines=[1440], dash="dash", width=2.5)
+
+                add_tesis_guides(fig_plotly2, y0=True, x_lines=[1440], dash="dash", width=1.0)
                 st.plotly_chart(fig_plotly2, use_container_width=True, config={"toImageButtonOptions": {"scale": 4}})
 
 

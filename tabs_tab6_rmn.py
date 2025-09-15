@@ -1992,10 +1992,14 @@ def render_rmn_1h_t2(df_tipo):
         yaxis_title="Intensidad",
         xaxis_type="log",
         height=400,
-        legend=dict(orientation="h", x=0, y=-0.2)
+        legend=dict(orientation="h", x=0, y=-0.2),
+        template="tesis"
     )
-    st.plotly_chart(fig1d, use_container_width=True)
 
+    fig1d.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+    fig1d.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+
+    st.plotly_chart(fig1d, use_container_width=True)
 
 
     # Checkbox para gráficos individuales, debajo de los combinados

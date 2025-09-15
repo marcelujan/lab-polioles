@@ -730,10 +730,8 @@ def mostrar_grafico_combinado(
         height=500,
         legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
     )
-    fig.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
-                    linecolor="black", tickcolor="black")
-    fig.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
-                    linecolor="black", tickcolor="black")
+    fig.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+    fig.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
 
     return fig
 
@@ -1093,10 +1091,8 @@ def mostrar_grafico_stacked(
         template="tesis",
         legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
     )
-    fig_offset.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
-                            linecolor="black", tickcolor="black")
-    fig_offset.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
-                            linecolor="black", tickcolor="black")
+    fig_offset.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+    fig_offset.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
 
     st.plotly_chart(fig_offset, use_container_width=True)
 
@@ -1359,10 +1355,8 @@ def mostrar_graficos_individuales(
             height=500,
             template="tesis"
         )
-        fig.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
-                 linecolor="black", tickcolor="black")
-        fig.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
-                        linecolor="black", tickcolor="black")
+        fig.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+        fig.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
 
         st.plotly_chart(fig, use_container_width=True)
 
@@ -1712,9 +1706,12 @@ def render_rmn_1h_d(df_tipo, db):
                                 title=f"Proyección 1D de Zona {idx_zona+1} en {nombre_archivo}",
                                 xaxis_title="ppm",
                                 yaxis_title="Intensidad integrada",
-                                height=300
+                                height=300,
+                                template="tesis"
                             )
                             fig_proy.update_xaxes(autorange="reversed")
+                            fig_proy.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+                            fig_proy.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
                             st.plotly_chart(fig_proy, use_container_width=True)
                             st.markdown(f"**📈 Tabla de integrales para Zona {idx_zona+1}**")
                             for col in columnas_zona:
@@ -2087,8 +2084,13 @@ def render_rmn_1h_t2(df_tipo):
                 xaxis_title="T2 (s)",
                 yaxis_title="Intensidad",
                 xaxis_type="log",
-                height=400
+                height=400,
+                template="tesis"
             )
+
+            fig1d_indiv.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+            fig1d_indiv.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
+
             st.plotly_chart(fig1d_indiv, use_container_width=True)
 
             color_idx += 1

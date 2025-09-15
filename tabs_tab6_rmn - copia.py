@@ -12,8 +12,6 @@ from PIL import Image
 from scipy.signal import find_peaks
 import requests
 import io
-from theme_plotly_tesis import setup_plotly_tesis, add_tesis_guides
-setup_plotly_tesis()  # deja “tesis” como template por defecto
 
 
 # --- Configuraciones globales ---
@@ -726,14 +724,10 @@ def mostrar_grafico_combinado(
         yaxis_title="Intensidad",
         xaxis=dict(range=[x_max, x_min]),
         yaxis=dict(range=[y_min, y_max] if y_max > y_min else None),
-        template="tesis",
+        template="simple_white",
         height=500,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
     )
-    fig.update_xaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
-                    linecolor="black", tickcolor="black")
-    fig.update_yaxes(title_font=dict(color="black"), tickfont=dict(color="black"),
-                    linecolor="black", tickcolor="black")
 
     return fig
 

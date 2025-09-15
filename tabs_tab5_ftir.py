@@ -1244,7 +1244,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
             for i, curva in enumerate(claves_curvas):
                 col = [col1, col2, col3, col4, col5][i % 5]
-                mostrar_curvas[curva] = col.checkbox(curva, value=True, key=f"mostrar_{curva}")
+                mostrar_curvas[curva] = col.checkbox(curva, value=False, key=f"mostrar_{curva}")
 
             # calcular valores automáticos de rango una vez definidos los checkboxes
             curvas_activas = [c for c, v in mostrar_curvas.items() if v]

@@ -1300,7 +1300,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
             fig_plotly.update_xaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
             fig_plotly.update_yaxes(title=dict(font=dict(color="black")), tickfont=dict(color="black"), linecolor="black", tickcolor="black")
-            #add_tesis_guides(fig_plotly, y0=True, x_lines=[1440], dash="dash", width=1.0)            
+            add_tesis_guides(fig_plotly, y0=True, x_lines=[1440], dash="dash", width=1.0)            
             st.plotly_chart(fig_plotly, use_container_width=True)
 
             # SEGUNDO gráfico (Plotly con ajuste Y, opcional)

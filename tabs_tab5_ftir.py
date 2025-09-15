@@ -1354,6 +1354,9 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                     line=dict(color="black", dash="dash")
                 )
                 
+                fig_plotly2.add_hline(y=0,   line_dash=dash_style, line_width=dash_width, line_color="black")
+                fig_plotly2.add_vline(x=1440,line_dash=dash_style, line_width=dash_width, line_color="black")
+
                 st.plotly_chart(fig_plotly2, use_container_width=True)
 
     # 4. Calculadora manual de Índice OH

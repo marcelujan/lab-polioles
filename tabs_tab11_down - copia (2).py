@@ -19,7 +19,7 @@ BASE_COLS = (
 
 OLD2NEW = lambda n: {
     f"{n}_Sal":             f"E{n} TIPO DE SAL",
-    f"{n}_[]":              f"E{n} CONCENTRACION",
+    f"{n}_[]":            f"E{n} CONCENTRACION",
     f"{n}_V (mL)":          f"E{n} VOLUMEN (mL)",
     f"{n}_T":               f"E{n} TEMP (°C)",
     f"{n}_t ag (h)":        f"E{n} t AGIT (h)",
@@ -67,10 +67,11 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     # Migración desde el esquema viejo (si aplica)
     df_in = _migrar_columnas(df_in)
 
+
     df_in = df_in.fillna("").astype(str)
     # reordenar explícitamente al esquema base
     df_in = df_in[[c for c in BASE_COLS]]
-
+        
     colcfg = {c: st.column_config.TextColumn(label=c, width="small") for c in BASE_COLS}
 
     # Etiquetas compactas opcionales:
@@ -80,8 +81,8 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     # columnas de etapas: todo texto, sin step/format
     for n in (1, 2, 3, 4):
-        colcfg[f"{n}_Sal"]        = st.column_config.TextColumn(label=f"{n}_Ag",   help=f"Etapa {n}: Sal", width="small")
-        colcfg[f"{n}_[]"]         = st.column_config.TextColumn(label=f"{n}_[]",   help=f"Etapa {n}: concentración", width="small")  # <- fix
+        colcfg[f"{n}_Sal"]     = st.column_config.TextColumn(label=f"{n}_Ag",   help=f"Etapa {n}: Sal", width="small")
+        colcfg[f"{n}_Cons"] = st.column_config.TextColumn(label=f"{n}_Cons", help=f"Etapa {n}: consumo", width="small")
         colcfg[f"{n}_V (mL)"]     = st.column_config.TextColumn(label=f"{n}_V",    help=f"Etapa {n}: Volumen (mL)", width="small")
         colcfg[f"{n}_T"]          = st.column_config.TextColumn(label=f"{n}_T",    help=f"Etapa {n}: Temperatura (°C)", width="small")
         colcfg[f"{n}_t ag (h)"]   = st.column_config.TextColumn(label=f"{n}_tAg",  help=f"Etapa {n}: tiempo de agitación (h)", width="small")
@@ -105,6 +106,8 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     rows_base = df_in.fillna("").to_dict("records")
     if "down_hash" not in st.session_state:
         st.session_state["down_hash"] = _hash_rows(rows_base)
+
+    df_in = df_in.fillna("").astype(str)
 
     # --- ÚNICO editor ---
     df_edit = st.data_editor(

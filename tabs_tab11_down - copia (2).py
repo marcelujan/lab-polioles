@@ -1,10 +1,11 @@
 # tabs_tab11_down.py
 import streamlit as st
 import pandas as pd
-import hashlib, json, datetime
+import hashlib, json
 from firestore_utils import cargar_sintesis_global, guardar_sintesis_global
 
 ETAPAS = [1, 2, 3, 4]
+
 CAMPOS_ETAPA = ["Sal", "[]", "V (mL)", "T", "t ag (h)", "t dec (h)", "V dec (mL)"]
 
 def _new_cols_etapa(n:int):
@@ -17,13 +18,13 @@ BASE_COLS = (
 )
 
 OLD2NEW = lambda n: {
-    f"{n}_Sal":        f"E{n} TIPO DE SAL",
-    f"{n}_[]":         f"E{n} CONCENTRACION",
-    f"{n}_V (mL)":     f"E{n} VOLUMEN (mL)",
-    f"{n}_T":          f"E{n} TEMP (°C)",
-    f"{n}_t ag (h)":   f"E{n} t AGIT (h)",
-    f"{n}_t dec (h)":  f"E{n} t DECAN (h)",
-    f"{n}_V dec (mL)": f"E{n} FASE ACUO RET (mL)",
+    f"{n}_Sal":             f"E{n} TIPO DE SAL",
+    f"{n}_[]":            f"E{n} CONCENTRACION",
+    f"{n}_V (mL)":          f"E{n} VOLUMEN (mL)",
+    f"{n}_T":               f"E{n} TEMP (°C)",
+    f"{n}_t ag (h)":        f"E{n} t AGIT (h)",
+    f"{n}_t dec (h)":       f"E{n} t DECAN (h)",
+    f"{n}_V dec (mL)":      f"E{n} FASE ACUO RET (mL)",
 }
 
 def _df_vacio():
@@ -43,6 +44,7 @@ def _migrar_columnas(df: pd.DataFrame) -> pd.DataFrame:
                     df[new_col] = df[old_col]
                 else:
                     df[new_col] = ""
+    # Opcional: podés conservar las viejas; aquí las eliminamos si existen
     cols_drop = []
     for n in ETAPAS:
         cols_drop += list(OLD2NEW(n).values())
@@ -54,63 +56,60 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
 
     # --- Cargar desde Firestore ---
     datos = cargar_sintesis_global(db) or {}
-    # Soporte a claves viejas si alguna vez cambió el nombre
-    raw = (
-        datos.get("down_tabla")
-        or datos.get("down")
-        or datos.get("down_tab")
-        or datos.get("Down")
-        or datos.get("downstream")
-        or []
-    )
+    raw = datos.get("down_tabla") or []
     df_in = pd.DataFrame(raw) if raw else _df_vacio()
 
-    # Asegurar columnas mínimas y migrar
+    # Asegurar columnas mínimas
     for c in BASE_COLS:
         if c not in df_in.columns:
             df_in[c] = ""
-    df_in = _migrar_columnas(df_in).fillna("").astype(str)
-    df_in = df_in[[c for c in BASE_COLS]]  # reordenar
 
-    # ---------------- Depuración ----------------
-    with st.expander("🔧 Depuración (Down)", expanded=False):
-        st.write({
-            "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
-            "keys_en_sintesis_global": list(datos.keys()),
-            "existe_down_tabla": "down_tabla" in datos,
-            "len_down_tabla": len(datos.get("down_tabla") or []),
-            "otras_claves_posibles": [k for k in datos.keys() if "down" in k.lower() and k != "down_tabla"],
-            "filas_cargadas_editor": len(df_in),
-        })
-        if not datos.get("down_tabla") and raw:
-            st.warning("Se cargó desde una **clave alternativa** (no down_tabla). Al guardar se normaliza a 'down_tabla'.")
-        if not raw:
-            st.info("No se encontraron registros; se muestra tabla vacía.")
-        if st.button("Forzar recarga (limpiar estado de sesión)"):
-            for k in ["down_hash", "down_editor_native"]:
-                st.session_state.pop(k, None)
-            st.rerun()
+    # Migración desde el esquema viejo (si aplica)
+    df_in = _migrar_columnas(df_in)
 
-    # ---------------- Column config ----------------
+
+    df_in = df_in.fillna("").astype(str)
+    # reordenar explícitamente al esquema base
+    df_in = df_in[[c for c in BASE_COLS]]
+        
     colcfg = {c: st.column_config.TextColumn(label=c, width="small") for c in BASE_COLS}
+
+    # Etiquetas compactas opcionales:
     colcfg["Síntesis"] = st.column_config.TextColumn(label="ID", width="small")
     colcfg["VOL ACUO (mL)"] = st.column_config.TextColumn(label="Vaq (mL)", help="Volumen fase acuosa", width="small")
     colcfg["Observaciones"] = st.column_config.TextColumn(label="Obs", width="large")
+
+    # columnas de etapas: todo texto, sin step/format
     for n in (1, 2, 3, 4):
-        colcfg[f"{n}_Sal"]        = st.column_config.TextColumn(label=f"{n}_Ag",   help=f"Etapa {n}: Sal", width="small")
-        colcfg[f"{n}_[]"]         = st.column_config.TextColumn(label=f"{n}_[]",   help=f"Etapa {n}: concentración", width="small")  # <- fix
+        colcfg[f"{n}_Sal"]     = st.column_config.TextColumn(label=f"{n}_Ag",   help=f"Etapa {n}: Sal", width="small")
+        colcfg[f"{n}_Cons"] = st.column_config.TextColumn(label=f"{n}_Cons", help=f"Etapa {n}: consumo", width="small")
         colcfg[f"{n}_V (mL)"]     = st.column_config.TextColumn(label=f"{n}_V",    help=f"Etapa {n}: Volumen (mL)", width="small")
         colcfg[f"{n}_T"]          = st.column_config.TextColumn(label=f"{n}_T",    help=f"Etapa {n}: Temperatura (°C)", width="small")
         colcfg[f"{n}_t ag (h)"]   = st.column_config.TextColumn(label=f"{n}_tAg",  help=f"Etapa {n}: tiempo de agitación (h)", width="small")
         colcfg[f"{n}_t dec (h)"]  = st.column_config.TextColumn(label=f"{n}_tDec", help=f"Etapa {n}: tiempo de decantación (h)", width="small")
         colcfg[f"{n}_V dec (mL)"] = st.column_config.TextColumn(label=f"{n}_Vdec", help=f"Etapa {n}: volumen decantado (mL)", width="small")
 
-    # ---------------- Hash base ----------------
+    # --- encabezados compactos ---
+    st.markdown("""
+    <style>
+    div[data-testid="stDataEditorGrid"] thead th,
+    div[data-testid="stDataFrame"] thead th{
+      padding: 2px 4px !important; white-space: nowrap !important;
+      overflow: hidden !important; text-overflow: ellipsis !important;
+    }
+    div[data-testid="stDataEditorGrid"] thead svg,
+    div[data-testid="stDataFrame"] thead svg{ display: none !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # hash base de lo cargado (solo 1 vez por sesión)
     rows_base = df_in.fillna("").to_dict("records")
     if "down_hash" not in st.session_state:
         st.session_state["down_hash"] = _hash_rows(rows_base)
 
-    # ---------------- Editor ----------------
+    df_in = df_in.fillna("").astype(str)
+
+    # --- ÚNICO editor ---
     df_edit = st.data_editor(
         df_in,
         num_rows="dynamic",
@@ -120,17 +119,10 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
         key="down_editor_native",
     )
 
-    # ---------------- Auto-guardado con manejo de errores ----------------
+    # auto-guardado
     rows = df_edit.fillna("").to_dict("records")
     h = _hash_rows(rows)
     if h != st.session_state["down_hash"]:
-        try:
-            # normalizamos siempre bajo 'down_tabla'
-            payload = {**datos, "down_tabla": rows}
-            guardar_sintesis_global(db, payload)
-            st.session_state["down_hash"] = h
-            st.toast("Guardado", icon="✅")
-            with st.expander("🔧 Depuración (Down)", expanded=False):
-                st.success(f"Guardado {len(rows)} filas en 'down_tabla'.")
-        except Exception as e:
-            st.error(f"Error guardando en Firestore: {e}")
+        guardar_sintesis_global(db, {**datos, "down_tabla": rows})
+        st.session_state["down_hash"] = h
+        st.toast("Guardado", icon="✅")

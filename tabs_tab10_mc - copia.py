@@ -976,29 +976,3 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 ---
 **Simplificaciones:** perfil térmico (no isoterma), volumen constante, cinética de orden potencia, α catalítico lumped; en 2-fases, \\(k_L a\\) y \\(K_{oq}\\) constantes.
 """)
-
-
-
-# === BEGIN: OH bridge publisher (modelo → FTIR) ===
-def _publish_mc_bridge_to_session(res: dict, LABELS: dict, conv_2F_org, times_h, T_C):
-    # Publica en st.session_state["mc_bridge"] lo necesario:
-    # - times_h: np.ndarray en horas
-    # - T_C: np.ndarray en °C
-    # - OL_org: np.ndarray (OL(org) convertido según unidad seleccionada)
-    try:
-        import numpy as np
-        labs_org, idx_org = LABELS["2F_tf_org"]
-        if "OL(org)" in labs_org:
-            i_ol_org = idx_org[labs_org.index("OL(org)")]
-            ol_org = res["2F_2film"][i_ol_org]
-            ol_org_conv = conv_2F_org(ol_org) if callable(conv_2F_org) else ol_org
-        else:
-            ol_org_conv = np.array([])
-        st.session_state["mc_bridge"] = {
-            "times_h": times_h,
-            "T_C": T_C,
-            "OL_org": ol_org_conv,
-        }
-    except Exception as e:
-        st.session_state["mc_bridge_error"] = str(e)
-# === END: OH bridge publisher (modelo → FTIR) ===

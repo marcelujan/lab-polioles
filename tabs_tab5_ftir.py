@@ -1364,3 +1364,98 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
     # 4. Calculadora manual de Índice OH
     if st.checkbox("Calculadora manual de Índice OH espectroscópico", value=False):
         calculadora_indice_oh_manual()
+
+
+@st.cache_data(ttl=30)
+def _read_mc_bridge_from_firestore():
+    try:
+        from google.cloud import firestore
+        db = firestore.Client()
+        snap = db.document("mc_bridge/latest").get()
+        if not snap.exists:
+            return None
+        data = snap.to_dict() or {}
+        return {
+            "times_h": data.get("times_h", []),
+            "T_C": data.get("T_C", []),
+            "OL_org": data.get("OL_org", []),
+            "updated_at": data.get("updated_at", None),
+        }
+    except Exception as e:
+        st.warning(f"Firestore no disponible: {e}")
+        return None
+
+
+def render_grafico_cruzado_modelo_oh():
+    import numpy as np
+    import plotly.graph_objects as go
+
+    bridge = st.session_state.get("mc_bridge") or _read_mc_bridge_from_firestore()
+
+    if bridge is None:
+        st.info("ℹ️ MC: no hay puente disponible (ni sesión ni Firestore). Abrí la hoja de **Modelo** para publicar el puente.")
+        return
+
+    times_h = np.asarray(bridge.get("times_h", []), dtype=float)
+    T_C     = np.asarray(bridge.get("T_C", []), dtype=float)
+    OL_org  = np.asarray(bridge.get("OL_org", []), dtype=float)
+
+    if times_h.size == 0 or OL_org.size == 0:
+        st.error(f"MC vacío: len(t)={times_h.size}, len(OL)={OL_org.size}, len(T)={T_C.size}.")
+        return
+
+    st.markdown("### MC – Índice OH(modelo) + T + puntos FTIR")
+
+    # Estado
+    key_state = "oh_bridge_state"
+    if key_state not in st.session_state:
+        st.session_state[key_state] = {"a": 1.0, "b": 0.0, "mostrar_T": True, "mostrar_OL": True}
+    S = st.session_state[key_state]
+
+    colA, colB, colC, colD = st.columns([1,1,1,1])
+    with colA:
+        S["a"] = st.number_input("a (escala)", value=float(S.get("a",1.0)), step=0.1, format="%.3f", key="oh_a")
+    with colB:
+        S["b"] = st.number_input("b (offset)", value=float(S.get("b",0.0)), step=0.1, format="%.3f", key="oh_b")
+    with colC:
+        S["mostrar_OL"] = st.checkbox("Modelo", value=bool(S.get("mostrar_OL", True)), key="oh_m_ol")
+    with colD:
+        S["mostrar_T"] = st.checkbox("T(°C)", value=bool(S.get("mostrar_T", True)), key="oh_m_t")
+
+    fig = go.Figure()
+
+    if S["mostrar_OL"]:
+        indice_modelo = S["a"]*OL_org + S["b"]
+        fig.add_trace(go.Scatter(x=times_h, y=indice_modelo, mode="lines", name="Índice(modelo)"))
+
+    if S["mostrar_T"] and T_C.size == times_h.size and T_C.size > 0:
+        fig.add_trace(go.Scatter(x=times_h, y=T_C, mode="lines", name="T (°C)", yaxis="y2"))
+
+    # Puntos FTIR si existen en df_oh_editado
+    df_oh = st.session_state.get("df_oh_editado")
+    if df_oh is None or getattr(df_oh, "empty", True):
+        st.info("Sin puntos FTIR cargados (opcional). Activá 'Índice OH espectroscópico' para sumar puntos.")
+    else:
+        if "Usar" not in df_oh.columns:
+            df_oh["Usar"] = True
+        for curva, grupo in df_oh[df_oh["Usar"]].groupby("Curva" if "Curva" in df_oh else ""):
+            grupo = grupo.dropna(subset=["X","Índice OH"]).sort_values("X")
+            if not grupo.empty:
+                fig.add_trace(go.Scatter(
+                    x=grupo["X"], y=grupo["Índice OH"],
+                    mode="markers", name=f"{curva or 'FTIR'} (pts)",
+                    hovertemplate="Curva=%{text}<br>t=%{x:.2f} h<br>Índice=%{y:.3f}<extra></extra>",
+                    text=grupo["Curva"].astype(str) if "Curva" in grupo else ""
+                ))
+
+    fig.update_layout(
+        xaxis_title="tiempo [h]",
+        yaxis_title="Índice OH (adim.)",
+        hovermode="x unified",
+        legend_title="Series",
+        yaxis2=dict(title="T (°C)", overlaying="y", side="right"),
+        margin=dict(l=20,r=20,t=40,b=20),
+        height=460
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"toImageButtonOptions": {"scale": 3}})
+    st.caption(f"🔧 Debug MC – t={times_h.size}, OL={OL_org.size}, T={T_C.size}")

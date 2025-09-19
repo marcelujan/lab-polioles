@@ -8,6 +8,40 @@ import hashlib, json
 import pandas as pd
 from typing import Literal, Dict, Tuple
 
+def _write_mc_bridge_firestore(times_h, T_C, OL_org):
+    try:
+        import numpy as np, time
+        from google.cloud import firestore
+        db = firestore.Client()
+        doc = db.document("mc_bridge/latest")
+        payload = {
+            "times_h": list(map(float, np.asarray(times_h).tolist())),
+            "T_C": list(map(float, np.asarray(T_C).tolist())) if T_C is not None else [],
+            "OL_org": list(map(float, np.asarray(OL_org).tolist())),
+            "updated_at": int(time.time())
+        }
+        doc.set(payload, merge=True)
+        st.session_state["mc_bridge_firestore_ok"] = True
+    except Exception as e:
+        st.session_state["mc_bridge_firestore_error"] = str(e)
+
+
+
+
+def _publish_mc_bridge_to_session(res: dict, LABELS: dict, conv_2F_org, times_h, T_C):
+    try:
+        import numpy as np
+        labs_org, idx_org = LABELS["2F_tf_org"]
+        i_ol_org = idx_org[labs_org.index("OL(org)")] if "OL(org)" in labs_org else None
+        ol_org = res["2F_2film"][i_ol_org] if i_ol_org is not None else []
+        ol_org_conv = conv_2F_org(ol_org) if i_ol_org is not None else []
+        st.session_state["mc_bridge"] = {"times_h": times_h, "T_C": T_C, "OL_org": ol_org_conv}
+    except Exception as e:
+        st.session_state["mc_bridge_error"] = str(e)
+
+
+
+
 MW_H2O2  = 34.0147
 MW_FA = 46.0254
 MW_H2O   = 18.0153
@@ -991,34 +1025,8 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 
 
 # === BEGIN: Firestore bridge: write mc_bridge ===
-def _write_mc_bridge_firestore(times_h, T_C, OL_org):
-    try:
-        import numpy as np, time
-        from google.cloud import firestore
-        db = firestore.Client()
-        doc = db.document("mc_bridge/latest")
-        payload = {
-            "times_h": list(map(float, np.asarray(times_h).tolist())),
-            "T_C": list(map(float, np.asarray(T_C).tolist())) if T_C is not None else [],
-            "OL_org": list(map(float, np.asarray(OL_org).tolist())),
-            "updated_at": int(time.time())
-        }
-        doc.set(payload, merge=True)
-        st.session_state["mc_bridge_firestore_ok"] = True
-    except Exception as e:
-        st.session_state["mc_bridge_firestore_error"] = str(e)
 # === END: Firestore bridge: write mc_bridge ===
 
 
 # === BEGIN: OH bridge publisher (modelo → sesión) ===
-def _publish_mc_bridge_to_session(res: dict, LABELS: dict, conv_2F_org, times_h, T_C):
-    try:
-        import numpy as np
-        labs_org, idx_org = LABELS["2F_tf_org"]
-        i_ol_org = idx_org[labs_org.index("OL(org)")] if "OL(org)" in labs_org else None
-        ol_org = res["2F_2film"][i_ol_org] if i_ol_org is not None else []
-        ol_org_conv = conv_2F_org(ol_org) if i_ol_org is not None else []
-        st.session_state["mc_bridge"] = {"times_h": times_h, "T_C": T_C, "OL_org": ol_org_conv}
-    except Exception as e:
-        st.session_state["mc_bridge_error"] = str(e)
 # === END: OH bridge publisher ===

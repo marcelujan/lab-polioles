@@ -1362,6 +1362,10 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 st.plotly_chart(fig_plotly2, use_container_width=True, config={"toImageButtonOptions": {"scale": 4}})
 
     # 4. Calculadora manual de Índice OH
+    # 3.b MC (Modelo→FTIR)
+    if st.checkbox("MC", value=False):
+        render_grafico_cruzado_modelo_oh()
+
     if st.checkbox("Calculadora manual de Índice OH espectroscópico", value=False):
         calculadora_indice_oh_manual()
 

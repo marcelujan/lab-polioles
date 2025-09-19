@@ -1461,4 +1461,5 @@ def render_grafico_cruzado_modelo_oh():
         height=480
     )
     st.plotly_chart(fig, use_container_width=True, config={"toImageButtonOptions": {"scale": 3}})
+    st.caption(f"🔧 Debug puente – len(t)={len(times_h)}, len(OL)={len(OL_org)}, len(T)={len(T_C)}; a={S.get('a')}, b={S.get('b')}")
 # === END: Gráfico cruzado Índice OH (modelo 2-films) + T ===

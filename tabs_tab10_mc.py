@@ -978,27 +978,21 @@ def render_tab10(db=None, mostrar_sector_flotante=lambda *a, **k: None):
 """)
 
 
-
-# === BEGIN: OH bridge publisher (modelo → FTIR) ===
-def _publish_mc_bridge_to_session(res: dict, LABELS: dict, conv_2F_org, times_h, T_C):
-    # Publica en st.session_state["mc_bridge"] lo necesario:
-    # - times_h: np.ndarray en horas
-    # - T_C: np.ndarray en °C
-    # - OL_org: np.ndarray (OL(org) convertido según unidad seleccionada)
+# === BEGIN: Firestore bridge: write mc_bridge ===
+def _write_mc_bridge_firestore(times_h, T_C, OL_org):
     try:
-        import numpy as np
-        labs_org, idx_org = LABELS["2F_tf_org"]
-        if "OL(org)" in labs_org:
-            i_ol_org = idx_org[labs_org.index("OL(org)")]
-            ol_org = res["2F_2film"][i_ol_org]
-            ol_org_conv = conv_2F_org(ol_org) if callable(conv_2F_org) else ol_org
-        else:
-            ol_org_conv = np.array([])
-        st.session_state["mc_bridge"] = {
-            "times_h": times_h,
-            "T_C": T_C,
-            "OL_org": ol_org_conv,
+        import numpy as np, time
+        from google.cloud import firestore
+        db = firestore.Client()
+        doc = db.document("mc_bridge/latest")
+        payload = {
+            "times_h": list(map(float, np.asarray(times_h).tolist())),
+            "T_C": list(map(float, np.asarray(T_C).tolist())) if T_C is not None else [],
+            "OL_org": list(map(float, np.asarray(OL_org).tolist())),
+            "updated_at": int(time.time())
         }
+        doc.set(payload, merge=True)
+        st.session_state["mc_bridge_firestore_ok"] = True
     except Exception as e:
-        st.session_state["mc_bridge_error"] = str(e)
-# === END: OH bridge publisher (modelo → FTIR) ===
+        st.session_state["mc_bridge_firestore_error"] = str(e)
+# === END: Firestore bridge: write mc_bridge ===

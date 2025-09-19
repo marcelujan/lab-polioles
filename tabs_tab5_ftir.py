@@ -1371,12 +1371,30 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 
 
 # === BEGIN: Gráfico cruzado Índice OH (modelo 2-films) + T ===
+
+def _read_mc_bridge_from_firestore():
+    try:
+        from google.cloud import firestore
+        db = firestore.Client()
+        snap = db.document("mc_bridge/latest").get()
+        if not snap.exists:
+            return None
+        data = snap.to_dict() or {}
+        return {
+            "times_h": data.get("times_h", []),
+            "T_C": data.get("T_C", []),
+            "OL_org": data.get("OL_org", []),
+            "updated_at": data.get("updated_at", None),
+        }
+    except Exception as e:
+        st.session_state["mc_bridge_firestore_read_error"] = str(e)
+        return None
 def render_grafico_cruzado_modelo_oh():
     import numpy as np
     import plotly.graph_objects as go
     from numpy import interp
 
-    bridge = st.session_state.get("mc_bridge")
+    bridge = st.session_state.get("mc_bridge") or _read_mc_bridge_from_firestore()
     df_oh = st.session_state.get("df_oh_editado")
     if bridge is None or df_oh is None or df_oh.empty:
         return
@@ -1461,5 +1479,4 @@ def render_grafico_cruzado_modelo_oh():
         height=480
     )
     st.plotly_chart(fig, use_container_width=True, config={"toImageButtonOptions": {"scale": 3}})
-    st.caption(f"🔧 Debug puente – len(t)={len(times_h)}, len(OL)={len(OL_org)}, len(T)={len(T_C)}; a={S.get('a')}, b={S.get('b')}")
 # === END: Gráfico cruzado Índice OH (modelo 2-films) + T ===

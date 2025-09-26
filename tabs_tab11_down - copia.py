@@ -2,22 +2,7 @@
 import streamlit as st
 import pandas as pd
 import hashlib, json, re
-from firestore_utils import cargar_sintesis_global, guardar_sintesis_global as _guardar_full
-
-# ===== Guardado parcial (merge) =====
-def guardar_sintesis_global_merge(db, parcial: dict):
-    """
-    Intenta escribir solo los campos cambiados con merge=True.
-    Si la función original no acepta 'merge', hace read-modify-write fresco.
-    """
-    try:
-        # Si _guardar_full admite merge=True, usamos escritura parcial real.
-        return _guardar_full(db, parcial, merge=True)  # type: ignore[arg-type]
-    except TypeError:
-        # Fallback: refrescamos último estado y mezclamos (reduce sobrescrituras).
-        latest = cargar_sintesis_global(db) or {}
-        latest.update(parcial)
-        return _guardar_full(db, latest)
+from firestore_utils import cargar_sintesis_global, guardar_sintesis_global
 
 # ===== Config =====
 ETAPAS = [1, 2, 3, 4, 5, 6]
@@ -199,16 +184,15 @@ def render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
     rows_costos = df_costos_edit.fillna("").to_dict("records")
     h_costos = _hash_rows(rows_costos)
 
-    changed = False
-    update_payload = {}
+    changed, payload = False, {**datos}
     if h != st.session_state["down_hash"]:
-        update_payload["down_tabla"] = rows_save
+        payload["down_tabla"] = rows_save
         st.session_state["down_hash"] = h
         changed = True
     if h_costos != st.session_state["down_costos_hash"]:
-        update_payload["down_costos_agentes"] = rows_costos
+        payload["down_costos_agentes"] = rows_costos
         st.session_state["down_costos_hash"] = h_costos
         changed = True
     if changed:
-        guardar_sintesis_global_merge(db, update_payload)
+        guardar_sintesis_global(db, payload)
         st.toast("Guardado", icon="✅")

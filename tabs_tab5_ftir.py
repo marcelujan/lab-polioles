@@ -23,7 +23,7 @@ def _area_con_linea_base(
     x_min: float,
     x_max: float,
     *,
-    positive_only: bool = True,
+    positive_onlyitive_only: bool = True,
 ) -> float:
     """Integra el área (trapz) tras restar una línea base lineal entre los extremos.
 
@@ -62,6 +62,66 @@ def _coerce_numeric_series(arr) -> pd.Series:
         s = s.astype(str).str.replace(",", ".", regex=False)
     return pd.to_numeric(s, errors="coerce")
 
+
+
+def _order_range(a, b):
+    """Devuelve (min,max) sin importar el orden de entrada."""
+    try:
+        a_f = float(a); b_f = float(b)
+    except Exception:
+        return a, b
+    return (a_f, b_f) if a_f <= b_f else (b_f, a_f)
+
+def _preprocess_full_spectrum(df: pd.DataFrame,
+                              clave: str,
+                              aplicar_suavizado: bool,
+                              normalizar: bool,
+                              ajustes_y: dict,
+                              restar_espectro: bool,
+                              x_ref,
+                              y_ref):
+    """Aplica el MISMO preprocesado del gráfico combinado, pero sobre TODO el espectro.
+    Esto hace que:
+      - la normalización no dependa del zoom (x_min/x_max),
+      - los cálculos de área usen exactamente la misma señal que se grafica.
+    """
+    if df is None or df.empty or not set(["x","y"]).issubset(df.columns):
+        return None, None
+
+    x = df["x"].to_numpy()
+    y = df["y"].to_numpy()
+
+    # Sanitizar numéricos
+    x, y = _sanitize_xy(x, y)
+    if x.size == 0:
+        return None, None
+
+    # Suavizado
+    if aplicar_suavizado and len(y) >= 7:
+        y = savgol_filter(y, window_length=7, polyorder=2)
+
+    # Normalización global (sobre todo el espectro)
+    if normalizar:
+        m = np.max(np.abs(y))
+        if m and not np.isnan(m) and m != 0:
+            y = y / m
+
+    # Offset Y por archivo
+    y = y + float(ajustes_y.get(clave, 0.0))
+
+    # Resta de espectro (sobre todo el espectro)
+    if restar_espectro and x_ref is not None and y_ref is not None:
+        try:
+            idx_ref = np.argsort(x_ref)
+            x_ref_sorted = np.asarray(x_ref)[idx_ref]
+            y_ref_sorted = np.asarray(y_ref)[idx_ref]
+            # interp exige x ascendente
+            y_interp = np.interp(x, x_ref_sorted, y_ref_sorted)
+            y = y - y_interp
+        except Exception:
+            pass
+
+    return x, y
 
 def _sanitize_xy(x, y):
     """Devuelve (x,y) como np.ndarray float, eliminando filas no numéricas/NaN y ordenando por x."""
@@ -526,20 +586,28 @@ def render_grafico_combinado_ftir(fig, datos_plotly, aplicar_suavizado, normaliz
                                     mostrar_picos, altura_min, distancia_min):
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         clave = f"{muestra} – {tipo} – {archivo}"
-        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)]
-        if df_filtrado.empty:
-            continue
-        x = df_filtrado["x"].values
-        y = df_filtrado["y"].values
-        if aplicar_suavizado and len(y) >= 7:
-            y = savgol_filter(y, window_length=7, polyorder=2)
-        if normalizar and np.max(np.abs(y)) != 0:
-            y = y / np.max(np.abs(y))
-        y = y + ajustes_y.get(clave, 0.0)
 
-        # x e y ya están filtrados, suavizados, normalizados, ajustados, etc.
-        x = df_filtrado["x"].values
-        y_data = y.copy()  # y ya tiene suavizado, normalizado, offset, etc.
+        # Preprocesar sobre TODO el espectro (la normalización no depende del zoom)
+        x_full, y_full = _preprocess_full_spectrum(
+            df=df,
+            clave=clave,
+            aplicar_suavizado=aplicar_suavizado,
+            normalizar=normalizar,
+            ajustes_y=ajustes_y,
+            restar_espectro=restar_espectro,
+            x_ref=x_ref,
+            y_ref=y_ref,
+        )
+        if x_full is None:
+            continue
+
+        # Recorte SOLO para visualizar (NO afecta cálculos de áreas)
+        xmin_plot, xmax_plot = _order_range(x_min, x_max)
+        mask = (x_full >= xmin_plot) & (x_full <= xmax_plot)
+        if not np.any(mask):
+            continue
+        x = x_full[mask]
+        y_data = y_full[mask].copy()
 
         if x_ref is not None and y_ref is not None:
             try:
@@ -677,36 +745,35 @@ def render_graficos_individuales_ftir(preprocesados, x_min, x_max, y_min, y_max,
         st.plotly_chart(fig, use_container_width=True)
 
 
+
 def generar_preprocesados_ftir(datos_plotly, aplicar_suavizado, normalizar,
                                 ajustes_y, restar_espectro,
                                 x_ref, y_ref, x_min, x_max):
+    """Genera espectros preprocesados para cálculos.
+
+    IMPORTANTE: el preprocesado (suavizado/normalización/offset/resta) se aplica
+    sobre TODO el espectro. El recorte x_min/x_max se usa SOLO para el gráfico.
+    """
     preprocesados = {}
 
     for i, (muestra, tipo, archivo, df) in enumerate(datos_plotly):
         clave = f"{muestra} – {tipo} – {archivo}"
-        df_filtrado = df[(df["x"] >= x_min) & (df["x"] <= x_max)].copy()
-        if df_filtrado.empty:
+        x_full, y_full = _preprocess_full_spectrum(
+            df=df,
+            clave=clave,
+            aplicar_suavizado=aplicar_suavizado,
+            normalizar=normalizar,
+            ajustes_y=ajustes_y,
+            restar_espectro=restar_espectro,
+            x_ref=x_ref,
+            y_ref=y_ref
+        )
+        if x_full is None:
             continue
-        x = df_filtrado["x"].values
-        y = df_filtrado["y"].values.astype(float)
 
-        if aplicar_suavizado and len(y) >= 7:
-            y = savgol_filter(y, window_length=7, polyorder=2)
-        if normalizar and np.max(np.abs(y)) != 0:
-            y = y / np.max(np.abs(y))
-        y = y + ajustes_y.get(clave, 0.0)
+        # Guardamos FULL para cuantificación (y para graficar se recorta aparte)
+        preprocesados[clave] = pd.DataFrame({"x": x_full, "y": y_full})
 
-        if restar_espectro and x_ref is not None and y_ref is not None:
-            idx_ref = np.argsort(x_ref)
-            x_ref_sorted = x_ref[idx_ref]
-            y_ref_sorted = y_ref[idx_ref] 
-                      
-            y_interp = np.interp(x, x_ref_sorted, y_ref_sorted)
-            y = y - y_interp
-
-
-        df_pre = pd.DataFrame({"x": x, "y": y})
-        preprocesados[clave] = df_pre
     return preprocesados
 
 
@@ -1287,7 +1354,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             if x.size == 0 or y.size == 0:
                 continue
 
-            area_ref = _area_con_linea_base(x, y, ref_xmin, ref_xmax, positivo=usar_solo_area_positiva)
+            area_ref = _area_con_linea_base(x, y, ref_xmin, ref_xmax, positive_only=usar_solo_area_positiva)
             row = {
                 "Archivo": nombre,
                 "A_ref_CH": area_ref,
@@ -1305,7 +1372,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
                 except Exception:
                     continue
 
-                a = _area_con_linea_base(x, y, xmin, xmax, positivo=usar_solo_area_positiva)
+                a = _area_con_linea_base(x, y, xmin, xmax, positive_only=usar_solo_area_positiva)
                 key = f"{_slug(grupo)}__{_slug(region)}"
                 row[f"A_{key}"] = a
                 row[f"I_{key}"] = (a / area_ref) if (area_ref not in (0, None) and not np.isnan(area_ref)) else np.nan

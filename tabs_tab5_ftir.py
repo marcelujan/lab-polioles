@@ -25,7 +25,7 @@ def _area_con_linea_base(
     positive_only: bool = True,
     **_ignored,
 ) -> float:
-    """Integra el área (trapzoid) tras restar una línea base lineal entre los extremos.
+    """Integra el área (trapz) tras restar una línea base lineal entre los extremos.
 
     - Usa el rango [min(x_min,x_max), max(x_min,x_max)] en unidades de cm⁻¹.
     - Ordena por x (por si viene invertido).
@@ -54,7 +54,7 @@ def _area_con_linea_base(
         yc = np.where(yc > 0, yc, 0.0)
     integrator = getattr(np, 'trapezoid', None)
     if integrator is None:
-        integrator = getattr(np, 'trapzoid')
+        integrator = getattr(np, 'trapz')
     return float(integrator(yc, xs))
 
 
@@ -237,7 +237,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
                     if df is not None:
                         df_filt = df[(df["x"] >= min(x0, x1)) & (df["x"] <= max(x0, x1))].copy()
                         df_filt = df_filt.sort_values("x")
-                        area = np.trapzoid(df_filt["y"], df_filt["x"])
+                        area = np.trapz(df_filt["y"], df_filt["x"])
                         editada.at[i, "Área"] = round(area, 2)
                 except:
                     continue
@@ -558,8 +558,8 @@ def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_compara
                         else:
                             simil = np.corrcoef(yi_interp, yj_interp)[0, 1] * 100
                     else:  # Comparación por área integrada
-                        area_i = np.trapzoid(yi_interp, x_comun)
-                        area_j = np.trapzoid(yj_interp, x_comun)
+                        area_i = np.trapz(yi_interp, x_comun)
+                        area_j = np.trapz(yj_interp, x_comun)
                         if area_i == 0 and area_j == 0:
                             simil = 100
                         elif area_i == 0 or area_j == 0:
@@ -1294,7 +1294,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             )
 
         # --- Referencia (editable) ---
-        c1, c2, c3, c4 = st.columns([1, 1, 1, 2])
+        c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 2])
         with c1:
             ref_xmin = st.number_input("Ref C–H: X min", value=float(st.session_state.get("ftir_ref_xmin", 2990.0)))
         with c2:
@@ -1302,7 +1302,13 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
         with c3:
             usar_solo_area_positiva = st.checkbox("Solo área positiva", value=bool(st.session_state.get("ftir_area_pos", True)))
         with c4:
-            st.caption("Sugerido: 2990–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃).")
+            # Escala aproximada para trabajar con órdenes de magnitud tipo "por triglicérido"
+            # (p.ej. triolein C57H104O6; trilinolein C57H98O6; valores típicos ~92–104 C–H totales).
+            ch_equiv = st.number_input("C–H equivalentes (TAG)", min_value=1.0, value=float(st.session_state.get("ftir_ch_equiv", 100.0)))
+            escalar_a_ch_equiv = st.checkbox("Escalar áreas a C–H equiv.", value=bool(st.session_state.get("ftir_scale_ch", True)))
+        with c5:
+            st.caption("Referencia sugerida: 2990–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃). "
+                       "Si 'Escalar áreas…' está activo, A_ref se reporta como C–H equivalentes (aprox.).")
 
         st.session_state["ftir_ref_xmin"] = float(ref_xmin)
         st.session_state["ftir_ref_xmax"] = float(ref_xmax)
@@ -1357,11 +1363,20 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             if x.size == 0 or y.size == 0:
                 continue
 
-            area_ref = _area_con_linea_base(x, y, ref_xmin, ref_xmax, usar_solo_area_positiva)
-            row = {
-                "Archivo": nombre,
-                "A_ref_CH": area_ref,
-            }
+            area_ref_raw = _area_con_linea_base(x, y, ref_xmin, ref_xmax, usar_solo_area_positiva)
+
+            # Escalado opcional: reporta A_ref como "C–H equivalentes (TAG)" (aprox.),
+            # y escala todas las áreas de bandas de forma consistente. El índice I no cambia.
+            if area_ref_raw in (0, None) or np.isnan(area_ref_raw):
+                scale_factor = np.nan
+                area_ref_out = np.nan
+            else:
+                if escalar_a_ch_equiv:
+                    scale_factor = float(ch_equiv) / float(area_ref_raw)
+                    area_ref_out = float(ch_equiv)
+                else:
+                    scale_factor = 1.0
+                    area_ref_out = float(area_ref_raw)
 
             for _, r in df_ranges.iterrows():
                 if not bool(r.get("Habilitado", True)):
@@ -1375,13 +1390,19 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
                 except Exception:
                     continue
 
-                a = _area_con_linea_base(x, y, xmin, xmax, usar_solo_area_positiva)
-                key = f"{_slug(grupo)}__{_slug(region)}"
-                row[f"A_{key}"] = a
-                row[f"I_{key}"] = (a / area_ref) if (area_ref not in (0, None) and not np.isnan(area_ref)) else np.nan
-                row[f"G_{key}"] = grupo  # para facilitar pivots fuera de la app
+                a_raw = _area_con_linea_base(x, y, xmin, xmax, usar_solo_area_positiva)
+                a_out = (a_raw * scale_factor) if (scale_factor not in (0, None) and not np.isnan(scale_factor)) else np.nan
+                I = (a_raw / area_ref_raw) if (area_ref_raw not in (0, None) and not np.isnan(area_ref_raw)) else np.nan
 
-            resultados.append(row)
+                resultados.append({
+                    "Archivo": nombre,
+                    "Grupo": grupo,
+                    "Región": region,
+                    "A_ref_CH": area_ref_out,
+                    "A_banda": a_out,
+                    "I": I,
+                })
+
 
         if not resultados:
             st.warning("No se pudieron calcular áreas (revisá que haya espectros preprocesados).")
@@ -1390,31 +1411,12 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
         df_res = pd.DataFrame(resultados)
 
         st.subheader("Resultados (áreas e índices)")
-        st.dataframe(df_res, use_container_width=True)
 
-        # --- Resumen por grupo: promedia índices de múltiples regiones del mismo grupo ---
-        if st.checkbox("Mostrar resumen por grupo (promedio de índices por grupo)", value=True):
-            # armamos un DF largo de índices
-            idx_cols = [c for c in df_res.columns if c.startswith("I_")]
-            if idx_cols:
-                long = []
-                for _, row in df_res.iterrows():
-                    archivo = row["Archivo"]
-                    for c in idx_cols:
-                        key = c[len("I_"):]
-                        gcol = f"G_{key}"
-                        grupo = row.get(gcol, "")
-                        long.append({"Archivo": archivo, "Grupo": grupo, "I": row[c]})
-                df_long = pd.DataFrame(long).dropna()
-                if not df_long.empty:
-                    df_sum = df_long.groupby(["Archivo", "Grupo"], as_index=False).agg(
-                        I_prom=("I", "mean"),
-                        I_std=("I", "std"),
-                        n=("I", "count"),
-                    )
-                    st.dataframe(df_sum, use_container_width=True)
-            else:
-                st.info("No hay columnas de índice (I_) para resumir.")
+        # Mostramos una tabla "larga" y compacta: identificadores + 3 columnas numéricas
+        # (A_ref_CH, A_banda, I). Esto facilita filtrar/ordenar por grupo y comparar regiones.
+        cols = ["Archivo", "Grupo", "Región", "A_ref_CH", "A_banda", "I"]
+        cols = [c for c in cols if c in df_res.columns]
+        st.dataframe(df_res[cols], use_container_width=True)
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 #    st.title("Análisis FTIR")
     st.session_state["current_tab"] = "Análisis FTIR"

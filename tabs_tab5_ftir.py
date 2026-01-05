@@ -55,6 +55,27 @@ def _area_con_linea_base(
     return float(np.trapz(yc, xs))
 
 
+def _coerce_numeric_series(arr) -> pd.Series:
+    """Convierte un array/serie a numérico de forma robusta (maneja comas decimales y strings)."""
+    s = pd.Series(arr)
+    if s.dtype == object:
+        s = s.astype(str).str.replace(",", ".", regex=False)
+    return pd.to_numeric(s, errors="coerce")
+
+
+def _sanitize_xy(x, y):
+    """Devuelve (x,y) como np.ndarray float, eliminando filas no numéricas/NaN y ordenando por x."""
+    xs = _coerce_numeric_series(x)
+    ys = _coerce_numeric_series(y)
+    df = pd.DataFrame({"x": xs, "y": ys}).dropna()
+    if df.empty:
+        return np.array([], dtype=float), np.array([], dtype=float)
+    df = df.sort_values("x")
+    return df["x"].to_numpy(dtype=float), df["y"].to_numpy(dtype=float)
+
+
+
+
 def _ratio_safe(numer: float, denom: float) -> float:
     if numer is None or denom is None:
         return np.nan
@@ -1255,8 +1276,9 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
                 else:
                     continue
 
-            x = np.asarray(x, dtype=float)
-            y = np.asarray(y, dtype=float)
+            x, y = _sanitize_xy(x, y)
+            if x.size == 0 or y.size == 0:
+                continue
 
             area_ref = _area_con_linea_base(x, y, ref_xmin, ref_xmax, positivo=usar_solo_area_positiva)
             row = {

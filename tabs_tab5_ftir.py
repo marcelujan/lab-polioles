@@ -25,7 +25,7 @@ def _area_con_linea_base(
     positive_only: bool = True,
     **_ignored,
 ) -> float:
-    """Integra el área (trapz) tras restar una línea base lineal entre los extremos.
+    """Integra el área (trapzoid) tras restar una línea base lineal entre los extremos.
 
     - Usa el rango [min(x_min,x_max), max(x_min,x_max)] en unidades de cm⁻¹.
     - Ordena por x (por si viene invertido).
@@ -52,7 +52,10 @@ def _area_con_linea_base(
     yc = ys - baseline
     if positive_only:
         yc = np.where(yc > 0, yc, 0.0)
-    return float(np.trapz(yc, xs))
+    integrator = getattr(np, 'trapezoid', None)
+    if integrator is None:
+        integrator = getattr(np, 'trapzoid')
+    return float(integrator(yc, xs))
 
 
 def _coerce_numeric_series(arr) -> pd.Series:
@@ -234,7 +237,7 @@ def render_tabla_calculos_ftir(db, datos_plotly, mostrar=True, sombrear=False):
                     if df is not None:
                         df_filt = df[(df["x"] >= min(x0, x1)) & (df["x"] <= max(x0, x1))].copy()
                         df_filt = df_filt.sort_values("x")
-                        area = np.trapz(df_filt["y"], df_filt["x"])
+                        area = np.trapzoid(df_filt["y"], df_filt["x"])
                         editada.at[i, "Área"] = round(area, 2)
                 except:
                     continue
@@ -555,8 +558,8 @@ def render_tabla_similitud_ftir_matriz(preprocesados, x_min, x_max, tipo_compara
                         else:
                             simil = np.corrcoef(yi_interp, yj_interp)[0, 1] * 100
                     else:  # Comparación por área integrada
-                        area_i = np.trapz(yi_interp, x_comun)
-                        area_j = np.trapz(yj_interp, x_comun)
+                        area_i = np.trapzoid(yi_interp, x_comun)
+                        area_j = np.trapzoid(yj_interp, x_comun)
                         if area_i == 0 and area_j == 0:
                             simil = 100
                         elif area_i == 0 or area_j == 0:

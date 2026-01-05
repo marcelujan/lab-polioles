@@ -1217,7 +1217,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             "(útil para comparar tendencias entre espectros en transmisión)."
         )
 
-        if st.session_state.get("activar_normalizar", False):
+        if st.session_state.get("normalizar_ftir", False):
             st.warning(
                 "Tenés activada la normalización por pico máximo. Para cuantificar por áreas, "
                 "lo recomendable es **desactivarla**, porque cambia las áreas y rompe la comparación cuantitativa."
@@ -1258,7 +1258,8 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
         # Persistimos la tabla editada
         st.session_state["ftir_feature_ranges"] = df_ranges
 
-        calcular = st.button("📊 Calcular áreas e índices", type="primary")
+        auto_calc = st.checkbox("Calcular automáticamente", value=True, key="auto_calc_areas")
+        calcular = True if auto_calc else st.button("📊 Calcular áreas e índices", type="primary")
 
         if not calcular:
             return
@@ -1267,14 +1268,20 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
         resultados = []
         # preprocesados: {nombre: (x, y)} o dict similar
         for nombre, data in preprocesados.items():
-            try:
-                x, y = data
-            except Exception:
-                # compatibilidad: algunos flujos guardan dicts con keys 'x','y'
-                if isinstance(data, dict) and "x" in data and "y" in data:
-                    x, y = data["x"], data["y"]
+            # data puede ser: (x,y), dict{"x","y"}, o DataFrame con columnas x,y
+            if isinstance(data, pd.DataFrame):
+                if set(["x","y"]).issubset(data.columns):
+                    x, y = data["x"].to_numpy(), data["y"].to_numpy()
                 else:
                     continue
+            else:
+                try:
+                    x, y = data
+                except Exception:
+                    if isinstance(data, dict) and "x" in data and "y" in data:
+                        x, y = data["x"], data["y"]
+                    else:
+                        continue
 
             x, y = _sanitize_xy(x, y)
             if x.size == 0 or y.size == 0:
@@ -1364,7 +1371,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 y_min=y_min,
                 y_max=y_max,
                 aplicar_suavizado=st.session_state.get("activar_suavizado", False),
-                normalizar=st.session_state.get("activar_normalizar", False),
+                normalizar=st.session_state.get("normalizar_ftir", False),
                 ajustes_y=st.session_state.get("ajustes_y", {}),
                 restar_espectro=st.session_state.get("activar_resta", False),
                 mostrar_picos=st.session_state.get("mostrar_picos", False),

@@ -1254,27 +1254,27 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
     import re
     def _default_feature_ranges_df() -> pd.DataFrame:
         filas = [
-            # Grupo, Región, X min, X max, Habilitado, Nota
-            ["CH alifático", "stretch total", 2990.0, 2840.0, True, "Referencia sugerida (evita ~3019 cm⁻¹ de CHCl₃)"],
-            ["CH2", "ν_as (~2920)", 2940.0, 2910.0, True, "Asimétrico CH₂ (aceites)"],
-            ["CH2", "ν_s (~2852)", 2865.0, 2840.0, True, "Simétrico CH₂"],
-            ["CH3", "ν_as (~2955)", 2975.0, 2945.0, True, "Asimétrico CH₃"],
-            ["CH3", "ν_s (~2870)", 2885.0, 2865.0, True, "Simétrico CH₃"],
-            ["OH", "libre (3700–3600)", 3700.0, 3600.0, True, "OH poco enlazado"],
-            ["OH", "H-bond (3600–3200)", 3600.0, 3200.0, True, "OH enlazado; banda ancha"],
-            ["Epóxido", "oxirano (845–820)", 845.0, 820.0, True, "Banda oxirano ~824–843"],
-            ["Epóxido", "oxirano (830–810)", 830.0, 810.0, True, "Alternativa más estrecha"],
-            ["Dobles enlaces", "=C–H (3012–3000)", 3012.0, 3000.0, True, "Puede interferir con residuo de CHCl₃ (3019)"],
-            ["Dobles enlaces", "C=C (1660–1640)", 1660.0, 1640.0, True, "C=C estiramiento"],
-            ["Éter", "C–O–C (1150–1085)", 1150.0, 1085.0, True, "Región típica éter/alcohol (solapamientos)"],
-            ["Éster", "C=O (1765–1705)", 1765.0, 1705.0, True, "Éster triglicérido ~1740"],
-            ["Éster", "C–O (1300–1000)", 1300.0, 1000.0, False, "Amplia; suele solaparse (activar si te sirve)"],
-            ["Formilo", "aldehído C–H (2830–2695)", 2830.0, 2695.0, False, "Doblete aldehído (si aparece)"],
-            ["Formilo", "aldehído C=O (1740–1720)", 1740.0, 1720.0, False, "Se puede solapar con éster"],
-            ["Carbonilo", "ventana C=O (1800–1680)", 1800.0, 1680.0, False, "Ventana general de carbonilos (diagnóstico)"],
-            ["Alcohol", "C–O (1150–1050)", 1150.0, 1050.0, False, "C–O alcohol (solapa con éter)"],
+            # Grupo, Región, X min, X max, Nota
+            ["CH alifático", "stretch total", 2990.0, 2840.0, "Referencia sugerida (evita ~3019 cm⁻¹ de CHCl₃)"],
+            ["CH2", "ν_as (~2920)", 2940.0, 2910.0, "Asimétrico CH₂ (aceites)"],
+            ["CH2", "ν_s (~2852)", 2865.0, 2840.0, "Simétrico CH₂"],
+            ["CH3", "ν_as (~2955)", 2975.0, 2945.0, "Asimétrico CH₃"],
+            ["CH3", "ν_s (~2870)", 2885.0, 2865.0, "Simétrico CH₃"],
+            ["OH", "libre (3700–3600)", 3700.0, 3600.0, "OH poco enlazado"],
+            ["OH", "H-bond (3600–3200)", 3600.0, 3200.0, "OH enlazado; banda ancha"],
+            ["Epóxido", "oxirano (845–820)", 845.0, 820.0, "Banda oxirano ~824–843"],
+            ["Epóxido", "oxirano (830–810)", 830.0, 810.0, "Alternativa más estrecha"],
+            ["Dobles enlaces", "=C–H (3012–3000)", 3012.0, 3000.0, "Puede interferir con residuo de CHCl₃ (3019)"],
+            ["Dobles enlaces", "C=C (1660–1640)", 1660.0, 1640.0, "C=C estiramiento"],
+            ["Éter", "C–O–C (1150–1085)", 1150.0, 1085.0, "Región típica éter/alcohol (solapamientos)"],
+            ["Éster", "C=O (1765–1705)", 1765.0, 1705.0, "Éster triglicérido ~1740"],
+            ["Éster", "C–O (1300–1000)", 1300.0, 1000.0, "Amplia; suele solaparse"],
+            ["Formilo", "aldehído C–H (2830–2695)", 2830.0, 2695.0, "Doblete aldehído (si aparece)"],
+            ["Formilo", "aldehído C=O (1740–1720)", 1740.0, 1720.0, "Se puede solapar con éster"],
+            ["Carbonilo", "ventana C=O (1800–1680)", 1800.0, 1680.0, "Ventana general de carbonilos (diagnóstico)"],
+            ["Alcohol", "C–O (1150–1050)", 1150.0, 1050.0, "C–O alcohol (solapa con éter)"],
         ]
-        return pd.DataFrame(filas, columns=["Grupo", "Región", "X min", "X max", "Habilitado", "Nota"])
+        return pd.DataFrame(filas, columns=["Grupo", "Región", "X min", "X max", "Nota"])
 
     def _slug(s: str) -> str:
         s = re.sub(r"\s+", "_", str(s).strip().lower())
@@ -1302,13 +1302,19 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
         with c3:
             usar_solo_area_positiva = st.checkbox("Solo área positiva", value=bool(st.session_state.get("ftir_area_pos", True)))
         with c4:
-            # Escala aproximada para trabajar con órdenes de magnitud tipo "por triglicérido"
-            # (p.ej. triolein C57H104O6; trilinolein C57H98O6; valores típicos ~92–104 C–H totales).
-            ch_equiv = st.number_input("C–H equivalentes (TAG)", min_value=1.0, value=float(st.session_state.get("ftir_ch_equiv", 100.0)))
-            escalar_a_ch_equiv = st.checkbox("Escalar áreas a C–H equiv.", value=bool(st.session_state.get("ftir_scale_ch", True)))
+            # Escala aproximada para trabajar con órdenes de magnitud tipo "por triglicérido".
+            # Se aplica multiplicando el índice I por este valor (por defecto 100).
+            ch_equiv = st.number_input(
+                "C–H equivalentes (TAG)",
+                min_value=1.0,
+                value=float(st.session_state.get("ftir_ch_equiv", 100.0)),
+                help="Escala práctica: I_escalado = I × (C–H equivalentes). Por defecto 100."
+            )
         with c5:
-            st.caption("Referencia sugerida: 2990–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃). "
-                       "Si 'Escalar áreas…' está activo, A_ref se reporta como C–H equivalentes (aprox.).")
+            st.caption(
+                "Referencia sugerida: 2990–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃). "
+                "Para trabajar con números más intuitivos, se reporta I_escalado = I × (C–H equivalentes)."
+            )
 
         st.session_state["ftir_ref_xmin"] = float(ref_xmin)
         st.session_state["ftir_ref_xmax"] = float(ref_xmax)
@@ -1323,7 +1329,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             if st.button("↩️ Restablecer rangos por defecto"):
                 st.session_state["ftir_feature_ranges"] = _default_feature_ranges_df()
         with colR2:
-            st.caption("Podés editar rangos, desactivar filas, y agregar nuevas filas para explorar señales.")
+            st.caption("Podés editar rangos y agregar nuevas filas para explorar señales.")
 
         df_ranges = st.data_editor(
             st.session_state["ftir_feature_ranges"],
@@ -1364,23 +1370,9 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
                 continue
 
             area_ref_raw = _area_con_linea_base(x, y, ref_xmin, ref_xmax, usar_solo_area_positiva)
-
-            # Escalado opcional: reporta A_ref como "C–H equivalentes (TAG)" (aprox.),
-            # y escala todas las áreas de bandas de forma consistente. El índice I no cambia.
-            if area_ref_raw in (0, None) or np.isnan(area_ref_raw):
-                scale_factor = np.nan
-                area_ref_out = np.nan
-            else:
-                if escalar_a_ch_equiv:
-                    scale_factor = float(ch_equiv) / float(area_ref_raw)
-                    area_ref_out = float(ch_equiv)
-                else:
-                    scale_factor = 1.0
-                    area_ref_out = float(area_ref_raw)
+            area_ref_out = float(area_ref_raw) if (area_ref_raw not in (0, None) and not np.isnan(area_ref_raw)) else np.nan
 
             for _, r in df_ranges.iterrows():
-                if not bool(r.get("Habilitado", True)):
-                    continue
 
                 grupo = str(r.get("Grupo", "")).strip() or "(sin grupo)"
                 region = str(r.get("Región", "")).strip() or "(sin región)"
@@ -1391,16 +1383,16 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
                     continue
 
                 a_raw = _area_con_linea_base(x, y, xmin, xmax, usar_solo_area_positiva)
-                a_out = (a_raw * scale_factor) if (scale_factor not in (0, None) and not np.isnan(scale_factor)) else np.nan
                 I = (a_raw / area_ref_raw) if (area_ref_raw not in (0, None) and not np.isnan(area_ref_raw)) else np.nan
+                I_escalado = (I * float(ch_equiv)) if (I is not np.nan and not np.isnan(I)) else np.nan
 
                 resultados.append({
                     "Archivo": nombre,
                     "Grupo": grupo,
                     "Región": region,
                     "A_ref_CH": area_ref_out,
-                    "A_banda": a_out,
-                    "I": I,
+                    "A_banda": float(a_raw) if (a_raw not in (None,) and not np.isnan(a_raw)) else np.nan,
+                    "I": I_escalado,
                 })
 
 

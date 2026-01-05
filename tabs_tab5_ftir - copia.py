@@ -15,72 +15,6 @@ from theme_plotly_tesis import setup_plotly_tesis, add_tesis_guides
 setup_plotly_tesis()  # registra y deja "tesis" como default
 
 GRUPOS_FUNCIONALES = ["Formiato", "Cloroformo", "C=C olefínicos", "Glicerol medio", "Glicerol extremos", "Metil-Éster", "Eter", "Ester", "Ácido carboxílico", "OH", "Epóxido", "C=C", "Alfa-C=O","Alfa-C-OH", "Alfa-C=C", "C=C-Alfa-C=C", "Beta-carbonilo", "Alfa-epóxido", "Epóxido-alfa-epóxido", "CH2", "CH3", "SO3-"]
-# --- Cuantificación OH (transmisión) ---
-def _savgol_safe(y: np.ndarray, window_length: int = 7, polyorder: int = 2) -> np.ndarray:
-    """Aplica Savitzky–Golay si es posible, si no devuelve y sin cambios."""
-    try:
-        if y is None or len(y) < max(window_length, polyorder + 2):
-            return y
-        # window_length debe ser impar y <= len(y)
-        wl = min(window_length, len(y) if len(y) % 2 == 1 else len(y) - 1)
-        if wl < polyorder + 2:
-            return y
-        if wl % 2 == 0:
-            wl = max(3, wl - 1)
-        return savgol_filter(y, window_length=wl, polyorder=min(polyorder, wl - 2))
-    except Exception:
-        return y
-
-def _select_range(x: np.ndarray, y: np.ndarray, xmin: float, xmax: float):
-    if x is None or y is None or len(x) == 0:
-        return None, None
-    lo, hi = (xmin, xmax) if xmin <= xmax else (xmax, xmin)
-    mask = (x >= lo) & (x <= hi)
-    if np.sum(mask) < 5:
-        return None, None
-    return x[mask], y[mask]
-
-def _linear_baseline(xr: np.ndarray, yr: np.ndarray) -> np.ndarray:
-    """Línea base lineal entre los extremos del rango (x[0], x[-1])."""
-    y0 = yr[0]
-    y1 = yr[-1]
-    x0 = xr[0]
-    x1 = xr[-1]
-    if x1 == x0:
-        return np.full_like(yr, y0)
-    return y0 + (y1 - y0) * (xr - x0) / (x1 - x0)
-
-def _area_baseline_corrected(x: np.ndarray, y: np.ndarray, xmin: float, xmax: float, positive_only: bool = True) -> float:
-    xr, yr = _select_range(x, y, xmin, xmax)
-    if xr is None:
-        return float('nan')
-    bl = _linear_baseline(xr, yr)
-    yc = yr - bl
-    if positive_only:
-        yc = np.maximum(yc, 0)
-    # trapz requiere x creciente; en FTIR a veces viene decreciente.
-    if xr[0] > xr[-1]:
-        xr = xr[::-1]
-        yc = yc[::-1]
-    return float(np.trapz(yc, xr))
-
-def _oh_index_for_spectrum(df: pd.DataFrame,
-                           aplicar_suavizado: bool,
-                           oh_min: float, oh_max: float,
-                           ref_min: float, ref_max: float,
-                           positive_only: bool = True) -> dict:
-    """Calcula índice OH = Area(OH)/Area(ref) para un espectro."""
-    x = df["x"].values
-    y = df["y"].values
-    if aplicar_suavizado:
-        y = _savgol_safe(y)
-    a_oh = _area_baseline_corrected(x, y, oh_min, oh_max, positive_only=positive_only)
-    a_ref = _area_baseline_corrected(x, y, ref_min, ref_max, positive_only=positive_only)
-    idx = float('nan')
-    if a_ref and not np.isnan(a_ref) and abs(a_ref) > 0:
-        idx = a_oh / a_ref
-    return {"A_OH": a_oh, "A_ref": a_ref, "Indice_OH": idx}
-
 
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
@@ -848,14 +782,6 @@ def calcular_indice_oh_auto(db, muestras):
                         x_val = pd.to_numeric(df.iloc[:, 0], errors='coerce')
                         y_val = pd.to_numeric(df.iloc[:, 1], errors='coerce')
                         df_limpio = pd.DataFrame({"X": x_val, "Y": y_val}).dropna()
-                        # --- Índice OH por áreas (más robusto para transmisión) ---
-                        try:
-                            df_tmp = pd.DataFrame({"x": df_limpio["X"].astype(float).values, "y": df_limpio["Y"].astype(float).values})
-                            # Rangos por defecto (ajustables en UI): OH 3600–3200; referencia CH 2995–2800
-                            res_areas = _oh_index_for_spectrum(df_tmp, aplicar_suavizado=False, oh_min=3600, oh_max=3200, ref_min=2995, ref_max=2800, positive_only=True)
-                        except Exception:
-                            res_areas = {"A_OH": None, "A_ref": None, "Indice_OH": None}
-
                         objetivo_x = 3548 if tipo == "FTIR-Acetato" else 3611
                         idx = (df_limpio["X"] - objetivo_x).abs().idxmin()
                         valor_y_extraido = df_limpio.loc[idx, "Y"]
@@ -872,9 +798,6 @@ def calcular_indice_oh_auto(db, muestras):
                 "Señal manual 3611": e.get("senal_3611"),
                 "Peso muestra [g]": e.get("peso_muestra"),
                 "Archivo": e.get("nombre_archivo", ""),
-                "A_OH_3600_3200": res_areas.get("A_OH"),
-                "A_ref_CH_2995_2800": res_areas.get("A_ref"),
-                "Indice_OH_area_ratio": res_areas.get("Indice_OH"),
             })
 
     df_oh = pd.DataFrame(espectros_info)
@@ -906,62 +829,8 @@ def calcular_indice_oh_auto(db, muestras):
         "Señal manual 3611", "Peso muestra [g]", "Archivo", "Señal solvente", "Índice OH"
     ])
 
-    return df_oh[["Muestra", "Tipo", "Observaciones", "Fecha","Señal", "Señal solvente", "Peso muestra [g]", "Índice OH", "A_OH_3600_3200", "A_ref_CH_2995_2800", "Indice_OH_area_ratio"]]
+    return df_oh[["Muestra", "Tipo", "Observaciones", "Fecha","Señal", "Señal solvente", "Peso muestra [g]", "Índice OH"]]
 
-
-
-def calcular_indice_oh_area(db, muestras, oh_min=3600, oh_max=3200, ref_min=2995, ref_max=2800,
-                            positive_only=True, aplicar_suavizado=False):
-    """Calcula áreas y ratio OH/ref desde los archivos (más estable que tomar un solo punto)."""
-    filas = []
-    for m in muestras:
-        for e in obtener_espectros_para_muestra(db, m["nombre"]):
-            tipo = e.get("tipo", "")
-            if tipo not in ["FTIR-Acetato", "FTIR-Cloroformo"]:
-                continue
-            contenido = e.get("contenido")
-            es_imagen = e.get("es_imagen", False)
-            if not (contenido and not es_imagen):
-                continue
-            try:
-                extension = e.get("nombre_archivo", "").split(".")[-1].lower()
-                binario = BytesIO(base64.b64decode(contenido))
-                if extension == "xlsx":
-                    df = pd.read_excel(binario, header=None)
-                else:
-                    df = None
-                    for sep in [",", ";", "\t", " "]:
-                        binario.seek(0)
-                        try:
-                            df_try = pd.read_csv(binario, sep=sep, header=None)
-                            if df_try.shape[1] >= 2:
-                                df = df_try
-                                break
-                        except:
-                            continue
-                if df is None or df.shape[1] < 2:
-                    continue
-                df = df.dropna()
-                x_val = pd.to_numeric(df.iloc[:, 0], errors='coerce')
-                y_val = pd.to_numeric(df.iloc[:, 1], errors='coerce')
-                df_limpio = pd.DataFrame({"x": x_val, "y": y_val}).dropna()
-                if df_limpio.empty:
-                    continue
-                res = _oh_index_for_spectrum(df_limpio, aplicar_suavizado=aplicar_suavizado,
-                                             oh_min=oh_min, oh_max=oh_max, ref_min=ref_min, ref_max=ref_max,
-                                             positive_only=positive_only)
-                filas.append({
-                    "Muestra": m["nombre"],
-                    "Tipo": tipo,
-                    "Observaciones": e.get("observaciones", ""),
-                    "Fecha": e.get("fecha", ""),
-                    "A_OH_3600_3200": res["A_OH"],
-                    "A_ref_CH_2995_2800": res["A_ref"],
-                    "Indice_OH_area_ratio": res["Indice_OH"],
-                })
-            except:
-                continue
-    return pd.DataFrame(filas)
 
 def calculadora_indice_oh_manual():
     #st.subheader("Calculadora manual de Índice OH")
@@ -1315,45 +1184,11 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
                 if k.startswith("_espectros_cache_"):
                     st.session_state.pop(k)
             df_auto = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
-            # --- Re-cálculo cuantitativo (áreas OH / referencia) ---
-            with st.expander("Cuantificación OH (transmisión): índice por áreas", expanded=False):
-                st.write("Recomendado para seguir la **aparición de –OH** en aceite de soja en **transmisión**. "
-                         "Calcula áreas con línea base lineal y reporta el ratio A(OH)/A(ref).")
-                c1, c2, c3, c4, c5 = st.columns(5)
-                oh_min = c1.number_input("OH min (cm⁻¹)", value=3600.0, step=10.0, key="oh_min_area")
-                oh_max = c2.number_input("OH max (cm⁻¹)", value=3200.0, step=10.0, key="oh_max_area")
-                ref_min = c3.number_input("Ref min (cm⁻¹)", value=2995.0, step=10.0, key="ref_min_area")
-                ref_max = c4.number_input("Ref max (cm⁻¹)", value=2800.0, step=10.0, key="ref_max_area")
-                pos_only = c5.checkbox("Sólo área positiva", value=True, key="pos_only_area")
-
-                aplicar_sg = st.checkbox("Aplicar suavizado SG antes de integrar", value=False, key="sg_area_calc")
-
-                if st.button("Recalcular A(OH), A(ref) e índice", key="btn_recalc_area"):
-                    df_area = calcular_indice_oh_area(
-                        db, cargar_muestras(db),
-                        oh_min=oh_min, oh_max=oh_max,
-                        ref_min=ref_min, ref_max=ref_max,
-                        positive_only=pos_only,
-                        aplicar_suavizado=aplicar_sg
-                    )
-                    if not df_area.empty:
-                        # Unir por claves para no perder el resto de columnas
-                        claves = ["Muestra","Tipo","Observaciones","Fecha"]
-                        df_auto = df_auto.drop(columns=["A_OH_3600_3200","A_ref_CH_2995_2800","Indice_OH_area_ratio"], errors="ignore")
-                        df_auto = df_auto.merge(df_area, on=claves, how="left")
-                        st.session_state["df_auto_recalc"] = df_auto
-                        st.success("Índices por área recalculados.")
-                    else:
-                        st.warning("No pude recalcular (no encontré espectros numéricos para esas muestras).")
-
 
             # 2) traer lo manual guardado
             doc_ref = db.document("tablas_indice_oh/manual")
             filas_guardadas = doc_ref.get().to_dict().get("filas", []) if doc_ref.get().exists else []
             df_manual = pd.DataFrame(filas_guardadas)
-
-            df_auto = st.session_state.get("df_auto_recalc", df_auto)
-
 
             # 3) fusionar por claves y conservar columnas manuales (X, Curva)
             claves = ["Muestra","Tipo","Observaciones","Fecha"]
@@ -1381,7 +1216,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             column_order=[
                 "Muestra", "Tipo", "Observaciones", "Fecha",
                 "Señal", "Señal solvente", "Peso muestra [g]",
-                "Índice OH", "A_OH_3600_3200", "A_ref_CH_2995_2800", "Indice_OH_area_ratio", "X", "Curva"
+                "Índice OH", "X", "Curva"
             ],
             use_container_width=True,
             hide_index=True,

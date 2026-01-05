@@ -22,14 +22,14 @@ def _area_con_linea_base(
     y: np.ndarray,
     x_min: float,
     x_max: float,
-    *,
-    positive_onlyitive_only: bool = True,
+    positive_only: bool = True,
+    **_ignored,
 ) -> float:
     """Integra el área (trapz) tras restar una línea base lineal entre los extremos.
 
     - Usa el rango [min(x_min,x_max), max(x_min,x_max)] en unidades de cm⁻¹.
     - Ordena por x (por si viene invertido).
-    - Si positive_only=True, descarta contribuciones negativas tras baseline.
+    - Si True, descarta contribuciones negativas tras baseline.
     """
     if x is None or y is None:
         return np.nan
@@ -1354,7 +1354,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             if x.size == 0 or y.size == 0:
                 continue
 
-            area_ref = _area_con_linea_base(x, y, ref_xmin, ref_xmax, positive_only=usar_solo_area_positiva)
+            area_ref = _area_con_linea_base(x, y, ref_xmin, ref_xmax, usar_solo_area_positiva)
             row = {
                 "Archivo": nombre,
                 "A_ref_CH": area_ref,
@@ -1372,7 +1372,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
                 except Exception:
                     continue
 
-                a = _area_con_linea_base(x, y, xmin, xmax, positive_only=usar_solo_area_positiva)
+                a = _area_con_linea_base(x, y, xmin, xmax, usar_solo_area_positiva)
                 key = f"{_slug(grupo)}__{_slug(region)}"
                 row[f"A_{key}"] = a
                 row[f"I_{key}"] = (a / area_ref) if (area_ref not in (0, None) and not np.isnan(area_ref)) else np.nan

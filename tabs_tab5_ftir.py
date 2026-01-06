@@ -1243,15 +1243,17 @@ def render_comparacion_espectros_ftir(db, muestras):
 def render_cuantificacion_areas_ftir(preprocesados: dict):
     """Cuantificación por áreas (con baseline lineal) para grupos funcionales.
 
-    - Define un rango de referencia (por defecto C–H alifático, editable).
-    - Permite múltiples rangos por grupo funcional para chequear consistencia.
-    - Calcula: áreas (baseline-corrected) e índices área/área_ref.
+    - Usa el MISMO espectro preprocesado completo que el gráfico combinado (suavizado/resta/normalización),
+      pero **no** depende del zoom (x_min/x_max) del gráfico.
+    - Integra áreas con línea base lineal dentro de cada rango y reporta un índice escalado:
+        I_escalado = (A_banda / A_ref_CH) * (C–H equivalentes)
+      donde C–H equivalentes por defecto = 100 (aprox. triglicérido típico de aceite de soja).
+    - Los rangos por defecto están limitados al cuadro acordado, y la tabla es editable (sin agregar filas).
     """
     if not preprocesados:
         st.info("Primero cargá y graficá espectros para poder cuantificar por áreas.")
         return
 
-    import re
     def _default_feature_ranges_df() -> pd.DataFrame:
         filas = [
             # Grupo, Región, X min, X max, Nota
@@ -1267,51 +1269,80 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
         ]
         return pd.DataFrame(filas, columns=["Grupo", "Región", "X min", "X max", "Nota"])
 
-    def _slug(s: str) -> str:
-        s = re.sub(r"\s+", "_", str(s).strip().lower())
-        s = re.sub(r"[^a-z0-9_\-]+", "", s)
-        return s[:60] if s else "x"
+    @st.cache_data(show_spinner=False, max_entries=128)
+    def _calcular_areas_cacheado(
+        preproc_xy: dict,
+        df_ranges: pd.DataFrame,
+        ref_xmin: float,
+        ref_xmax: float,
+        usar_solo_area_positiva: bool,
+        ch_equiv: float,
+    ) -> pd.DataFrame:
+        """Función pura y cacheable: calcula áreas e índices a partir de espectros ya sanitizados."""
+        resultados = []
+        for nombre, (x, y) in preproc_xy.items():
+            if x is None or y is None:
+                continue
+            if len(x) < 3 or len(y) < 3:
+                continue
+
+            area_ref = _area_con_linea_base(x, y, ref_xmin, ref_xmax, usar_solo_area_positiva)
+
+            for _, r in df_ranges.iterrows():
+                grupo = str(r.get("Grupo", "")).strip() or "(sin grupo)"
+                region = str(r.get("Región", "")).strip() or "(sin región)"
+                try:
+                    xmin = float(r.get("X min"))
+                    xmax = float(r.get("X max"))
+                except Exception:
+                    continue
+
+                a_banda = _area_con_linea_base(x, y, xmin, xmax, usar_solo_area_positiva)
+                I = _ratio_safe(a_banda, area_ref)
+                I_escalado = float(I * ch_equiv) if np.isfinite(I) else np.nan
+
+                resultados.append({
+                    "Archivo": nombre,
+                    "Grupo": grupo,
+                    "Región": region,
+                    "A_ref_CH": float(area_ref) if np.isfinite(area_ref) else np.nan,
+                    "A_banda": float(a_banda) if np.isfinite(a_banda) else np.nan,
+                    "I": I_escalado,
+                })
+
+        return pd.DataFrame(resultados)
 
     with st.expander("📏 Cuantificación por áreas (grupos funcionales)", expanded=True):
         st.markdown(
-            "Integra áreas **con línea base lineal** dentro de cada rango, y calcula índices **área/área_ref** "
-            "(útil para comparar tendencias entre espectros en transmisión)."
+            "Integra áreas **con línea base lineal** dentro de cada rango, y reporta un índice **escalado**: "
+            "**I = (A_banda / A_ref_CH) × (C–H equivalentes)**."
         )
+        st.caption("Los cálculos usan el espectro preprocesado completo (suavizado/resta/normalización), pero el zoom del gráfico no afecta los resultados.")
 
-        if st.session_state.get("normalizar_ftir", False):
-            st.warning(
-                "Tenés activada la normalización por pico máximo. Para cuantificar por áreas, "
-                "lo recomendable es **desactivarla**, porque cambia las áreas y rompe la comparación cuantitativa."
-            )
-
-        # --- Referencia (editable) ---
+        # Referencia + escala (editable)
         c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 2])
         with c1:
-            ref_xmin = st.number_input("Ref C–H: X min", value=float(st.session_state.get("ftir_ref_xmin", 2990.0)))
+            ref_xmin = st.number_input("Ref C–H: X min", value=float(st.session_state.get("ftir_ref_xmin", 2980.0)))
         with c2:
             ref_xmax = st.number_input("Ref C–H: X max", value=float(st.session_state.get("ftir_ref_xmax", 2840.0)))
         with c3:
             usar_solo_area_positiva = st.checkbox("Solo área positiva", value=bool(st.session_state.get("ftir_area_pos", True)))
         with c4:
-            # Escala aproximada para trabajar con órdenes de magnitud tipo "por triglicérido".
-            # Se aplica multiplicando el índice I por este valor (por defecto 100).
             ch_equiv = st.number_input(
                 "C–H equivalentes (TAG)",
                 min_value=1.0,
                 value=float(st.session_state.get("ftir_ch_equiv", 100.0)),
-                help="Escala práctica: I_escalado = I × (C–H equivalentes). Por defecto 100."
+                help="Escala práctica: I = (A_banda/A_ref_CH) × (C–H equivalentes). Por defecto 100.",
             )
         with c5:
-            st.caption(
-                "Referencia sugerida: 2990–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃). "
-                "Para trabajar con números más intuitivos, se reporta I_escalado = I × (C–H equivalentes)."
-            )
+            st.caption("Referencia recomendada: 2980–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃).")
 
         st.session_state["ftir_ref_xmin"] = float(ref_xmin)
         st.session_state["ftir_ref_xmax"] = float(ref_xmax)
         st.session_state["ftir_area_pos"] = bool(usar_solo_area_positiva)
+        st.session_state["ftir_ch_equiv"] = float(ch_equiv)
 
-        # --- Tabla editable de rangos ---
+        # Tabla de rangos (limitada, editable sin filas nuevas)
         if "ftir_feature_ranges" not in st.session_state:
             st.session_state["ftir_feature_ranges"] = _default_feature_ranges_df()
 
@@ -1320,25 +1351,21 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             if st.button("↩️ Restablecer rangos por defecto"):
                 st.session_state["ftir_feature_ranges"] = _default_feature_ranges_df()
         with colR2:
-            st.caption("Podés editar rangos y agregar nuevas filas para explorar señales.")
+            st.caption("Podés editar X min/X max y notas. (Lista limitada al set acordado).")
 
         df_ranges = st.data_editor(
             st.session_state["ftir_feature_ranges"],
-            num_rows="dynamic",
+            num_rows="fixed",
             use_container_width=True,
             key="ftir_feature_ranges_editor",
         )
-        # Persistimos la tabla editada
         st.session_state["ftir_feature_ranges"] = df_ranges
-        calcular = True
 
-        # --- Cálculos ---
-        resultados = []
-        # preprocesados: {nombre: (x, y)} o dict similar
+        # Preparar espectros para cache: asegurar (x,y) numéricos
+        preproc_xy = {}
         for nombre, data in preprocesados.items():
-            # data puede ser: (x,y), dict{"x","y"}, o DataFrame con columnas x,y
             if isinstance(data, pd.DataFrame):
-                if set(["x","y"]).issubset(data.columns):
+                if set(["x", "y"]).issubset(data.columns):
                     x, y = data["x"].to_numpy(), data["y"].to_numpy()
                 else:
                     continue
@@ -1350,50 +1377,27 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
                         x, y = data["x"], data["y"]
                     else:
                         continue
-
             x, y = _sanitize_xy(x, y)
             if x.size == 0 or y.size == 0:
                 continue
+            preproc_xy[str(nombre)] = (x, y)
 
-            area_ref_raw = _area_con_linea_base(x, y, ref_xmin, ref_xmax, usar_solo_area_positiva)
-            area_ref_out = float(area_ref_raw) if (area_ref_raw not in (0, None) and not np.isnan(area_ref_raw)) else np.nan
+        # Cálculo automático SIEMPRE (sin checkbox)
+        df_res = _calcular_areas_cacheado(
+            preproc_xy=preproc_xy,
+            df_ranges=df_ranges,
+            ref_xmin=float(ref_xmin),
+            ref_xmax=float(ref_xmax),
+            usar_solo_area_positiva=bool(usar_solo_area_positiva),
+            ch_equiv=float(ch_equiv),
+        )
 
-            for _, r in df_ranges.iterrows():
-
-                grupo = str(r.get("Grupo", "")).strip() or "(sin grupo)"
-                region = str(r.get("Región", "")).strip() or "(sin región)"
-                try:
-                    xmin = float(r.get("X min"))
-                    xmax = float(r.get("X max"))
-                except Exception:
-                    continue
-
-                a_raw = _area_con_linea_base(x, y, xmin, xmax, usar_solo_area_positiva)
-                I = (a_raw / area_ref_raw) if (area_ref_raw not in (0, None) and not np.isnan(area_ref_raw)) else np.nan
-                I_escalado = (I * float(ch_equiv)) if (I is not np.nan and not np.isnan(I)) else np.nan
-
-                resultados.append({
-                    "Archivo": nombre,
-                    "Grupo": grupo,
-                    "Región": region,
-                    "A_ref_CH": area_ref_out,
-                    "A_banda": float(a_raw) if (a_raw not in (None,) and not np.isnan(a_raw)) else np.nan,
-                    "I": I_escalado,
-                })
-
-
-        if not resultados:
+        if df_res.empty:
             st.warning("No se pudieron calcular áreas (revisá que haya espectros preprocesados).")
             return
 
-        df_res = pd.DataFrame(resultados)
-
-        st.subheader("Resultados (áreas e índices)")
-
-        # Mostramos una tabla "larga" y compacta: identificadores + 3 columnas numéricas
-        # (A_ref_CH, A_banda, I). Esto facilita filtrar/ordenar por grupo y comparar regiones.
+        st.subheader("Resultados (áreas e índice escalado)")
         cols = ["Archivo", "Grupo", "Región", "A_ref_CH", "A_banda", "I"]
-        cols = [c for c in cols if c in df_res.columns]
         st.dataframe(df_res[cols], use_container_width=True)
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 #    st.title("Análisis FTIR")

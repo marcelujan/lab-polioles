@@ -1253,7 +1253,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
 
     import re
     def _default_feature_ranges_df() -> pd.DataFrame:
-                filas = [
+        filas = [
             ['CH alifático', 'stretch total', 2980.0, 2840.0, 'Referencia (evitar ~3019 cm⁻¹ de CHCl₃)'],
             ['CH2', 'ν_as (~2920)', 2960.0, 2910.0, 'Asimétrico CH₂ (aceites)'],
             ['CH3', 'ν_s (~2870)', 2880.0, 2850.0, 'Simétrico CH₃'],
@@ -1281,7 +1281,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             ['948–965', '948–965', 948.0, 965.0, 'Señal débil; comparar con 990–1046'],
             ['617–640', '617–640', 617.0, 640.0, 'Señal muy débil; zona ruidosa; usar con cautela'],
         ]
-    return pd.DataFrame(filas, columns=["Grupo", "Región", "X min", "X max", "Nota"])
+        return pd.DataFrame(filas, columns=["Grupo", "Región", "X min", "X max", "Nota"])
 
     def _slug(s: str) -> str:
         s = re.sub(r"\s+", "_", str(s).strip().lower())

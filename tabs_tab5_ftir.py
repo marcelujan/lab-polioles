@@ -1281,7 +1281,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             ['948–965', '948–965', 948.0, 965.0, 'Señal débil; comparar con 990–1046'],
             ['617–640', '617–640', 617.0, 640.0, 'Señal muy débil; zona ruidosa; usar con cautela'],
         ]
-        return pd.DataFrame(filas, columns=["Grupo", "Región", "X min", "X max", "Nota"])
+    return pd.DataFrame(filas, columns=["Grupo", "Región", "X min", "X max", "Nota"])
 
     def _slug(s: str) -> str:
         s = re.sub(r"\s+", "_", str(s).strip().lower())

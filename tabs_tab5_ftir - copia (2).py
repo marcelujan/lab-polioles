@@ -1255,15 +1255,24 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
     def _default_feature_ranges_df() -> pd.DataFrame:
         filas = [
             # Grupo, Región, X min, X max, Nota
-            ["CH alifático", "stretch total", 2980.0, 2840.0, "Referencia (evitar ~3019 cm⁻¹ de CHCl₃)"],
-            ["CH2", "ν_as (~2920)", 2960.0, 2910.0, "Asimétrico CH₂ (aceites)"],
-            ["CH3", "ν_s (~2870)", 2880.0, 2850.0, "Simétrico CH₃"],
-            ["OH", "libre + H-bond (3770–3200)", 3600.0, 3200.0, "OH poco enlazado + OH enlazado"],
-            ["Epóxido", "oxirano (845–820)", 855.0, 840.0, "Banda oxirano"],
-            ["Dobles enlaces", "C=C (1660–1640)", 1665.0, 1635.0, "C=C estiramiento"],
-            ["Éter + OH", "C–O–C (1150–1085)", 1128.0, 1080.0, "Región típica éter/alcohol (solapamientos)"],
-            ["Éster", "C=O (1765–1705)", 1765.0, 1690.0, "Éster triglicérido ~1740"],
+            ["CH alifático", "stretch total", 2990.0, 2840.0, "Referencia sugerida (evita ~3019 cm⁻¹ de CHCl₃)"],
+            ["CH2", "ν_as (~2920)", 2940.0, 2910.0, "Asimétrico CH₂ (aceites)"],
+            ["CH2", "ν_s (~2852)", 2865.0, 2840.0, "Simétrico CH₂"],
+            ["CH3", "ν_as (~2955)", 2975.0, 2945.0, "Asimétrico CH₃"],
+            ["CH3", "ν_s (~2870)", 2885.0, 2865.0, "Simétrico CH₃"],
+            ["OH", "libre (3700–3600)", 3700.0, 3600.0, "OH poco enlazado"],
+            ["OH", "H-bond (3600–3200)", 3600.0, 3200.0, "OH enlazado; banda ancha"],
+            ["Epóxido", "oxirano (845–820)", 845.0, 820.0, "Banda oxirano ~824–843"],
+            ["Epóxido", "oxirano (830–810)", 830.0, 810.0, "Alternativa más estrecha"],
+            ["Dobles enlaces", "=C–H (3012–3000)", 3012.0, 3000.0, "Puede interferir con residuo de CHCl₃ (3019)"],
+            ["Dobles enlaces", "C=C (1660–1640)", 1660.0, 1640.0, "C=C estiramiento"],
+            ["Éter", "C–O–C (1150–1085)", 1150.0, 1085.0, "Región típica éter/alcohol (solapamientos)"],
+            ["Éster", "C=O (1765–1705)", 1765.0, 1705.0, "Éster triglicérido ~1740"],
             ["Éster", "C–O (1300–1000)", 1300.0, 1000.0, "Amplia; suele solaparse"],
+            ["Formilo", "aldehído C–H (2830–2695)", 2830.0, 2695.0, "Doblete aldehído (si aparece)"],
+            ["Formilo", "aldehído C=O (1740–1720)", 1740.0, 1720.0, "Se puede solapar con éster"],
+            ["Carbonilo", "ventana C=O (1800–1680)", 1800.0, 1680.0, "Ventana general de carbonilos (diagnóstico)"],
+            ["Alcohol", "C–O (1150–1050)", 1150.0, 1050.0, "C–O alcohol (solapa con éter)"],
         ]
         return pd.DataFrame(filas, columns=["Grupo", "Región", "X min", "X max", "Nota"])
 
@@ -1278,10 +1287,16 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             "(útil para comparar tendencias entre espectros en transmisión)."
         )
 
+        if st.session_state.get("normalizar_ftir", False):
+            st.warning(
+                "Tenés activada la normalización por pico máximo. Para cuantificar por áreas, "
+                "lo recomendable es **desactivarla**, porque cambia las áreas y rompe la comparación cuantitativa."
+            )
+
         # --- Referencia (editable) ---
         c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 2])
         with c1:
-            ref_xmin = st.number_input("Ref C–H: X min", value=float(st.session_state.get("ftir_ref_xmin", 2980.0)))
+            ref_xmin = st.number_input("Ref C–H: X min", value=float(st.session_state.get("ftir_ref_xmin", 2990.0)))
         with c2:
             ref_xmax = st.number_input("Ref C–H: X max", value=float(st.session_state.get("ftir_ref_xmax", 2840.0)))
         with c3:
@@ -1297,7 +1312,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             )
         with c5:
             st.caption(
-                "Referencia sugerida: 2980–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃). "
+                "Referencia sugerida: 2990–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃). "
                 "Para trabajar con números más intuitivos, se reporta I_escalado = I × (C–H equivalentes)."
             )
 
@@ -1314,11 +1329,11 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             if st.button("↩️ Restablecer rangos por defecto"):
                 st.session_state["ftir_feature_ranges"] = _default_feature_ranges_df()
         with colR2:
-            st.caption("Podés editar rangos si necesitás ajustar la integración.")
+            st.caption("Podés editar rangos y agregar nuevas filas para explorar señales.")
 
         df_ranges = st.data_editor(
             st.session_state["ftir_feature_ranges"],
-            num_rows="fixed",
+            num_rows="dynamic",
             use_container_width=True,
             key="ftir_feature_ranges_editor",
         )

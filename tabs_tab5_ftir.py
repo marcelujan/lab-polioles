@@ -1399,6 +1399,9 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
     if df_res.empty:
         st.warning("No se pudieron calcular áreas (revisá que haya espectros preprocesados).")
         return
+    # Ordenar para lectura: agrupar por 'Grupo' y luego por 'Archivo'/'Región'
+    df_res = df_res.sort_values(["Grupo", "Archivo", "Región"], kind="mergesort").reset_index(drop=True)
+
     cols = ["Archivo", "Grupo", "Región", "A_ref_CH", "A_banda", "I"]
     st.dataframe(df_res[cols], use_container_width=True)
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):

@@ -1400,9 +1400,27 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
         st.warning("No se pudieron calcular áreas (revisá que haya espectros preprocesados).")
         return
     # Ordenar para lectura: agrupar por 'Grupo' y luego por 'Archivo'/'Región'
-    df_res = df_res.sort_values(["Grupo", "Archivo", "Región"], kind="mergesort").reset_index(drop=True)
+    
+# Orden personalizado de 'Grupo' y 'Región' según aparecen en la tabla 1 (df_ranges):
+#  - Primero los grupos funcionales "principales"
+#  - Luego las zonas adicionales, en el mismo orden en que están listadas
+try:
+    _grupo_order = list(pd.unique(df_ranges["Grupo"]))
+    _region_rank = {(g, r): i for i, (g, r) in enumerate(zip(df_ranges["Grupo"], df_ranges["Región"]))}
 
-    cols = ["Archivo", "Grupo", "Región", "A_ref_CH", "A_banda", "I"]
+    df_res["_grupo_order"] = pd.Categorical(df_res["Grupo"], categories=_grupo_order, ordered=True)
+    df_res["_region_rank"] = df_res.apply(lambda rr: _region_rank.get((rr["Grupo"], rr.get("Región", "")), 10**9), axis=1)
+
+    # Dentro de cada región, conservar orden estable por archivo (aparición)
+    _archivo_order = list(pd.unique(df_res["Archivo"]))
+    df_res["_archivo_order"] = pd.Categorical(df_res["Archivo"], categories=_archivo_order, ordered=True)
+
+    df_res = df_res.sort_values(["_grupo_order", "_region_rank", "_archivo_order"], kind="mergesort").reset_index(drop=True)
+    df_res = df_res.drop(columns=["_grupo_order", "_region_rank", "_archivo_order"])
+except Exception:
+    # fallback: orden simple
+    df_res = df_res.sort_values(["Grupo", "Archivo", "Región"], kind="mergesort").reset_index(drop=True)
+cols = ["Archivo", "Grupo", "Región", "A_ref_CH", "A_banda", "I"]
     st.dataframe(df_res[cols], use_container_width=True)
 def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
 #    st.title("Análisis FTIR")

@@ -1258,7 +1258,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             ["CH alifático", "stretch total", 2980.0, 2840.0, "Referencia (evitar ~3019 cm⁻¹ de CHCl₃)"],
             ["CH2", "ν_as (~2920)", 2960.0, 2910.0, "Asimétrico CH₂ (aceites)"],
             ["CH3", "ν_s (~2870)", 2880.0, 2850.0, "Simétrico CH₃"],
-            ["OH", "libre + H-bond (3770–3200)", 3600.0, 3200.0, "OH poco enlazado + OH enlazado"],
+            ["OH", "libre + H-bond (3770–3200)", 3770.0, 3200.0, "OH poco enlazado + OH enlazado"],
             ["Epóxido", "oxirano (845–820)", 855.0, 840.0, "Banda oxirano"],
             ["Dobles enlaces", "C=C (1660–1640)", 1665.0, 1635.0, "C=C estiramiento"],
             ["Éter + OH", "C–O–C (1150–1085)", 1128.0, 1080.0, "Región típica éter/alcohol (solapamientos)"],
@@ -1278,10 +1278,16 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             "(útil para comparar tendencias entre espectros en transmisión)."
         )
 
+        if st.session_state.get("normalizar_ftir", False):
+            st.warning(
+                "Tenés activada la normalización por pico máximo. Para cuantificar por áreas, "
+                "lo recomendable es **desactivarla**, porque cambia las áreas y rompe la comparación cuantitativa."
+            )
+
         # --- Referencia (editable) ---
         c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 2])
         with c1:
-            ref_xmin = st.number_input("Ref C–H: X min", value=float(st.session_state.get("ftir_ref_xmin", 2980.0)))
+            ref_xmin = st.number_input("Ref C–H: X min", value=float(st.session_state.get("ftir_ref_xmin", 2990.0)))
         with c2:
             ref_xmax = st.number_input("Ref C–H: X max", value=float(st.session_state.get("ftir_ref_xmax", 2840.0)))
         with c3:
@@ -1297,7 +1303,7 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             )
         with c5:
             st.caption(
-                "Referencia sugerida: 2980–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃). "
+                "Referencia sugerida: 2990–2840 cm⁻¹ (evita ~3019 cm⁻¹ de CHCl₃). "
                 "Para trabajar con números más intuitivos, se reporta I_escalado = I × (C–H equivalentes)."
             )
 
@@ -1314,22 +1320,17 @@ def render_cuantificacion_areas_ftir(preprocesados: dict):
             if st.button("↩️ Restablecer rangos por defecto"):
                 st.session_state["ftir_feature_ranges"] = _default_feature_ranges_df()
         with colR2:
-            st.caption("Podés editar rangos si necesitás ajustar la integración.")
+            st.caption("Podés editar rangos y agregar nuevas filas para explorar señales.")
 
         df_ranges = st.data_editor(
             st.session_state["ftir_feature_ranges"],
-            num_rows="fixed",
+            num_rows="dynamic",
             use_container_width=True,
             key="ftir_feature_ranges_editor",
         )
         # Persistimos la tabla editada
         st.session_state["ftir_feature_ranges"] = df_ranges
-
-        auto_calc = st.checkbox("Calcular automáticamente", value=True, key="auto_calc_areas")
-        calcular = True if auto_calc else st.button("📊 Calcular áreas e índices", type="primary")
-
-        if not calcular:
-            return
+        calcular = True
 
         # --- Cálculos ---
         resultados = []

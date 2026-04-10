@@ -1,7 +1,8 @@
-cd H:\Mi unidad\lab-polioles
+abrir el cmd desde la carpeta H:\Mi unidad\lab-polioles
 
+ejecutar:
 python admin_create_user.py \
   --service-account ./service-account.json \
-  --email tu_mail@dominio.com \
-  --password 'tu_clave' \
+  --email mlujan1863@gmail.com \
+  --password 'Aero2020unc' \
   --role editor

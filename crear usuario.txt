@@ -1,8 +1,23 @@
 abrir el cmd desde la carpeta H:\Mi unidad\lab-polioles
 
+<<<<<<< HEAD
 ejecutar:
 python admin_create_user.py \
   --service-account ./service-account.json \
   --email mlujan1863@gmail.com \
   --password 'Aero2020unc' \
   --role editor
+=======
+crear:
+  
+py -c "from firebase_admin import credentials, initialize_app, auth; initialize_app(credentials.Certificate(r'C:\Users\mluja\Documents\clave\laboratorio-polioles-firebase-adminsdk-fbsvc-7e6d4ba110.json')); u=auth.get_user_by_email('marcelo.lujan@mi.unc.edu.ar'); auth.set_custom_user_claims(u.uid, {'can_use_app': True, 'role': 'editor'}); print('ok', u.uid)"
+
+
+
+
+verificar: claims= {'can_use_app': True, 'role': 'editor'}
+
+py -c "from firebase_admin import credentials, initialize_app, auth; initialize_app(credentials.Certificate(r'C:\Users\mluja\Documents\clave\laboratorio-polioles-firebase-adminsdk-fbsvc-7e6d4ba110.json')); u=auth.get_user_by_email('marcelo.lujan@mi.unc.edu.ar'); print('uid=',u.uid); print('disabled=',u.disabled); print('claims=',u.custom_claims)"
+
+resultado esperado: 
+>>>>>>> f41e5b3 (Actualizaci├│n autom├ítica desde script)

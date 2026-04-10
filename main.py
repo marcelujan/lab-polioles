@@ -4,6 +4,7 @@ import firebase_admin
 import streamlit as st
 from firebase_admin import credentials
 
+from audit_db import AuditFirestoreClient, apply_audit_mode
 from auth_utils import iniciar_sesion
 from firestore_utils import cargar_muestras, guardar_muestra
 from ia_flotante import mostrar_panel_ia
@@ -31,7 +32,7 @@ if not firebase_admin._apps:
 st.set_page_config(page_title="Laboratorio de Polioles", layout="wide")
 
 
-PUBLIC_SECTIONS = [
+TABS = [
     "Lab polioles",
     "Análisis de datos",
     "Carga de espectros",
@@ -46,93 +47,54 @@ PUBLIC_SECTIONS = [
 ]
 
 
-OWNER_EMAIL = "mlujan1863@gmail.com"
-
-
-def cerrar_sesion():
+def _clear_runtime_state() -> None:
     for key in list(st.session_state.keys()):
-        del st.session_state[key]
-    st.rerun()
+        if key.startswith("_espectros_cache_"):
+            st.session_state.pop(key, None)
+    st.session_state.pop("db", None)
+    st.session_state.pop("firebase_initialized", None)
+    st.session_state.pop("firebase_db", None)
 
 
-def bloquear_acceso_silencioso():
-    for key in ["auth", "token", "user_email", "firebase_initialized", "db", "firebase_db"]:
-        st.session_state.pop(key, None)
-
-
-def render_portada_publica():
+if "auth" not in st.session_state:
     st.title("Laboratorio de Polioles")
+    with st.form("login_form", clear_on_submit=False):
+        email = st.text_input("Correo electrónico")
+        password = st.text_input("Contraseña", type="password")
+        submitted = st.form_submit_button("Ingresar")
 
-    col1, col2 = st.columns([1.3, 1])
-
-    with col1:
-        st.subheader("Laboratorio")
-        st.markdown(
-            """
-            Plataforma para carga, análisis y consulta de información del laboratorio.
-            """
-        )
-
-        st.subheader("Áreas disponibles")
-        st.markdown(
-            """
-            - Gestión de muestras.
-            - Análisis de datos.
-            - Espectros y FTIR.
-            - RMN.
-            - Consola y módulos de apoyo.
-            """
-        )
-
-    with col2:
-        st.subheader("Módulos")
-        for section in PUBLIC_SECTIONS:
-            st.markdown(f"- {section}")
-
-
-def render_login():
-    st.markdown("---")
-    st.subheader("Ingreso")
-    email = st.text_input("Correo electrónico")
-    password = st.text_input("Contraseña", type="password")
-
-    if st.button("Iniciar sesión", type="primary"):
+    if submitted:
         auth_ctx = iniciar_sesion(email, password)
         if auth_ctx:
+            _clear_runtime_state()
             st.session_state["auth"] = auth_ctx
-            st.session_state["token"] = auth_ctx["id_token"]
-            st.session_state["user_email"] = auth_ctx["email"]
+            st.session_state["user_email"] = auth_ctx.get("email")
             st.rerun()
-
-
-# --- Portada pública ---
-auth_ctx = st.session_state.get("auth")
-if not auth_ctx:
-    render_portada_publica()
-    render_login()
+        else:
+            st.error("No fue posible iniciar sesión.")
     st.stop()
 
-# --- Usuario autenticado pero no habilitado: bloqueo silencioso ---
-if not auth_ctx.get("can_use_app", False):
-    bloquear_acceso_silencioso()
-    render_portada_publica()
-    render_login()
-    st.stop()
 
-with st.sidebar:
-    st.write(f"Sesión: {auth_ctx['email']}")
-    if st.button("Cerrar sesión"):
-        cerrar_sesion()
+auth_ctx = st.session_state.get("auth", {})
+audit_mode = not auth_ctx.get("can_use_app", False)
+st.session_state["audit_mode"] = audit_mode
 
-# --- Firebase solo para usuarios habilitados ---
-if "firebase_initialized" not in st.session_state:
-    st.session_state.db = firebase_admin.firestore.client()
-    st.session_state.firebase_initialized = True
+if audit_mode:
+    if st.session_state.get("firebase_mode") != "audit":
+        _clear_runtime_state()
+        apply_audit_mode()
+        st.session_state.db = AuditFirestoreClient()
+        st.session_state.firebase_mode = "audit"
+else:
+    if st.session_state.get("firebase_mode") != "live":
+        _clear_runtime_state()
+        st.session_state.db = firebase_admin.firestore.client()
+        st.session_state.firebase_mode = "live"
 
 db = st.session_state.db
 
-# --- Tabs principales ---
-tabs = st.tabs(PUBLIC_SECTIONS)
+
+tabs = st.tabs(TABS)
 
 with tabs[0]:
     render_tab1(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
@@ -157,6 +119,6 @@ with tabs[9]:
 with tabs[10]:
     render_tab11(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante)
 
-if auth_ctx["email"] == OWNER_EMAIL and "db" in st.session_state:
+if not audit_mode and "user_email" in st.session_state and "db" in st.session_state:
     st.session_state["firebase_db"] = st.session_state.db
     mostrar_panel_ia()

@@ -16,7 +16,6 @@ def iniciar_sesion(email, password):
     response = requests.post(url, json=payload, timeout=30)
 
     if response.status_code != 200:
-        st.error("Credenciales incorrectas o cuenta no habilitada.")
         return None
 
     data = response.json()
@@ -25,16 +24,19 @@ def iniciar_sesion(email, password):
     try:
         decoded = admin_auth.verify_id_token(id_token)
         user = admin_auth.get_user(decoded["uid"])
-    except Exception as exc:
-        st.error(f"No se pudo validar la sesión en el servidor: {exc}")
+    except Exception:
         return None
 
     claims = user.custom_claims or {}
+    can_use_app = bool(claims.get("can_use_app", False))
+
+    if not can_use_app:
+        return None
 
     return {
         "id_token": id_token,
         "uid": user.uid,
         "email": user.email or email,
-        "can_use_app": bool(claims.get("can_use_app", False)),
-        "role": claims.get("role", "auditor"),
+        "can_use_app": True,
+        "role": claims.get("role", "editor"),
     }

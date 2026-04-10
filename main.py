@@ -55,49 +55,39 @@ def cerrar_sesion():
     st.rerun()
 
 
+def bloquear_acceso_silencioso():
+    for key in ["auth", "token", "user_email", "firebase_initialized", "db", "firebase_db"]:
+        st.session_state.pop(key, None)
+
 
 def render_portada_publica():
     st.title("Laboratorio de Polioles")
-    st.caption("Acceso público de auditoría. El uso operativo está restringido.")
-
-    st.info(
-        "Cualquier visitante puede revisar la portada y el alcance de la plataforma, "
-        "pero las funciones conectadas a Firebase quedan reservadas a cuentas habilitadas manualmente."
-    )
 
     col1, col2 = st.columns([1.3, 1])
 
     with col1:
-        st.subheader("Qué puede ver un auditor")
+        st.subheader("Laboratorio")
         st.markdown(
             """
-            - Estructura general de la aplicación.
-            - Módulos disponibles y propósito de cada uno.
-            - Criterio de acceso y forma de solicitar habilitación.
+            Plataforma para carga, análisis y consulta de información del laboratorio.
             """
         )
 
-        st.subheader("Qué no puede hacer un auditor")
+        st.subheader("Áreas disponibles")
         st.markdown(
             """
-            - Leer o escribir datos en Firestore.
-            - Cargar espectros o editar muestras.
-            - Guardar sugerencias, conclusiones u observaciones.
-            - Usar herramientas internas de análisis.
+            - Gestión de muestras.
+            - Análisis de datos.
+            - Espectros y FTIR.
+            - RMN.
+            - Consola y módulos de apoyo.
             """
         )
 
     with col2:
-        st.subheader("Módulos disponibles")
+        st.subheader("Módulos")
         for section in PUBLIC_SECTIONS:
             st.markdown(f"- {section}")
-
-        st.subheader("Solicitud de acceso")
-        st.write(
-            "Las cuentas operativas se crean manualmente por el administrador. "
-            "No hay auto-registro desde esta web."
-        )
-
 
 
 def render_login():
@@ -105,9 +95,6 @@ def render_login():
     st.subheader("Ingreso")
     email = st.text_input("Correo electrónico")
     password = st.text_input("Contraseña", type="password")
-    st.warning(
-        "Si usás autocompletar, verificá que ambos campos estén visibles antes de continuar."
-    )
 
     if st.button("Iniciar sesión", type="primary"):
         auth_ctx = iniciar_sesion(email, password)
@@ -115,42 +102,7 @@ def render_login():
             st.session_state["auth"] = auth_ctx
             st.session_state["token"] = auth_ctx["id_token"]
             st.session_state["user_email"] = auth_ctx["email"]
-            st.success("Inicio de sesión exitoso.")
             st.rerun()
-
-
-
-def render_modo_auditoria(auth_ctx):
-    st.title("Modo auditoría")
-    st.caption(f"Sesión iniciada como {auth_ctx['email']}")
-
-    st.warning(
-        "Tu cuenta existe, pero no está habilitada para operar en la aplicación. "
-        "No se iniciará la conexión a Firestore."
-    )
-
-    st.markdown("### Alcance visible")
-    for section in PUBLIC_SECTIONS:
-        st.markdown(f"- {section}")
-
-    st.markdown("### Estado del acceso")
-    st.code(
-        json.dumps(
-            {
-                "email": auth_ctx["email"],
-                "role": auth_ctx.get("role", "auditor"),
-                "can_use_app": auth_ctx.get("can_use_app", False),
-            },
-            indent=2,
-            ensure_ascii=False,
-        ),
-        language="json",
-    )
-
-    st.info(
-        "Para habilitar el uso real, el administrador debe crear tu cuenta y asignarte "
-        "el claim can_use_app=true."
-    )
 
 
 # --- Portada pública ---
@@ -160,15 +112,17 @@ if not auth_ctx:
     render_login()
     st.stop()
 
+# --- Usuario autenticado pero no habilitado: bloqueo silencioso ---
+if not auth_ctx.get("can_use_app", False):
+    bloquear_acceso_silencioso()
+    render_portada_publica()
+    render_login()
+    st.stop()
+
 with st.sidebar:
     st.write(f"Sesión: {auth_ctx['email']}")
     if st.button("Cerrar sesión"):
         cerrar_sesion()
-
-# --- Usuario autenticado pero no habilitado ---
-if not auth_ctx.get("can_use_app", False):
-    render_modo_auditoria(auth_ctx)
-    st.stop()
 
 # --- Firebase solo para usuarios habilitados ---
 if "firebase_initialized" not in st.session_state:

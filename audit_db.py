@@ -392,6 +392,7 @@ def _seed_client() -> FakeFirestoreClient:
     # Sugerencias y referencias
     db.collection("sugerencias").document("sug_001").set({
         "fecha": "2025-03-09T10:00:00",
+        "comentario": "Agregar validación de consistencia entre índice OH y FTIR.",
         "texto": "Agregar validación de consistencia entre índice OH y FTIR.",
         "usuario": "auditor-demo"
     })

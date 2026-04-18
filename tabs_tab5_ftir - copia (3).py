@@ -67,61 +67,6 @@ def _coerce_numeric_series(arr) -> pd.Series:
 
 
 
-def _normalizar_df_indice_oh(df):
-    """Asegura un esquema estable para la tabla de Índice OH.
-
-    En modo auditoría pueden venir filas demo con nombres levemente distintos
-    (por ejemplo `Indice OH` o `Peso [g]`) o sin columnas manuales (`X`, `Curva`).
-    Esta función unifica el esquema para evitar KeyError en la UI.
-    """
-    cols_base = [
-        "Muestra", "Tipo", "Observaciones", "Fecha",
-        "Señal", "Señal solvente", "Peso muestra [g]",
-        "Índice OH", "X", "Curva"
-    ]
-
-    if df is None:
-        return pd.DataFrame(columns=cols_base)
-
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
-    else:
-        df = df.copy()
-
-    renames = {}
-    if "Indice OH" in df.columns and "Índice OH" not in df.columns:
-        renames["Indice OH"] = "Índice OH"
-    if "Peso [g]" in df.columns and "Peso muestra [g]" not in df.columns:
-        renames["Peso [g]"] = "Peso muestra [g]"
-    if renames:
-        df = df.rename(columns=renames)
-
-    defaults = {
-        "Muestra": "",
-        "Tipo": "",
-        "Observaciones": "",
-        "Fecha": "",
-        "Señal": np.nan,
-        "Señal solvente": np.nan,
-        "Peso muestra [g]": np.nan,
-        "Índice OH": np.nan,
-        "X": np.nan,
-        "Curva": "",
-    }
-
-    for col, default in defaults.items():
-        if col not in df.columns:
-            if col == "Curva" and "Archivo" in df.columns:
-                df[col] = df["Archivo"].fillna("")
-            else:
-                df[col] = default
-
-    for col in ["Señal", "Señal solvente", "Peso muestra [g]", "Índice OH", "X"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-
-    return df
-
-
 def _order_range(a, b):
     """Devuelve (min,max) sin importar el orden de entrada."""
     try:
@@ -1541,13 +1486,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
         # leer solo al iniciar
         if doc.exists and "df_oh_editado" not in st.session_state:
             filas_guardadas = doc.to_dict().get("filas", [])
-            st.session_state["df_oh_editado"] = _normalizar_df_indice_oh(pd.DataFrame(filas_guardadas))
+            st.session_state["df_oh_editado"] = pd.DataFrame(filas_guardadas)
         elif "df_oh_editado" not in st.session_state:
             df_resultado = calcular_indice_oh_auto(db, cargar_muestras(db)).reset_index(drop=True)
             if not df_resultado.empty:
                 df_resultado["X"] = None
                 df_resultado["Curva"] = ""
-                st.session_state["df_oh_editado"] = _normalizar_df_indice_oh(df_resultado)
+                st.session_state["df_oh_editado"] = df_resultado
 
         colA, colB = st.columns(2)
         if colA.button("🔄 Refrescar espectros"):
@@ -1566,7 +1511,7 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             # 2) traer lo manual guardado
             doc_ref = db.document("tablas_indice_oh/manual")
             filas_guardadas = doc_ref.get().to_dict().get("filas", []) if doc_ref.get().exists else []
-            df_manual = _normalizar_df_indice_oh(pd.DataFrame(filas_guardadas))
+            df_manual = pd.DataFrame(filas_guardadas)
 
             # 3) fusionar por claves y conservar columnas manuales (X, Curva)
             claves = ["Muestra","Tipo","Observaciones","Fecha"]
@@ -1580,14 +1525,13 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             else:
                 df_final = df_auto
 
-            df_final = _normalizar_df_indice_oh(df_final)
             st.session_state["df_oh_editado"] = df_final
             doc_ref.set({"filas": df_final.to_dict(orient="records")})
             st.success("Tabla actualizada y fusionada sin perder tus datos manuales.")
 
 
         df_editado = st.data_editor(
-            _normalizar_df_indice_oh(st.session_state.get("df_oh_editado", pd.DataFrame())),
+            st.session_state.get("df_oh_editado", pd.DataFrame()),
             column_config={
                 "X": st.column_config.NumberColumn("X", format="%.3f"),
                 "Curva": st.column_config.TextColumn("Curva"),
@@ -1607,8 +1551,6 @@ def render_tab5(db, cargar_muestras, mostrar_sector_flotante):
             st.session_state["df_oh_editado"] = df_editado
             doc_ref.set({"filas": df_editado.to_dict(orient="records")})
             st.success("Datos guardados")
-
-        df_editado = _normalizar_df_indice_oh(df_editado)
 
         # filtrar datos válidos
         df_filtrado = df_editado[

@@ -1,4 +1,5 @@
 import json
+from functools import wraps
 
 import firebase_admin
 import streamlit as st
@@ -19,6 +20,44 @@ from tabs_tab9_desarrollos import render_tab9
 from tabs_tab10_mc import render_tab10
 from tabs_tab11_down import render_tab11
 from ui_utils import mostrar_sector_flotante
+
+
+def patch_streamlit_width_args():
+    """Compatibilidad temporal para Streamlit >= 1.57.
+
+    Convierte use_container_width=True/False al nuevo argumento width antes de
+    llamar a Streamlit, evitando warnings repetidos en todos los tabs.
+    """
+    nombres_funciones = (
+        "dataframe",
+        "data_editor",
+        "plotly_chart",
+        "image",
+        "download_button",
+        "pyplot",
+        "altair_chart",
+        "line_chart",
+        "bar_chart",
+        "area_chart",
+        "scatter_chart",
+    )
+
+    for nombre in nombres_funciones:
+        funcion_original = getattr(st, nombre, None)
+        if funcion_original is None or getattr(funcion_original, "_width_arg_patched", False):
+            continue
+
+        @wraps(funcion_original)
+        def funcion_patcheada(*args, _funcion_original=funcion_original, **kwargs):
+            if "use_container_width" in kwargs and "width" not in kwargs:
+                kwargs["width"] = "stretch" if kwargs.pop("use_container_width") else "content"
+            return _funcion_original(*args, **kwargs)
+
+        funcion_patcheada._width_arg_patched = True
+        setattr(st, nombre, funcion_patcheada)
+
+
+patch_streamlit_width_args()
 
 
 if not firebase_admin._apps:

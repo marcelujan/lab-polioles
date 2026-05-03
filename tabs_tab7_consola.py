@@ -10,6 +10,21 @@ from tempfile import TemporaryDirectory
 import warnings 
 warnings.filterwarnings("ignore", category=UserWarning, module="zipfile")
 
+COLUMNAS_BINARIAS_ESPECTROS = ("contenido", "Contenido")
+
+
+def preparar_df_espectros_excel(df):
+    """Devuelve metadatos exportables a Excel sin contenido binario/base64.
+
+    Excel limita cada celda a 32.767 caracteres. Los espectros completos se
+    descargan por ZIP; el Excel queda como índice de metadatos.
+    """
+    if df is None or df.empty:
+        return pd.DataFrame()
+    columnas_a_excluir = [col for col in COLUMNAS_BINARIAS_ESPECTROS if col in df.columns]
+    return df.drop(columns=columnas_a_excluir, errors="ignore")
+
+
 def obtener_ids_espectros(nombre):
     return [doc.id for doc in firestore.Client().collection("muestras").document(nombre).collection("espectros").list_documents()]
 
@@ -128,6 +143,7 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             # Generar Excel de análisis
             df_analisis = pd.DataFrame(m.get("analisis", []))
             df_espectros = pd.DataFrame(obtener_espectros_para_muestra(db, m["nombre"]))
+            df_espectros_excel = preparar_df_espectros_excel(df_espectros)
 
             filas_mascaras = []
             for e in obtener_espectros_para_muestra(db, m["nombre"]):
@@ -146,7 +162,7 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             buffer_excel = BytesIO()
             with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
                 df_analisis.to_excel(writer, index=False, sheet_name="Análisis")
-                df_espectros.to_excel(writer, index=False, sheet_name="Espectros")
+                df_espectros_excel.to_excel(writer, index=False, sheet_name="Espectros")
                 if not df_mascaras.empty:
                     df_mascaras.to_excel(writer, index=False, sheet_name="Mascaras_RMN1H")                
             buffer_excel.seek(0)
@@ -167,8 +183,8 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
             buffer_zip.seek(0)
 
             # Botones de descarga
-            c2.download_button(f"📥 {len(df_analisis)}", data=buffer_excel.getvalue(), file_name=f"analisis_{nombre}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key=f"excel1_{i}")
-            c3.download_button(f"📦 {len(obtener_espectros_para_muestra(db, m['nombre']))}", data=buffer_zip.getvalue(), file_name=f"espectros_{nombre}.zip", mime="application/zip", use_container_width=True, key=f"zip1_{i}")
+            c2.download_button(f"📥 {len(df_analisis)}", data=buffer_excel.getvalue(), file_name=f"analisis_{nombre}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", width="stretch", key=f"excel1_{i}")
+            c3.download_button(f"📦 {len(obtener_espectros_para_muestra(db, m['nombre']))}", data=buffer_zip.getvalue(), file_name=f"espectros_{nombre}.zip", mime="application/zip", width="stretch", key=f"zip1_{i}")
 
     # Tabla 2: Descargas por análisis
     with col2:
@@ -210,7 +226,7 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 data=buffer_excel.getvalue(),
                 file_name=f"analisis_{tipo}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
+                width="stretch",
                 key=f"excel2_{i}"
             )
 
@@ -255,7 +271,7 @@ def render_tab7(db, cargar_muestras, guardar_muestra, mostrar_sector_flotante):
                 data=buffer_zip.getvalue(),
                 file_name=f"espectros_{tipo}.zip",
                 mime="application/zip",
-                use_container_width=True,
+                width="stretch",
                 key=f"zip3_{i}"
             )
 
